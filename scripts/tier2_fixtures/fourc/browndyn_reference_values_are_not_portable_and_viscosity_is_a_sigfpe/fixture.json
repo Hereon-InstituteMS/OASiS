@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::brownian_dynamics#4 and #5. Three measurements, all counted rather than asserted. (a) DETERMINISM WITHIN A BUILD: the same deck run twice on the same binary with RANDSEED fixed gives bit-identical result lines (cmp, not a tolerance) -- so a re-run tells you nothing about spread. (b) REFERENCE VALUES ACROSS BUILDS: ten of 4C's own beam*browndyn* decks are run unchanged and the reproducing ones counted. The outcome is MIXED on one and the same binary (BROWNDYN_REFERENCE_OUTCOME_IS_MIXED=yes asserts 0 < reproducing < run, not a specific count, so the fixture survives 4C adding or fixing decks) -- and THAT is the point of the entry: a failing Brownian reference value is not evidence your deck is wrong. A first draft claimed the decks simply do not reproduce; a wider scan falsified it and the entry was rewritten to 'some do and some do not'. MISMATCH_IS_LEADING_DIGIT=yes checks the failures are at the scale of the answer rather than at roundoff, and the POSITIVE CONTROL (NON_BROWNIAN_BEAM_DECK_REPRODUCES=yes) rules out a broken binary. (c) The two keys with no usable default: dropping VISCOSITY or BROWNDYNPROB gives exit 136 and a raw SIGFPE with zero PROC 0 ERROR blocks and nothing naming the key or the damping. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 rebuilds the two dropped-key decks untouched, so no SIGFPE occurs; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "brownian_dynamics",
+  "pitfall_index": 4,
+  "covers": [
+    "brownian_dynamics:4",
+    "brownian_dynamics:5"
+  ],
+  "mode": "cmd",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "DETERMINISTIC_WITHIN_BUILD=yes",
+    "BROWNDYN_DECKS_RUN=10",
+    "BROWNDYN_REFERENCE_OUTCOME_IS_MIXED=yes",
+    "MISMATCH_IS_LEADING_DIGIT=yes",
+    "NON_BROWNIAN_BEAM_DECK_REPRODUCES=yes",
+    "EXIT_CONTROL=0",
+    "EXIT_NOVISC=136",
+    "EXIT_NOPROB=136",
+    "NOVISC_IS_A_SIGNAL=yes",
+    "NOPROB_IS_A_SIGNAL=yes",
+    "NOVISC_FOURC_ERROR_BLOCKS=0",
+    "NOPROB_FOURC_ERROR_BLOCKS=0",
+    "NOVISC_NAMES_THE_KEY=no",
+    "NOPROB_NAMES_THE_KEY=no",
+    "Signal code: Floating point divide-by-zero (3)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "DETERMINISTIC_WITHIN_BUILD=no",
+    "BROWNDYN_REFERENCE_OUTCOME_IS_MIXED=no",
+    "NON_BROWNIAN_BEAM_DECK_REPRODUCES=no",
+    "NOVISC_IS_A_SIGNAL=no",
+    "NOPROB_IS_A_SIGNAL=no",
+    "EXIT_NOVISC=0",
+    "EXIT_NOPROB=0",
+    "NOVISC_NAMES_THE_KEY=yes",
+    "MISMATCH_IS_LEADING_DIGIT=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild the VISCOSITY-dropped and BROWNDYNPROB-dropped decks from the untouched upstream file. No SIGFPE occurs, the exit statuses and IS_A_SIGNAL tokens flip and the fixture must go red. (The reference-portability half is an observation about 4C's own decks, not an injected pathology, so it is unaffected -- the mutation kills on the injected half only, which the tokens above make explicit.)",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#11. Dropping TEMPERATUREEVALUATION while a result test still asks for QUANTITY 'temperature' produces \"state 'temperature' not found in container!\" -- and it produces it at the END: the whole time loop runs first (NOMODULE_RAN_THE_WHOLE_LOOP=yes, counted from the TIME: lines) and nothing at setup mentions temperature or thermal at all (NOMODULE_SETUP_DIAGNOSTICS=0, measured on the log prefix BEFORE the first TIME: line, not on the whole file). The second probe separates this from its neighbour so the two are not conflated: a genuine typo in the QUANTITY string gives 'result check failed with unknown quantity' instead, and TYPO_ALSO_SAYS_STATE_NOT_FOUND=no confirms the two messages do not co-occur. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_NOMODULE=1",
+    "EXIT_TYPO=1",
+    "EXIT_BASE=0",
+    "BASE_PASSES=yes",
+    "state 'temperature' not found in container!",
+    "MODULE_OFF_REPORTS_A_MISSING_STATE=yes",
+    "NOMODULE_RAN_THE_WHOLE_LOOP=yes",
+    "NOMODULE_SETUP_DIAGNOSTICS=0",
+    "result check failed with unknown quantity",
+    "TYPO_GIVES_A_DIFFERENT_MESSAGE=yes",
+    "TYPO_ALSO_SAYS_STATE_NOT_FOUND=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "MODULE_OFF_REPORTS_A_MISSING_STATE=no",
+    "NOMODULE_RAN_THE_WHOLE_LOOP=no",
+    "TYPO_GIVES_A_DIFFERENT_MESSAGE=no",
+    "TYPO_ALSO_SAYS_STATE_NOT_FOUND=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

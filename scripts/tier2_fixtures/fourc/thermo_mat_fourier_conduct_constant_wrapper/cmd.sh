@@ -9,7 +9,15 @@
 # and 4C reports the whole MAT_Fourier block as 'remains
 # unused'.
 set -u
-BIN=$HOME/Schreibtisch/4C-src/4C/build/4C
+# Resolve the 4C binary: explicit override first, then the paths this
+# repo has been verified against. Updated 2026-08-03 — the previous
+# hard-coded $HOME/Schreibtisch/4C-src path no longer exists on the
+# verification host; the deployed build is /home/alexander/4C/build/4C.
+for _c in "${FOURC_BINARY:-}" "$HOME/4C/build/4C" "$HOME/Schreibtisch/4C-src/4C/build/4C"; do
+  [ -x "$_c" ] && BIN="$_c" && break
+done
+: "${BIN:?4C binary not found — set FOURC_BINARY}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/opt/4C-dependencies/lib}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 cat > "$TMP/probe.yaml" <<'EOF'
@@ -23,5 +31,5 @@ MATERIALS:
       CAPA: 1.0
       CONDUCT: 1.0
 EOF
-"$BIN" "$TMP/probe.yaml" "$TMP/out" 2>&1 | head -25
+stdbuf -oL -eL "$BIN" "$TMP/probe.yaml" "$TMP/out" 2>&1 | head -25
 exit 0

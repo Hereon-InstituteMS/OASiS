@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::arterial_network#5, and the execution that showed its Signal to be far too gentle. On upstream one_d_3_artery_network (50 steps) widening ONE trunk segment by 10%, DIAM 24 -> 26.4, does not give 'smoothly-varying pressure': the run completes and the flowrate at node 4 comes out -7.36e+05 against 2.33e+01 for the same deck without the bulge -- a factor 31620 and a sign flip -- with the area splitting 326.3 / 508.6 across the step. Doubling the bulge, DIAM 24 -> 48, kills 4C with a bare SIGFPE inside ArteryEleCalcLinExp::evaluate_wf_and_wb: shell status 136 and BULGE2X_ERROR_BANNERS=0, i.e. no 'PROC 0 ERROR' banner to grep for. VALIDITY_WARNINGS=0 in both arms: nothing about axisymmetry, flow separation or the 1D reduction is ever printed. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "arterial_network",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=1",
+    "EXIT_BULGE=1",
+    "EXIT_BULGE2X=136",
+    "BULGE_REACHED_RESULT_TEST=1",
+    "is WRONG --> actresult=-7.35667136132564861e+05",
+    "is WRONG --> actresult= 3.26328072373738394e+02",
+    "BULGE_FLOW_BLOWUP_FACTOR=31620",
+    "BULGE_FLOW_KEPT_ITS_SIGN=no",
+    "BULGE2X_ERROR_BANNERS=0",
+    "Signal: Floating point exception (8)",
+    "evaluate_wf_and_wb",
+    "VALIDITY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BULGE=0",
+    "EXIT_BULGE2X=0",
+    "BULGE_FLOW_KEPT_ITS_SIGN=yes",
+    "BULGE2X_ERROR_BANNERS=1"
+  ],
+  "_mutation": {
+    "note": "remove the bulge: keep the uniform trunk diameter in the 10% arm. The flowrate returns to 2.33e+01, the blow-up factor and the sign flip disappear, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BULGE_DIAM=26.4",
+    "to": "BULGE_DIAM=24.0"
+  }
+}

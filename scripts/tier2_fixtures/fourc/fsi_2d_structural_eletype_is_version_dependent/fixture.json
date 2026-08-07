@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#13, a VERSION-DEPENDENCE finding. The entry states one era as if it were the only one: '4C 2026.3 2D structural element name is SOLID QUAD4 (NOT WALL QUAD4)', with THICKNESS/PLANE_ASSUMPTION, and reports the loser as \"Unknown type 'WALL' of finite element\" from 4C_comm_parobjectfactory.cpp:153. The deployed binary is in the other era. Upstream 2D FSI deck volmortar2D_fsi.4C.yaml ships WALL QUAD4 ... EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2 (as do the contact2D_*.4C.yaml decks the entry cites for the SOLID spelling), that arm reaches fill_complete on the structure discretization and matches all six pinned results, and the rewritten SOLID QUAD4 ... THICKNESS ... PLANE_ASSUMPTION arm is refused at element reading with \"Element 'SOLID' does not seem to know cell type 'quad4'.\" from core/fem/src/general/element/4C_fem_general_element_definition.cpp line 29. Rather than pin either era the fixture rewrites the upstream deck into BOTH spellings, runs both, and asserts the era-agnostic invariant EXACTLY_ONE_2D_FSI_FACTORY=yes plus an element-vocabulary rejection for the loser, then prints VERDICT: FSI_2D_STRUCT_ELETYPE=<winner>. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76), where the verdict was WALL.",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 13,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "WALL_ARM_ELEMENT_LINES=4",
+    "SOLID_ARM_ELEMENT_LINES=4",
+    "EXACTLY_ONE_2D_FSI_FACTORY=yes",
+    "VERDICT: FSI_2D_STRUCT_ELETYPE=",
+    "fill_complete() on discretization structure",
+    "OK (6)",
+    "processor 0 finished normally",
+    "LOSER_DIAGNOSTIC_IS_A_CELL_TYPE_REJECTION=yes",
+    "LOSER_TIME_STEPS_RUN=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXACTLY_ONE_2D_FSI_FACTORY=no",
+    "VERDICT: FSI_2D_STRUCT_ELETYPE=UNRESOLVED",
+    "LOSER_DIAGNOSTIC_IS_A_CELL_TYPE_REJECTION=no",
+    "WALL_ARM_ELEMENT_LINES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop writing the second spelling, so both arms carry whichever eletype the upstream deck already uses. Both then reach fill_complete, EXACTLY_ONE_2D_FSI_FACTORY becomes no (forbidden) and the loser's rejection disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "PROBE_BOTH_SPELLINGS=yes",
+    "to": "PROBE_BOTH_SPELLINGS=no"
+  }
+}

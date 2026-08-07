@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#26 — runtime VTK output is a silent no-op unless BOTH IO/RUNTIME VTK OUTPUT (with INTERVAL_STEPS > 0; the default is -1 = never, see src/inpar/4C_inpar_IO_runtime_output.cpp) and the per-field IO/RUNTIME VTK OUTPUT/STRUCTURE sub-section are present. The fixture runs the same 2-step HEX8 deck four ways and reports EXIT and the .vtu count. All four exit 0; only the complete configuration writes files, which is exactly why this failure mode is invisible without counting output. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 26,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "both_sections: EXIT=0 VTU=3",
+    "parent_only: EXIT=0 VTU=0",
+    "no_interval_steps: EXIT=0 VTU=0",
+    "no_io_at_all: EXIT=0 VTU=0"
+  ],
+  "forbid_in_output": [
+    "both_sections: EXIT=0 VTU=0"
+  ]
+}

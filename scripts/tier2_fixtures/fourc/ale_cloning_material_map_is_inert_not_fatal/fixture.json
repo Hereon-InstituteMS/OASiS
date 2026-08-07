@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::ale#4 and the execution that FALSIFIED it. The entry claimed a CLONING MATERIAL MAP in a stand-alone ALE deck fails with 'source field not found'. It does not fail at all: the section is inert in a single-field problem. A plausible fluid->ale map and a nonsense map naming fields that do not exist and material IDs 99/42 that are not defined are both accepted silently, the run completes, and the deck's own result test still passes to 1.4e-17 — bit-identical to the run with no map. The word 'clone' never appears in the output and there is no 'source field not found' string in 4C. The corrected claim is the opposite failure mode: a wrong or stray map gives no diagnostic, so its presence is not evidence that cloning is wired up. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ale",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_NOMAP=0",
+    "EXIT_PLAUSIBLE=0",
+    "EXIT_BOGUS=0",
+    "processor 0 finished normally",
+    "is CORRECT, abs(diff)=",
+    "PLAUSIBLE_MENTIONS_CLONE=0",
+    "BOGUS_MENTIONS_CLONE=0",
+    "BOGUS_MENTIONS_FROBNICATE=0",
+    "CLAIMED_SOURCE_FIELD_NOT_FOUND_TEXT=0",
+    "BOGUS_MAP_CHANGES_ANSWER=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BOGUS=1",
+    "BOGUS_MAP_CHANGES_ANSWER=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: make the 'bogus' deck a copy of the clean one, so no invalid CLONING MATERIAL MAP is ever offered to 4C. BOGUS_MENTIONS_FROBNICATE would then be trivially 0 for the wrong reason — so the mutation instead removes the whole map from the bogus arm, and the fixture must go red because there is nothing left to demonstrate silence about.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[3], \"w\").write(t.replace(\"MATERIALS:\", \"\"\"CLONING MATERIAL MAP:",
+    "to": "open(sys.argv[3], \"w\").write(t); _dead = (\"\"\"CLONING MATERIAL MAP:"
+  }
+}

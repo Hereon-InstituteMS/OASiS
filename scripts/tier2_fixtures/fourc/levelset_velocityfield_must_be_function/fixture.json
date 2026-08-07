@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#2 and a FALSIFICATION of its Signal. The entry claimed omitting VELOCITYFIELD defaults to zero so 'the interface STAYS PUT' and 'the level-set field appears time-independent'. On the upstream deck levelset_gaussian_hill_pbc that never happens: FourC::levelset_dyn checks the value up front and throws 'Other velocity fields than a field given by a function not yet supported for level-set problems' from 4C_levelset_dyn.cpp, so the run never reaches a time step and there is no stationary field to inspect. The check is stricter than the entry implied in the other direction too -- VELOCITYFIELD: Navier_Stokes hits the same throw, so for PROBLEMTYPE Level_Set the only accepted value is 'function' with VELFUNCNO. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 2,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_FUNC=0",
+    "EXIT_OMITTED=1",
+    "EXIT_NAVSTO=1",
+    "processor 0 finished normally",
+    "FUNC_RESULT_FAILURES=0",
+    "Other velocity fields than a field given by a function not yet supported for level-set problems",
+    "4C_levelset_dyn.cpp",
+    "NAVSTO_SAME_ABORT=1",
+    "OMITTED_REACHED_RESULT_TEST=0",
+    "OMITTED_RESULT_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the prescribed velocity field, so nothing is omitted. The levelset_dyn throw vanishes and the arm exits 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(drive, \"\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FUNC=1",
+    "EXIT_OMITTED=0",
+    "OMITTED_REACHED_RESULT_TEST=1"
+  ]
+}

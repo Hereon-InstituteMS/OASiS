@@ -1,0 +1,53 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_airways#5, and the execution that corrected its Signal. There is no MAT_redAirway in 4C (MAT_REDAIRWAY_EXISTS=0) and the fix is not 'a different material per generation': the upstream 2-generation deck red_airway_3airway_2acinus_awacinter drives all three airways from ONE material, MAT_fluid (DISTINCT_AIRWAY_MATERIALS=1). Everything that varies by generation is an element-line token. Tapering Area 1.0 -> 0.5 on the two generation-1 airways moves node 2 pressure 29.8681 -> 29.9613 and WallElasticity 500 -> 5000 moves it to 29.9913, both with the material untouched, and 4C prints no warning for the uniform case. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_airways",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "DISTINCT_AIRWAY_MATERIALS=1",
+    "EXIT_BASE=0",
+    "EXIT_TAPER=1",
+    "EXIT_WALL=1",
+    "EXIT_MATRED=1",
+    "BASE_TESTS_CORRECT=5",
+    "TAPER_TESTS_WRONG=5",
+    "WALL_TESTS_WRONG=5",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 2.99613354324411922e+01",
+    "is WRONG --> actresult= 2.99913234806692017e+01",
+    "Failed to match specification in section 'MATERIALS'.",
+    "MAT_REDAIRWAY_EXISTS=0",
+    "UNIFORM_MATERIAL_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_TAPER=0",
+    "EXIT_WALL=0",
+    "EXIT_MATRED=0",
+    "TAPER_TESTS_WRONG=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the per-generation geometry change: leave Area uniform in the TAPER arm. The result tests pass, EXIT_TAPER becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    taper = taper.replace(blk, blk.replace('Area 1.0 Generation 1', 'Area 0.5 Generation 1'))",
+      "to": "    taper = taper"
+    },
+    {
+      "note": "remove the per-element wall change: leave WallElasticity alone in the WALL arm. EXIT_WALL becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/WallElasticity 500.0/WallElasticity 5000.0/'  base.yaml > wall.yaml",
+      "to": "cp base.yaml wall.yaml"
+    },
+    {
+      "note": "remove the invented-material probe: keep MAT_fluid. The MATERIALS match failure vanishes, EXIT_MATRED becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/    MAT_fluid:/    MAT_redAirway:/'           base.yaml > matred.yaml",
+      "to": "cp base.yaml matred.yaml"
+    }
+  ]
+}

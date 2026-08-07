@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#28. `4C --parameters 2>/dev/null` exits 0 and emits 2 926 432 bytes of YAML starting 'metadata:' / 'commit_hash: 89519cfe...' / 'version: 2026.2.0-dev', with exactly seven top-level keys in this order: metadata, legacy_element_specs, legacy_particle_specs, cell_types, sections, $references, legacy_string_sections. It declares 478 input sections and 60 legacy element names on this build, and carries 11980 'required:' flags, one per parameter. Capturing with 2>&1 instead adds 30 bytes of local X11 warning on this host, so any size or hash must redirect stdout alone — only the direction (2>&1 can only be larger) is asserted, since how much host noise there is varies. The last two arms show why the dump is the right thing to consult: 'STRUCTURAL DYNAMIC' is present (1) and the near-miss 'STRUCTURAL DYNAMICS' is absent (0), and feeding that absent name to the same binary gives \"Section 'STRUCTURAL DYNAMICS' is not a valid section name.\" and exit 1. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 28,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PARAMETERS=0",
+    "CLEAN_BYTES=2926432",
+    "NOISY_IS_AT_LEAST_CLEAN=yes",
+    "CLEAN_DUMP_IS_PURE_YAML=metadata:",
+    "commit_hash: 89519cfe76251fc668617c4ab1a70b94fd86ec52",
+    "version: 2026.2.0-dev",
+    "TOP_LEVEL_KEYS=7",
+    "TOP_LEVEL_KEY_LIST=metadata legacy_element_specs legacy_particle_specs cell_types sections $references legacy_string_sections",
+    "SECTION_COUNT=478",
+    "LEGACY_ELEMENT_COUNT=60",
+    "HAS_REQUIRED_FLAGS=11980",
+    "DUMP_HAS_STRUCTURAL_DYNAMIC=1",
+    "DUMP_HAS_INVENTED_SECTION=0",
+    "EXIT_INVENTED=1",
+    "Section 'STRUCTURAL DYNAMICS' is not a valid section name."
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PARAMETERS=1",
+    "NOISY_IS_AT_LEAST_CLEAN=no",
+    "DUMP_HAS_STRUCTURAL_DYNAMIC=0",
+    "DUMP_HAS_INVENTED_SECTION=1",
+    "EXIT_INVENTED=0"
+  ],
+  "_mutation": [
+    {
+      "note": "take the dump with 2>&1 as most people would. On this host that adds 30 bytes of X11 warning, CLEAN_BYTES stops being 2926432, and the fixture must go red — which is exactly the mistake the entry warns about.",
+      "file": "cmd.sh",
+      "from": "\"$BIN\" --parameters 2>/dev/null > \"$TMP/clean.yaml\"",
+      "to": "\"$BIN\" --parameters > \"$TMP/clean.yaml\" 2>&1"
+    },
+    {
+      "note": "stop consulting the dump and write the invented section anyway: name a section that does exist, so the not-a-valid-section diagnostic vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "STRUCTURAL DYNAMICS:\n  DYNAMICTYPE: \"Statics\"",
+      "to": "STRUCTURAL DYNAMIC:\n  DYNAMICTYPE: \"Statics\""
+    }
+  ]
+}

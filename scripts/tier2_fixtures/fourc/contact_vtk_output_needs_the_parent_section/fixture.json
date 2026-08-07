@@ -1,0 +1,61 @@
+{
+  "_comment": "Tier-2 for fourc::contact#14 — 'OUTPUT_CONTACT: true' in IO/RUNTIME VTK OUTPUT/STRUCTURE writes contact tractions only when the PARENT section 'IO/RUNTIME VTK OUTPUT' with INTERVAL_STEPS is present too, and forgetting the parent is completely silent. Four runs of the same converging two-block mortar penalty deck (-0.3 over ten steps), differing only in their IO sections, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: with both sections a <prefix>-vtk-files/ directory appears holding TWO file series, 22 structure-* files and 22 structure-contact-* files; with the child section alone there is no directory at all and not one file; with both sections but OUTPUT_CONTACT left out only the structure-* series appears; with neither section nothing is written. ALL FOUR exit 0 and ERROR_BLOCKS_*=0 in every log — there is no error and no warning either way, so the only detector is the ABSENCE of the directory, which is exactly what the entry says and what this fixture asserts. The contact series really does carry the tractions rather than a copy of the displacement field: the vtu arrays are read back and are norcontactstress, tancontactstress, gap and activeset.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 14,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "EXIT_BOTH_SECTIONS=0",
+    "EXIT_CHILD_ONLY=0",
+    "EXIT_NO_OUTPUT_CONTACT=0",
+    "EXIT_NO_IO_SECTIONS=0",
+    "processor 0 finished normally",
+    "VTK_DIR_BOTH_SECTIONS=yes",
+    "STRUCTURE_SERIES_BOTH_SECTIONS=22",
+    "CONTACT_SERIES_BOTH_SECTIONS=22",
+    "VTK_DIR_CHILD_ONLY=no",
+    "STRUCTURE_SERIES_CHILD_ONLY=0",
+    "CONTACT_SERIES_CHILD_ONLY=0",
+    "ERROR_BLOCKS_CHILD_ONLY=0",
+    "VTK_DIR_NO_OUTPUT_CONTACT=yes",
+    "CONTACT_SERIES_NO_OUTPUT_CONTACT=0",
+    "VTK_DIR_NO_IO_SECTIONS=no",
+    "CONTACT_VTU_HAS_norcontactstress=yes",
+    "CONTACT_VTU_HAS_tancontactstress=yes",
+    "CONTACT_VTU_HAS_gap=yes",
+    "CONTACT_VTU_HAS_activeset=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_BOTH_SECTIONS=1",
+    "EXIT_CHILD_ONLY=1",
+    "VTK_DIR_BOTH_SECTIONS=no",
+    "VTK_DIR_CHILD_ONLY=yes",
+    "CONTACT_SERIES_BOTH_SECTIONS=0",
+    "ERROR_BLOCKS_CHILD_ONLY=1",
+    "CONTACT_VTU_HAS_gap=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the child-only arm: give it the parent section. The directory then appears, VTK_DIR_CHILD_ONLY flips to yes and STRUCTURE_SERIES_CHILD_ONLY stops being 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"$CHILD_ONLY\" \"$TMP/child_only.yaml\"",
+      "to": "deck \"$BOTH\" \"$TMP/child_only.yaml\""
+    },
+    {
+      "note": "take the parent section away from the working arm instead. Nothing is written at all, VTK_DIR_BOTH_SECTIONS flips to no and both series counts collapse, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"$BOTH\"       \"$TMP/both.yaml\"",
+      "to": "deck \"$CHILD_ONLY\"       \"$TMP/both.yaml\""
+    },
+    {
+      "note": "keep the parent but drop OUTPUT_CONTACT from the working arm. The structure series still appears, the contact series does not, CONTACT_SERIES_BOTH_SECTIONS becomes 0 and the traction-array checks lose their file, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"$BOTH\"       \"$TMP/both.yaml\"\ndeck \"$CHILD_ONLY\" \"$TMP/child_only.yaml\"",
+      "to": "deck \"$NO_CONTACT\"       \"$TMP/both.yaml\"\ndeck \"$CHILD_ONLY\" \"$TMP/child_only.yaml\""
+    }
+  ]
+}

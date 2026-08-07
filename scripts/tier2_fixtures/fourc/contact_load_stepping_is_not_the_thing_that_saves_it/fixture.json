@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::contact#3, and a FALSIFICATION of the rule itself. The entry says quasi-static contact MUST use load stepping and that applying the full load in one step 'almost always causes Newton divergence'. On a two-block mortar penalty deck the opposite holds: the full load in one step converges at both load levels tested, and costs fewer total Newton iterations than the ten-step run at the mild level. At the harsh level (three times the prescribed displacement) the SINGLE-step run converges while the TEN-step run aborts with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp, i.e. LOAD_STEPPING_RESCUES_THE_HARSH_CASE=no. The claimed diagnostic is wrong too: CLAIMED_MAXITERS_SIGNAL=0 and FAILURE_IS_AT_FIRST_STEP=no, because the failing run finalises a step before giving up, so 'NOX hits StatusTest::MaxIters at the first step' describes nothing that happens. What survives of the entry is only that a contact solve can fail where the active set changes sharply; prescribing more steps is not the remedy, because the intermediate configurations bring their own transitions. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_ONEMILD=0",
+    "EXIT_TENMILD=0",
+    "EXIT_ONEHARSH=0",
+    "EXIT_TENHARSH=1",
+    "processor 0 finished normally",
+    "ONEMILD_STEPS=1",
+    "ONEHARSH_STEPS=1",
+    "TENMILD_STEPS=10",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "ONE_STEP_COSTS_FEWER_ITERATIONS=yes",
+    "ONE_STEP_CONVERGES_AT_BOTH_LOADS=yes",
+    "LOAD_STEPPING_RESCUES_THE_HARSH_CASE=no",
+    "CLAIMED_MAXITERS_SIGNAL=0",
+    "FAILURE_IS_AT_FIRST_STEP=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_ONEHARSH=1",
+    "EXIT_TENHARSH=0",
+    "ONE_STEP_CONVERGES_AT_BOTH_LOADS=no",
+    "LOAD_STEPPING_RESCUES_THE_HARSH_CASE=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology the entry names — single-step loading — from the harsh arm by giving it ten steps. That arm then behaves like the ten-step run and fails, so ONE_STEP_CONVERGES_AT_BOTH_LOADS flips and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 1  1.0 \"-0.9\" > \"$TMP/one_harsh.yaml\"",
+      "to": "deck 10 0.1 \"-0.9\" > \"$TMP/one_harsh.yaml\""
+    },
+    {
+      "note": "remove the pathology from the mild single-step arm the same way. Its iteration count then equals the ten-step run's, so ONE_STEP_COSTS_FEWER_ITERATIONS flips and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 1  1.0 \"-0.3\" > \"$TMP/one_mild.yaml\"",
+      "to": "deck 10 0.1 \"-0.3\" > \"$TMP/one_mild.yaml\""
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#18 -- the rule holds, the Signal is FALSIFIED, and the recovery information the entry assumes is not printed. Adding IO/RUNTIME VTK OUTPUT/ALE to upstream fsi_fp_mono_fs_ga_ga.4C.yaml aborts at parse (0 time steps) with \"Section 'IO/RUNTIME VTK OUTPUT/ALE' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp line 546 -- the generic invalid-section-name check, quoting the whole path as one name. The claimed 'unknown subsection ALE in IO/RUNTIME VTK OUTPUT' and the claimed file 4C_io_input_spec_builders.cpp are both absent, and so is any candidate list or suggestion: nothing in the output mentions /FLUID or /STRUCTURE, so a reader gets no hint of the working spelling. A control arm confirms IO/RUNTIME VTK OUTPUT/FLUID in the same position runs to 'processor 0 finished normally' over 10 steps with OK (6). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 18,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BAD_ARM_SUBSECTION=ALE",
+    "EXIT_PLAIN=0",
+    "EXIT_SUBSECTION=1",
+    "EXIT_FLUID=0",
+    "Section 'IO/RUNTIME VTK OUTPUT/ALE' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "SUBSECTION_TIME_STEPS_RUN=0",
+    "SUBSECTION_CLAIMED_SENTENCE=0",
+    "SUBSECTION_CLAIMED_SOURCE_FILE=0",
+    "SUBSECTION_OFFERS_A_CANDIDATE_LIST=0",
+    "SUBSECTION_MENTIONS_FLUID_OR_STRUCTURE=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "FLUID_TIME_STEPS_RUN=10"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_SUBSECTION=0",
+    "EXIT_FLUID=1",
+    "BAD_ARM_SUBSECTION=FLUID"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: request the subsection 4C does define, FLUID, in the bad arm too. The invalid-section-name abort disappears, EXIT_SUBSECTION becomes 0 and BAD_ARM_SUBSECTION becomes FLUID (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "VTK_SUBSECTION=ALE",
+    "to": "VTK_SUBSECTION=FLUID"
+  }
+}

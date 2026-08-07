@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#6 and a FALSIFICATION of both halves. The entry said 2D must use DESIGN FSI COUPLING LINE CONDITIONS and 3D must use SURF, and that the wrong one 'silently has ZERO coupling nodes' while neither field diverges. FSI::Monolithic::setup_system looks the interface up by condition NAME ('FSICoupling'), not by geometry type, so on the 3D upstream deck fsi_fp_mono_fs_ga_ga.4C.yaml renaming the section to LINE and adding a DLINE-NODE TOPOLOGY with the same eight interface nodes reproduces the SURF baseline exactly: exit 0, 10 time steps, OK (6). Renaming it to LINE while leaving the DLine set undefined does not decouple silently either -- it aborts before time step 1 with 'DLine 0 not in range [0:0[' and 'DLine condition on non existent DLine?Could not read set from entity type.' from core/fem/src/condition/4C_fem_condition.cpp line 120, and no zero-coupling-nodes message of any kind is printed. The rule is that the entity set must exist, not that the entity type is fixed by the dimension. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BAD_ARMS_STILL_HAVE_SURF_CONDITION=0",
+    "BAD_ARMS_USE_ENTITY=LINE",
+    "EXIT_SURF=0",
+    "EXIT_LINETOPO=0",
+    "EXIT_LINENOTOPO=1",
+    "processor 0 finished normally",
+    "OK (6)",
+    "LINETOPO_TIME_STEPS_RUN=10",
+    "DLine 0 not in range [0:0[",
+    "DLine condition on non existent DLine?",
+    "4C_fem_condition.cpp",
+    "LINENOTOPO_TIME_STEPS_RUN=0",
+    "LINENOTOPO_ZERO_COUPLING_NODE_MESSAGE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SURF=1",
+    "EXIT_LINETOPO=1",
+    "EXIT_LINENOTOPO=0",
+    "BAD_ARMS_STILL_HAVE_SURF_CONDITION=1",
+    "BAD_ARMS_USE_ENTITY=SURF"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the 3D deck's FSI interface on SURF entities in every arm. The DLine abort disappears, EXIT_LINENOTOPO becomes 0 and BAD_ARMS_USE_ENTITY becomes SURF (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "FSI_COND_ENTITY=LINE",
+    "to": "FSI_COND_ENTITY=SURF"
+  }
+}

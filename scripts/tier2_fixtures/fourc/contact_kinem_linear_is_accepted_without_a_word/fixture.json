@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::contact#5 — KINEM linear on a mortar contact problem is accepted in complete silence. Four arms of one two-block penalty deck, KINEM nonlinear and linear at two load levels: all four parse, build the contact interface, reach a four-node active set and finish ten steps, and KINEM_WARNINGS=0 across all four logs. The penetration, computed from 4C's report of the two facing corner nodes, differs between the two kinematics at both loads and the relative disagreement more than doubles when the prescribed displacement is doubled — DISAGREEMENT_GROWS_WITH_DEFORMATION=yes. That growth is the operational point: at small deformation the two answers are close enough that a single run reveals nothing, so the error hides until the load is raised. Deliberately not asserted: the entry's Hertz contact-radius error and its 'pressure distribution symmetric about the initial geometry', which are statements about a benchmark this deck does not solve. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "STEPS_NLSMALL=10",
+    "STEPS_LINSMALL=10",
+    "STEPS_NLLARGE=10",
+    "STEPS_LINLARGE=10",
+    "Building contact interface",
+    "Contact-Normal-Active-Set-Size = 4",
+    "is WRONG --> actresult=",
+    "LINEAR_DIFFERS_AT_SMALL_LOAD=yes",
+    "LINEAR_DIFFERS_AT_LARGE_LOAD=yes",
+    "DISAGREEMENT_GROWS_WITH_DEFORMATION=yes",
+    "KINEM_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "STEPS_LINLARGE=0",
+    "LINEAR_DIFFERS_AT_SMALL_LOAD=no",
+    "LINEAR_DIFFERS_AT_LARGE_LOAD=no",
+    "DISAGREEMENT_GROWS_WITH_DEFORMATION=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology at the large load: give that arm nonlinear kinematics. The two large-load arms then agree exactly, so both LINEAR_DIFFERS_AT_LARGE_LOAD and the growth check flip and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    \"-0.6\" > \"$TMP/lin_large.yaml\"",
+      "to": "deck nonlinear \"-0.6\" > \"$TMP/lin_large.yaml\""
+    },
+    {
+      "note": "remove the pathology at the small load: give that arm nonlinear kinematics. LINEAR_DIFFERS_AT_SMALL_LOAD then flips to no and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    \"-0.3\" > \"$TMP/lin_small.yaml\"",
+      "to": "deck nonlinear \"-0.3\" > \"$TMP/lin_small.yaml\""
+    }
+  ]
+}

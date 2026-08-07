@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::particles#12. Three probes on one deck. A mapping-shaped PARTICLES entry -- TYPE:/POS:/MAT:, the shape an agent naturally writes and the shape this repo's own PASI template shipped until 2026-08-07 -- is refused, but not in a way that helps: the message is \"Yaml node does not contain a string. This legacy function is only meant for strings.\" from a generic IO file, naming neither the PARTICLES section (MAPPING_MESSAGE_NAMES_THE_SECTION=no, measured on the error block only) nor the grammar. The single thread back to particles is the stack frame Particle::read_particles. A first draft of this fixture asserted the message DID name the section; the harness caught it as a vacuous baseline and the entry was rewritten to quote what 4C actually prints. FALSIFIED WHILE WRITING THIS: the drafted claim implied an invented phase name is cleanly rejected. It is not. Declared consistently in both phase maps, 'fluidphase' SEGFAULTS with zero error blocks and is never named in the log (INVENTED_PHASE_ERROR_BLOCKS=0, INVENTED_PHASE_NAMED_IN_LOG=no) -- the lookup is guarded by an assertion a release build compiles out. The entry was rewritten to say that. Third probe: swapping two particle LINES, with the set of particles unchanged (SWAPPED_PARTICLE_COUNT_UNCHANGED=yes), breaks every result verdict, which is how 'ids follow file order' is demonstrated rather than asserted. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_MAPPING=1",
+    "EXIT_BADPHASE=139",
+    "EXIT_SWAPPED=1",
+    "EXIT_BASE=0",
+    "BASE_PASSES=yes",
+    "MAPPING_REFUSED=yes",
+    "MAPPING_MESSAGE_EXPLAINS_THE_GRAMMAR=no",
+    "INVENTED_PHASE_SEGFAULTS=yes",
+    "INVENTED_PHASE_ERROR_BLOCKS=0",
+    "INVENTED_PHASE_NAMED_IN_LOG=no",
+    "IDS_FOLLOW_FILE_ORDER=yes",
+    "SWAPPED_PARTICLE_COUNT_UNCHANGED=yes",
+    "Yaml node does not contain a string. This legacy function is only meant for strings.",
+    "MAPPING_MESSAGE_NAMES_THE_SECTION=no",
+    "MAPPING_ONLY_THE_STACK_NAMES_PARTICLES=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "MAPPING_REFUSED=no",
+    "INVENTED_PHASE_SEGFAULTS=no",
+    "INVENTED_PHASE_NAMED_IN_LOG=yes",
+    "IDS_FOLLOW_FILE_ORDER=no",
+    "SWAPPED_VERDICTS_WRONG=0",
+    "MAPPING_MESSAGE_NAMES_THE_SECTION=yes",
+    "MAPPING_ONLY_THE_STACK_NAMES_PARTICLES=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The symptom never appears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

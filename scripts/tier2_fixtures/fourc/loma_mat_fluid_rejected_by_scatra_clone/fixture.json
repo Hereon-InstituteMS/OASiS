@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#2 and a FALSIFICATION of its Signal. The rule (use MAT_sutherland, not MAT_fluid) holds. The quoted abort 'material MAT_fluid incompatible with PHYSICAL_TYPE Loma' does not exist, and neither does the alternative outcome the entry offered ('results show constant density'). On the upstream deck loma_2d_heated_chan_30x100 the scalar-transport discretisation is cloned from the fluid one, so the material is checked by ScatraFluidCloneStrategy and the run dies with 'Material with ID 1 is not admissible for scalar transport elements' from 4C_scatra_utils_clonestrategy.cpp, before any time step. The message names neither the material type nor Loma, so grepping the log for either learns nothing. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 2,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SUTH=0",
+    "EXIT_MATFLUID=1",
+    "processor 0 finished normally",
+    "SUTH_RESULT_FAILURES=0",
+    "Material with ID 1 is not admissible for scalar transport elements",
+    "4C_scatra_utils_clonestrategy.cpp",
+    "MATFLUID_REACHED_RESULT_TEST=0",
+    "CLAIMED_INCOMPATIBLE_TEXT=0",
+    "ABORT_LINE_MENTIONS_LOMA=0",
+    "ABORT_LINE_MENTIONS_MAT_FLUID=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the Sutherland material in the second arm. The cloning-strategy abort vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(old, new))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SUTH=1",
+    "EXIT_MATFLUID=0",
+    "MATFLUID_REACHED_RESULT_TEST=1"
+  ]
+}

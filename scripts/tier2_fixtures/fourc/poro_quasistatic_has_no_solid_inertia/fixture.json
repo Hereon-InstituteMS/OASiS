@@ -1,0 +1,56 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#9 — a FALSIFICATION. The entry said 4C poro keeps the rho*a term even for quasi-static problems, so a step load rings at the elastic wave frequency, and prescribed ramping the load over ten wave traversal times. Upstream poro_2D_quad4_const_material_nodal_orthotropic_permeability.4C.yaml is a genuinely quasi-static poro deck (STRUCTURAL DYNAMIC DYNAMICTYPE Statics, FLUID DYNAMIC TIMEINTEGR Stationary, POROELASTICITY DYNAMIC TRANSIENT_TERMS none): it exits 0 with 3 result tests CORRECT, and multiplying the solid DENS by 1000 (2000 -> 2000000) leaves all 3 CORRECT, none WRONG and the abs(diff) unchanged (SOLID_DENSITY_CHANGED_THE_ANSWER=no). The skeleton density does not enter the solution at all, so there is no inertia term to ring. Two guardrails 4C raises itself are pinned alongside: TRANSIENT_TERMS 'all' beside a stationary fluid is refused with the fix named — \"Invalid option for stationary fluid! Set 'TRANSIENT_TERMS' in section POROELASTICITY DYNAMIC to 'none'!\" from poroelast/4C_poroelast_base.cpp line 215 — and switching only the structure to OneStepTheta is refused with 'porous media problem is limited in functionality (only one-step-theta scheme, stationary and (af)genalpha case possible)', because the structure and porofluid integrators must be paired. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_DENS1000X=0",
+    "EXIT_TRANSIENT=1",
+    "EXIT_OST=1",
+    "BASE_DECK_DENS=DENS: 2000",
+    "HEAVY_DECK_IS_1000X=1",
+    "processor 0 finished normally",
+    "BASE_CORRECT=3",
+    "DENS1000X_CORRECT=3",
+    "DENS1000X_WRONG=0",
+    "SOLID_DENSITY_CHANGED_THE_ANSWER=no",
+    "Invalid option for stationary fluid! Set 'TRANSIENT_TERMS' in section POROELASTICITY DYNAMIC to 'none'!",
+    "4C_poroelast_base.cpp",
+    "porous media problem is limited in functionality (only one-step-theta scheme, stationary and (af)genalpha case possible)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "EXIT_BASE=1",
+    "EXIT_DENS1000X=1",
+    "EXIT_TRANSIENT=0",
+    "EXIT_OST=0",
+    "SOLID_DENSITY_CHANGED_THE_ANSWER=yes",
+    "DENS1000X_WRONG=1",
+    "HEAVY_DECK_IS_1000X=0"
+  ],
+  "_mutation": [
+    {
+      "note": "stop varying the solid density, which is the whole measurement. HEAVY_DECK_IS_1000X drops to 0, the two arms become the same deck, and the fixture loses the only comparison that shows inertia is absent — so it must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/      DENS: 2000$/      DENS: 2000000/'                 \"$BASE\" > \"$TMP/dens1000x.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/dens1000x.yaml\""
+    },
+    {
+      "note": "remove the pathology from the transient arm: leave TRANSIENT_TERMS at none. The stationary-fluid refusal vanishes, that arm exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  TRANSIENT_TERMS: \"none\"/  TRANSIENT_TERMS: \"all\"/'    \"$BASE\" > \"$TMP/transient.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/transient.yaml\""
+    },
+    {
+      "note": "remove the pathology from the integrator-pairing arm: leave the structure on Statics beside the stationary fluid. The pairing refusal vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  DYNAMICTYPE: \"Statics\"/  DYNAMICTYPE: \"OneStepTheta\"/' \"$BASE\" > \"$TMP/ost.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/ost.yaml\""
+    }
+  ]
+}

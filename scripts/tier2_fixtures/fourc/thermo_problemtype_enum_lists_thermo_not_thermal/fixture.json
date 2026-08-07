@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::thermo#1 — PROBLEMTYPE must be 'Thermo'; 'Thermal' is not a member of the enum. Same one-HEX8 conduction deck twice, differing only in that token: 'Thermo' exits 0 with 'processor 0 finished normally', 'Thermal' exits 1 from 4C_io_input_spec_builders.cpp with \"Candidate deprecated_selection 'PROBLEMTYPE' has wrong value, possible values:\" followed by the full enum. The enum text is asserted to contain '|Thermo|' and not '|Thermal|', which is what makes the diagnostic self-correcting. Also pinned: this is a VALUE rejection, not a section-name rejection — 'is not a valid section name' never appears (SECTION_NAME_COMPLAINT=0), so it is a different code path from thermo#2. Distinct from the fourc::_input_format#1 fixture, which asserts the same enum family from a Structure deck. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_THERMO=0",
+    "EXIT_THERMAL=1",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "Candidate deprecated_selection 'PROBLEMTYPE' has wrong value, possible values:",
+    "ENUM_LISTS_THERMO=yes",
+    "ENUM_LISTS_THERMAL=no",
+    "SECTION_NAME_COMPLAINT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THERMO=1",
+    "EXIT_THERMAL=0",
+    "ENUM_LISTS_THERMO=no",
+    "ENUM_LISTS_THERMAL=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: spell the second arm's PROBLEMTYPE correctly. The match-tree diagnostic and its enum dump then vanish and EXIT_THERMAL becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"Thermal\" > \"$TMP/bad.yaml\"",
+    "to": "deck \"Thermo\" > \"$TMP/bad.yaml\""
+  }
+}

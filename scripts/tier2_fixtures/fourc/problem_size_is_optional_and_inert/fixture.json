@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#21 — PROBLEM SIZE is declared {.required = false} in src/global_legacy_module/4C_global_legacy_module_validparameters.cpp and its ELEMENTS / NODES / MATERIALS / NPATCHES / NUMDF counts are read into a parameter list and then never consumed (the 4C source comments them as unused, 'Misuse is possible'). The same 1-element HEX8 cantilever is run three ways — no PROBLEM SIZE section at all, correct counts, and absurd counts (999 elements / 7 nodes / 42 materials against a real 1-element 8-node 1-material mesh). All three exit 0, and each carries the SAME RESULT DESCRIPTION pinned to 4.47909266337460053e-03 at TOLERANCE 1e-12, so a passing exit code also proves the counts do not perturb the answer. This corrects the earlier catalogue claim that PROBLEM SIZE is a mandatory section. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 21,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "absent: EXIT=0",
+    "correct_counts: EXIT=0",
+    "absurd_counts: EXIT=0"
+  ],
+  "forbid_in_output": [
+    "absent: EXIT=1",
+    "absurd_counts: EXIT=1"
+  ]
+}

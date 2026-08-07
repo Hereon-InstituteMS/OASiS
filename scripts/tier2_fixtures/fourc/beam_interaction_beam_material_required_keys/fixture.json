@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#5. The rule holds — MAT_BeamReissnerElastHyper requires CROSSAREA and MOMINPOL — but both quoted Signals were fabricated: neither 'MAT_BeamReissnerElastHyper requires CROSSAREA' nor 'MOMINPOL not specified' exists in 4C. What 4C emits is 'Failed to match specification in section MATERIALS' followed by a match tree that offers every other material spec as a candidate; the one decisive line is \"[X] Expected parameter 'CROSSAREA'\" more than 100 lines into that tree. The generalisable lesson, which the fixture pins, is that a rejected material card is diagnosed by grepping for [X] Expected parameter '<KEY>' rather than for any sentence naming the material. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C on upstream deck beam3r_line2_static_test1.4C.yaml.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_FULL=0",
+    "EXIT_NOCROSS=1",
+    "EXIT_NOMOM=1",
+    "processor 0 finished normally",
+    "Failed to match specification in section 'MATERIALS'",
+    "[X] Expected parameter 'CROSSAREA'",
+    "[X] Expected parameter 'MOMINPOL'",
+    "CROSSAREA_LINE_BEYOND_100=yes",
+    "TREE_OFFERS_UNRELATED_MATERIALS=1",
+    "CLAIMED_REQUIRES_CROSSAREA_TEXT=0",
+    "CLAIMED_MOMINPOL_NOT_SPECIFIED_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FULL=1",
+    "EXIT_NOCROSS=0",
+    "EXIT_NOMOM=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop deleting CROSSAREA and MOMINPOL, so both arms carry a complete material card. Both then run to completion and every diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "grep -v \"      CROSSAREA: 1$\"    \"$BASE\" > \"$TMP/nocross.yaml\"\ngrep -v \"      MOMINPOL: 0.1406$\" \"$BASE\" > \"$TMP/nomom.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nocross.yaml\"\ncp \"$BASE\" \"$TMP/nomom.yaml\""
+  }
+}

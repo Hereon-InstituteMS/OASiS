@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#6. Upstream tsi_lincompression_1waydisp with four TYPE tokens on its SOLIDSCATRA lines. The claim is falsified twice. 'TYPE Std' does NOT throw: it runs to 'processor 0 finished normally' with all 5 result tests CORRECT, exactly like 'TYPE Undefined' (STD_THROWS=0, STD_RESULT_TESTS_CORRECT=5 = UNDEFINED_RESULT_TESTS_CORRECT). And omitting TYPE is not a runtime FOUR_C_THROW at problem setup but a parse error while reading the element line, \"Required value 'TYPE' not found in input line\" from 4C_io_input_spec_builders.cpp, carrying none of the SOLIDSCATRA wording (OMITTED_THROWS_SOLIDSCATRA_MESSAGE=0). What does throw is a value outside the enum: 'The input type Bogus is not valid for SOLIDSCATRA elements!' from 4C_solid_scatra_3D_ele_lib.cpp — and still during element reading, before any mesh or time step exists (BOGUS_REACHED_FILL_COMPLETE=0, BOGUS_REACHED_FIRST_TIME_STEP=0), not 'at the first time step'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TYPE_UNDEFINED=0",
+    "EXIT_TYPE_STD=0",
+    "EXIT_TYPE_OMITTED=1",
+    "EXIT_TYPE_BOGUS=1",
+    "processor 0 finished normally",
+    "STD_RESULT_TESTS_CORRECT=5",
+    "UNDEFINED_RESULT_TESTS_CORRECT=5",
+    "STD_THROWS=0",
+    "Required value 'TYPE' not found in input line",
+    "4C_io_input_spec_builders.cpp",
+    "OMITTED_THROWS_SOLIDSCATRA_MESSAGE=0",
+    "The input type Bogus is not valid for SOLIDSCATRA elements!",
+    "4C_solid_scatra_3D_ele_lib.cpp",
+    "BOGUS_REACHED_FILL_COMPLETE=0",
+    "BOGUS_REACHED_FIRST_TIME_STEP=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TYPE_STD=1",
+    "EXIT_TYPE_BOGUS=0",
+    "EXIT_TYPE_OMITTED=0",
+    "STD_THROWS=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the out-of-enum arm a legal TYPE. Nothing then throws, the 'not valid for SOLIDSCATRA elements' line disappears and EXIT_TYPE_BOGUS becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/KINEM linear TYPE Undefined/KINEM linear TYPE Bogus/' \"$BASE\"",
+    "to": "sed 's/KINEM linear TYPE Undefined/KINEM linear TYPE Loma/'  \"$BASE\""
+  }
+}

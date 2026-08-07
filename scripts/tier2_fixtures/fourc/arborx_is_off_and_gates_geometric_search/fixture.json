@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#15. ArborX is optional and this build has FOUR_C_WITH_ARBORX:BOOL=OFF (read from the CMakeCache beside the binary). What that costs is shown by input, not by documentation: the same 1-element HEX8 deck is run under all three MESH PARTITIONING methods. 'hypergraph' prints 'Redistributing using hypergraph' and 'multijagged' prints 'Redistributing using recursive coordinate bisection'; both exit 0 with their result test CORRECT. 'monolithic' announces itself ('Redistributing using monolithic hypergraph') and then aborts, because it builds a monolithic node graph through a global collision search: \"The struct 'Core::GeometricSearch::BoundingVolume' can only be used with ArborX.To use it, enable ArborX during the configure process.\" from core/geometric_search/src/4C_geometric_search_bounding_volume.hpp line 79 (note the missing space where the two literals are concatenated). The failing arm never reaches a linear solve at all (MONOLITHIC_REACHED_A_LINEAR_SOLVE=0 against 3 Core::LinAlg::Solver timer entries in the hypergraph arm), which is exactly the claim's point: ArborX gates geometric search, not the linear algebra. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 15,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_HYPERGRAPH=0",
+    "EXIT_MULTIJAGGED=0",
+    "EXIT_MONOLITHIC=1",
+    "Redistributing using hypergraph",
+    "Redistributing using recursive coordinate bisection",
+    "processor 0 finished normally",
+    "HYPERGRAPH_CORRECT=1",
+    "MULTIJAGGED_CORRECT=1",
+    "Redistributing using monolithic hypergraph",
+    "The struct 'Core::GeometricSearch::BoundingVolume' can only be used with ArborX.To use it, enable ArborX during the configure process.",
+    "4C_geometric_search_bounding_volume.hpp",
+    "MONOLITHIC_REACHED_A_LINEAR_SOLVE=0",
+    "HYPERGRAPH_REACHED_A_LINEAR_SOLVE=3",
+    "CMAKECACHE_ARBORX=FOUR_C_WITH_ARBORX:BOOL=OFF"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_HYPERGRAPH=1",
+    "EXIT_MULTIJAGGED=1",
+    "EXIT_MONOLITHIC=0",
+    "CMAKECACHE_ARBORX=FOUR_C_WITH_ARBORX:BOOL=ON"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: stop asking for the partitioner that needs geometric search. The ArborX abort vanishes, MONOLITHIC exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk monolithic  \"$TMP/monolithic.yaml\"",
+      "to": "mk hypergraph  \"$TMP/monolithic.yaml\""
+    },
+    {
+      "note": "drop the contrast arm that shows a normal run does reach the linear solver. HYPERGRAPH_REACHED_A_LINEAR_SOLVE stops being 3 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "echo \"HYPERGRAPH_REACHED_A_LINEAR_SOLVE=$(grep -c 'Core::LinAlg::Solver' \"$TMP/HYPERGRAPH.log\")\"",
+      "to": "echo \"HYPERGRAPH_REACHED_A_LINEAR_SOLVE=$(grep -c 'Core::LinAlg::Solver' \"$TMP/MONOLITHIC.log\")\""
+    }
+  ]
+}

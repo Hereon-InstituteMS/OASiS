@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#10, confirming both halves of the corrected entry on upstream fsi_fp_mono_fs_ga_ga.4C.yaml. 'EVERY_ITERATION: true' inside the IO section aborts at parse (0 time steps) with 'Could not match this input' from core/io/src/4C_io_input_spec_builders.cpp line 633, echoing the offending block and then 'against the given input specification' plus a candidate list headed \"Candidate group 'IO'\". The pinned detail worth having is what that list does NOT contain: 23 'Defaulted parameter' rows are printed and zero of them is EVERY_ITERATION, so the reader has to spot an absence rather than read an error. The claimed wording 'unknown parameter EVERY_ITERATION' appears nowhere. The same key one section deeper, in IO/RUNTIME VTK OUTPUT, is accepted and leaves the run untouched: 10 steps, OK (6), 'processor 0 finished normally'. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PLAIN=0",
+    "EXIT_BAD=1",
+    "EXIT_GOOD=0",
+    "OK (6)",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "against the given input specification",
+    "Candidate group 'IO'",
+    "BAD_TIME_STEPS_RUN=0",
+    "BAD_CANDIDATE_LIST_OFFERS_EVERY_ITERATION=0",
+    "BAD_CANDIDATE_LIST_HAS_DEFAULTED_ROWS=23",
+    "processor 0 finished normally",
+    "GOOD_TIME_STEPS_RUN=10",
+    "CLAIMED_UNKNOWN_PARAMETER_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_BAD=0",
+    "EXIT_GOOD=1",
+    "BAD_CANDIDATE_LIST_HAS_DEFAULTED_ROWS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: write the key in the section that owns it, IO/RUNTIME VTK OUTPUT, in the bad arm too. The parse error disappears, EXIT_BAD becomes 0 (forbidden) and the candidate-list counters go to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "EVERY_ITERATION_SECTION=\"IO\"",
+    "to": "EVERY_ITERATION_SECTION=\"IO/RUNTIME VTK OUTPUT\""
+  }
+}

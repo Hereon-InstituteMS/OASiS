@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#4 — CALCFLUX_DOMAIN: 'total' is what puts species fluxes into the VTK output, and its absence is an absence rather than a placeholder. On upstream elch_2D_tertiary_twoEqu_ENC_varParams_ndb_2iter (which carries no CALCFLUX key) the .vtu holds phi_1..phi_4 and no flux array at all (WITHOUT_KEY_FLUX_ARRAYS=0); adding CALCFLUX_DOMAIN: 'total' to SCALAR TRANSPORT DYNAMIC adds flux_domain_phi_1..flux_domain_phi_4 (WITH_TOTAL_FLUX_ARRAYS=4). The solution is untouched — both arms pass all ten result tests — so this is an output switch, not a physics one. The entry's Signal said the flux fields 'show not computed'; that string is in neither the log nor the .vtu (CLAIMED_NOT_COMPUTED_TEXT=0), because there is no field there to say anything. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BASE_DECK_HAS_CALCFLUX=0",
+    "EXIT_NOFLUX=0",
+    "EXIT_FLUX=0",
+    "NOFLUX_PASSED=10",
+    "FLUX_PASSED=10",
+    "processor 0 finished normally",
+    "WITHOUT_KEY_FLUX_ARRAYS=0",
+    "WITH_TOTAL_FLUX_ARRAYS=4",
+    "Name=\"flux_domain_phi_1\"",
+    "Name=\"phi_4\"",
+    "CLAIMED_NOT_COMPUTED_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FLUX=1",
+    "EXIT_NOFLUX=1",
+    "WITHOUT_KEY_FLUX_ARRAYS=4",
+    "WITH_TOTAL_FLUX_ARRAYS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm no CALCFLUX_DOMAIN either. The flux arrays never appear, WITH_TOTAL_FLUX_ARRAYS drops to 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/^  SOLVERTYPE: \"nonlinear\"$/  SOLVERTYPE: \"nonlinear\"\\n  CALCFLUX_DOMAIN: \"total\"/' \\\n    \"$BASE\" > \"$TMP/flux.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/flux.yaml\""
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#9. Omitting ADHESION_DISTANCE or ADHESION_HAMAKER produces a message about the SENTINEL -- 'negative adhesion distance!', 'negative hamaker constant!' -- for a key that was never written, and MESSAGES_SAY_MISSING=no confirms neither log contains the words not set, missing or required. ADHESION_MAX_CONTACT_PRESSURE inverts the usual sign expectation: the upstream deck sets it to a negative number and a positive one is refused as 'positive adhesion maximum contact pressure!'. The fourth probe is the silent one: ADHESION_DISTANCE: 0.0 is accepted, raises no particle-module abort (ZERODIST_ABORTS=0) and is not inert -- it changes half the verdicts. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NODIST=1",
+    "EXIT_NOHAMAKER=1",
+    "EXIT_POSPRESS=1",
+    "EXIT_ADBASE=0",
+    "negative adhesion distance!",
+    "OMITTED_DISTANCE_READS_AS_NEGATIVE=yes",
+    "negative hamaker constant!",
+    "OMITTED_HAMAKER_READS_AS_NEGATIVE=yes",
+    "MESSAGES_SAY_MISSING=no",
+    "positive adhesion maximum contact pressure!",
+    "POSITIVE_PRESSURE_IS_THE_ERROR=yes",
+    "ZERODIST_ABORTS=0",
+    "ZERODIST_IS_SILENT_BUT_NOT_INERT=yes",
+    "ADBASE_PASSES=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OMITTED_DISTANCE_READS_AS_NEGATIVE=no",
+    "OMITTED_HAMAKER_READS_AS_NEGATIVE=no",
+    "POSITIVE_PRESSURE_IS_THE_ERROR=no",
+    "MESSAGES_SAY_MISSING=yes",
+    "ZERODIST_IS_SILENT_BUT_NOT_INERT=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

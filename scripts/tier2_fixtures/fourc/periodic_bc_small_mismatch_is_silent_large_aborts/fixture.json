@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::constraint#3 — periodic master/slave surfaces must match geometrically, executed on upstream tsi_heatflux_monolithic_pbc (xy plane, z=0 Slave against z=8 Master, ABSTREETOL 1e-09). The finding that matters is the split between a silent regime and a loud one. Displacing one slave node by 1e-3, six orders of magnitude above ABSTREETOL, still yields the identical pairing banner '15 masters are coupled to at least 1 and up to 1 slaves' with NUDGED_PAIRING_WARNINGS=0: ABSTREETOL guides the search tree, it does not reject a bad partner, so a slightly mismatched pair is accepted without comment. Displace the same node far enough to leave the face footprint and a partner really is lost, which IS reported: 'have 14 masters in midtosid list, 15 expected' from core/fem/src/condition/4C_fem_condition_periodic.cpp. The entry's 'slave is rotated' case has its own answer — ANGLE 5 on an xy pair gives 'Rotation of slave plane only implemented for xz and yz planes'. Deliberately not asserted: how far the nudged answer drifts, since moving any node changes a finite-element result and a control run that nudges a non-periodic node by the same amount also perturbs the result tests; the silence, not the delta, is the evidence. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "constraint",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MATCHED=0",
+    "EXIT_MOVED=1",
+    "EXIT_ROTATED=1",
+    "The layout is generated: 15 masters are coupled to at least 1 and up to 1 slaves,",
+    "processor 0 finished normally",
+    "MATCHED_RESULT_FAILURES=0",
+    "NUDGED_PAIRING_WARNINGS=0",
+    "have 14 masters in midtosid list, 15 expected",
+    "4C_fem_condition_periodic.cpp",
+    "Rotation of slave plane only implemented for xz and yz planes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MATCHED=1",
+    "EXIT_MOVED=0",
+    "EXIT_ROTATED=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the far-displacement arm: leave the slave node where the master expects it. The pairing is then complete, that arm exits 0 and the midtosid count message disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|1.4500000000000000e+00 1.5000000000000000e+00 0.0000000000000000e+00|1.6000000000000000e+00 1.5000000000000000e+00 0.0000000000000000e+00|' \"$BASE\" > \"$TMP/moved.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/moved.yaml\""
+    },
+    {
+      "note": "remove the pathology from the rotation arm: leave ANGLE at 0. That arm then runs like the baseline and the rotation refusal disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(sys.argv[2], \"w\").write(t.replace(slave, slave.replace(\"ANGLE: 0\", \"ANGLE: 5\"), 1))",
+      "to": "open(sys.argv[2], \"w\").write(t)"
+    }
+  ]
+}

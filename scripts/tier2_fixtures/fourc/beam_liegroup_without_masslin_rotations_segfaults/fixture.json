@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::beams#6, and a FALSIFICATION of its Signal. The rule holds \u2014 GenAlphaLieGroup on beam3r needs MASSLIN: rotations \u2014 but there is no 'inconsistent mass linearisation for Lie-group integrator' anywhere in 4C and nothing of the kind is printed. MASSLIN defaults to 'none', the input layer accepts it silently, and the process dies of SIGSEGV inside GenAlphaLieGroup::post_setup -> compute_mass_matrix_and_init_acc -> Beam3r::calc_inertia_force_and_mass_matrix. NONE_4C_DIAGNOSTICS=0 and NONE_STEPS=0 pin the two things that make this expensive to debug: no error message at all, and no time step ever taken. (Whether the mangled backtrace happens to contain the token MassLin varies between runs, so that is deliberately not asserted.) The wrong arm is a crash, not an abort, so a caller that only checks for '4C printed an error' will misread it as an environment problem. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) on upstream deck beam3r_line3_genalpha_liegroup_3Dtwistmoment.4C.yaml.",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ROTATIONS=0",
+    "EXIT_NONE=139",
+    "processor 0 finished normally",
+    "ROTATIONS_STEPS=20",
+    "Signal: Segmentation fault (11)",
+    "GenAlphaLieGroup",
+    "compute_mass_matrix_and_init_acc",
+    "calc_inertia_force_and_mass_matrix",
+    "NONE_4C_DIAGNOSTICS=0",
+    "NONE_STEPS=0",
+    "CLAIMED_INCONSISTENT_MASS_LIN_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ROTATIONS=1",
+    "EXIT_NONE=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep MASSLIN: rotations in the second arm too. Both arms then run all 20 steps and exit 0, so the segfault evidence disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/MASSLIN: \"rotations\"/MASSLIN: \"none\"/' \"$BASE\" > \"$TMP/ml_none.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/ml_none.yaml\""
+  }
+}

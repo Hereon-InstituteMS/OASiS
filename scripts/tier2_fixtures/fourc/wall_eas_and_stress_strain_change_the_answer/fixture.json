@@ -1,0 +1,59 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#10 — on the WALL element EAS and STRESS_STRAIN are not cosmetic, and they fail in opposite ways. Six arms of one 1x1 WALL QUAD4 unit square (YOUNG 1000, NUE 0.3, THICK 1.0, GP 2 2, left edge clamped, right edge line Neumann VAL 1 in y, dispy read at the loaded corner node 2), every comparison at the SAME node and the SAME kinematics, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. The reference arms (KINEM nonlinear + EAS none + plane_strain; KINEM linear + EAS none + plane_strain) exit 0 with their RESULT DESCRIPTION pinned at 1e-12. The contrast arms reuse that same pinned test and it fires: EAS none -> full moves the tip deflection by EAS_FULL_SHIFT_PERCENT=23.1 and plane_strain -> plane_stress by PLANE_STRESS_SHIFT_PERCENT=6.7, both read out of 4C's own 'is WRONG --> actresult=' line rather than asserted from prose. Neither run says anything about the keyword responsible — NL_EAS_FULL_WARNS_ABOUT_EAS=0, LIN_STRESS_WARNS_ABOUT_STRESS_STRAIN=0 — and the only error block in either log is the result test itself (*_ONLY_ERROR_IS_THE_RESULT_TEST=yes), which is exactly why a real deck without a result test says nothing at all. The loud branch is the other one: 'EAS full' with KINEM linear exits 1 with 'ERROR: No EAS for geometrically linear WALL element' from w1/4C_w1_input.cpp line 143, for both STRESS_STRAIN settings. So the EAS trap stops the run and the STRESS_STRAIN trap lets it lie.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NL_EAS_NONE=0",
+    "EXIT_NL_EAS_FULL=1",
+    "EXIT_LIN_STRAIN=0",
+    "EXIT_LIN_STRESS=1",
+    "EXIT_LIN_EAS_FULL_STRAIN=1",
+    "EXIT_LIN_EAS_FULL_STRESS=1",
+    "processor 0 finished normally",
+    "NL_EAS_NONE_RESULT_FAILURES=0",
+    "LIN_STRAIN_RESULT_FAILURES=0",
+    "NL_EAS_FULL_WARNS_ABOUT_EAS=0",
+    "LIN_STRESS_WARNS_ABOUT_STRESS_STRAIN=0",
+    "NL_EAS_FULL_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "LIN_STRESS_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "EAS_FULL_SHIFT_PERCENT=23.1",
+    "PLANE_STRESS_SHIFT_PERCENT=6.7",
+    "ERROR: No EAS for geometrically linear WALL element",
+    "4C_w1_input.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_NL_EAS_NONE=1",
+    "EXIT_LIN_STRAIN=1",
+    "EXIT_LIN_EAS_FULL_STRAIN=0",
+    "EXIT_LIN_EAS_FULL_STRESS=0",
+    "NL_EAS_FULL_ONLY_ERROR_IS_THE_RESULT_TEST=no",
+    "EAS_FULL_SHIFT_PERCENT=0.0",
+    "PLANE_STRESS_SHIFT_PERCENT=0.0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the contrast from the EAS arm: switch EAS off so it becomes a copy of the reference. The 23.1% shift disappears (the result test passes and nothing prints a percentage), so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck nonlinear full plane_strain \"$NL_REF\" \"$TMP/nl_full.yaml\"",
+      "to": "deck nonlinear none plane_strain \"$NL_REF\" \"$TMP/nl_full.yaml\""
+    },
+    {
+      "note": "remove the contrast from the STRESS_STRAIN arm the same way. The 6.7% shift disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    none plane_stress \"$L_REF\"  \"$TMP/l_stress.yaml\"",
+      "to": "deck linear    none plane_strain \"$L_REF\"  \"$TMP/l_stress.yaml\""
+    },
+    {
+      "note": "remove the pathology from the loud arm: give EAS the nonlinear kinematics it requires. The w1_input throw disappears and EXIT_LIN_EAS_FULL_STRAIN becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    full plane_strain \"$L_REF\"  \"$TMP/l_full_strain.yaml\"",
+      "to": "deck nonlinear full plane_strain \"$NL_REF\"  \"$TMP/l_full_strain.yaml\""
+    }
+  ]
+}

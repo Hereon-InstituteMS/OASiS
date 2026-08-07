@@ -215,9 +215,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("plasticity", "Elasto-plasticity: J2/von Mises, Drucker-Prager, GTN damage, crystal plasticity", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["linear_2d", "nonlinear_3d"]),
+            # heat_transient_2d was reachable through generate_input()
+            # and produced a running One-Step-Theta deck, but was absent
+            # from template_variants, so no tool could select it and no
+            # caller could discover it. Registered 2026-08-03 after
+            # executing both variants on the installed 4C (both rc=0).
             PhysicsCapability("heat", "Heat conduction", [2, 3],
                               ["QUAD4", "HEX8"],
-                              ["heat_2d"]),
+                              ["heat_2d", "heat_transient_2d"]),
             PhysicsCapability("fluid", "Incompressible Navier-Stokes", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["channel_2d", "cavity_2d"]),
@@ -230,15 +235,24 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("beams", "Beam elements", [2, 3],
                               ["BEAM3R", "BEAM3EB"],
                               ["cantilever_static", "cantilever_dynamic"]),
+            # inline_penalty_3d FIRST: it is the only contact variant
+            # that is self-contained (inline nodes + elements) and runs
+            # without FOURC_ROOT or an external Exodus mesh. penalty_3d
+            # is the tutorial/format-template route and needs both.
             PhysicsCapability("contact", "Contact mechanics", [3],
                               ["HEX8"],
-                              ["penalty_3d"]),
+                              ["inline_penalty_3d", "penalty_3d"]),
             PhysicsCapability("particle_pd", "Peridynamics (bond-based)", [2],
                               ["particle"],
                               ["plate_2d", "impact_2d"]),
             PhysicsCapability("particle_sph", "Smoothed particle hydrodynamics", [2],
                               ["particle"],
                               ["poiseuille_2d", "dam_break_2d"]),
+            PhysicsCapability("particle_dem",
+                              "Discrete element method (granular contact, "
+                              "friction, rolling, adhesion, walls)",
+                              [1, 2, 3], ["particle"],
+                              ["normal_impact_1d"]),
             PhysicsCapability("tsi", "Thermo-structure interaction", [2, 3],
                               ["SOLIDSCATRA HEX8"],
                               ["monolithic_3d", "oneway_3d",
@@ -303,9 +317,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("multiscale", "Multiscale FE-squared (computational homogenisation)", [3],
                               ["SOLID HEX8"],
                               ["fe2_3d"]),
+            # single_phase_3d listed FIRST because it is the only one of
+            # the three that generates a complete deck and runs (rc=0 on
+            # the installed 4C, 2026-08-03); terzaghi_2d and
+            # consolidation_3d fall through to the ~1 kB reference-stub
+            # template and are documentation, not runnable input.
             PhysicsCapability("porous_media", "Poroelasticity (Biot/mixture theory, consolidation)", [2, 3],
                               ["WALLQ4PORO", "WALLQ9PORO", "SOLIDH8PORO", "SOLIDT4PORO"],
-                              ["terzaghi_2d", "consolidation_3d"]),
+                              ["single_phase_3d", "terzaghi_2d", "consolidation_3d"]),
             # New physics
             PhysicsCapability("membrane", "Membrane elements (inflatable, fabric, tissue)", [2, 3],
                               ["MEMBRANE TRI3", "MEMBRANE QUAD4"], ["membrane_2d"]),
@@ -584,23 +603,33 @@ class FourcBackend(SolverBackend):
                 "summary": ("SPH dam-break: 2D rectangular "
                             "column of fluid collapsing onto a "
                             "rigid floor under gravity."),
-                "needs": ["MAT_PARTICLE with SPH_FLUID "
-                          "particle type (density, "
-                          "DYN_VISCOSITY, BULK_MODULUS, "
-                          "SOUNDSPEED)",
-                          "PARTICLE_PHASE for the fluid "
-                          "column + a boundaryphase for the "
-                          "floor/walls",
-                          "PARTICLE DYNAMIC with explicit "
-                          "time integration + appropriate "
-                          "CFL"],
-                "pitfalls": ["SOUNDSPEED too low → fluid "
-                             "compresses unrealistically; "
-                             "rule of thumb c >= 10 * v_max",
-                             "SMOOTHING_LENGTH too small → "
-                             "spurious tensile-instability "
-                             "voids; rule of thumb h ~ 1.3 * "
-                             "particle spacing"],
+                "needs": ["MAT_ParticleSPHFluid with all nine "
+                          "required keys: INITRADIUS, "
+                          "INITDENSITY, REFDENSFAC, EXPONENT, "
+                          "BACKGROUNDPRESSURE, BULK_MODULUS, "
+                          "DYNAMIC_VISCOSITY, BULK_VISCOSITY, "
+                          "ARTIFICIAL_VISCOSITY — none of them "
+                          "has a default",
+                          "PHASE_TO_MATERIAL_ID mapping phase1 "
+                          "to the fluid material and "
+                          "boundaryphase to a "
+                          "MAT_ParticleSPHBoundary for the "
+                          "floor/walls, plus the matching "
+                          "PHASE_TO_DYNLOADBALFAC",
+                          "PARTICLE DYNAMIC with TIMESTEP "
+                          "chosen by hand — 4C runs no "
+                          "stability check for SPH"],
+                "pitfalls": ["There is no SOUNDSPEED key. The "
+                             "speed of sound is DERIVED, "
+                             "sqrt(BULK_MODULUS / INITDENSITY), "
+                             "so the acoustic scale is set by "
+                             "raising BULK_MODULUS",
+                             "There is no SMOOTHING_LENGTH key "
+                             "either. The kernel support radius "
+                             "is the material's INITRADIUS, and "
+                             "the upstream convention is 2*dx "
+                             "for CubicSpline and 3*dx for "
+                             "QuinticSpline"],
             },
             ("porous_media", "terzaghi_2d"): {
                 "problemtype": "Poroelasticity",
@@ -808,11 +837,17 @@ class FourcBackend(SolverBackend):
                           "PARTICLE DYNAMIC (INTERACTION DEM) + "
                           "PASI DYNAMIC + STRUCTURAL DYNAMIC + a "
                           "BINNING STRATEGY with the domain box",
-                          "MAT_ParticleMaterialDEM + a structural "
-                          "material"],
-                "pitfalls": ["Explicit DEM time step must satisfy "
-                             "the Rayleigh/contact-stiffness CFL or "
-                             "it explodes",
+                          "MAT_ParticleDEM (INITRADIUS + "
+                          "INITDENSITY only) + optionally "
+                          "MAT_ParticleWallDEM for the coupling "
+                          "surface + a structural material"],
+                "pitfalls": ["The DEM time step is checked but "
+                             "never enforced: exceeding the "
+                             "critical step only prints "
+                             "'Warning: time step <dt> larger "
+                             "than critical time step <dtcrit>!' "
+                             "once per step and the run finishes "
+                             "with a wrong answer",
                              "DOMAINBOUNDINGBOX must enclose all "
                              "particle motion"],
             },
@@ -1223,6 +1258,7 @@ class FourcBackend(SolverBackend):
             matched_fluid_cavity_input,
             matched_fluid_channel_input,
             matched_reduced_airways_input,
+            matched_contact_3d_input,
         )
         key = f"{physics}_{variant}"
 
@@ -1430,6 +1466,22 @@ class FourcBackend(SolverBackend):
             # inline BEAM3R cantilevers; the tip load scales with E,
             # so the probe's E=1000 override converges like the
             # default E=1e7.
+            # contact/inline_penalty_3d: the ONLY self-contained contact
+            # variant. contact/penalty_3d needs FOURC_ROOT and an external
+            # Exodus mesh; without them it falls through to the
+            # <placeholder> format template, which cannot run (4C's
+            # MatchTree rejects "TIMESTEP: <load_step_size>"). This one
+            # carries its own nodes and elements and completes every load
+            # step on the deployed 4C (verified by execution 2026-08-03).
+            "contact_inline_penalty_3d":
+                lambda p: matched_contact_3d_input(
+                    nx=int(p.get("nx", 2)), ny=int(p.get("ny", 2)),
+                    nz=int(p.get("nz", 2)),
+                    gap=p.get("gap", 0.1),
+                    indent=p.get("indent", 0.3),
+                    penalty=p.get("penalty", 1.0e4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                    n_steps=int(p.get("n_steps", 10))),
             "beams_cantilever_static":
                 lambda p: matched_beam_cantilever_static_input(
                     n_elem=p.get("n_elem", 10),

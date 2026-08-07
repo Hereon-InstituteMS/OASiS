@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::poisson#4 — NUMDOF declares the length of ONOFF/VAL/FUNCT and is checked against them, not against the single scalar a Poisson problem transports. On a stationary TRANSP TRI3 deck, NUMDOF 1 with one-entry arrays and NUMDOF 4 with four-entry arrays (VAL [1, 2, 3, 4]) both run and return the identical centre value 5.00000000000000111e-01; the over-declared deck emits exactly one 'PROC 0 ERROR in' line, which is the deliberate recording result test (NUMDOF4_ERROR_LINES=1), so three surplus entries are dropped without comment. What IS enforced is array length == NUMDOF: NUMDOF 1 with a two-entry FUNCT is refused with \"Failed to match condition specification in section 'DESIGN LINE DIRICH CONDITIONS'.\" from core/fem/src/condition/4C_fem_condition_definition.cpp, and 4C names the offending array — \"Candidate parameter 'FUNCT' has incorrect size\". Neither phrasing an earlier version of this entry quoted ('array size mismatch', 'expected NUMDOF entries') appears. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "poisson",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "NUMDOF1_VALUE=5.00000000000000111e-01",
+    "NUMDOF4_VALUE=5.00000000000000111e-01",
+    "OVERDECLARED_NUMDOF_CHANGES_THE_ANSWER=no",
+    "NUMDOF4_ERROR_LINES=1",
+    "Failed to match condition specification in section 'DESIGN LINE DIRICH CONDITIONS'.",
+    "4C_fem_condition_definition.cpp",
+    "Candidate parameter 'FUNCT' has incorrect size",
+    "CLAIMED_ARRAY_SIZE_MISMATCH=0",
+    "CLAIMED_EXPECTED_NUMDOF_ENTRIES=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OVERDECLARED_NUMDOF_CHANGES_THE_ANSWER=yes",
+    "EXIT_NUMDOF4=0",
+    "EXIT_RAGGED=0"
+  ],
+  "_mutation": [
+    {
+      "note": "make the surplus entries stop being surplus: move a different value into the FIRST slot, which is the one the single scalar DOF reads. The applied boundary value changes, NUMDOF4_VALUE stops matching the NUMDOF-1 reading, and the fixture must go red — which is also what shows the comparison is sensitive to the arrays at all.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"numdof\\\":4,\\\"onoff\\\":\\\"[1, 1, 1, 1]\\\",\\\"val\\\":\\\"[1.0, 2.0, 3.0, 4.0]\\\",\\\"funct\\\":\\\"[1, 0, 0, 0]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "pois \"{\\\"numdof\\\":4,\\\"onoff\\\":\\\"[1, 1, 1, 1]\\\",\\\"val\\\":\\\"[4.0, 2.0, 3.0, 4.0]\\\",\\\"funct\\\":\\\"[1, 0, 0, 0]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "remove the pathology from the ragged arm: make FUNCT the length NUMDOF declares. The condition-spec rejection and the named-array line both disappear and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"numdof\\\":1,\\\"onoff\\\":\\\"[1]\\\",\\\"val\\\":\\\"[1.0]\\\",\\\"funct\\\":\\\"[1, 0]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "pois \"{\\\"numdof\\\":1,\\\"onoff\\\":\\\"[1]\\\",\\\"val\\\":\\\"[1.0]\\\",\\\"funct\\\":\\\"[1]\\\",\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    }
+  ]
+}

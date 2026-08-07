@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#10, checked by running 4C rather than reading a schema. Eleven copies of upstream tsi_lincompression_1waydisp, one COUPALGO value each. All seven catalogued names get past the parser (ACCEPTED_BY_PARSER=7/7); all four names the earlier catalog carried — tsi_iterstaggaitken, tsi_iterstaggaitkenirons, tsi_iterstaggfixedrel and bare monolithic — are rejected at parse time (REJECTED_BY_PARSER=4/4) with 'Could not match this input' from 4C_io_input_spec_builders.cpp, the offending YAML block echoed, and the whole legal enum printed on one line: \"[!] Candidate deprecated_selection 'COUPALGO' has wrong value, possible values: tsi_iterstagg|tsi_iterstagg_aitken|tsi_iterstagg_aitkenirons|tsi_iterstagg_fixedrelax|tsi_monolithic|tsi_oneway|tsi_sequstagg\". The correctly spelled tsi_oneway runs the deck to 'processor 0 finished normally'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "ACCEPTED_BY_PARSER=7/7",
+    "REJECTED_BY_PARSER=4/4",
+    "EXIT_BAD_MONOLITHIC=1",
+    "EXIT_GOOD_ONEWAY=0",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "COUPALGO: \"monolithic\"",
+    "possible values: tsi_iterstagg|tsi_iterstagg_aitken|tsi_iterstagg_aitkenirons|tsi_iterstagg_fixedrelax|tsi_monolithic|tsi_oneway|tsi_sequstagg",
+    "processor 0 finished normally"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BAD_MONOLITHIC=0",
+    "EXIT_GOOD_ONEWAY=1",
+    "REJECTED_BY_PARSER=0/4"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: spell the four historical names the way the schema does, so they are legal. REJECTED_BY_PARSER drops to 0/4 and the enum-dump line disappears from the monolithic arm, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "HISTORICAL=\"tsi_iterstaggaitken tsi_iterstaggaitkenirons tsi_iterstaggfixedrel monolithic\"",
+    "to": "HISTORICAL=\"tsi_iterstagg_aitken tsi_iterstagg_aitkenirons tsi_iterstagg_fixedrelax tsi_monolithic\""
+  }
+}

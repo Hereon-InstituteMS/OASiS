@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#5, confirmed and sharpened. The claim is about zeroth-order kernel error at t=0, so upstream particle_sph_1d_pressurewave_boundary_densitysummation_cubicspline_adami.4C.yaml is cut to NUMSTEP 1, its initial velocity field dropped, and its result block replaced by one probe: density at an interior fluid particle. A correctly packed 1-D lattice at INITRADIUS = 2*dx reproduces INITDENSITY to abs(diff) = 1.11022302462515654e-16, i.e. exactly — the control is bit-right, not approximately right. Shifting alternate fluid particles by +-25% of dx, with the same count, the same total length and the same mass per particle (4C takes the mass from INITIALPARTICLESPACING, not from the actual positions), returns 1.16662840136084323e+00 at the very first evaluation: a 16.7% error before any dynamics, so the entry's 'more than 5%' is conservative. 4C emits no spacing, packing or neighbour-count diagnostic. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "JITTERED_FLUID_PARTICLES=51",
+    "EXIT_UNIFORM=0",
+    "EXIT_JITTERED=1",
+    "processor 0 finished normally",
+    "UNIFORM_FAILURES=0",
+    "is CORRECT, abs(diff)= 1.11022302462515654e-16",
+    "JITTERED_FAILURES=1",
+    "is WRONG --> actresult= 1.16662840136084323e+00",
+    "JITTERED_SPACING_WARNINGS=0",
+    "JITTERED_DENSITY_ERROR_PERCENT=16.7",
+    "DENSITY_ERROR_EXCEEDS_FIVE_PERCENT_AT_T0=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_UNIFORM=1",
+    "EXIT_JITTERED=0",
+    "JITTERED_FAILURES=0",
+    "DENSITY_ERROR_EXCEEDS_FIVE_PERCENT_AT_T0=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the fluid particles on the uniform lattice in the second arm. The density comes back to INITDENSITY exactly, the probe passes and EXIT_JITTERED becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "        x = float(m.group(2)) + (0.001 if k % 2 == 0 else -0.001)   # +-25% of dx",
+    "to": "        x = float(m.group(2))"
+  }
+}

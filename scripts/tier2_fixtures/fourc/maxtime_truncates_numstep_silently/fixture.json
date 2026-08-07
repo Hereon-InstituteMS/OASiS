@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#8 — the structural time loop stops at whichever of NUMSTEP and MAXTIME is reached first, and the early stop is silent (exit 0, no warning). Same deck three ways: TIMESTEP 0.1 / NUMSTEP 100 / MAXTIME 0.3 runs 3 of the requested 100 steps and ends on 'Finalised step 3 / 100'; TIMESTEP 0.1 / NUMSTEP 3 / MAXTIME 100 ends on 'Finalised step 3 / 3'; MAXTIME 0 executes the loop body zero times, prints no step line at all, and still exits 0. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "maxtime_clips: EXIT=0 STEPS_RUN=3",
+    "Finalised step 3 / 100",
+    "numstep_clips: EXIT=0 STEPS_RUN=3",
+    "Finalised step 3 / 3",
+    "maxtime_zero: EXIT=0 STEPS_RUN=0"
+  ],
+  "forbid_in_output": [
+    "Finalised step 100 / 100",
+    "maxtime_clips: EXIT=1"
+  ]
+}

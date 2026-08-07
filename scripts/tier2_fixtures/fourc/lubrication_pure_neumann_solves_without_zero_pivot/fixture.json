@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#4, and a FALSIFICATION of its Signal. The entry claimed a pure-Neumann Reynolds setup makes the operator singular and that 'direct LU solver reports zero pivot'. Deleting the DESIGN LINE DIRICH CONDITIONS block from upstream lubrication_sb_2d.4C.yaml runs all five time steps on Superlu, converges, and returns 761.33 at node 10 against the reference 73.94 (10.30x). 'zero pivot' and 'singular' appear in neither the penalised nor the un-penalised run (CLAIMED_ZERO_PIVOT=00 concatenates both counts), and 4C never remarks on the missing Dirichlet. The hazard is therefore silent-wrong-answer, not solver breakdown. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_WITH_DBC=0",
+    "EXIT_NO_DBC=1",
+    "is CORRECT, abs(diff)=",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "Result check failed with 1 errors out of 1 tests",
+    "NO_DBC_TIME_STEPS_RUN=5",
+    "CLAIMED_ZERO_PIVOT=00",
+    "CLAIMED_SINGULAR=00",
+    "NO_DBC_MISSING_DIRICHLET_WARNINGS=0",
+    "NO_DBC_PRESSURE_IS_FINITE=yes",
+    "NO_DBC_OVER_REFERENCE=10.30"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITH_DBC=1",
+    "EXIT_NO_DBC=0",
+    "NO_DBC_PRESSURE_IS_FINITE=no",
+    "NO_DBC_OVER_REFERENCE=1.00"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the pressure Dirichlet in the second and third arms. Both then reproduce the reference, the result test passes, and the 10.30x contrast disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "DROP_DIRICHLET=yes",
+    "to": "DROP_DIRICHLET=no"
+  }
+}

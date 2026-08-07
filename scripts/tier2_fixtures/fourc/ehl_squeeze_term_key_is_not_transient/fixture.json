@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#5, and a FALSIFICATION of the key it names. The entry said 'Set TRANSIENT: true in LUBRICATION DYNAMIC'. There is no TRANSIENT key: writing it aborts at parse time in core/io/src/4C_io_input_spec_builders.cpp line 633 with 'Could not match this input', before any field is built (CLAIMEDKEY_FIELDS_BUILT=0), and 4C reports it under '[!] The following data remains unused:' while enumerating the parameters the section does accept — including the real key, ADD_SQUEEZE_TERM (bool, default false). That key is load-bearing: upstream ehl3d_mixed.4C.yaml sets it true, and turning it off makes the run die of SIGFPE inside the contact regularisation without reaching the result tests. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "OFF_ARM_ADD_SQUEEZE_TERM:false",
+    "CLAIMED_KEY_IN_DECK=1",
+    "EXIT_SQUEEZE_ON=0",
+    "EXIT_CLAIMEDKEY=1",
+    "EXIT_SQUEEZE_OFF=136",
+    "OK (7)",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "The following data remains unused:",
+    "Signal: Floating point exception (8)",
+    "CLAIMEDKEY_FIELDS_BUILT=0",
+    "CLAIMEDKEY_NAMES_THE_UNUSED_KEY=1",
+    "CLAIMEDKEY_ENUMERATES_REAL_KEY=1",
+    "SQUEEZE_OFF_DIES=1",
+    "SQUEEZE_OFF_REACHED_RESULT_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SQUEEZE_ON=1",
+    "EXIT_CLAIMEDKEY=0",
+    "EXIT_SQUEEZE_OFF=0",
+    "CLAIMED_KEY_IN_DECK=0",
+    "OFF_ARM_ADD_SQUEEZE_TERM:true"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the fabricated-key pathology: stop injecting TRANSIENT. CLAIMED_KEY_IN_DECK drops to 0 (a forbidden token) and the parse abort disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "CLAIMED_KEY='  TRANSIENT: true'",
+      "to": "CLAIMED_KEY=''"
+    },
+    {
+      "note": "remove the squeeze-term pathology: leave ADD_SQUEEZE_TERM on in the third arm. OFF_ARM_ADD_SQUEEZE_TERM:true is a forbidden token, EXIT_SQUEEZE_OFF stops being 136 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "SQUEEZE_SETTING=false",
+      "to": "SQUEEZE_SETTING=true"
+    }
+  ]
+}

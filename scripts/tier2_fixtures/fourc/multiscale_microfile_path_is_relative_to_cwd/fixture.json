@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::multiscale#1. The entry claimed 'failed to load micro input file X' or 'micro input file missing MATERIALS section'; neither string exists in 4C. A missing MICROFILE produces the ordinary input-file diagnostic, \"Input file 'X' does not exist.\" from core/io/src/4C_io_input_file.cpp, which never mentions micro, multiscale or homogenisation — so grepping the log for those words finds nothing. The second, undocumented half is the resolution rule: the path is relative to the WORKING DIRECTORY, not to the macro deck. The fixture runs the identical macro deck twice, once with the micro file in the working directory (exit 0, three result tests correct) and once from a subdirectory (same failure as a missing file). Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "multiscale",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BESIDE=0",
+    "EXIT_FROM_SUBDIR=1",
+    "EXIT_MISSING=1",
+    "BESIDE_TESTS_CORRECT=3",
+    "processor 0 finished normally",
+    "Input file 'no_such_micro_file.4C.yaml' does not exist.",
+    "4C_io_input_file.cpp",
+    "Input file 'sohex8_multiscale_micro.mat.4C.yaml' does not exist.",
+    "MISSING_MENTIONS_MICRO=0",
+    "CLAIMED_FAILED_TO_LOAD_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BESIDE=1",
+    "EXIT_FROM_SUBDIR=0",
+    "EXIT_MISSING=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the missing-file pathology: point MICROFILE at the file that is actually there. The 'does not exist' diagnostic vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/MICROFILE: \"sohex8_multiscale_micro.mat.4C.yaml\"/MICROFILE: \"no_such_micro_file.4C.yaml\"/' \\\n    macro.yaml > missing.yaml",
+      "to": "cp macro.yaml missing.yaml"
+    },
+    {
+      "note": "remove the cwd pathology: copy the micro file into the subdirectory too, so the relative path resolves there. EXIT_FROM_SUBDIR becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mkdir -p sub && cp macro.yaml sub/",
+      "to": "mkdir -p sub && cp macro.yaml sohex8_multiscale_micro.mat.4C.yaml sub/"
+    }
+  ]
+}

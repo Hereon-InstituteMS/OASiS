@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#4, and a falsification of its Signal. The rule holds — structure and particles need separate geometry blocks — but a particle line dropped into STRUCTURE ELEMENTS of upstream pasi_twoway_norelax_particle_dem_1d_normalcontact_linspring_walldiscretcond.4C.yaml is read as an element line, so the parser trips on the first token while trying to read an element id: \"Could not parse 'TYPE' as an integer value.\" from core/io/src/4C_io_value_parser.cpp line 90. Nothing in that mentions particles, the PARTICLES section or a structural mesh; it reads as an ordinary malformed-element error, which sends the reader to the wrong place. There is no 'unexpected particle entry in structural mesh' string in 4C. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "PARTICLE_LINE_INJECTED=1",
+    "EXIT_SEPARATE=0",
+    "EXIT_MIXED=1",
+    "processor 0 finished normally",
+    "SEPARATE_FAILURES=0",
+    "Could not parse 'TYPE' as an integer value.",
+    "4C_io_value_parser.cpp, line 90",
+    "CLAIMED_UNEXPECTED_PARTICLE_ENTRY_TEXT=0",
+    "DIAGNOSTIC_MENTIONS_PARTICLES=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SEPARATE=1",
+    "EXIT_MIXED=0",
+    "PARTICLE_LINE_INJECTED=0",
+    "DIAGNOSTIC_MENTIONS_PARTICLES=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave STRUCTURE ELEMENTS alone. No particle line is injected, the parse error vanishes, PARTICLE_LINE_INJECTED becomes 0 and EXIT_MIXED becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "              'STRUCTURE ELEMENTS:\\n  - \"TYPE phase1 POS 0.0 0.0 0.5\"\\n', 1))",
+    "to": "              'STRUCTURE ELEMENTS:\\n', 1))"
+  }
+}

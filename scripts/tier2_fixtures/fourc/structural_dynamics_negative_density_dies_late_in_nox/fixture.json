@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#7 — one slender inline HEX8 cantilever under GenAlpha, three densities. DENS 1.0 finalises all 12 steps and exits 0. DENS 0.0 finalises none and throws 'You are about to invert a singular matrix!' from structure_new/4C_structure_new_integrator.cpp — loud, immediate, and therefore the GOOD outcome. DENS -1.0 parses without complaint (MAT_Struct_StVenantKirchhoff has no validator on DENS), finalises 7 of the 12 steps on this deck and only then throws the generic 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp, whose text names neither the density nor the material (DENS_NEG_DIAGNOSTIC_NAMES_DENSITY=0). The exact step count is left out of the assertions on purpose; DENS_NEG_DIED_AFTER_RUNNING=yes is the part that carries the claim. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DENS_POS=0",
+    "EXIT_DENS_ZERO=1",
+    "EXIT_DENS_NEG=1",
+    "processor 0 finished normally",
+    "DENS_POS_STEPS=12",
+    "DENS_ZERO_STEPS=0",
+    "You are about to invert a singular matrix!",
+    "DENS_NEG_DIED_AFTER_RUNNING=yes",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "DENS_NEG_DIAGNOSTIC_NAMES_DENSITY=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DENS_POS=1",
+    "EXIT_DENS_NEG=0",
+    "DENS_NEG_DIED_AFTER_RUNNING=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the negative arm: flip the sign back. It then runs to the end like the positive arm, EXIT_DENS_NEG becomes 0 and the NOX non-convergence message disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck -1.0 \"$TMP/neg.4C.yaml\"",
+      "to": "deck 1.0 \"$TMP/neg.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the zero arm: give it a physical density. The singular-matrix throw and DENS_ZERO_STEPS=0 both go away, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck  0.0 \"$TMP/zero.4C.yaml\"",
+      "to": "deck  1.0 \"$TMP/zero.4C.yaml\""
+    }
+  ]
+}

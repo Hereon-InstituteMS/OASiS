@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#5 — MAXITER: 1 is an ABORT, not an early exit, and it kills a linear deck whose residual has already converged. Five arms of one self-contained 3D HEX8 Statics deck (YOUNG 1000, NUE 0.3, surface Neumann, TOLDISP 1e-12 / TOLRES 1e-11), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: MAXITER 1 exits 1 for BOTH kinematics settings with 'Failed.......Number of Iterations = 1 < 1' and 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp line 165. The decisive part is that in that same Final Status Test block the residual test has PASSED — MAXITER1_RESIDUAL_TEST_PASSED=yes and MAXITER1_RESIDUAL_BELOW_TOL=yes (Structure-F-Norm 4.030e-16 < 1.000e-11) — while the iteration counter test failed, so 'one iteration is enough for a linear problem' is exactly backwards. MAXITER 2 on the identical deck exits 0 and finishes, and a generous cap costs nothing: MAXITER 2 and MAXITER 30 both spend 2 Newton iterations (GENEROUS_CAP_COSTS_EXTRA_ITERATIONS=no), the nonlinear deck 5, because Newton stops at the tolerance and not at the cap.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_LIN_MAXITER1=1",
+    "EXIT_LIN_MAXITER2=0",
+    "EXIT_LIN_MAXITER30=0",
+    "EXIT_NLN_MAXITER1=1",
+    "EXIT_NLN_MAXITER30=0",
+    "Failed.......Number of Iterations = 1 < 1",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "MAXITER1_RESIDUAL_TEST_PASSED=yes",
+    "MAXITER1_RESIDUAL_BELOW_TOL=yes",
+    "MAXITER1_ITERATION_TEST_FAILED=yes",
+    "processor 0 finished normally",
+    "ITERS_LIN_MAXITER2=2",
+    "ITERS_LIN_MAXITER30=2",
+    "ITERS_NLN_MAXITER30=5",
+    "GENEROUS_CAP_COSTS_EXTRA_ITERATIONS=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_LIN_MAXITER1=0",
+    "EXIT_LIN_MAXITER2=1",
+    "EXIT_NLN_MAXITER1=0",
+    "MAXITER1_RESIDUAL_TEST_PASSED=no",
+    "GENEROUS_CAP_COSTS_EXTRA_ITERATIONS=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the linear arm the cap that already suffices. The abort disappears, EXIT_LIN_MAXITER1 becomes 0 and the Final Status block no longer carries a failed iteration test, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    1  \"$TMP/lin_1.4C.yaml\"",
+      "to": "deck linear    2  \"$TMP/lin_1.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the nonlinear arm the same way. EXIT_NLN_MAXITER1 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck nonlinear 1  \"$TMP/nln_1.4C.yaml\"",
+      "to": "deck nonlinear 30 \"$TMP/nln_1.4C.yaml\""
+    }
+  ]
+}

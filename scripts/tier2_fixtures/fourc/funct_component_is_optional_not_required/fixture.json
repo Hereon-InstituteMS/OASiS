@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#1 — a FALSIFICATION. The entry claimed SYMBOLIC_FUNCTION_OF_SPACE_TIME with a VARIABLE REQUIRES 'COMPONENT: 0', and that omitting it silently drops the VARIABLE so the function returns 0 everywhere and a Dirichlet driven by it stays stuck at 0. None of that happens. A HEX8 deck prescribes dispy = VAL 0.1 x FUNCT1, where FUNCT1 is the symbolic expression 'a' and 'a' is a linearinterpolation VARIABLE ramping 0 -> 0.5, so the only correct answer is 0.05 — distinguishable from both 0.0 (variable dropped) and 0.1 (function forced to 1). With COMPONENT: 0 and without it, 4C prints 'is CORRECT, abs(diff)= 0.00000000000000000e+00' against the pinned 5.00000000000000028e-02 at TOLERANCE 1e-12 and exits 0; the arm without COMPONENT reports no failing test (WITHOUT_REPORTED_A_WRONG_TEST=0) and never mentions COMPONENT at all (WITHOUT_COMPLAINED_ABOUT_COMPONENT=0). The schema declares COMPONENT optional (SCHEMA_COMPONENT_REQUIRED_TRUE=0) and 4C_utils_function.cpp reads it with .value_or(0). What IS fatal is a mismatched index: COMPONENT: 1 on the first component gives 'expected COMPONENT 0 but got COMPONENT 1' from core/utils/src/functions/4C_utils_function.cpp line 244, exit 1. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITH=0",
+    "EXIT_WITHOUT=0",
+    "EXIT_COMP1=1",
+    "WITHOUT_DECK_MENTIONS_COMPONENT=0",
+    "WITH_DECK_MENTIONS_COMPONENT=1",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "processor 0 finished normally",
+    "WITHOUT_REPORTED_A_WRONG_TEST=0",
+    "WITHOUT_COMPLAINED_ABOUT_COMPONENT=0",
+    "expected COMPONENT 0 but got COMPONENT 1",
+    "4C_utils_function.cpp",
+    "SCHEMA_COMPONENT_REQUIRED_TRUE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITH=1",
+    "EXIT_WITHOUT=1",
+    "EXIT_COMP1=0",
+    "WITHOUT_REPORTED_A_WRONG_TEST=1",
+    "SCHEMA_COMPONENT_REQUIRED_TRUE=1"
+  ],
+  "_mutation": [
+    {
+      "note": "put COMPONENT back into the arm that omits it. The two arms become the same deck, WITHOUT_DECK_MENTIONS_COMPONENT stops being 0, and the fixture loses the only input that demonstrates the key is optional — so it must go red.",
+      "file": "cmd.sh",
+      "from": "mk '  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: \"a\"' \"$TMP/without.yaml\"",
+      "to": "mk '  - COMPONENT: 0\n    SYMBOLIC_FUNCTION_OF_SPACE_TIME: \"a\"' \"$TMP/without.yaml\""
+    },
+    {
+      "note": "remove the pathology from the mismatched-index arm: name the component actually being defined. The COMPONENT mismatch throw vanishes, COMP1 exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk '  - COMPONENT: 1\n    SYMBOLIC_FUNCTION_OF_SPACE_TIME: \"a\"' \"$TMP/comp1.yaml\"",
+      "to": "mk '  - COMPONENT: 0\n    SYMBOLIC_FUNCTION_OF_SPACE_TIME: \"a\"' \"$TMP/comp1.yaml\""
+    }
+  ]
+}

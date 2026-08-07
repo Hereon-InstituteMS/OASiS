@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::mixture#2. The idea is right — growth needs a time-dependent mass source — but RHO_GROWTH is not a 4C key and growth is not a switch on the steady rule. On upstream mixture_growth_full_constrained_mixture_fiber_non_adaptive.4C.yaml the driver is GROWTH_CONSTANT on MIX_Constituent_FullConstrainedMixtureFiber under MIX_GrowthRemodelMixtureRule: zeroing it moves 20 of the 28 result tests. Adding RHO_GROWTH to that rule is a parse abort ('Could not match this input', global_data/4C_global_data_read.cpp), and so is adding GROWTH_STRATEGY to MIX_Rule_Simple on the steady deck mixture_elast_hyper_dynamic.4C.yaml — the steady rule has no growth slot at all, so 'a steady mixture solve cannot capture growth' is enforced by the input spec rather than surfacing as a silent pure-elastic answer. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "mixture",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GROWTH=0",
+    "EXIT_NOGROWTH=1",
+    "EXIT_RHOGROWTH=1",
+    "EXIT_SIMPLEGROW=1",
+    "processor 0 finished normally",
+    "NOGROWTH_RESULT_TEST_FAILURES=20",
+    "is WRONG --> actresult=",
+    "Could not match this input",
+    "4C_global_data_read.cpp",
+    "SIMPLE_RULE_ACCEPTS_GROWTH_STRATEGY=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GROWTH=1",
+    "EXIT_NOGROWTH=0",
+    "EXIT_RHOGROWTH=0",
+    "EXIT_SIMPLEGROW=0",
+    "NOGROWTH_RESULT_TEST_FAILURES=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the NOGROWTH arm: leave GROWTH_CONSTANT alone. Nothing then shows that it drives the growth — EXIT_NOGROWTH becomes 0, the failure count goes to zero and no failure line prints — so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/      GROWTH_CONSTANT: 0.01/      GROWTH_CONSTANT: 0.0/' \"$GROW\" > \"$TMP/nogrowth.yaml\"",
+      "to": "cp \"$GROW\" \"$TMP/nogrowth.yaml\""
+    },
+    {
+      "note": "remove the pathology from the SIMPLEGROW arm: do not attach a growth strategy to the steady rule. EXIT_SIMPLEGROW becomes 0 and SIMPLE_RULE_ACCEPTS_GROWTH_STRATEGY becomes 1, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace(anchor, \"    MIX_Rule_Simple:\\n      GROWTH_STRATEGY: 100\\n      DENS: 0.1\\n\", 1))",
+      "to": "    t)"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::fpsi#5, and a FALSIFICATION of its Signal. The entry claimed that cloning the porous field to ALE 'raises porous field already has Lagrangian motion from 4C_fpsi_factory.cpp'. Adding a third CLONING MATERIAL MAP entry structure -> ale to upstream fpsi_ofsiinterface.4C.yaml is accepted in silence: the run exits 0, passes both result tests to 1e-19, builds the same 15 discretisations as the clean deck, and prints no warning. No 4C_fpsi_factory.cpp exists in 4C. The advice is sound but unenforced, which is why it has to be written down rather than discovered from a diagnostic. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fpsi",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "ALE_CLONE_ENTRIES=2",
+    "EXIT_CLEAN=0",
+    "EXIT_POROALE=0",
+    "OK (2)",
+    "processor 0 finished normally",
+    "is CORRECT, abs(diff)=",
+    "POROALE_FAILED_TESTS=0",
+    "POROALE_PASSED_TESTS=2",
+    "CLAIMED_LAGRANGIAN_TEXT=0",
+    "CLAIMED_FPSI_FACTORY_FILE=0",
+    "POROALE_CLONE_WARNINGS=0",
+    "POROALE_FIELDS_BUILT=15",
+    "CLEAN_FIELDS_BUILT=15"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLEAN=1",
+    "EXIT_POROALE=1",
+    "ALE_CLONE_ENTRIES=1",
+    "POROALE_PASSED_TESTS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop injecting the porous -> ale clone entry. ALE_CLONE_ENTRIES drops to 1 (a forbidden token), so there is no forbidden cloning whose silent acceptance could be demonstrated and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "EXTRA_CLONE='  - SRC_FIELD: \"structure\"\\n    SRC_MAT: 1\\n    TAR_FIELD: \"ale\"\\n    TAR_MAT: 5\\n'",
+    "to": "EXTRA_CLONE=''"
+  }
+}

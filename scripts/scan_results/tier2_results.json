@@ -1,8 +1,8 @@
 {
   "summary": {
-    "n_fixtures": 197,
-    "passed": 197,
-    "failed": 0,
+    "n_fixtures": 206,
+    "passed": 203,
+    "failed": 3,
     "harness_pending": 0,
     "skipped": 0
   },
@@ -807,16 +807,17 @@
       "pitfall_index": 9,
       "fixture_id": "beam_material_camelcase_no_inner_underscore",
       "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "missing_required_materials=[]",
-        "historical_wrong_in_schema=[]",
-        "line5_in_b3r=True",
-        "line4_in_b3k=True"
+      "status": "failed",
+      "expect_matched": [],
+      "forbid_violated": [
+        "FAIL:"
       ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "schema_beam_materials=['MAT_BeamKirchhoffElastHyper', 'MAT_BeamKirchhoffElastHyper_ByModes', 'MAT_BeamKirchhoffTorsionFreeElastHyper', 'MAT_BeamKirchhoffTorsionFreeElastHyper_ByModes', 'MAT_BeamReissnerElastHyper', 'MAT_BeamReissnerElastHyper_ByModes', 'MAT_BeamReissnerElastPlastic']\nmissing_required_materials=[]\nhistorical_wrong_in_schema=[]\nbeam3r_cells=['LINE2', 'LINE3', 'LINE4', 'LINE5']\nbeam3k_cells=['LINE2', 'LINE3', 'LINE4']\nbeam3eb_cells=['LINE2']\nline5_in_b3r=True\nline4_in_b3k=True\n"
+      "notes": [
+        "missing in output: ['historical_wrong_in_schema=[]', 'line4_in_b3k=True', 'line5_in_b3r=True', 'missing_required_materials=[]']",
+        "forbidden tokens appeared: ['FAIL:']",
+        "2026-08-03 ENVIRONMENTAL, not a falsified claim: this fixture compares the catalogue against 4C's compiled JSON schema, and the deployed build on this host does not carry 4C_schema.json. That artefact is produced post-build by `create-schema-files 4C_metadata.yaml 4C_schema.json` (see apps/global_full/CMakeLists.txt); the raw metadata IS present as <build>/4C_metadata.yaml and is also obtainable from `4C --parameters`, but the build venv's interpreter is broken here so the conversion could not be run. The fixture now also honours $FOURC_SCHEMA_JSON and the deployed build path, so it self-heals once the schema is regenerated. Its recorded 'passed' state from the 2026-06 host was NOT contradicted by any run."
+      ],
+      "captured_head": "FAIL: 4C_schema.json not found\n"
     },
     "fourc::_input_format::0": {
       "key": "fourc::_input_format::0",
@@ -833,7 +834,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.0bDwdLAiFJ/probe.dat\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core/"
+      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_file.cpp, line 428:\nCan"
     },
     "fourc::_input_format::1": {
       "key": "fourc::_input_format::1",
@@ -850,7 +851,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.tV85ECZb8D/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_spec_builders.cpp, line"
     },
     "fourc::scalar_transport::0": {
       "key": "fourc::scalar_transport::0",
@@ -866,7 +867,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.DWiKOeh1Y4/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/core"
+      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_file.cpp, line 546:\nSec"
     },
     "fourc::linear_elasticity::4": {
       "key": "fourc::linear_elasticity::4",
@@ -877,13 +878,12 @@
       "mode": "cmd",
       "status": "passed",
       "expect_matched": [
-        "Unknown type 'WALL' of finite element",
-        "4C_comm_parobjectfactory",
-        "fill_complete() on discretization structure"
+        "EXACTLY_ONE_2D_FACTORY=yes",
+        "VERDICT: 2D_ELEMENT="
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "=== WALL (catalog form) \u2014 must fail ===\n\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.L3nqUE34bg/wall.yaml\n\n\n=========================================================================\nPROC 0 ERR"
+      "captured_head": "WALL_ACCEPTS_QUAD4=yes\nSOLID_ACCEPTS_QUAD4=no\nEXACTLY_ONE_2D_FACTORY=yes\nVERDICT: 2D_ELEMENT=WALL\nElement 'SOLID' does not seem to know cell type 'quad4'.\n"
     },
     "fourc::structural_dynamics::7": {
       "key": "fourc::structural_dynamics::7",
@@ -917,7 +917,7 @@
       ],
       "forbid_violated": [],
       "notes": [],
-      "captured_head": "\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.3.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      12eb1e39626acc5c543a42f6945a754279b37580      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\nRead input from file: /tmp/tmp.YcVWwSiNyd/probe.yaml\n\n\n=========================================================================\nPROC 0 ERROR in ~/Schreibtisch/4C-src/4C/src/glob"
+      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/global_data/4C_global_data_read.cpp, line 1377:"
     },
     "fourc::fluid::4": {
       "key": "fourc::fluid::4",
@@ -926,16 +926,17 @@
       "pitfall_index": 4,
       "fixture_id": "time_integration_enum_per_section",
       "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "bare_camelcase_in_fluid=[]",
-        "bare_camelcase_in_scatra=[]",
-        "underscored_in_struct=[]",
-        "underscored_in_thermal=[]"
+      "status": "failed",
+      "expect_matched": [],
+      "forbid_violated": [
+        "FAIL:"
       ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "fluid_timeintegr=['Af_Gen_Alpha', 'BDF2', 'Np_Gen_Alpha', 'One_Step_Theta', 'Stationary']\nscatra_timeintegr=['BDF2', 'Gen_Alpha', 'One_Step_Theta', 'Stationary']\nstructural_dynamictype=['AdamsBashforth2', 'AdamsBashforth4', 'CentrDiff', 'ExplicitEuler', 'GenAlpha', 'GenAlphaLieGroup', 'OneStepTheta', 'Statics']\nthermal_dynamictype=['GenAlpha', 'OneStepTheta', 'Statics', 'Undefined']\nbare_camelcase_in_fluid=[]\nbare_camelcase_in_scatra=[]\nunderscored_in_struct=[]\nunderscored_in_thermal=[]\n"
+      "notes": [
+        "missing in output: ['bare_camelcase_in_fluid=[]', 'bare_camelcase_in_scatra=[]', 'underscored_in_struct=[]', 'underscored_in_thermal=[]']",
+        "forbidden tokens appeared: ['FAIL:']",
+        "2026-08-03 ENVIRONMENTAL, not a falsified claim: this fixture compares the catalogue against 4C's compiled JSON schema, and the deployed build on this host does not carry 4C_schema.json. That artefact is produced post-build by `create-schema-files 4C_metadata.yaml 4C_schema.json` (see apps/global_full/CMakeLists.txt); the raw metadata IS present as <build>/4C_metadata.yaml and is also obtainable from `4C --parameters`, but the build venv's interpreter is broken here so the conversion could not be run. The fixture now also honours $FOURC_SCHEMA_JSON and the deployed build path, so it self-heals once the schema is regenerated. Its recorded 'passed' state from the 2026-06 host was NOT contradicted by any run."
+      ],
+      "captured_head": "FAIL: 4C_schema.json not found\n"
     },
     "fourc::tsi::7": {
       "key": "fourc::tsi::7",
@@ -944,16 +945,17 @@
       "pitfall_index": 7,
       "fixture_id": "tsi_coupalgo_enum_names",
       "mode": "python",
-      "status": "passed",
-      "expect_matched": [
-        "all_match=True",
-        "catalog_extra=[]",
-        "schema_extra=[]",
-        "historical_wrong_in_schema=[]"
+      "status": "failed",
+      "expect_matched": [],
+      "forbid_violated": [
+        "FAIL:"
       ],
-      "forbid_violated": [],
-      "notes": [],
-      "captured_head": "schema_enum=['tsi_iterstagg', 'tsi_iterstagg_aitken', 'tsi_iterstagg_aitkenirons', 'tsi_iterstagg_fixedrelax', 'tsi_monolithic', 'tsi_oneway', 'tsi_sequstagg']\ncatalog_extra=[]\nschema_extra=[]\nhistorical_wrong_in_schema=[]\nall_match=True n=7\n"
+      "notes": [
+        "missing in output: ['all_match=True', 'catalog_extra=[]', 'historical_wrong_in_schema=[]', 'schema_extra=[]']",
+        "forbidden tokens appeared: ['FAIL:']",
+        "2026-08-03 ENVIRONMENTAL, not a falsified claim: this fixture compares the catalogue against 4C's compiled JSON schema, and the deployed build on this host does not carry 4C_schema.json. That artefact is produced post-build by `create-schema-files 4C_metadata.yaml 4C_schema.json` (see apps/global_full/CMakeLists.txt); the raw metadata IS present as <build>/4C_metadata.yaml and is also obtainable from `4C --parameters`, but the build venv's interpreter is broken here so the conversion could not be run. The fixture now also honours $FOURC_SCHEMA_JSON and the deployed build path, so it self-heals once the schema is regenerated. Its recorded 'passed' state from the 2026-06 host was NOT contradicted by any run."
+      ],
+      "captured_head": "FAIL: 4C_schema.json not found at expected paths\n"
     },
     "kratos::linear_elasticity::8": {
       "key": "kratos::linear_elasticity::8",
@@ -3432,6 +3434,175 @@
       "forbid_violated": [],
       "notes": [],
       "captured_head": "rc_si=0\nrc_cgs=0\nboth_runs_exit_zero=True\nmax_ncoll_si=14\nmax_ncoll_cgs=32133\ncgs_collision_rate_is_far_higher=True\ncompute_temp_si=271.42855\ncompute_temp_cgs=271.42855\ncompute_temp_is_identical=True\ncell_touches_si=1.0346\ncell_touches_cgs=108.8740\ncell_touches_tell_present=True\nwarnings_si=0 warnings_cgs=0\nno_warning_in_either_log=True\n"
+    },
+    "fourc::structural_mechanics::9": {
+      "key": "fourc::structural_mechanics::9",
+      "backend": "fourc",
+      "physics": "structural_mechanics",
+      "pitfall_index": 9,
+      "fixture_id": "material_parameter_validation_bounds",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "nue_ok: EXIT=0",
+        "fill_complete() on discretization structure",
+        "nue_half: EXIT=1",
+        "Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)",
+        "dens_missing: EXIT=1",
+        "Expected parameter 'DENS'"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "=== NUE 0.49 (inside range) \u2014 must run ===\nnue_ok: EXIT=0\nfill_complete() on discretization structure\n=== NUE 0.5 (incompressible limit) \u2014 must be rejected ===\nnue_half: EXIT=1\nCandidate parameter 'NUE' does not pass validation: in_range[-1,0.5)\n=== DENS omitted under Statics \u2014 must be rejected ===\ndens_missing: EXIT=1\nExpected parameter 'DENS'\n"
+    },
+    "fourc::structural_dynamics::8": {
+      "key": "fourc::structural_dynamics::8",
+      "backend": "fourc",
+      "physics": "structural_dynamics",
+      "pitfall_index": 8,
+      "fixture_id": "maxtime_truncates_numstep_silently",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "maxtime_clips: EXIT=0 STEPS_RUN=3",
+        "Finalised step 3 / 100",
+        "numstep_clips: EXIT=0 STEPS_RUN=3",
+        "Finalised step 3 / 3",
+        "maxtime_zero: EXIT=0 STEPS_RUN=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "maxtime_clips: EXIT=0 STEPS_RUN=3\nFinalised step 1 / 100\nFinalised step 3 / 100\nnumstep_clips: EXIT=0 STEPS_RUN=3\nFinalised step 1 / 3\nFinalised step 3 / 3\nmaxtime_zero: EXIT=0 STEPS_RUN=0\n"
+    },
+    "fourc::input_format::25": {
+      "key": "fourc::input_format::25",
+      "backend": "fourc",
+      "physics": "input_format",
+      "pitfall_index": 25,
+      "fixture_id": "neumann_type_enum_vs_element_support",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "live: EXIT=0",
+        "Finalised step 1 / 1",
+        "dead: EXIT=1",
+        "Unknown type of SurfaceNeumann condition",
+        "bogus: EXIT=1",
+        "possible values: Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "live: EXIT=0\nFinalised step 1 / 1\ndead: EXIT=1\nUnknown type of SurfaceNeumann condition\nbogus: EXIT=1\npossible values: Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure\n"
+    },
+    "fourc::input_format::21": {
+      "key": "fourc::input_format::21",
+      "backend": "fourc",
+      "physics": "input_format",
+      "pitfall_index": 21,
+      "fixture_id": "problem_size_is_optional_and_inert",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "absent: EXIT=0",
+        "correct_counts: EXIT=0",
+        "absurd_counts: EXIT=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "absent: EXIT=0\ncorrect_counts: EXIT=0\nabsurd_counts: EXIT=0\n"
+    },
+    "fourc::structural_dynamics::9": {
+      "key": "fourc::structural_dynamics::9",
+      "backend": "fourc",
+      "physics": "structural_dynamics",
+      "pitfall_index": 9,
+      "fixture_id": "restartevery_section_placement",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "io_section: WRITE_EXIT=0 RESTART_RECORDS=0",
+        "io_section: RESTART_EXIT=1",
+        "No restart entry for discretization 'structure' step 2",
+        "sdyn_section: WRITE_EXIT=0 RESTART_RECORDS=1",
+        "sdyn_section: RESTART_EXIT=0",
+        "Restart of the structural simulation from step 2"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "io_section: WRITE_EXIT=0 RESTART_RECORDS=0\nio_section: RESTART_EXIT=1\nNo restart entry for discretization 'structure' step 2\nsdyn_section: WRITE_EXIT=0 RESTART_RECORDS=1\nsdyn_section: RESTART_EXIT=0\nRestart of the structural simulation from step 2\n"
+    },
+    "fourc::input_format::17": {
+      "key": "fourc::input_format::17",
+      "backend": "fourc",
+      "physics": "input_format",
+      "pitfall_index": 17,
+      "fixture_id": "result_description_gates_the_exit_code",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "is CORRECT",
+        "EXIT_A=0",
+        "is WRONG --> actresult=",
+        "Result check failed with 1 errors out of 1 tests",
+        "EXIT_B=1",
+        "EXIT_C=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "=== (a) correct VALUE, tight TOLERANCE \u2014 must exit 0 ===\nSTRUCTURE: structure       dispy    at node   3\t is CORRECT, abs(diff)= 0.00000000000000000e+00 < 1.00000000000000004e-10\nEXIT_A=0\n=== (b) wrong VALUE, tight TOLERANCE \u2014 must exit 1 ===\nSTRUCTURE: structure       dispy    at node   3\t is WRONG --> actresult= 4.47909266337460053e-03, givenresult= 9.99000000000000000e+02, abs(diff)= 9.98995520907336640e+02 > 1.00000000000000004e-10\nResult check failed with 1 errors out of 1 tests\nEXIT_B=1\n=== (c) wrong VALUE, loose TOLERANCE \u2014 silently exits 0 ===\nSTRUCTURE: structure       dispy    at node   3\t is CORRECT, abs(diff)= 4.47909266337460053e-03 < 1.00000000000000000e+00\nEXIT_C=0\n"
+    },
+    "fourc::input_format::26": {
+      "key": "fourc::input_format::26",
+      "backend": "fourc",
+      "physics": "input_format",
+      "pitfall_index": 26,
+      "fixture_id": "runtime_vtk_output_needs_both_sections",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "both_sections: EXIT=0 VTU=3",
+        "parent_only: EXIT=0 VTU=0",
+        "no_interval_steps: EXIT=0 VTU=0",
+        "no_io_at_all: EXIT=0 VTU=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "both_sections: EXIT=0 VTU=3\nparent_only: EXIT=0 VTU=0\nno_interval_steps: EXIT=0 VTU=0\nno_io_at_all: EXIT=0 VTU=0\n"
+    },
+    "fourc::structural_dynamics::6": {
+      "key": "fourc::structural_dynamics::6",
+      "backend": "fourc",
+      "physics": "structural_dynamics",
+      "pitfall_index": 6,
+      "fixture_id": "structural_dynamic_dynamictype_enum",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "Could not match this input",
+        "STRUCTURAL DYNAMIC",
+        "DYNAMICTYPE"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "Invalid MIT-MAGIC-COOKIE-1 key\n******************************************************\n*                                                    *\n*                         4C                         *\n*                                                    *\n*                version 2026.2.0-dev                *\n*                                                    *\n*                      git SHA1                      *\n*      89519cfe76251fc668617c4ab1a70b94fd86ec52      *\n*                                                    *\n******************************************************\n\nTrilinos Version: f4d64271518 (git SHA1)\nTotal number of MPI ranks: 1\n\n\n=========================================================================\nPROC 0 ERROR in ~/4C/src/core/io/src/4C_io_input_spec_builders.cpp, line"
+    },
+    "fourc::thermal::3": {
+      "key": "fourc::thermal::3",
+      "backend": "fourc",
+      "physics": "thermal",
+      "pitfall_index": 3,
+      "fixture_id": "thermo_prefixed_dirich_silently_ignored",
+      "mode": "cmd",
+      "status": "passed",
+      "expect_matched": [
+        "is WRONG --> actresult= 0.00000000000000000e+00",
+        "EXIT_PREFIXED=1",
+        "is CORRECT",
+        "EXIT_PLAIN=0"
+      ],
+      "forbid_violated": [],
+      "notes": [],
+      "captured_head": "=== THERMO-prefixed section (silently ignored) ===\nTHERMAL  : thermo          temp     at node   2\t is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 1.00000000000000000e+02, abs(diff)= 1.00000000000000000e+02 > 1.00000000000000002e-08\nEXIT_PREFIXED=1\n=== plain section (works) ===\nTHERMAL  : thermo          temp     at node   2\t is CORRECT, abs(diff)= 0.00000000000000000e+00 < 1.00000000000000002e-08\nEXIT_PLAIN=0\n"
     }
   }
 }

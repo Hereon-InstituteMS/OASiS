@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#4. The rule holds and this is its silent-wrong shape. Upstream ehl3d_mixed.4C.yaml presses the upper body via a 3-DOF DESIGN SURF DIRICH on DSURFACE 1, its back face; DSURFACE 2 is the Slave side of the EHL mortar contact. Moving that condition onto DSURFACE 2 is accepted without any diagnostic (LOAD_FACE_WARNINGS=0), runs all 20 steps, and gives a deformation that looks like a deflection — the driven contact nodes take exactly the prescribed -5.00e-2 in y — while both tangential displacements collapse to exactly 0 and 5 of the deck's 7 result tests move. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "LOADED_SURFACE_IN_DECK=2",
+    "EXIT_RIGHTFACE=0",
+    "EXIT_WRONGFACE=1",
+    "OK (7)",
+    "processor 0 finished normally",
+    "Result check failed with 5 errors out of 7 tests",
+    "is WRONG --> actresult=",
+    "WRONGFACE_TIME_STEPS_RUN=20",
+    "WRONGFACE_FAILED_TESTS=5",
+    "LOAD_FACE_WARNINGS=0",
+    "WRONGFACE_DEFORMATION=nonzero_and_plausible",
+    "WRONGFACE_TANGENTIAL_DISPLACEMENT=exactly_zero"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_RIGHTFACE=1",
+    "EXIT_WRONGFACE=0",
+    "LOADED_SURFACE_IN_DECK=1",
+    "WRONGFACE_DEFORMATION=other",
+    "WRONGFACE_TANGENTIAL_DISPLACEMENT=nonzero"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the pressing Dirichlet on the upstream back face. LOADED_SURFACE_IN_DECK becomes 1 (a forbidden token), both arms reproduce the reference and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "LOAD_SURFACE=2",
+    "to": "LOAD_SURFACE=1"
+  }
+}

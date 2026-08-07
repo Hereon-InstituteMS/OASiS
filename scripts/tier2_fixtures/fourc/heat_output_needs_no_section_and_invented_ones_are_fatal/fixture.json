@@ -1,0 +1,54 @@
+{
+  "_comment": "Tier-2 for fourc::heat#2 — a Scalar_Transport run writes its VTK unasked, and the two output sections an agent is most likely to invent are fatal rather than merely ineffective. A 3-D HEX8 heat deck carrying no output section at all (AUTO_DECK_HAS_OUTPUT_SECTION=0) exits 0 and still produces five <prefix>-vtk-files/scatra-*.vtu plus <prefix>-scatra.pvd with the nodal array named phi_1. 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' and 'IO/RUNTIME VTK OUTPUT/SCATRA' are each rejected before anything runs by section-name validation in core/io/src/4C_io_input_file.cpp. The discriminating arm is 'IO/RUNTIME VTK OUTPUT' on its own: that IS a valid section name in a scatra deck (IOVTK_SECTION_NAME_REJECTED=0, exit 0), so the two rejections are about those particular names and not about output sections in general. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "heat",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "AUTO_DECK_HAS_OUTPUT_SECTION=0",
+    "EXIT_AUTO=0",
+    "EXIT_IOVTK=0",
+    "EXIT_SCATRA_SECT=1",
+    "EXIT_IO_SECT=1",
+    "processor 0 finished normally",
+    "AUTO_VTU_COUNT=5",
+    "AUTO_PVD=yes",
+    "AUTO_VTU_ARRAY_NAME=phi_1",
+    "IOVTK_SECTION_NAME_REJECTED=0",
+    "Section 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' is not a valid section name.",
+    "Section 'IO/RUNTIME VTK OUTPUT/SCATRA' is not a valid section name.",
+    "4C_io_input_file.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_AUTO=1",
+    "EXIT_IOVTK=1",
+    "EXIT_SCATRA_SECT=0",
+    "EXIT_IO_SECT=0",
+    "AUTO_VTU_COUNT=0",
+    "AUTO_PVD=no",
+    "AUTO_VTU_ARRAY_NAME=absent"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the first invented section: drop it. That arm becomes a second baseline, EXIT_SCATRA_SECT goes to 0 and its rejection line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"numstep\\\":2,\\\"extra_sections\\\":\\\"SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "heat \"{\\\"numstep\\\":2}\" \\"
+    },
+    {
+      "note": "remove the pathology from the second invented section the same way; its rejection line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"numstep\\\":2,\\\"extra_sections\\\":\\\"IO/RUNTIME VTK OUTPUT/SCATRA:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "heat \"{\\\"numstep\\\":2}\" \\"
+    },
+    {
+      "note": "take the automatic output away by asking for zero steps in the baseline arm: AUTO_VTU_COUNT stops being 5, so the half of the entry that says you need no output section is no longer demonstrated and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"numstep\\\":4}\" \"$TMP/auto.yaml\"",
+      "to": "heat \"{\\\"numstep\\\":1}\" \"$TMP/auto.yaml\""
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::thermo#4 — hand-building a thermal-structural coupling inside PROBLEMTYPE 'Thermo' does not produce a coupled problem, it produces a heat-conduction run with the structural half deleted. A STRUCTURE ELEMENTS block plus MAT_Struct_StVenantKirchhoff is appended to a working thermo deck: the run exits 0, passes its thermal result test, prints 'fill_complete() on discretization thermo' and NEVER prints a structure banner (STRUCT_DISCRETISATION_IN_HANDBUILT=0), with no warning of any kind (IGNORED_BLOCK_WARNINGS=0). The control is upstream tsi_heatflux_monolithic.4C.yaml, which does print 'fill_complete() on discretization structure' — so the banner is a real discriminator and its absence is real evidence. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "DECK_CARRIES_STRUCTURE_ELEMENTS=1",
+    "EXIT_THERMO_ONLY=0",
+    "EXIT_THERMO_PLUS_STRUCT=0",
+    "EXIT_TSI=0",
+    "fill_complete() on discretization thermo",
+    "fill_complete() on discretization structure",
+    "processor 0 finished normally",
+    "is CORRECT",
+    "STRUCT_DISCRETISATION_IN_HANDBUILT=0",
+    "STRUCT_DISCRETISATION_IN_TSI=yes",
+    "IGNORED_BLOCK_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "DECK_CARRIES_STRUCTURE_ELEMENTS=0",
+    "EXIT_THERMO_PLUS_STRUCT=1",
+    "EXIT_TSI=1",
+    "STRUCT_DISCRETISATION_IN_TSI=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop bolting a structural block onto the Thermo deck. The second arm then carries nothing to be silently dropped, DECK_CARRIES_STRUCTURE_ELEMENTS becomes 0 and the fixture must go red — the observation only means something while the block is present.",
+    "file": "cmd.sh",
+    "from": "deck \"$STRUCT_BLOCK\" > \"$TMP/thermo_plus_struct.yaml\"",
+    "to": "deck \"\" > \"$TMP/thermo_plus_struct.yaml\""
+  }
+}

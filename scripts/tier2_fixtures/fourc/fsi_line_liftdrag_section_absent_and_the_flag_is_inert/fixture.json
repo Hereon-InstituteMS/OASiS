@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#9 -- the abort is confirmed verbatim, the suggested workaround is FALSIFIED. Injecting 'DESIGN FLUID LINE LIFT&DRAG' into upstream fsi_fp_mono_fs_ga_ga.4C.yaml aborts at parse (0 time steps) with \"Section 'DESIGN FLUID LINE LIFT&DRAG' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp line 546, exactly as the entry says; 0 of the 1974 upstream decks contain that section name while 2 contain the SURF variant. But the entry's remedy -- 'set LIFTDRAG: true in FLUID DYNAMIC, 4C computes it automatically from the no-slip boundaries' -- does nothing. FLD::Utils::lift_drag() begins with dis->get_condition(\"LIFTDRAG\", ldconds) and only DESIGN FLUID SURF LIFT&DRAG registers that condition name (src/inpar/4C_inpar_fluid.cpp), so the deck with LIFTDRAG: true and no condition runs all 10 steps, matches all six pinned results and prints zero \"lift'n'drag\" lines and zero warnings. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "SURF_VARIANT_EXISTS_IN_UPSTREAM_TREE=2",
+    "LINE_VARIANT_EXISTS_IN_UPSTREAM_TREE=0",
+    "EXIT_PLAIN=0",
+    "EXIT_LINESECTION=1",
+    "EXIT_FLAGONLY=0",
+    "Section 'DESIGN FLUID LINE LIFT&DRAG' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "LINESECTION_TIME_STEPS_RUN=0",
+    "processor 0 finished normally",
+    "OK (6)",
+    "FLAGONLY_TIME_STEPS_RUN=10",
+    "FLAGONLY_LIFTDRAG_OUTPUT_LINES=0",
+    "FLAGONLY_LIFTDRAG_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_LINESECTION=0",
+    "EXIT_FLAGONLY=1",
+    "LINE_VARIANT_EXISTS_IN_UPSTREAM_TREE=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: inject the SURF spelling, which 4C does define. The invalid-section-name abort disappears and EXIT_LINESECTION changes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "LIFTDRAG_SECTION=\"DESIGN FLUID LINE LIFT&DRAG\"",
+    "to": "LIFTDRAG_SECTION=\"DESIGN FLUID SURF LIFT&DRAG\""
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#20 and a FALSIFICATION. The entry claimed a fast inflow ramp 'produces Newton divergence within ~10 time steps even at laminar Re'. The upstream 2D FSI driven-cavity benchmark fsi_dc_mono_fs_ga_ga.4C.yaml already uses precisely the slow ramp the entry recommends (FUNCT1 = y*(1-cos(2*t*pi/5)), FUNCT2 = (1-cos(2*t*pi/5)), a 5 s cosine) over 10 steps of dt = 0.1. Replacing it with an instantaneous step to the same peak amplitude (y*2 and 2) holds the amplitude fixed and varies only the rate. Both arms complete all 10 time steps, neither prints a single non-convergence or divergence message, and the step arm takes 148 Newton steps against 81 -- 83% more work, not a failure. It exits nonzero only because the answer moved: 'Result check failed with 9 errors out of 9 tests', structure dispx at node 38 = -2.650e-03 against the pinned 2.467e-05. The real cost of a fast ramp on this benchmark is iterations and a different solution, not divergence. Both arms had the deck's relative MueLu xml path rewritten to an absolute one; that edit is identical in both. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 20,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "STEP_ARM_KEEPS_THE_COSINE_RAMP=0",
+    "EXIT_RAMP=0",
+    "EXIT_STEP=1",
+    "processor 0 finished normally",
+    "OK (9)",
+    "RAMP_TIME_STEPS_RUN=10",
+    "STEP_TIME_STEPS_RUN=10",
+    "RAMP_NONCONVERGENCE_MESSAGES=0",
+    "STEP_NONCONVERGENCE_MESSAGES=0",
+    "NEWTON_STEPS_SLOW_RAMP=81",
+    "NEWTON_STEPS_INSTANT_STEP=148",
+    "VERDICT: STEP_INFLOW_COSTS_MORE_NEWTON_STEPS=yes",
+    "Result check failed with 9 errors out of 9 tests",
+    "is WRONG --> actresult="
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_RAMP=1",
+    "EXIT_STEP=0",
+    "STEP_ARM_KEEPS_THE_COSINE_RAMP=2",
+    "VERDICT: STEP_INFLOW_COSTS_MORE_NEWTON_STEPS=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the step arm the same 5 s cosine ramp as the control. The two arms become identical, STEP_ARM_KEEPS_THE_COSINE_RAMP becomes 2 (forbidden), the Newton counts equalise so the verdict flips to 'no' (forbidden) and EXIT_STEP becomes 0 (forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "FAST_RAMP_SPACE_TIME=\"y*2\"",
+    "to": "FAST_RAMP_SPACE_TIME=\"y*(1-cos(2*t*pi/5))\""
+  }
+}

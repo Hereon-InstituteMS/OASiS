@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::heat#5 — BDF2 needs no hand-written start-up, and 4C gives you no way to see the one it already does. The same 3-D HEX8 heat deck under TIMEINTEGR 'BDF2' and under 'One_Step_Theta' with THETA 1.0 (which IS backward Euler): after ONE step the two agree to the last printed digit (1.75354251012145718e-01 both), after two (3.03303489655998737e-01 vs 2.89998581151961199e-01) and after three (3.90141172605912911e-01 vs 3.70066213493452145e-01) they differ. The later-step disagreement is what stops the first observation being vacuous — if BDF2 never engaged, every step would agree. And the step header of the BDF2 run says 'BDF2       STEP = 1/3' on the very step that is not BDF2, with the same word on all three steps (BDF2_BANNER_STEPS=3) and no start-up announcement anywhere (STARTUP_ANNOUNCED=0). Matches src/scatra/4C_scatra_timint_bdf2.cpp, where set_old_part_of_righthandside uses theta=1.0 for step 1 and 2/3 thereafter. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "heat",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "STEPS_1 BDF2=1.75354251012145718e-01 BACKWARD_EULER=1.75354251012145718e-01",
+    "STEPS_2 BDF2=3.03303489655998737e-01 BACKWARD_EULER=2.89998581151961199e-01",
+    "STEPS_3 BDF2=3.90141172605912911e-01 BACKWARD_EULER=3.70066213493452145e-01",
+    "is WRONG --> actresult=",
+    "FIRST_STEP_IS_BACKWARD_EULER=yes",
+    "LATER_STEPS_DIFFER=yes",
+    "BDF2       STEP = 1/3",
+    "BDF2_BANNER_STEPS=3",
+    "STARTUP_ANNOUNCED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FIRST_STEP_IS_BACKWARD_EULER=no",
+    "LATER_STEPS_DIFFER=no",
+    "BDF2= BACKWARD_EULER="
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: run the 'BDF2' arm as One_Step_Theta too. Every step then agrees, LATER_STEPS_DIFFER flips to no and the printed BDF2 banner disappears, so the fixture must go red — that assertion is what proves BDF2 really engages after step 1.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"timeintegr\\\":\\\"BDF2\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.02,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "heat \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.02,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "break the comparison the other way: make the control something that is NOT backward Euler. The one-step equality fails and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.02,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "heat \"{\\\"timeintegr\\\":\\\"Stationary\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.02,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    }
+  ]
+}

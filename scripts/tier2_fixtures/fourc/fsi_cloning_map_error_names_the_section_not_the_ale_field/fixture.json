@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#3 -- the rule holds, the Signal is FALSIFIED. Deleting the CLONING MATERIAL MAP block from upstream fsi_fp_mono_fs_ga_ga.4C.yaml does abort before time step 1, but with 'At least one material pairing required in --CLONING MATERIAL MAP.' from core/fem/src/general/utils/4C_fem_general_utils_createdis.hpp line 318, raised inside Core::FE::clone_discretization<ALE::Utils::AleCloneStrategy>. The claimed sentence 'cannot clone material for ALE field' appears nowhere (NOMAP_CLAIMED_SENTENCE=0) and neither does the claimed source file 4C_adapter_fld_base_algorithm (NOMAP_CLAIMED_SOURCE_FILE=0). Note the real message still uses the legacy '--CLONING MATERIAL MAP' dashed spelling, which is not how the section is written in a YAML deck. The control arm shows what the pairing buys: 'Created discretization ale as a clone of discretization fluid' and OK (6). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "NOMAP_CLONING_SECTIONS=0",
+    "EXIT_WITHMAP=0",
+    "EXIT_NOMAP=1",
+    "Created discretization ale as a clone of discretization fluid",
+    "OK (6)",
+    "At least one material pairing required in --CLONING MATERIAL MAP.",
+    "4C_fem_general_utils_createdis.hpp",
+    "AleCloneStrategy",
+    "NOMAP_TIME_STEPS_RUN=0",
+    "NOMAP_CLONED_ALE=0",
+    "NOMAP_CLAIMED_SENTENCE=0",
+    "NOMAP_CLAIMED_SOURCE_FILE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHMAP=1",
+    "EXIT_NOMAP=0",
+    "NOMAP_CLONED_ALE=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the fluid->ale material pairing. Both arms then clone the ale field, EXIT_NOMAP becomes 0 and NOMAP_CLONED_ALE becomes 1 (both forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "DROP_CLONING_MAP=yes",
+    "to": "DROP_CLONING_MAP=no"
+  }
+}

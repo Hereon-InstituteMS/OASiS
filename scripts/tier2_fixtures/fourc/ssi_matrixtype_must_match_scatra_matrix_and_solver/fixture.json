@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::ssi#5 and the execution that FALSIFIED both halves of its Signal. 'block' with a direct UMFPACK solver is not wasteful — on upstream ssi_mono_3D_1hex8_scatra.4C.yaml it simply runs and passes every result test. The two real failures are hard aborts, not exploding iteration counts: a scatra MATRIXTYPE of block_condition with a direct solver gives 'Global system matrix with block structure requires AMGnxn, MueLu or Teko block preconditioner!' from src/scatra/4C_scatra_timint_implicit.cpp, and forcing SSI CONTROL/MONOLITHIC MATRIXTYPE to sparse on the upstream Teko/BGS-AMG 5x5 deck gives 'Incompatible matrix type associated with scalar transport field!' from src/ssi/4C_ssi_monolithic.cpp inside SsiMono::setup_system(). Neither run reaches a solve. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssi",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SPARSEDIRECT=0",
+    "EXIT_BLOCKDIRECT=0",
+    "EXIT_BLOCKSCATRA=1",
+    "EXIT_TEKOSPARSE=1",
+    "processor 0 finished normally",
+    "BLOCKDIRECT_RESULT_TEST_FAILURES=0",
+    "Global system matrix with block structure requires AMGnxn, MueLu or Teko block preconditioner!",
+    "4C_scatra_timint_implicit.cpp",
+    "Incompatible matrix type associated with scalar transport field!",
+    "4C_ssi_monolithic.cpp",
+    "TEKOSPARSE_FAILS_IN_SETUP_SYSTEM=1",
+    "TEKOSPARSE_RESULT_TESTS_PERFORMED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SPARSEDIRECT=1",
+    "EXIT_BLOCKDIRECT=1",
+    "EXIT_BLOCKSCATRA=0",
+    "EXIT_TEKOSPARSE=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the scatra-block arm: do not inject a block_condition scatra matrix. The direct solver is then legal, EXIT_BLOCKSCATRA becomes 0 and the preconditioner diagnostic vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace(head, head + '  MATRIXTYPE: \"block_condition\"\\n', 1))",
+      "to": "    t)"
+    },
+    {
+      "note": "remove the pathology from the Teko arm: leave the upstream block MATRIXTYPE alone. It then matches the block scatra field, EXIT_TEKOSPARSE becomes 0 and the incompatible-matrix diagnostic vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^  MATRIXTYPE: \"block\"$/  MATRIXTYPE: \"sparse\"/' \"$TEKO\" > \"$TMP/teko_sparse.yaml\"",
+      "to": "cp \"$TEKO\" \"$TMP/teko_sparse.yaml\""
+    }
+  ]
+}

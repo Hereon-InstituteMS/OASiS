@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#3 and a FALSIFICATION of the magnitude in its Signal. The rule (SUPG with DEFINITION_TAU: Taylor_Hughes_Zarins is the right default for advection-dominated level-set transport) is confirmed by the upstream deck levelset_gaussian_hill_pbc, which relies on exactly that default. But 'ringing across element edges (5-10% amplitude that does not damp)' is not what happens: STABTYPE: no_stabilization on that deck completes normally, produces no NaN, fails all four pinned phi values, and every one of those deviations is below 1% of the reference -- none exceeds 5%. So the unstabilised run is wrong, but quietly and by a small amount, detectable only against a reference solution rather than by looking for visible oscillations. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 3,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_SUPG=0",
+    "EXIT_NOSTAB=1",
+    "processor 0 finished normally",
+    "SUPG_RESULT_FAILURES=0",
+    "NOSTAB_REACHED_RESULT_TEST=1",
+    "NOSTAB_RESULT_FAILURES=4",
+    "is WRONG --> actresult=",
+    "NOSTAB_DEVIATIONS_ABOVE_5PCT=0",
+    "NOSTAB_DEVIATIONS_ABOVE_1PCT=0",
+    "NOSTAB_NAN=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the deck on its default SUPG stabilisation. All four failures vanish and the deviation counts stop being measurable, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|^SCALAR TRANSPORT DYNAMIC:|SCALAR TRANSPORT DYNAMIC/STABILIZATION:\\n  STABTYPE: \"no_stabilization\"\\nSCALAR TRANSPORT DYNAMIC:|' \"$BASE\" > \"$TMP/nostab.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nostab.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SUPG=1",
+    "EXIT_NOSTAB=0",
+    "NOSTAB_RESULT_FAILURES=0"
+  ]
+}

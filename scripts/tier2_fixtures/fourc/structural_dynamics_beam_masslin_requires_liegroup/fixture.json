@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#2 — on the upstream beam3r_herm2line3_genalpha_liegroup_lineload_dynamic deck (MAXTIME shortened to 0.05, RESULT DESCRIPTION removed so the control arm can exit 0), the GenAlphaLieGroup + MASSLIN rotations pairing is enforced in both directions but very unevenly. Swapping the scheme to classical GenAlpha while keeping MASSLIN: rotations throws 'MASSLIN=ml_rotations is not supported by classical GenAlpha! Choose GenAlphaLieGroup instead!' from structure_new/src/implicit/4C_structure_new_impl_genalpha.cpp — a perfect message that names the fix. Dropping MASSLIN to 'none' while keeping GenAlphaLieGroup produces NO 4C diagnostic whatsoever (NO_MASSLIN_4C_ERROR_LINES=0): the process is killed by 'Signal: Segmentation fault (11)' inside GenAlphaLieGroup::post_setup -> Beam3r::calc_inertia_force_and_mass_matrix, exit 139, zero steps. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_LIEGROUP=0",
+    "EXIT_CLASSICAL_GENALPHA=1",
+    "EXIT_LIEGROUP_NO_MASSLIN=139",
+    "processor 0 finished normally",
+    "LIEGROUP_STEPS=5",
+    "MASSLIN=ml_rotations is not supported by classical GenAlpha! Choose GenAlphaLieGroup instead!",
+    "4C_structure_new_impl_genalpha.cpp",
+    "NO_MASSLIN_STEPS=0",
+    "NO_MASSLIN_4C_ERROR_LINES=0",
+    "Signal: Segmentation fault (11)",
+    "GenAlphaLieGroup10post_setup"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_LIEGROUP=1",
+    "EXIT_CLASSICAL_GENALPHA=0",
+    "EXIT_LIEGROUP_NO_MASSLIN=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave the second arm on the Lie-group scheme. The MASSLIN throw vanishes and EXIT_CLASSICAL_GENALPHA becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace('DYNAMICTYPE: \"GenAlphaLieGroup\"', 'DYNAMICTYPE: \"GenAlpha\"'))",
+      "to": "    t)"
+    },
+    {
+      "note": "remove the second pathology: keep MASSLIN: rotations on the Lie-group arm. The segmentation fault vanishes and EXIT_LIEGROUP_NO_MASSLIN becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace('MASSLIN: \"rotations\"', 'MASSLIN: \"none\"'))",
+      "to": "    t)"
+    }
+  ]
+}

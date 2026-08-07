@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for fourc::beams#4, and a FALSIFICATION of its Signal. HERMITE_CENTERLINE true does add three tangent DOFs per node (6 -> 9), and upstream beam3r_herm2line2_static_test1 carries NUMDOF 9 with nine-entry ONOFF/VAL/FUNCT vectors. But cutting the Dirichlet block back to NUMDOF 6 does NOT produce an under-constrained run with 'spurious tangent growth at constrained nodes' — nothing is silent. The DBC reader aborts before the first step with '6 DOFs given but 9 expected in Point Dirichlet boundary condition' from core/fem/src/discretization/4C_fem_discretization_utils_dbc.cpp, the same check that guards beams#1 in the opposite direction. SIX_STEPS_TAKEN=0 pins that no time step happens. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_NINE=0",
+    "EXIT_SIX=1",
+    "processor 0 finished normally",
+    "6 DOFs given but 9 expected in Point Dirichlet boundary condition",
+    "4C_fem_discretization_utils_dbc.cpp",
+    "SIX_STEPS_TAKEN=0",
+    "CLAIMED_SPURIOUS_TANGENT_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NINE=1",
+    "EXIT_SIX=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep NUMDOF 9 on the Hermite deck. Both arms then run to completion, the DOF-count diagnostic vanishes and the second arm exits 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(nine, six, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

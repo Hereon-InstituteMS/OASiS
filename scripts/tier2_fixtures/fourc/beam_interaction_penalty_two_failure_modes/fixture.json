@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#1. The claim that the penalty parameter has a too-high and a too-low failure mode holds; its Signal did not. No condition-number printout appears anywhere (CONDITION_NUMBER_PRINTOUTS=0) and no post-processing of beam-beam distance is needed. On the upstream twobeamstwisting deck, dividing BEAMS_BTBLINEPENALTYPARAM by 1e4 lets the solve CONVERGE to a silently wrong answer — node 5 dispx 4.38e-6 against an expected -1.90e-2, contact simply not enforced — while multiplying by 1e8 makes NOX abort with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp before any result test runs. Under-penalty is the dangerous one because it produces a plausible number. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_LOWPEN=1",
+    "EXIT_HIGHPEN=1",
+    "BASE_TESTS_CORRECT=3",
+    "LOWPEN_TESTS_WRONG=1",
+    "LOWPEN_REACHED_RESULT_TEST=1",
+    "HIGHPEN_REACHED_RESULT_TEST=0",
+    "is WRONG --> actresult=",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "CONDITION_NUMBER_PRINTOUTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_LOWPEN=0",
+    "EXIT_HIGHPEN=0",
+    "LOWPEN_TESTS_WRONG=0",
+    "HIGHPEN_REACHED_RESULT_TEST=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the under-penalty pathology: leave the calibrated penalty in the low arm. Contact is then enforced, the result test passes, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe LOWPEN  lowpen.yaml",
+      "to": "probe LOWPEN  base.yaml"
+    },
+    {
+      "note": "remove the over-penalty pathology: leave the calibrated penalty in the high arm. NOX then converges, HIGHPEN reaches the result test, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe HIGHPEN highpen.yaml",
+      "to": "probe HIGHPEN base.yaml"
+    }
+  ]
+}

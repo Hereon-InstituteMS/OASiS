@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for fourc::ale#0 — stand-alone ALE elements are ALE2 (2D) / ALE3 (3D) inside 'ALE ELEMENTS'; writing SOLID there aborts. The point worth pinning is the SHAPE of the failure: the diagnostic names the CELL type ('does not seem to know cell type quad4') and never mentions ALE, so an agent grepping the error for 'ALE' learns nothing about what it did wrong. DIAGNOSTIC_MENTIONS_ALE=no keeps that pinned; an earlier version of the knowledge entry quoted 'expected ALE element type' from a '4C_ale_factory.cpp' and neither the string nor the file exists. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ale",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_ALE2=0",
+    "EXIT_SOLID=1",
+    "processor 0 finished normally",
+    "Element 'SOLID' does not seem to know cell type 'quad4'.",
+    "4C_fem_general_element_definition.cpp",
+    "DIAGNOSTIC_MENTIONS_ALE=no"
+  ],
+  "forbid_in_output": [
+    "no_4c_binary",
+    "EXIT_ALE2=1",
+    "EXIT_SOLID=0",
+    "DIAGNOSTIC_MENTIONS_ALE=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: declare the bad arm with the CORRECT ALE2 category. The abort and its diagnostic then vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"SOLID\" > \"$TMP/bad.yaml\"",
+    "to": "deck \"ALE2\" > \"$TMP/bad.yaml\""
+  }
+}

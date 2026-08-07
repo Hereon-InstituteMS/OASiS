@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#3, sharpened by execution. Swapping MODEL 'FHN' -> 'TNNP' in upstream scatra_myocard_FHN_material and changing nothing else runs to completion and returns phi = -85.811 where the deck expects 0.778036. The difference is not just action-potential duration: FHN's phi is a dimensionless 0..1 excitation variable and TNNP's is a transmembrane potential in mV resting near -85, so initial field, stimulus amplitude and expected values all have to be re-derived. The upstream decks confirm it -- FHN uses init 0.0 / VAL 0.3, TNNP uses init -85.423 / VAL 30 (both marker counts 11). MODEL_MISMATCH_WARNINGS=0: MODEL is just an enum and 4C accepts the mismatch silently. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "UPSTREAM_FHN_REST_AND_STIMULUS=11",
+    "UPSTREAM_TNNP_REST_AND_STIMULUS=11",
+    "EXIT_BASE=0",
+    "EXIT_SWAPPED=1",
+    "BASE_TESTS_CORRECT=1",
+    "SWAPPED_REACHED_RESULT_TEST=1",
+    "processor 0 finished normally",
+    "actresult=-8.58111713418211366e+01",
+    "SWAPPED_MODEL_RESTS_NEAR_MINUS_85=yes",
+    "SWAPPED_MODEL_STAYED_IN_FHN_RANGE=no",
+    "MODEL_MISMATCH_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_SWAPPED=0",
+    "SWAPPED_MODEL_RESTS_NEAR_MINUS_85=no",
+    "SWAPPED_MODEL_STAYED_IN_FHN_RANGE=yes"
+  ],
+  "_mutation": {
+    "note": "remove the model swap: leave FHN in place. phi returns to 0.778036, the mV-scale markers flip, EXIT_SWAPPED becomes 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SWAPPED_MODEL=TNNP",
+    "to": "SWAPPED_MODEL=FHN"
+  }
+}

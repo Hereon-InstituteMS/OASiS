@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#1 — VELOCITYFIELD is OPTIONAL: 'zero' is its default, and a deck with the key deleted produces a bit-identical answer with no diagnostic anywhere. The omitted arm passes the same 1e-12 result test as the explicit one ('is CORRECT', abs(diff)=0), exits 0, and the substring 'velocit' appears zero times in its whole log (OMITTED_MENTIONS_VELOCITY=0). Both strings an earlier version of this entry quoted are absent (CLAIMED_VELOCITY_FIELD_NOT_FOUND=0, CLAIMED_VELNP_UNINITIALIZED=0). A third arm keeps the silence from being an absence of checking: VELOCITYFIELD: 'function' with no VELFUNCNO does draw an error, 'Function with index -1 (i.e. input FUNCT-1) not available.' from core/utils/src/functions/4C_utils_function_manager.hpp. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "OMITTED_DECK_HAS_VELOCITYFIELD=0",
+    "EXPLICIT_DECK_HAS_VELOCITYFIELD=1",
+    "EXIT_EXPLICIT=0",
+    "EXIT_OMITTED=0",
+    "EXIT_BOGUS=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "OMITTED_MENTIONS_VELOCITY=0",
+    "CLAIMED_VELOCITY_FIELD_NOT_FOUND=0",
+    "CLAIMED_VELNP_UNINITIALIZED=0",
+    "Function with index -1 (i.e. input FUNCT-1) not available.",
+    "4C_utils_function_manager.hpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OMITTED_DECK_HAS_VELOCITYFIELD=1",
+    "EXIT_OMITTED=1",
+    "EXIT_BOGUS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: put VELOCITYFIELD back in the second arm. There is then no omission under test, OMITTED_DECK_HAS_VELOCITYFIELD becomes 1 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"velocityfield\\\":\\\"\\\",\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\"  \"$TMP/omitted.yaml\"",
+      "to": "sca \"{\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\"  \"$TMP/omitted.yaml\""
+    },
+    {
+      "note": "remove the control: give the bogus arm a working velocity setting. 4C then has nothing to object to, EXIT_BOGUS becomes 0 and the function-manager diagnostic disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"velocityfield\\\":\\\"  VELOCITYFIELD: \\\\\\\"function\\\\\\\"\\n\\\",\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\" \\",
+      "to": "sca \"{\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\" \\"
+    }
+  ]
+}

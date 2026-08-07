@@ -487,48 +487,352 @@ def register_example_tools(mcp: FastMCP):
 _4C_INPUT_GUIDE = """\
 # 4C Input File Guide (.4C.yaml)
 
-## File Structure
-4C uses YAML input files with ALL-CAPS section names:
+A 4C deck is a flat YAML mapping of ALL-CAPS section names. There is no
+nesting of sections: subsections are spelled with a slash IN the name, e.g.
+`STRUCTURAL DYNAMIC/GENALPHA`, as a separate top-level key.
+
+4C's error messages are fmt templates: the binary contains
+`Section '{}' is not a valid section name.`, not the rendered text. To check
+whether a message can occur at all, grep for the TEMPLATE form, e.g.
+
+    strings -n 6 <path-to-4C> <path-to-lib4C.so> \\
+        | grep -F "Section '{}' is not a valid section name."
+
+A few messages are assembled at runtime and are NOT findable this way (for
+instance "Expected parameter 'DENS'"), and a few come from the C++ runtime
+rather than from 4C, so a zero hit is weak evidence, not proof.
+
+An unknown section name is fatal before anything runs:
+    Section 'XFLUID DYNAMIC' is not a valid section name.
+so guessing a section name costs the whole run. `4C --parameters` prints the
+version-exact list of every accepted section and key; it is the only
+authority.
+
+## 1. GETTING A MESH IN — three routes, pick exactly one per field
+
+### Route A — inline (no external files; use this unless told otherwise)
+Three sections together:
+    NODE COORDS:            list of "NODE <id> COORD <x> <y> <z>"
+    <FIELD> ELEMENTS:       list of "<eid> <ELETYPE> <CELLTYPE> <nodes...> <KEY val>..."
+    D<ENTITY>-NODE TOPOLOGY: list of "NODE <id> D<ENTITY> <design id>"
+The element section name is per field and is one of:
+    STRUCTURE ELEMENTS, THERMO ELEMENTS, FLUID ELEMENTS, TRANSPORT ELEMENTS,
+    ALE ELEMENTS, LUBRICATION ELEMENTS, ARTERY ELEMENTS,
+    REDUCED D AIRWAYS ELEMENTS, TRANSPORT2 ELEMENTS, PARTICLES
+The topology sections are DNODE-NODE, DLINE-NODE, DSURF-NODE, DVOL-NODE
+TOPOLOGY, and the entity words inside them are DNODE, DLINE, DSURFACE, DVOL.
+
+### Route B — external Exodus mesh
+    STRUCTURE GEOMETRY:
+      FILE: mesh.e            # REQUIRED, absolute or relative to the input file
+      SHOW_INFO: summary      # optional: none|summary|detailed_summary|detailed|full
+      ELEMENT_BLOCKS:         # REQUIRED
+        - ID: 1               # the block id inside the Exodus file
+          SOLID:              # element type
+            HEX8:             # cell type
+              MAT: 1
+              KINEM: nonlinear
+Conditions then address node sets by name instead of by design-entity id:
+    DESIGN SURF DIRICH CONDITIONS:
+      - NODE_SET_NAME: wall
+        NUMDOF: 3
+        ONOFF: [1, 1, 1]
+        VAL: [0, 0, 0]
+        FUNCT: [null, null, null]
+`E:` and `NODE_SET_NAME:` are mutually exclusive on one condition entry.
+The per-field name is <FIELD> GEOMETRY: STRUCTURE / THERMO / FLUID /
+TRANSPORT / ALE / ARTERY / LUBRICATION / TRANSPORT2 / REDUCED D AIRWAYS.
+
+### Route C — built-in box generator (no node list at all)
+    STRUCTURE DOMAIN:
+      bottom_corner_point: [0.0, 0.0, 0.0]   # REQUIRED
+      top_corner_point: [10.0, 1.0, 1.0]     # REQUIRED, each coord strictly greater
+      subdivisions: [10, 2, 2]               # REQUIRED, elements per direction
+      elements:                              # REQUIRED
+        SOLID:
+          HEX8:
+            MAT: 1
+            KINEM: nonlinear
+      # optional: rotation_angle: [0,0,0]   auto_partition: false
+Design entities are then attached SYMBOLICALLY — no node ids anywhere:
+    DSURF-NODE TOPOLOGY:
+      - "SIDE structure x- DSURFACE 1"
+      - "SIDE structure x+ DSURFACE 2"
+    DLINE-NODE TOPOLOGY:
+      - "EDGE structure x- y- DLINE 1"
+    DNODE-NODE TOPOLOGY:
+      - "CORNER structure x- y- z- DNODE 1"
+    DVOL-NODE TOPOLOGY:
+      - "VOLUME structure DVOLUME 1"
+The word after SIDE/EDGE/CORNER/VOLUME is the DISCRETISATION name (structure,
+thermo, fluid, ale, scatra...), not the section name, and it is CASE
+SENSITIVE and lowercase - "SIDE STRUCTURE x- DSURFACE 1" aborts with
+"Could not find discretization 'STRUCTURE'." Mixing a DOMAIN section with a NODE COORDS
+section does NOT fail - the extra nodes are ignored and the run exits 0. It
+only surfaces if a RESULT DESCRIPTION happens to reference a node id the
+generator renumbered, as "Node 1 does not belong to discretization
+structure". Pick one route. The generator makes
+HEX8/20/27 and WEDGE6/15 ONLY, so Route C is 3D-only and any 2D problem
+must use Route A. Asking it for a 2D cell fails in three different places
+depending on how you ask: "SOLID: QUAD4:" gives "Could not match this input"
+(SOLID owns no quad4 at all); "WALL: QUAD4:" with the default
+auto_partition: false gives "This map-partition is only available for
+HEX-elements!"; and "WALL: QUAD4:" with auto_partition: true finally gives
+the explicit "The discretization type quad4, is not implemented. Currently
+only HEX(8,20,27) and WEDGE(6,15) are implemented for the box geometry
+generation."
+
+## 2. THE ELEMENT LINE — what each element type demands
+
+Grammar: `<eid> <ELETYPE> <CELLTYPE> <node ids...> <KEY value> <KEY value>...`
+Keys are positionless but every REQUIRED key must be present, and any token
+the element does not own is fatal ("After parsing, the line still contains
+'<token>'").
+
+| ELETYPE | cell types | REQUIRED keys |
+|---|---|---|
+| SOLID  | HEX8 HEX18 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 NURBS27 | MAT, KINEM |
+| WALL   | QUAD4 QUAD8 QUAD9 TRI3 TRI6 | MAT, KINEM, EAS, THICK, STRESS_STRAIN, GP |
+| THERMO | QUAD4 QUAD8 QUAD9 TRI3 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 LINE2 | MAT |
+| TRANSP | QUAD4 QUAD8 QUAD9 TRI3 TRI6 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 LINE2 LINE3 | MAT, TYPE (`TYPE Std` for plain convection-diffusion) |
+| FLUID  | QUAD4 QUAD8 QUAD9 TRI3 TRI6 HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 | MAT, NA (`NA Euler` for a fixed mesh, `NA ALE` for a moving one) |
+| SOLIDSCATRA | HEX8 HEX27 TET4 TET10 | MAT, KINEM, TYPE |
+| ALE2 (2D) | QUAD4 QUAD8 QUAD9 TRI3 TRI6 | MAT |
+| ALE3 (3D) | HEX8 HEX20 HEX27 TET4 TET10 WEDGE6 WEDGE15 PYRAMID5 | MAT |
+
+The tables list the ordinary cell types only. Every element type above
+also declares NURBS cells, which are omitted here because they need the
+separate NURBS apparatus (SHAPEFCT, KNOTVECTORS, CP lines) described
+below and are not drop-in replacements.
+
+SOLID owns NO 2D cell type on this build — 2D structural cells belong to
+WALL. Getting this backwards gives
+"Element 'SOLID' does not seem to know cell type 'quad4'."
+(the cell type is echoed in LOWERCASE).
+
+BEING LISTED BY `4C --parameters` IS NOT THE SAME AS WORKING. `--parameters`
+describes the PARSER; some cell types parse and then die at element
+evaluation. Confirmed dead on this build: WALL NURBS4/NURBS9 (the registered
+type for those is WALLNURBS, and the rejection misleadingly says "Unknown
+type 'WALL' of finite element"), and THERMO TRI6/WEDGE15/LINE3/NURBS4/NURBS9,
+which abort with "Element shape TRI6 (6 nodes) not activated. Just do it."
+The tables above list only what was executed successfully.
+
+WALL GP is per direction for quads ("GP 2 2", QUAD9 wants "GP 3 3") but for
+TRI3/TRI6 the SECOND number must be 0: "GP 3 0". "GP 3 3" on a triangle
+aborts with "Unknown number of Gauss points for tri element". WALL EAS full
+is 4-node only.
+
+KINEM takes exactly "linear" or "nonlinear". "nonlinearTotLag" is what 4C
+echoes back internally after parsing "nonlinear"; writing it is rejected with
+"Could not parse parameter 'KINEM': invalid value 'nonlinearTotLag'. Valid
+options are: linear|nonlinear".
+
+NURBS cells of any element type additionally need PROBLEM TYPE/SHAPEFCT:
+"Nurbs", a "<DIS> KNOTVECTORS" section, and control points written as
+"CP <id> COORD x y z <weight>" instead of "NODE". Omitting SHAPEFCT gives
+"Received discretization which is not Nurbs!"; omitting the knotvectors gives
+"cannot get ele knots when filled is false". Some element/cell combinations
+fail hard instead: WALLNURBS with plain NODE lines segfaults with no message
+at all (exit 139). Treat NURBS as a separate exercise, not a drop-in cell
+type.
+An element type that does not exist at all gives
+"Unknown type 'BOGUS' of finite element".
+A missing required key gives
+"Required value 'KINEM' not found in input line".
+
+SOLID optional keys: PRESTRESS_TECH (none|mulf), RAD/AXI/CIR, FIBER1..3,
+TECH, INTEGRATION. TECH exists on only three cell types and with different
+choices each: HEX8 -> none|fbar|eas_mild|eas_full|shell_ans|shell_eas|
+shell_eas_ans; WEDGE6 -> none|shell_ans|shell_eas_ans; PYRAMID5 -> none|fbar.
+Writing TECH on TET4 or HEX20 is fatal. INTEGRATION is usable ONLY where the
+element is written as a YAML MAP - inside ELEMENT_BLOCKS (Route B) or inside
+`STRUCTURE DOMAIN: elements:` (Route C), as
+`INTEGRATION: {RESIDUUM: hex_27point, MASS: hex_8point}`. On an inline
+`STRUCTURE ELEMENTS` string line there is NO syntax that works, and it fails
+in two different ways, and the discriminator is the SYNTAX, not how many
+sub-keys you write. Plain whitespace tokens
+("INTEGRATION RESIDUUM hex_27point MASS hex_8point") abort with
+"Key 'INTEGRATION' cannot be found in the container."; anything using the
+brace form, and the bare keyword, produce NO 4C diagnostic at all - the
+process dies with
+"terminate called after throwing an instance of 'std::bad_any_cast'" and
+shell exit status 134. That line comes from the C++ runtime's terminate
+handler in libstdc++, not from 4C, so grepping the 4C binary for it finds
+nothing - the absence is expected, not evidence it cannot happen.
+
+## 3. COMPLETE RUNNABLE DECK — 3D linear-elastic cantilever, generated mesh
+
 ```yaml
-TITLE:
-  - "Description of the simulation"
 PROBLEM TYPE:
-  PROBLEMTYPE: "Structure"  # or Scalar_Transport, Fluid, etc.
+  PROBLEMTYPE: "Structure"
+STRUCTURE DOMAIN:
+  bottom_corner_point: [0.0, 0.0, 0.0]
+  top_corner_point: [10.0, 1.0, 1.0]
+  subdivisions: [10, 2, 2]
+  elements:
+    SOLID:
+      HEX8:
+        MAT: 1
+        KINEM: nonlinear
 STRUCTURAL DYNAMIC:
   DYNAMICTYPE: "Statics"
-  # ... time integration parameters
+  TIMESTEP: 1.0
+  NUMSTEP: 1
+  MAXTIME: 1.0
+  TOLDISP: 1.0e-10        # update-norm tolerance
+  TOLRES: 1.0e-09         # residual-norm tolerance
+  MAXITER: 30
+  LINEAR_SOLVER: 1
 SOLVER 1:
   SOLVER: "UMFPACK"
+  NAME: "Structure_Solver"
 MATERIALS:
   - MAT: 1
     MAT_Struct_StVenantKirchhoff:
-      YOUNG: 210000
+      YOUNG: 1000.0
       NUE: 0.3
-      DENS: 7.85e-9
-STRUCTURE GEOMETRY:
-  ELEMENT_BLOCKS:
-    - ID: 1
-      SOLID:
-        HEX8:
-          MAT: 1
-          KINEM: linear
-  FILE: mesh.e
+      DENS: 1.0           # REQUIRED even under Statics
+FUNCT1:
+  - SYMBOLIC_FUNCTION_OF_SPACE_TIME: "t"
+DESIGN SURF DIRICH CONDITIONS:
+  - E: 1
+    NUMDOF: 3
+    ONOFF: [1, 1, 1]
+    VAL: [0.0, 0.0, 0.0]
+    FUNCT: [0, 0, 0]
+DESIGN SURF NEUMANN CONDITIONS:
+  - E: 2
+    NUMDOF: 3
+    ONOFF: [0, 0, 1]
+    VAL: [0.0, 0.0, -1.0]
+    FUNCT: [0, 0, 1]
+    TYPE: "Live"
+DSURF-NODE TOPOLOGY:
+  - "SIDE structure x- DSURFACE 1"
+  - "SIDE structure x+ DSURFACE 2"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 1
+IO/RUNTIME VTK OUTPUT/STRUCTURE:
+  OUTPUT_STRUCTURE: true
+  DISPLACEMENT: true
+RESULT DESCRIPTION:
+  - STRUCTURE:
+      DIS: "structure"
+      NODE: 1
+      QUANTITY: "dispz"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30    # record mode: prints abs(diff) = the true value
 ```
 
-## Key Rules
-1. Section names are ALL CAPS: STRUCTURAL DYNAMIC, not Structural Dynamic
-2. PROBLEMTYPE determines which *_DYNAMIC section is read
-3. Each physics needs its own GEOMETRY section (STRUCTURE, FLUID, TRANSPORT)
-4. Materials are listed under MATERIALS with MAT: <id>
-5. Solvers are SOLVER 1, SOLVER 2, etc.
-6. Boundary conditions reference node/surface sets by ID (ENTITY_TYPE: node_set_id)
+## 4. COMPLETE RUNNABLE DECK — transient heat conduction (PROBLEMTYPE Thermo)
 
-## Common Mistakes
-- Using wrong section name (SCATRA DYNAMIC vs SCALAR TRANSPORT DYNAMIC)
-- Missing VELOCITYFIELD: zero for pure diffusion
-- Using NUMDOF inconsistently with the physics
-- Forgetting to set KINEM: nonlinear for large-deformation problems
-- Missing DENS in dynamics (zero mass matrix = singular)
+```yaml
+PROBLEM TYPE:
+  PROBLEMTYPE: "Thermo"
+THERMO DOMAIN:
+  bottom_corner_point: [0.0, 0.0, 0.0]
+  top_corner_point: [1.0, 0.2, 0.2]
+  subdivisions: [10, 2, 2]
+  elements:
+    THERMO:
+      HEX8:
+        MAT: 1
+THERMAL DYNAMIC:
+  DYNAMICTYPE: "OneStepTheta"
+  TIMESTEP: 0.01
+  NUMSTEP: 20
+  MAXTIME: 0.2
+  INITIALFIELD: "zero_field"
+  TOLTEMP: 1.0e-10
+  TOLRES: 1.0e-08
+  MAXITER: 30
+  LINEAR_SOLVER: 1
+THERMAL DYNAMIC/ONESTEPTHETA:
+  THETA: 1.0               # 1.0 = backward Euler, 0.5 = Crank-Nicolson
+SOLVER 1:
+  SOLVER: "UMFPACK"
+  NAME: "Thermo_Solver"
+MATERIALS:
+  - MAT: 1
+    MAT_Fourier:
+      CAPA: 1.0
+      CONDUCT:
+        constant: [1.0]    # tensor-typed: a bare scalar is rejected
+DESIGN SURF DIRICH CONDITIONS:   # PLAIN, *not* SURF THERMO DIRICH
+  - E: 1
+    NUMDOF: 1                    # one temperature DOF
+    ONOFF: [1]
+    VAL: [100.0]
+    FUNCT: [0]
+DSURF-NODE TOPOLOGY:
+  - "SIDE thermo x- DSURFACE 1"
+IO/RUNTIME VTK OUTPUT:
+  INTERVAL_STEPS: 5
+THERMAL DYNAMIC/RUNTIME VTK OUTPUT:
+  OUTPUT_THERMO: true
+  TEMPERATURE: true
+RESULT DESCRIPTION:
+  - THERMAL:                     # THERMAL, not THERMO
+      DIS: "thermo"
+      NODE: 1
+      QUANTITY: "temp"
+      VALUE: 0.0
+      TOLERANCE: 1.0e30
+```
+
+For contact, ask for the `contact` physics knowledge — it carries its own
+complete deck plus the three sections contact adds.
+
+## 5. Key rules
+1. Section names are ALL CAPS and exact. A typo is fatal, never ignored.
+2. PROBLEMTYPE selects which *_DYNAMIC section is read; the rest are ignored.
+3. Each field needs ONE mesh route (inline / GEOMETRY / DOMAIN), never two.
+4. Materials live under MATERIALS as `- MAT: <id>` then the material's own
+   key as a nested mapping.
+5. Solvers are SOLVER 1, SOLVER 2, ... and every LINEAR_SOLVER integer in the
+   deck must name one that exists.
+6. ONOFF, VAL and FUNCT must each have exactly NUMDOF entries - THAT is what
+   4C enforces, and an inconsistent block is rejected with "Could not match
+   this input". The physical count (3 for 3D structure, 2 for 2D structure, 1
+   for thermal and scalar transport) is what you SHOULD write, but a
+   self-consistent oversized block - NUMDOF: 3 with three-entry arrays on a
+   scalar field - runs with exit 0 and the same answer. So a wrong NUMDOF is
+   a silent modelling error, not a caught one.
+7. Convergence is controlled by TOLDISP+TOLRES (structure) or TOLTEMP+TOLRES
+   (thermal); both members of the pair must be met by default
+   (NORMCOMBI_RESFDISP / NORMCOMBI_RESFTEMP: "And"). ONLY the structural
+   solver echoes them: it prints `Structure-Update-Norm = ... < <your
+   TOLDISP>` and `Structure-F-Norm = ... < <your TOLRES>`. The thermal
+   integrator is not NOX and prints no tolerance at all - just a numiter /
+   abs-res-norm / abs-temp-norm table - so do not try to confirm a thermal
+   tolerance by grepping the log.
+8. Runtime VTK needs BOTH the parent `IO/RUNTIME VTK OUTPUT` section AND the
+   per-field one with at least one field flag set; either alone writes
+   nothing. Scalar transport is the exception: it writes .vtu automatically
+   and has NO runtime-VTK section at all.
+9. Add a RESULT DESCRIPTION entry so a wrong answer becomes a non-zero exit
+   code instead of a silent success. Run once with TOLERANCE: 1.0e30 to read
+   the true value out of `abs(diff)`, then tighten.
+10. Capture output through `stdbuf -oL -eL` — 4C aborts via MPI_Abort and a
+    block-buffered stdout (including a plain file redirect) loses the
+    diagnostic.
+
+## 6. Common mistakes
+- Wrong section name: SCATRA DYNAMIC instead of SCALAR TRANSPORT DYNAMIC;
+  XFLUID DYNAMIC instead of XFLUID DYNAMIC/GENERAL; EHL DYNAMIC instead of
+  ELASTO HYDRO DYNAMIC; FBI DYNAMIC instead of FLUID BEAM INTERACTION;
+  PORO GEOMETRY instead of POROELASTICITY DYNAMIC;
+  IO/RUNTIME VTK OUTPUT/PARTICLES — no such section, particle output is
+  configured inside PARTICLE DYNAMIC.
+- `SOLID QUAD4` in 2D when SOLID owns no 2D cell type — use WALL with all
+  six of its keys.
+- Missing DENS in a structural material (zero mass matrix = singular).
+- Forgetting KINEM: nonlinear for large-deformation problems.
+- In a standalone PROBLEMTYPE: Thermo run, using the THERMO-prefixed
+  condition sections (DESIGN SURF THERMO DIRICH CONDITIONS). They parse
+  cleanly and are then silently dropped, leaving the temperature at its
+  initial value with exit 0. Use the plain DESIGN SURF DIRICH CONDITIONS.
 """
 
 _FENICS_INPUT_GUIDE = """\

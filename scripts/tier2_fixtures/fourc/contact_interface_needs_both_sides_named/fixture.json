@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::contact#1, and a FALSIFICATION of its Signal. The rule holds — a mortar contact interface needs a Slave and a Master sharing an InterfaceID — but neither quoted log line exists in 4C ('no master partner found for interface X', 'MortarInterface: InterfaceID X has 0 master elements'), and CLAIMED_INTERFACE_TEXTS=0 pins that. Both real failures come from contact/src/4C_contact_utils.cpp, and the message depends on how the group is malformed rather than on which side is absent: marking both surfaces Slave gives 'Master side missing in contact condition group!', while listing only one surface gives 'Not enough contact conditions in discretization', which never names a side at all (ONESIDED_MESSAGE_NAMES_A_SIDE=no) and so reads like a missing-section problem instead of a missing-partner one. The paired control builds the interface and reaches a four-node active set. Distinct from the contact#0 fixture, which covers the two-Master and mismatched-ID cases. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) on a self-contained two-block penalty deck.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PAIRED=0",
+    "EXIT_TWOSLAVES=1",
+    "EXIT_ONESIDED=1",
+    "Building contact interface",
+    "processor 0 finished normally",
+    "Master side missing in contact condition group!",
+    "4C_contact_utils.cpp",
+    "Not enough contact conditions in discretization",
+    "CLAIMED_INTERFACE_TEXTS=0",
+    "ONESIDED_MESSAGE_NAMES_A_SIDE=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_PAIRED=1",
+    "EXIT_TWOSLAVES=0",
+    "EXIT_ONESIDED=0",
+    "PAIRED_ACTIVE_SET_NONZERO=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the two-Slave arm: give the second surface its Master role back. That arm then runs to completion and 'Master side missing' disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"$TWO_SLAVES\" > \"$TMP/two_slaves.yaml\"",
+      "to": "deck \"$PAIRED\" > \"$TMP/two_slaves.yaml\""
+    },
+    {
+      "note": "remove the pathology from the single-sided arm: list both surfaces. That arm then runs to completion and 'Not enough contact conditions in discretization' disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"$ONE_SIDED\"  > \"$TMP/one_sided.yaml\"",
+      "to": "deck \"$PAIRED\"  > \"$TMP/one_sided.yaml\""
+    }
+  ]
+}

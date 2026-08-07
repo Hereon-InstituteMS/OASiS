@@ -1,0 +1,57 @@
+{
+  "_comment": "Tier-2 for fourc::fluid#2 — 'Fluid_Ale' is the exact enum spelling, ALE DYNAMIC really is required, and choosing the wrong problem type for an ALE deck is the failure with no diagnostic. Baseline is the upstream deck f2_loc_sys_bc_ale.4C.yaml, mutated in one place per arm. Untouched it exits 0 with four result tests CORRECT and none WRONG. With the ALE DYNAMIC block deleted (NOALE_DECK_HAS_ALE_DYNAMIC=0) it exits 1 from src/adapter/4C_adapter_ale.cpp with 'No linear solver defined for ALE problems. Please set LINEAR_SOLVER in ALE DYNAMIC to a valid number!' — the message names the key inside the section rather than the missing section. PROBLEMTYPE 'Fluid_ALE' is rejected with \"Candidate deprecated_selection 'PROBLEMTYPE' has wrong value\" and the whole legal enum printed, which contains |Fluid_Ale| (ENUM_LIST_CONTAINS_FLUID_ALE=1). PROBLEMTYPE 'Fluid' on the same deck segfaults: exit 139 with 'Signal: Segmentation fault (11)', not one 'PROC 0 ERROR in' line (PLAIN_ERROR_LINES=0) and no result test reached (PLAIN_REACHED_RESULT_TEST=0); reproduced three times. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "fluid",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "NOALE_DECK_HAS_ALE_DYNAMIC=0",
+    "EXIT_BASE=0",
+    "EXIT_NOALE=1",
+    "EXIT_CASE=1",
+    "EXIT_PLAIN=139",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "BASE_RESULT_PASSES=4",
+    "No linear solver defined for ALE problems. Please set LINEAR_SOLVER in ALE DYNAMIC to a valid number!",
+    "4C_adapter_ale.cpp",
+    "Candidate deprecated_selection 'PROBLEMTYPE' has wrong value",
+    "ENUM_LIST_CONTAINS_FLUID_ALE=1",
+    "PLAIN_ERROR_LINES=0",
+    "PLAIN_REACHED_RESULT_TEST=0",
+    "Signal: Segmentation fault (11)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "upstream_deck_changed",
+    "EXIT_BASE=1",
+    "EXIT_NOALE=0",
+    "EXIT_CASE=0",
+    "EXIT_PLAIN=0",
+    "NOALE_DECK_HAS_ALE_DYNAMIC=1",
+    "PLAIN_REACHED_RESULT_TEST=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the deletion arm: keep ALE DYNAMIC. NOALE_DECK_HAS_ALE_DYNAMIC becomes 1, EXIT_NOALE goes to 0 and the adapter diagnostic disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(sys.argv[2], \"w\").write(t[:i] + t[j:])",
+      "to": "open(sys.argv[2], \"w\").write(t)"
+    },
+    {
+      "note": "remove the pathology from the enum arm: write the enum value with the case 4C expects. EXIT_CASE goes to 0, the printed enum list disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^  PROBLEMTYPE: \"Fluid_Ale\"|  PROBLEMTYPE: \"Fluid_ALE\"|' \"$BASE\" > \"$TMP/case.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/case.yaml\""
+    },
+    {
+      "note": "remove the pathology from the wrong-problem-type arm: leave the problem type alone. EXIT_PLAIN goes to 0, the segfault line disappears and PLAIN_REACHED_RESULT_TEST stops being 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^  PROBLEMTYPE: \"Fluid_Ale\"|  PROBLEMTYPE: \"Fluid\"|'     \"$BASE\" > \"$TMP/plain.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/plain.yaml\""
+    }
+  ]
+}

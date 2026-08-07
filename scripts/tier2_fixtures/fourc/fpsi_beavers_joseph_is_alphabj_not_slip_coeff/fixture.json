@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::fpsi#6, and a FALSIFICATION of both the key it names and the default it assumes. The entry said 'omitting BJS defaults to no-slip' and told the reader to 'set the SLIP_COEFF in DESIGN FPSI COUPLING SURF CONDITIONS'. That condition accepts only E / ENTITY_TYPE / NODE_SET_NAME / coupling_id, so SLIP_COEFF is rejected at parse time with 'Could not match this input' from core/fem/src/condition/4C_fem_condition_definition.cpp line 79. The real key is FPSI DYNAMIC/ALPHABJ, described in fpsi/4C_fpsi_input.cpp as the Beavers-Joseph-Coefficient for the slip boundary condition at the fluid-porous interface with documented range 0.1-4, and its default is 1.0, not no-slip: on upstream fpsi_ofsiinterface.4C.yaml writing ALPHABJ: 1.0 explicitly reproduces the untouched deck exactly (both arms 0 failed tests), while ALPHABJ: 4.0 moves the answer enough to fail both 1e-10 result tests. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fpsi",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "SLIPCOEFF_IN_DECK=1",
+    "BIG_ARM_[ALPHABJ:4.0]",
+    "EXIT_DEFAULT=0",
+    "EXIT_SLIPCOEFF=1",
+    "EXIT_ALPHABJ1=0",
+    "EXIT_ALPHABJ4=1",
+    "OK (2)",
+    "Could not match this input",
+    "4C_fem_condition_definition.cpp",
+    "Result check failed with 2 errors out of 2 tests",
+    "is WRONG --> actresult=",
+    "EXPLICIT_ALPHABJ1_FAILED_TESTS=0",
+    "DEFAULT_FAILED_TESTS=0",
+    "ALPHABJ4_FAILED_TESTS=2",
+    "SLIPCOEFF_ACCEPTED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEFAULT=1",
+    "EXIT_SLIPCOEFF=0",
+    "EXIT_ALPHABJ1=1",
+    "EXIT_ALPHABJ4=0",
+    "SLIPCOEFF_IN_DECK=0",
+    "ALPHABJ4_FAILED_TESTS=0",
+    "BIG_ARM_[ALPHABJ:1.0]"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the fabricated-key pathology: stop injecting SLIP_COEFF. SLIPCOEFF_IN_DECK drops to 0 (a forbidden token) and the parse abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "CLAIMED_CONDITION_KEY='    SLIP_COEFF: 1.0'",
+      "to": "CLAIMED_CONDITION_KEY=''"
+    },
+    {
+      "note": "remove the coefficient contrast: set the big arm to the default 1.0. BIG_ARM_[ALPHABJ:1.0] is a forbidden token, ALPHABJ4_FAILED_TESTS drops to 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "BIG_ALPHABJ=4.0",
+      "to": "BIG_ALPHABJ=1.0"
+    }
+  ]
+}

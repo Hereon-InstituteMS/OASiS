@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::solid_mechanics#2, and a FALSIFICATION of the claim that DENS 'can be omitted' for quasi-static problems. DENS is required:true in MAT_Struct_StVenantKirchhoff, so deleting the line is a parse error ('Could not match this input' from core/io/src/4C_io_input_spec_builders.cpp), not a default. Its VALUE is genuinely inert under Statics without gravity: the same single-HEX8 deck with DENS 1.0 and with DENS 0.0 both exit 0 and both pass the same result test pinned to 1e-10 (STATICS_DENS0_RESULT_FAILURES=0). Under DYNAMICTYPE GenAlpha the same DENS 0.0 throws 'You are about to invert a singular matrix!' from structure_new/4C_structure_new_integrator.cpp before any step is finalised. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "linear_elasticity",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STATICS_DENS1=0",
+    "EXIT_STATICS_DENS0=0",
+    "EXIT_NO_DENS=1",
+    "EXIT_GENALPHA_DENS0=1",
+    "processor 0 finished normally",
+    "STATICS_DENS0_RESULT_FAILURES=0",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "You are about to invert a singular matrix!",
+    "4C_structure_new_integrator.cpp",
+    "GENALPHA_DENS0_STEPS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NO_DENS=0",
+    "EXIT_GENALPHA_DENS0=0",
+    "EXIT_STATICS_DENS0=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the omitted-key arm: put DENS back. The parse error vanishes and EXIT_NO_DENS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck Statics  \"\"                   \"$TMP/sx.4C.yaml\"",
+      "to": "deck Statics  $'\\n      DENS: 1.0' \"$TMP/sx.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the transient arm: give it a physical density. The singular-matrix throw vanishes and EXIT_GENALPHA_DENS0 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck GenAlpha $'\\n      DENS: 0.0' \"$TMP/g0.4C.yaml\"",
+      "to": "deck GenAlpha $'\\n      DENS: 1.0' \"$TMP/g0.4C.yaml\""
+    }
+  ]
+}

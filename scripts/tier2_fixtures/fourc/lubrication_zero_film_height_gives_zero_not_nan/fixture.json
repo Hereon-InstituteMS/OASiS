@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#2, and a FALSIFICATION of its Signal. The entry claimed 'h(x) -> 0 gives pressure NaN at the first time step (1/h^3 in the viscous term)'. On upstream lubrication_sb_2d.4C.yaml, replacing the height function by 0.0 gives pressure EXACTLY 0.0 — no NaN, no Inf, no zero pivot, no solver complaint, five clean Newton tables — because h enters multiplicatively (h^3 grad p) and never divides. h = 1e-14 behaves identically. What DOES abort is omitting HEIGHTFEILD/HFUNCNO, and the diagnostic is about the FUNCT id, not the film: 'Function with index -1 (i.e. input FUNCT-1) not available.' from core/utils/src/functions/4C_utils_function_manager.hpp, raised from Lubrication::TimIntImpl::set_height_field_pure_lub. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BASELINE=0",
+    "EXIT_ZEROH=1",
+    "EXIT_NOHFUNC=1",
+    "is CORRECT, abs(diff)=",
+    "is WRONG --> actresult=",
+    "ZERO_HEIGHT_PRESSURE_IS_EXACTLY_ZERO=yes",
+    "CLAIMED_NAN_OR_INF=0",
+    "ZERO_HEIGHT_SOLVER_COMPLAINTS=0",
+    "Function with index -1 (i.e. input FUNCT-1) not available.",
+    "4C_utils_function_manager.hpp",
+    "set_height_field_pure_lub"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASELINE=1",
+    "EXIT_ZEROH=0",
+    "EXIT_NOHFUNC=0",
+    "ZERO_HEIGHT_PRESSURE_IS_EXACTLY_ZERO=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the h -> 0 pathology: give the ZEROH arm the upstream height function. Its pressure is then the baseline value, so ZERO_HEIGHT_PRESSURE_IS_EXACTLY_ZERO flips to 'no' and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "ZERO_HEIGHT='0.0'",
+      "to": "ZERO_HEIGHT='(0.045)-(x*0.5e-3)'"
+    },
+    {
+      "note": "remove the missing-height-field pathology: stop deleting HEIGHTFEILD/HFUNCNO. The FUNCT-id abort and its file name vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(sys.argv[2], \"w\").write(t.replace(blk, \"\"))",
+      "to": "open(sys.argv[2], \"w\").write(t)"
+    }
+  ]
+}

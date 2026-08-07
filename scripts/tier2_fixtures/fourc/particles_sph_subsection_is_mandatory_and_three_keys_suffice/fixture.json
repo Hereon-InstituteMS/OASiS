@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::particles#0. The rule holds — PARTICLE DYNAMIC/SPH is mandatory even for a pure bond-based PD body — but the Signal is fabricated and the quoted symptom would condemn a correct deck. Deleting the sub-section from upstream particle_sph_2d_pdbody_gravity.4C.yaml aborts with 'negative initial particle spacing!' from particle/src/interaction/4C_particle_interaction_sph.cpp line 249 before a single time step: INITIALPARTICLESPACING lives there and its default of -1 is caught at setup, so there is no 'no-force simulation' and no displacement to inspect. Meanwhile the HEALTHY baseline prints 'Number of pd_neighbor_pairs in peridynamic evaluation on this proc: 0' on 1940 of its 3001 steps, because that counter is the body-to-body contact pair list and not the bond list. The entry's remedy is confirmed exactly: cutting the SPH block to the three keys it names (KERNEL, KERNEL_SPACE_DIM, INITIALPARTICLESPACING) keeps the same 1512 initialised bonds and reproduces all ten result values with abs(diff) exactly 0.00000000000000000e+00. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "SPH_KEYS_FULL=5",
+    "SPH_KEYS_MINIMAL=3",
+    "EXIT_FULL=0",
+    "EXIT_MINSPH=0",
+    "EXIT_NOSPH=1",
+    "processor 0 finished normally",
+    "FULL_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "MINSPH_FAILURES=0",
+    "MINSPH_EXACT_ZERO_DIFFS=10",
+    "negative initial particle spacing!",
+    "4C_particle_interaction_sph.cpp, line 249",
+    "NOSPH_TIME_STEPS_RUN=0",
+    "CLAIMED_PD_NEIGHBOR_PAIRS_EQUALS_ZERO_TEXT=0",
+    "FULL_STEPS_WITH_ZERO_PD_NEIGHBOR_PAIRS=1940"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FULL=1",
+    "EXIT_MINSPH=1",
+    "EXIT_NOSPH=0",
+    "MINSPH_EXACT_ZERO_DIFFS=0",
+    "FULL_STEPS_WITH_ZERO_PD_NEIGHBOR_PAIRS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the SPH sub-section in the third arm instead of deleting it. That arm then runs like the baseline, the 'negative initial particle spacing!' abort disappears, NOSPH_TIME_STEPS_RUN becomes 3001 and EXIT_NOSPH becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[4], \"w\").write(t.replace(old, \"\"))",
+    "to": "open(sys.argv[4], \"w\").write(t)"
+  }
+}

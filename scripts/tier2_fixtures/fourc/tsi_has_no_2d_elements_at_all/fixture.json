@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#0. A minimal DIM 2 Thermo_Structure_Interaction deck with one QUAD4 dies for every element category: WALL gives 'Unsupported solid element type!' from src/tsi/4C_tsi_utils.cpp, SOLID and SOLIDSCATRA both give \"Element '<name>' does not seem to know cell type 'quad4'.\" from 4C_fem_general_element_definition.cpp — all exit 1 — while upstream tsi_lincompression_1waydisp (3D, SOLIDSCATRA HEX8) runs to 'processor 0 finished normally'. The rule holds; one quoted signal does not. The claim attributed the WALL failure to 'Invalid type of material law for wall element' at 4C_w1_mat.cpp:179. That string exists in the source but is never reached (CLAIMED_W1_MAT_MESSAGE=0, CLAIMED_W1_MAT_FILE=0): TSI's clone strategy rejects a non-SolidScatra element before any material is evaluated, and the message it prints names neither the material nor the WALL element (WALL_DIAGNOSTIC_NAMES_WALL=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WALL_2D=1",
+    "EXIT_SOLID_2D=1",
+    "EXIT_SOLIDSCATRA_2D=1",
+    "EXIT_SOLIDSCATRA_3D=0",
+    "processor 0 finished normally",
+    "Unsupported solid element type!",
+    "4C_tsi_utils.cpp",
+    "Element 'SOLID' does not seem to know cell type 'quad4'.",
+    "Element 'SOLIDSCATRA' does not seem to know cell type 'quad4'.",
+    "4C_fem_general_element_definition.cpp",
+    "CLAIMED_W1_MAT_MESSAGE=0",
+    "CLAIMED_W1_MAT_FILE=0",
+    "WALL_DIAGNOSTIC_NAMES_WALL=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SOLIDSCATRA_3D=1",
+    "EXIT_SOLIDSCATRA_2D=0",
+    "EXIT_SOLID_2D=0",
+    "EXIT_WALL_2D=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the SOLIDSCATRA arm in 3D by giving it a HEX8 line on the same 2D deck. The cell type is then known, the 'does not seem to know cell type quad4' line for SOLIDSCATRA disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck2d \"SOLIDSCATRA QUAD4 1 2 3 4 MAT 1 KINEM linear TYPE Undefined\"",
+    "to": "deck2d \"SOLIDSCATRA HEX8 1 2 3 4 1 2 3 4 MAT 1 KINEM linear TYPE Undefined\""
+  }
+}

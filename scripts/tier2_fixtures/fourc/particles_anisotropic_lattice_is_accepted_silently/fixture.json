@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::particles#2, confirmed and made countable. Halving only the y-coordinates of the 162 pdphase particles of upstream particle_sph_2d_pdbody_gravity.4C.yaml turns the square lattice into dx=1.0 / dy=0.5 while leaving PERIDYNAMIC_GRID_SPACING at 1.0 and INTERACTION_HORIZON at 3.0, so the horizon reaches 3 particle rows in x and 6 in y. 4C accepts it in total silence — zero lines matching spacing, non-uniform, packing or anisotropic — and the only trace is the bond list growing from 1512 to 2338 for the same particle count, i.e. each particle acquires far more partners along the dense axis while every bond is still weighted with the single scalar dx^4 volume correction. That is the anisotropic stiffness the entry warns about. All 3001 steps then run and 8 of the 10 result tests fail, particle 132 landing at posx 8.02483754744231881e+00 against the reference 7.92632290305826448e+00. The claim's 'visibly anisotropic wave propagation' is not a 4C diagnostic; the bond count is. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "PDPHASE_PARTICLES=162",
+    "NEIGHBOUR_ROWS_X=3",
+    "NEIGHBOUR_ROWS_Y=6",
+    "EXIT_UNIFORM=0",
+    "EXIT_ANISO=1",
+    "processor 0 finished normally",
+    "UNIFORM_FAILURES=0",
+    "BONDS_UNIFORM=1512",
+    "BONDS_ANISO=2338",
+    "ANISO_SPACING_WARNINGS=0",
+    "ANISO_STEPS_RUN=3001",
+    "ANISO_FAILURES=8",
+    "is WRONG --> actresult= 8.02483754744231881e+00"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_UNIFORM=1",
+    "EXIT_ANISO=0",
+    "ANISO_FAILURES=0",
+    "BONDS_ANISO=1512"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the y spacing alone so the second arm keeps the square lattice. It then reproduces the baseline exactly, BONDS_ANISO falls back to 1512, ANISO_FAILURES becomes 0 and EXIT_ANISO becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "        y = float(m.group(3)) * 0.5          # halve only the y spacing",
+    "to": "        y = float(m.group(3))"
+  }
+}

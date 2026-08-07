@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::cardiovascular0d#2. Cavity 0 of upstream cardiovascular0d_4elementwindkessel_structure_direct_genalpha is DSURFACE 3 = all eight nodes of the first HEX8, the closed boundary of a 10x10x10 cube; 4C prints '0 V:' near -1.0e+03 each step and the run exits 0 with three result tests correct. Dropping nodes 5..8 leaves one face and the printed volume becomes -1.6666666666666666e+02 and never changes (OPEN_DISTINCT_CAVITY0_VOLUMES=1) -- exactly (1/3)*(-5)*100, the divergence-theorem integral over the single remaining face, a sixth of the truth and constant, so the 0D model sees a rigid cavity. NOX then gives up with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp and no result test runs; nothing in that message mentions the cavity surface (OPEN_CAVITY_DIAGNOSTICS=0). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiovascular0d",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CLOSED=0",
+    "EXIT_OPEN=1",
+    "CLOSED_TESTS_CORRECT=3",
+    "OPEN_REACHED_RESULT_TEST=0",
+    "processor 0 finished normally",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "CLOSED_CAVITY0_VOLUMES=10",
+    "0 V: -1.6666666666666666e+02",
+    "OPEN_DISTINCT_CAVITY0_VOLUMES=1",
+    "OPEN_VOLUME_IS_ONE_FACE_INTEGRAL=1",
+    "OPEN_CAVITY_DIAGNOSTICS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLOSED=1",
+    "EXIT_OPEN=0",
+    "OPEN_REACHED_RESULT_TEST=1",
+    "OPEN_VOLUME_IS_ONE_FACE_INTEGRAL=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the cavity boundary closed in the OPEN arm. The volume goes back to ~-1.0e+03 and varies per step, NOX converges, EXIT_OPEN becomes 0 and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "OPEN_THE_CAVITY=yes",
+    "to": "OPEN_THE_CAVITY=no"
+  }
+}

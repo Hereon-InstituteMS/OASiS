@@ -1,0 +1,54 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#3. A 1-element HEX8 deck that exits 0 is given, in turn, three section names the catalogue calls out as wrong. All three abort with the offending name quoted: \"Section 'EVERY_ITERATION' is not a valid section name.\", the same for the transposed 'DESIGN THERMO LINE DIRICH CONDITIONS', and the same for 'DESIGN FLUID LINE LIFT&DRAG' — all from core/io/src/4C_io_input_file.cpp line 546. A fourth arm distinguishes the neighbouring failure: the real section IO carrying a key it does not own ('BANANA') gives 'Could not match this input' from 4C_io_input_spec_builders.cpp line 633 and never blames the section NAME (BADKEY_BLAMED_THE_SECTION_NAME=0). The binary's own schema is then queried for the same names: 'DESIGN LINE THERMO DIRICH CONDITIONS' is present (1), the transposed spelling is absent (0), LIFT&DRAG exists as SURF (1) and not as LINE (0), EVERY_ITERATION is absent (0), and the schema declares 251 DESIGN sections in total. Sections appear in the dump as '    - name: <NAME>' under the top-level 'sections:' key, which is why the plain 'grep DESIGN' recipe needs that prefix. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_EVERYITER=1",
+    "EXIT_TRANSPOSED=1",
+    "EXIT_LIFTDRAG=1",
+    "EXIT_BADKEY=1",
+    "processor 0 finished normally",
+    "Section 'EVERY_ITERATION' is not a valid section name.",
+    "Section 'DESIGN THERMO LINE DIRICH CONDITIONS' is not a valid section name.",
+    "Section 'DESIGN FLUID LINE LIFT&DRAG' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "BADKEY_BLAMED_THE_SECTION_NAME=0",
+    "SCHEMA_HAS_DESIGN_LINE_THERMO_DIRICH=1",
+    "SCHEMA_HAS_DESIGN_THERMO_LINE_DIRICH=0",
+    "SCHEMA_HAS_FLUID_SURF_LIFTDRAG=1",
+    "SCHEMA_HAS_FLUID_LINE_LIFTDRAG=0",
+    "SCHEMA_HAS_EVERY_ITERATION=0",
+    "SCHEMA_DESIGN_SECTION_COUNT=251"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_EVERYITER=0",
+    "EXIT_TRANSPOSED=0",
+    "EXIT_LIFTDRAG=0",
+    "BADKEY_BLAMED_THE_SECTION_NAME=1",
+    "SCHEMA_HAS_DESIGN_LINE_THERMO_DIRICH=0",
+    "SCHEMA_HAS_DESIGN_THERMO_LINE_DIRICH=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the transposed arm: write the spelling the schema actually declares. That arm then runs to completion, the section-name diagnostic vanishes, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk 'DESIGN THERMO LINE DIRICH CONDITIONS:",
+      "to": "mk 'DESIGN LINE THERMO DIRICH CONDITIONS:"
+    },
+    {
+      "note": "remove the pathology from the EVERY_ITERATION arm: drop the invented section. That arm exits 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk 'EVERY_ITERATION:\n  OUTPUT: true' \"$TMP/everyiter.yaml\"",
+      "to": "mk '' \"$TMP/everyiter.yaml\""
+    }
+  ]
+}

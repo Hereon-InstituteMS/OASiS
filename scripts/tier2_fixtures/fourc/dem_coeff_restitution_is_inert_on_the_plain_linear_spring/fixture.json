@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#10. COEFF_RESTITUTION added to a deck using the default NormalLinearSpring leaves the result verdicts BIT-IDENTICAL (cmp on the extracted verdict lines, not a tolerance), the deck still passes, and UNUSED_PARAM_WARNINGS=0 shows no unused-parameter diagnostic anywhere. An identity assertion is satisfied a fortiori by two identical runs, so it needs a positive control to be worth anything: STIFFER changes NORMAL_STIFF, a parameter this law DOES use, and the same comparison separates it (IDENTITY_IS_INFORMATIVE=yes). NOT-DISCRIMINATING, recorded rather than papered over: the equality assertion is STRUCTURALLY immune to mutation. The first version of this fixture SURVIVED its mutation, because making the two compared decks identical satisfies the equality even harder, and the positive control runs on a third deck the mutation does not touch. The fixture was not tuned until it passed. What was added is a guard for a different and real defect -- PATHOLOGY_PRESENT checks that the deck under test actually carries COEFF_RESTITUTION, and CONTROL_DECK_IS_CLEAN that the reference does not -- so a silently failed edit can no longer look like a confirmed inertness. The mutation now dies on that guard. Be clear about what that means: the mutation proves the fixture notices when the key is absent, NOT that the equality would catch a non-inert parameter. Only IDENTITY_IS_INFORMATIVE speaks to the latter, and it does so by showing the same comparison separates a parameter the law does use. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "PATHOLOGY_PRESENT=yes",
+    "CONTROL_DECK_IS_CLEAN=yes",
+    "EXIT_PLAIN=0",
+    "EXIT_WITHREST=0",
+    "VERDICT_LINES=4",
+    "RESTITUTION_IS_INERT=yes",
+    "IDENTITY_IS_INFORMATIVE=yes",
+    "UNUSED_PARAM_WARNINGS=0",
+    "WITHREST_STILL_PASSES=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "RESTITUTION_IS_INERT=no",
+    "IDENTITY_IS_INFORMATIVE=no",
+    "VERDICT_LINES=0",
+    "PATHOLOGY_PRESENT=no",
+    "CONTROL_DECK_IS_CLEAN=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

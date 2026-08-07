@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#8. Upstream tsi_lincompression_iterstaggdisp (two-way tsi_iterstagg) run twice; the mutant adds exactly one section, DESIGN VOL THERMO DIRICH CONDITIONS at 300.0 on the DVOL that already lists all 12 nodes. Baseline: mechanical heating solves the thermal field up to 347.234 at the three tested nodes, all result tests CORRECT, exit 0. Pinned: all three nodes read exactly 3.00000000000000000e+02 — the prescribed value, not a solution (PINNED_NODES_AT_PRESCRIBED_300=3) — and the displacement moves with it, ux(x=4) going from -7.59637513170070999e-01 to -7.61904761904762196e-01, because the feedback it lost was real. 4C emits no diagnostic in either run (PINNED_CONVERGENCE_COMPLAINTS=0): the coupling iteration converges happily and answers a different question. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_FREE=0",
+    "EXIT_PINNED=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "PINNED_NODES_AT_PRESCRIBED_300=3",
+    "is WRONG --> actresult= 3.00000000000000000e+02, givenresult= 3.47234354640127151e+02",
+    "is WRONG --> actresult=-7.61904761904762196e-01",
+    "PINNED_CONVERGENCE_COMPLAINTS=0",
+    "FREE_CONVERGENCE_COMPLAINTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FREE=1",
+    "EXIT_PINNED=0",
+    "PINNED_NODES_AT_PRESCRIBED_300=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: prescribe nothing, i.e. leave the upstream deck alone in the second arm too. The thermal field is then solved, reaches 347.234, EXIT_PINNED becomes 0 and PINNED_NODES_AT_PRESCRIBED_300 drops to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(anchor, blk, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)                            "
+  }
+}

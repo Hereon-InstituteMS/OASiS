@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#3 and a FALSIFICATION. The entry claimed 4C aborts with 'XFEM: material map needs MAT_NEGATIVE and MAT_POSITIVE'. The tokens MAT_NEGATIVE and MAT_POSITIVE appear nowhere in the 4C source. The DESIGN XFEM LEVELSET TWOPHASE VOL CONDITIONS spec carries only E, COUPLINGID, LEVELSETFIELDNO, BOOLEANTYPE and COMPLEMENTARY, so adding the two claimed keys is rejected as unmatched condition input that echoes 'MAT_NEGATIVE: 1' back as unused. A correctly spelled two-phase condition is accepted by the parser and then dies in Core::Elements::Element::location_vector with 'wrong number of nodes' from 4C_fem_general_element.cpp -- the only two upstream decks that mention the condition leave it as an empty list. Two-phase level-set XFEM is not configurable the way the entry described. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 3,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TWOPHASE=1",
+    "EXIT_MATMAP=1",
+    "Failed to match condition specification in section 'DESIGN XFEM LEVELSET TWOPHASE VOL CONDITIONS'",
+    "MAT_NEGATIVE: 1",
+    "wrong number of nodes",
+    "4C_fem_general_element.cpp",
+    "CLAIMED_MATERIAL_MAP_TEXT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop adding the claimed material-map keys, so the second arm is just the plain two-phase condition. The condition-spec rejection and the echoed MAT_NEGATIVE line vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    tp.replace(\"    COMPLEMENTARY: false\",",
+    "to": "    tp.replace(\"    COMPLEMENTARY_ABSENT: false\","
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TWOPHASE=0",
+    "EXIT_MATMAP=0"
+  ]
+}

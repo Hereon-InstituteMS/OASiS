@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::beams#2, and a FALSIFICATION of its Signal. The rule (TRIADS is required for BEAM3R) holds. The stated symptom does not: there is no 'zero initial rotation reference', no undefined first load step and no random initial twist, because the run never reaches a time step. BEAM3R's element spec is all_of({MAT, one_of({TRIADS, NODAL_ROTATION_VECTORS}), USE_FAD, HERMITE_CENTERLINE}), so dropping TRIADS is a parse failure inside ElementReader::get_and_distribute_elements: \"Required 'one_of' not found in input line\" from core/io/src/4C_io_input_spec_builders.cpp. NOTRIADS_STEPS_TAKEN=0 pins that no step is taken. The second half worth knowing is that the diagnostic names neither TRIADS nor BEAM3R, so grepping the error for the keyword you forgot returns nothing — DIAGNOSTIC_NAMES_TRIADS=no. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) on upstream deck beam3r_line2_static_test1.4C.yaml.",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_WITHTRIADS=0",
+    "EXIT_NOTRIADS=1",
+    "processor 0 finished normally",
+    "Required 'one_of' not found in input line",
+    "4C_io_input_spec_builders.cpp",
+    "ElementReader::get_and_distribute_elements",
+    "NOTRIADS_STEPS_TAKEN=0",
+    "DIAGNOSTIC_NAMES_TRIADS=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHTRIADS=1",
+    "EXIT_NOTRIADS=0",
+    "DIAGNOSTIC_NAMES_TRIADS=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep TRIADS on every element line. The element spec then matches, the deck runs its ten steps and exits 0, so the parse diagnostic disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(out)",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

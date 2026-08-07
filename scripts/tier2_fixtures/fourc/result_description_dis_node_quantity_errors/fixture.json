@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#20. The same 1-element HEX8 deck is run with a correct RESULT DESCRIPTION and then with each of the three fields spoiled in turn. DIS 'structur' exits 1 with 'expected 1 tests but performed 0' from core/utils/src/result_test/4C_utils_result_test.cpp line 198 — the run completes, the mis-spelled name is never echoed (DIS_ARM_ECHOES_THE_TYPO=0) and no test is reported WRONG (DIS_ARM_REPORTS_A_WRONG_TEST=0), so only the COUNT betrays it. NODE 99999 exits 1 with 'Node 99999 does not belong to discretization structure' and QUANTITY 'banana' with \"Quantity 'banana' not supported in structure testing\", both from structure_new/src/utils/4C_structure_new_resulttest.cpp. A typo in a verification block therefore cannot fake a passing run. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 20,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_DIS=1",
+    "EXIT_NODE=1",
+    "EXIT_QTY=1",
+    "processor 0 finished normally",
+    "expected 1 tests but performed 0",
+    "4C_utils_result_test.cpp",
+    "Node 99999 does not belong to discretization structure",
+    "Quantity 'banana' not supported in structure testing",
+    "4C_structure_new_resulttest.cpp",
+    "DIS_ARM_ECHOES_THE_TYPO=0",
+    "DIS_ARM_REPORTS_A_WRONG_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_DIS=0",
+    "EXIT_NODE=0",
+    "EXIT_QTY=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the DIS arm: spell the discretisation correctly. The entry then matches, the count check passes and the count diagnostic vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk structur  3     dispy  \"$TMP/dis.yaml\"",
+      "to": "mk structure 3     dispy  \"$TMP/dis.yaml\""
+    },
+    {
+      "note": "remove the pathology from the NODE arm: name a node that exists. The node throw vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk structure 99999 dispy  \"$TMP/node.yaml\"",
+      "to": "mk structure 3     dispy  \"$TMP/node.yaml\""
+    },
+    {
+      "note": "remove the pathology from the QUANTITY arm: ask for a quantity the structure tester supports. The quantity throw vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk structure 3     banana \"$TMP/qty.yaml\"",
+      "to": "mk structure 3     dispy  \"$TMP/qty.yaml\""
+    }
+  ]
+}

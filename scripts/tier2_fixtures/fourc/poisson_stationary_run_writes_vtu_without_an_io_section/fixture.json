@@ -1,0 +1,54 @@
+{
+  "_comment": "Tier-2 for fourc::poisson#2 — even a one-step stationary Poisson solve writes its VTK unasked, and the two output sections an agent invents for scalar transport are fatal rather than ineffective. The deck carries no output section of any kind (AUTO_DECK_HAS_OUTPUT_SECTION=0), exits 0, and still writes two <prefix>-vtk-files/scatra-*.vtu (initial state and solution) plus <prefix>-scatra.pvd with the nodal array named phi_1. 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' and 'IO/RUNTIME VTK OUTPUT/SCATRA' are each rejected before anything runs by section-name validation in core/io/src/4C_io_input_file.cpp. The discriminating fourth arm is 'IO/RUNTIME VTK OUTPUT/FLUID', which IS a valid section name in this deck (IO_FLUID_SECTION_NAME_REJECTED=0, exit 0) — so the rejections are about those two names, not about runtime-VTK subsections being unwelcome. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "poisson",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "AUTO_DECK_HAS_OUTPUT_SECTION=0",
+    "EXIT_AUTO=0",
+    "EXIT_SCATRA_SECT=1",
+    "EXIT_IO_SECT=1",
+    "EXIT_IO_FLUID=0",
+    "processor 0 finished normally",
+    "AUTO_VTU_COUNT=2",
+    "AUTO_PVD=yes",
+    "AUTO_VTU_ARRAY_NAME=phi_1",
+    "Section 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' is not a valid section name.",
+    "Section 'IO/RUNTIME VTK OUTPUT/SCATRA' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "IO_FLUID_SECTION_NAME_REJECTED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_AUTO=1",
+    "EXIT_SCATRA_SECT=0",
+    "EXIT_IO_SECT=0",
+    "EXIT_IO_FLUID=1",
+    "AUTO_VTU_COUNT=0",
+    "AUTO_PVD=no",
+    "AUTO_VTU_ARRAY_NAME=absent"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the first invented section: drop it. That arm becomes a second baseline, EXIT_SCATRA_SECT goes to 0 and its rejection line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "pois \"{}\" \\"
+    },
+    {
+      "note": "remove the pathology from the second invented section the same way; its rejection line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"IO/RUNTIME VTK OUTPUT/SCATRA:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "pois \"{}\" \\"
+    },
+    {
+      "note": "break the discriminating arm: give it one of the invalid names instead of the valid one. EXIT_IO_FLUID becomes 1 and IO_FLUID_SECTION_NAME_REJECTED stops being 0, so the fixture must go red — that arm is what rules out 'any output subsection is refused here'.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"extra_sections\\\":\\\"IO/RUNTIME VTK OUTPUT/FLUID:\\n  OUTPUT_FLUID: true\\n\\\"}\" \\",
+      "to": "pois \"{\\\"extra_sections\\\":\\\"IO/RUNTIME VTK OUTPUT/SCATRA:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#5 and a FALSIFICATION of its Signal. The rule (keep the time step small relative to h/|u|) holds as accuracy advice, but the described mechanism does not apply: 4C's scalar transport is implicit, so there is no upwind stability bound to break and no O(1) overshoot. On the upstream deck levelset_gaussian_hill_pbc, taking the same physical end time in 10 steps of 0.1 instead of 100 steps of 0.01 completes normally, produces no NaN, prints no CFL or Courant warning of any kind, reaches 'Checking results of 4 tests' and fails all four -- with every computed value BELOW the reference and none above it. The large step damps the hill rather than making it ring. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 5,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_CFL=0",
+    "EXIT_BIGDT=1",
+    "processor 0 finished normally",
+    "CFL_RESULT_FAILURES=0",
+    "BIGDT_REACHED_RESULT_TEST=1",
+    "BIGDT_RESULT_FAILURES=4",
+    "is WRONG --> actresult=",
+    "BIGDT_VALUES_BELOW_REFERENCE=4",
+    "BIGDT_VALUES_ABOVE_REFERENCE=0",
+    "BIGDT_NAN=0",
+    "BIGDT_CFL_WARNINGS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the upstream step size and step count. All four failures vanish and the below-reference count drops to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed -e 's/  NUMSTEP: 100/  NUMSTEP: 10/' -e 's/  TIMESTEP: 0.01/  TIMESTEP: 0.1/' \"$BASE\" > \"$TMP/bigdt.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/bigdt.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CFL=1",
+    "EXIT_BIGDT=0",
+    "BIGDT_RESULT_FAILURES=0",
+    "BIGDT_VALUES_BELOW_REFERENCE=0"
+  ]
+}

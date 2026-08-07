@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#0, and a FALSIFICATION of its Signal. The entry claimed an incompatible lubrication/structure interface 'raises no matching lubrication interface from 4C_ehl_factory.cpp at setup'. On upstream ehl3d_mixed.4C.yaml neither breakage says anything: giving the Master side InterfaceID 2 while the Slave keeps 1 is accepted and still reproduces all seven reference values (IDMISMATCH_PASSED_TESTS=7), and deleting the Master condition outright still runs to the end with the contact node collapsing to ~1e-15 in x, caught only by the deck's own result tests (5 of 7). CLAIMED_NO_MATCHING_TEXT=00 concatenates the counts from both broken arms; no 4C_ehl_factory.cpp exists in 4C. Both are silent-wrong failures. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "MASTER_BLOCKS_LEFT=0",
+    "SLAVE_MASTER_IDS_DIFFER=yes",
+    "EXIT_MATCHED=0",
+    "EXIT_IDMISMATCH=0",
+    "EXIT_NOMASTER=1",
+    "OK (7)",
+    "processor 0 finished normally",
+    "Result check failed with 5 errors out of 7 tests",
+    "is WRONG --> actresult=",
+    "IDMISMATCH_FAILED_TESTS=0",
+    "IDMISMATCH_PASSED_TESTS=7",
+    "NOMASTER_FAILED_TESTS=5",
+    "CLAIMED_NO_MATCHING_TEXT=00",
+    "CLAIMED_EHL_FACTORY_FILE=0",
+    "INTERFACE_DIAGNOSTICS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MATCHED=1",
+    "EXIT_IDMISMATCH=1",
+    "EXIT_NOMASTER=0",
+    "MASTER_BLOCKS_LEFT=1",
+    "SLAVE_MASTER_IDS_DIFFER=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the id-mismatch pathology: give the Master the same InterfaceID as the Slave. SLAVE_MASTER_IDS_DIFFER flips to 'no' \u2014 a forbidden token \u2014 so the fixture must go red rather than silently testing a deck that is no longer mismatched.",
+      "file": "cmd.sh",
+      "from": "MASTER_INTERFACE_ID=2",
+      "to": "MASTER_INTERFACE_ID=1"
+    },
+    {
+      "note": "remove the missing-master pathology: keep the Master coupling condition. MASTER_BLOCKS_LEFT becomes 1 (a forbidden token), the 5-of-7 failure disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DROP_MASTER=yes",
+      "to": "DROP_MASTER=no"
+    }
+  ]
+}

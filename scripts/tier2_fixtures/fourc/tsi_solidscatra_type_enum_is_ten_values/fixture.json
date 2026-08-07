@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#11. Both of the claim's lists swept by execution and both wrong. TYPE enum: the 11 catalogued values run one at a time on upstream tsi_lincompression_1waydisp give TYPE_VALUES_ACCEPTED=10, TYPE_VALUES_REFUSED=1, TYPE_VALUES_REFUSED_NAMES=NLS — 'NLS' is not in the enum and draws the same 'The input type NLS is not valid for SOLIDSCATRA elements!' an invented value gets, from 4C_solid_scatra_3D_ele_lib.cpp (the claim names 4C_solid_scatra_ele_lib.cpp, which does not appear: CLAIMED_LIB_FILE_WITHOUT_3D=0). Cell types: sweeping eleven cell types with the right node count each gives CELLTYPES_KNOWN_TO_SOLIDSCATRA=HEX8 HEX27 TET4 TET10 NURBS27 and CELLTYPES_REFUSED_BY_SOLIDSCATRA=QUAD4 QUAD9 TRI3 TRI6 PYRAMID5 WEDGE6, each refused with \"Element 'SOLIDSCATRA' does not seem to know cell type '<ct>'.\" from 4C_fem_general_element_definition.cpp. So the claimed 2D support (QUAD4, QUAD9, TRI3, TRI6) does not exist, consistent with tsi#0. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 500,
+  "expect_in_output": [
+    "CLAIMED_TYPE_VALUES=11",
+    "TYPE_VALUES_ACCEPTED=10",
+    "TYPE_VALUES_REFUSED=1",
+    "TYPE_VALUES_REFUSED_NAMES=NLS",
+    "The input type NLS is not valid for SOLIDSCATRA elements!",
+    "4C_solid_scatra_3D_ele_lib.cpp",
+    "CELLTYPES_KNOWN_TO_SOLIDSCATRA=HEX8 HEX27 TET4 TET10 NURBS27",
+    "CELLTYPES_REFUSED_BY_SOLIDSCATRA=QUAD4 QUAD9 TRI3 TRI6 PYRAMID5 WEDGE6",
+    "Element 'SOLIDSCATRA' does not seem to know cell type 'quad4'.",
+    "Element 'SOLIDSCATRA' does not seem to know cell type 'tri6'.",
+    "4C_fem_general_element_definition.cpp",
+    "CLAIMED_LIB_FILE_WITHOUT_3D=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "TYPE_VALUES_ACCEPTED=11",
+    "TYPE_VALUES_REFUSED=0",
+    "CELLTYPES_KNOWN_TO_SOLIDSCATRA=QUAD4"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the TYPE sweep: drop the invented 'NLS' from the swept list, leaving the ten values the element really accepts. TYPE_VALUES_REFUSED then falls to 0 and the NLS diagnostic disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "CLAIMED_TYPES=\"Undefined AdvReac CardMono GR NLS Chemo ChemoReac ElchDiffCond \\",
+      "to": "CLAIMED_TYPES=\"Undefined AdvReac CardMono GR Chemo ChemoReac ElchDiffCond \\"
+    },
+    {
+      "note": "remove the pathology from the cell-type sweep: ask only about the 3D cell types the element declares. CELLTYPES_REFUSED_BY_SOLIDSCATRA loses its 2D entries and the quad4/tri6 diagnostics disappear, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "for pair in QUAD4:4 QUAD9:9 TRI3:3 TRI6:6 HEX8:8 HEX27:27 TET4:4 TET10:10 \\",
+      "to": "for pair in HEX8:8 HEX27:27 TET4:4 TET10:10 \\"
+    }
+  ]
+}

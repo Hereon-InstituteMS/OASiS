@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#29. The same HEX8 Statics cantilever with MAT_Struct_StVenantKirchhoff is run at four Poisson ratios. NUE 0.49 exits 0 at dispy 3.48962414247091460e-03 (pinned in RESULT DESCRIPTION at TOLERANCE 1e-12, reported 'abs(diff)= 0.00000000000000000e+00'). NUE 0.5 and NUE 0.6 are both rejected at parse under \"Failed to match specification in section 'MATERIALS'\" with the validator quoted verbatim: \"Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)\". NUE -1.0 is the interesting one: the bracket is CLOSED at the low end, so it passes validation (MINUS1_FAILED_VALIDATION=0), 4C emits no error block at all (MINUS1_FOURC_ERROR_BLOCKS=0), and the process dies of 'Signal: Floating point exception (8)' with shell status 136 because the Lame constants blow up as NUE -> -1. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 29,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_INSIDE=0",
+    "EXIT_HALF=1",
+    "EXIT_OVER=1",
+    "EXIT_MINUS1=136",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "processor 0 finished normally",
+    "Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)",
+    "Failed to match specification in section 'MATERIALS'",
+    "MINUS1_FAILED_VALIDATION=0",
+    "MINUS1_FOURC_ERROR_BLOCKS=0",
+    "Signal: Floating point exception (8)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INSIDE=1",
+    "EXIT_HALF=0",
+    "EXIT_OVER=0",
+    "EXIT_MINUS1=0\n"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep NUE strictly inside (-1, 0.5) on the low arm. The SIGFPE vanishes, EXIT_MINUS1 becomes 0, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "mk -1.0 \"$TMP/minus1.yaml\"",
+    "to": "mk -0.9 \"$TMP/minus1.yaml\""
+  }
+}

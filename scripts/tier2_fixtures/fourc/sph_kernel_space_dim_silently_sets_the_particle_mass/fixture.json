@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#0. The rule holds but the Signal is off by three orders of magnitude and points at the wrong mechanism. Switching Kernel1D -> Kernel2D on upstream particle_sph_1d_hydrostatic_freesurface_densityintegration_cubicspline_adami.4C.yaml is accepted in total silence (no warning matching kernel/dimension/mismatch anywhere) and does change the physics: three of five result tests fail, density moves 1.00015521027962739 -> 1.00020166835008029 and velx roughly doubles. But the density stays within 0.02% of INITDENSITY, not the claimed ~30%, so an agent screening for a 30% deviation clears a broken deck. The mechanism worth knowing is not normalisation: KERNEL_SPACE_DIM also fixes the particle volume, since 4C sets mass = INITDENSITY * INITIALPARTICLESPACING^KERNEL_SPACE_DIM. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_KERNEL1D=0",
+    "EXIT_KERNEL2D=1",
+    "processor 0 finished normally",
+    "KERNEL1D_FAILURES=0",
+    "KERNEL2D_WARNINGS=0",
+    "KERNEL2D_FAILURES=3",
+    "is WRONG --> actresult= 1.00020166835008029e+00",
+    "KERNEL2D_DENSITY_DEVIATION_FROM_INITDENSITY_PERCENT=0.0202",
+    "CLAIMED_30_PERCENT_DENSITY_DEVIATION_OBSERVED=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_KERNEL1D=1",
+    "EXIT_KERNEL2D=0",
+    "KERNEL2D_FAILURES=0",
+    "CLAIMED_30_PERCENT_DENSITY_DEVIATION_OBSERVED=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave KERNEL_SPACE_DIM at the deck's own Kernel1D. The density and velocity return to the reference values, the deck passes and EXIT_KERNEL2D becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|KERNEL_SPACE_DIM: \"Kernel1D\"|KERNEL_SPACE_DIM: \"Kernel2D\"|' \"$BASE\" > \"$TMP/dim2.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/dim2.yaml\""
+  }
+}

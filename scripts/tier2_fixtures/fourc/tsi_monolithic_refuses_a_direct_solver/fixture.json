@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#8. Upstream tsi_lincompression_monolithic run twice, differing only in SOLVER 2 (the block TSI DYNAMIC/MONOLITHIC points LINEAR_SOLVER at). Belos + Teko runs to 'processor 0 finished normally' with all 8 result tests CORRECT; swapping it for UMFPACK aborts inside TSI::Monolithic::create_linear_solver, exit 1, before any time step (UMFPACK_REACHED_FIRST_TIME_STEP=0). So the rule holds. The Signal does not: 'monolithic TSI requires Belos' does not occur (CLAIMED_REQUIRES_BELOS_TEXT=0). The real message is the two-word 'Iterative solver expected' from src/tsi/4C_tsi_monolithic.cpp, which names neither Belos nor the solver you wrote (DIAGNOSTIC_NAMES_BELOS=0, DIAGNOSTIC_NAMES_UMFPACK=0) — grepping the error for either finds nothing. Both arms run with cwd on a scratch dir carrying a symlink to the upstream xml/ tree because the deck's SOLVER_XML_FILE paths are relative. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "EXIT_BELOS=0",
+    "EXIT_UMFPACK=1",
+    "processor 0 finished normally",
+    "BELOS_RESULT_TESTS_CORRECT=8",
+    "Iterative solver expected",
+    "4C_tsi_monolithic.cpp",
+    "TSI::Monolithic::create_linear_solver",
+    "CLAIMED_REQUIRES_BELOS_TEXT=0",
+    "DIAGNOSTIC_NAMES_BELOS=0",
+    "DIAGNOSTIC_NAMES_UMFPACK=0",
+    "UMFPACK_REACHED_FIRST_TIME_STEP=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BELOS=1",
+    "EXIT_UMFPACK=0",
+    "BELOS_RESULT_TESTS_CORRECT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the iterative solver in place in the second arm too. It then runs, 'Iterative solver expected' disappears and EXIT_UMFPACK becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(old, new))",
+    "to": "open(sys.argv[2], \"w\").write(t)                    "
+  }
+}

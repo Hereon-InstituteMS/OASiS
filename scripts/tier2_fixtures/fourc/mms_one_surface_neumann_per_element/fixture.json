@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#1 — in 2D the plain 'DESIGN SURF NEUMANN CONDITIONS' on a DSURF covering every node IS the thermo body load, and at most one such condition may touch an element. Three arms on the same manufactured-solution deck: ONE applies the source and the centre node is 'is CORRECT' (exit 0); OVERLAP adds a second DSURF over the same nodes and 4C throws 'more than one VolumeNeumann cond on one node' from src/thermo/src/element/4C_thermo_ele_impl.cpp — during element evaluation, after the discretisation is already built (OVERLAP_BUILT_DISCRETISATION=yes), not at input read; NONE omits the condition entirely and 4C says nothing at all (MISSING_BODY_LOAD_WARNINGS=0), the centre node quietly landing at 8.89e-01 instead of -1.13e-02. The asymmetry is the lesson: a duplicated body load is fatal, a missing one is silent. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_ONE=0",
+    "EXIT_OVERLAP=1",
+    "EXIT_NONE=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "more than one VolumeNeumann cond on one node",
+    "4C_thermo_ele_impl.cpp",
+    "OVERLAP_BUILT_DISCRETISATION=yes",
+    "is WRONG --> actresult= 8.89498029234571885e-01",
+    "MISSING_BODY_LOAD_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ONE=1",
+    "EXIT_OVERLAP=0",
+    "OVERLAP_BUILT_DISCRETISATION=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: stop duplicating the condition. The throw vanishes, EXIT_OVERLAP becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mms \"{\\\"n\\\":16,\\\"dt\\\":0.05,\\\"numstep\\\":8,\\\"neumann_twice\\\":true,\\\"results\\\":[[$CENTRE,$EXACT,5e-3]]}\" \\",
+      "to": "mms \"{\\\"n\\\":16,\\\"dt\\\":0.05,\\\"numstep\\\":8,\\\"results\\\":[[$CENTRE,$EXACT,5e-3]]}\" \\"
+    },
+    {
+      "note": "remove the other half: give the third arm its body load back. It then matches the analytic value, the 8.89e-01 reading disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mms \"{\\\"n\\\":16,\\\"dt\\\":0.05,\\\"numstep\\\":8,\\\"neumann\\\":\\\"\\\",\\\"results\\\":[[$CENTRE,$EXACT,5e-3]]}\" \\",
+      "to": "mms \"{\\\"n\\\":16,\\\"dt\\\":0.05,\\\"numstep\\\":8,\\\"results\\\":[[$CENTRE,$EXACT,5e-3]]}\" \\"
+    }
+  ]
+}

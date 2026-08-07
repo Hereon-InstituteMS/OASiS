@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#3 — KINEM takes exactly 'linear' or 'nonlinear', and 'nonlinearTotLag' is 4C's own OUTPUT spelling rather than an input. Six arms of one self-contained 3D HEX8 deck, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: both legal spellings exit 0 with 'processor 0 finished normally'; 'nonlinearTotLag', 'NonLinear' and 'updated_lagrange' each exit 1 with \"Could not parse parameter 'KINEM': invalid value '<what you wrote>'. Valid options are: linear|nonlinear\", so there is no case-insensitive fallback and no separate updated-Lagrangian spelling. The last arm closes the loop and is the reason the wrong spelling circulates at all: a deck that writes the LEGAL 'KINEM nonlinear' plus one unparseable trailing token makes 4C dump the container it just built, and in that dump the value reads 'KINEM : nonlinearTotLag' (ECHO_SPELLS_TOTLAG=yes while DECK_WROTE_PLAIN_NONLINEAR=yes). So 'nonlinear' already IS the total-Lagrangian formulation and the echoed name must not be copied back into a deck.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_NONLINEAR=0",
+    "EXIT_LINEAR=0",
+    "EXIT_TOTLAG=1",
+    "EXIT_CAMELCASE=1",
+    "EXIT_UPDLAG=1",
+    "EXIT_ECHO=1",
+    "processor 0 finished normally",
+    "Could not parse parameter 'KINEM': invalid value 'nonlinearTotLag'. Valid options are: linear|nonlinear",
+    "Could not parse parameter 'KINEM': invalid value 'NonLinear'",
+    "Could not parse parameter 'KINEM': invalid value 'updated_lagrange'",
+    "After parsing, the line still contains 'WHATEVER'.",
+    "ECHO_DUMP_PRESENT=yes",
+    "ECHO_SPELLS_TOTLAG=yes",
+    "DECK_WROTE_PLAIN_NONLINEAR=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_NONLINEAR=1",
+    "EXIT_LINEAR=1",
+    "EXIT_TOTLAG=0",
+    "ECHO_SPELLS_TOTLAG=no",
+    "DECK_WROTE_PLAIN_NONLINEAR=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: write the legal spelling in the TOTLAG arm. The enum rejection disappears and EXIT_TOTLAG becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm TOTLAG    \"KINEM nonlinearTotLag\"",
+      "to": "arm TOTLAG    \"KINEM nonlinear\""
+    },
+    {
+      "note": "remove the leftover token from the echo arm. 4C then has nothing to complain about, prints no 'Parsed parameters:' dump, and ECHO_SPELLS_TOTLAG flips to no, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm ECHO      \"KINEM nonlinear WHATEVER\"",
+      "to": "arm ECHO      \"KINEM nonlinear\""
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::thermo#2 — the stand-alone thermal dynamics section is 'THERMAL DYNAMIC'; 'THERMO DYNAMIC' is not a section name on this build. Same deck twice, one word apart: the good arm result-tests the hot face at 100.0 ('is CORRECT', exit 0), the bad arm exits 1 from core/io/src/4C_io_input_file.cpp with \"Section 'THERMO DYNAMIC' is not a valid section name.\" The two negative assertions separate this from thermo#1: the bad arm never reaches a discretisation (BAD_ARM_REACHED_DISCRETISATION=0) and never produces the value-level 'Could not match this input' complaint (BAD_ARM_MATCHTREE_COMPLAINT=0) — section names are checked earlier and by different code. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_THERMAL_DYNAMIC=0",
+    "EXIT_THERMO_DYNAMIC=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "Section 'THERMO DYNAMIC' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "BAD_ARM_REACHED_DISCRETISATION=0",
+    "BAD_ARM_MATCHTREE_COMPLAINT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THERMAL_DYNAMIC=1",
+    "EXIT_THERMO_DYNAMIC=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the correct section name too. The section-name rejection vanishes and EXIT_THERMO_DYNAMIC becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"THERMO DYNAMIC\"  > \"$TMP/bad.yaml\"",
+    "to": "deck \"THERMAL DYNAMIC\"  > \"$TMP/bad.yaml\""
+  }
+}

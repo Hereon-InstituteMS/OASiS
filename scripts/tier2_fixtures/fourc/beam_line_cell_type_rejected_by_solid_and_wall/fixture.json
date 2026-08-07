@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#8 — a beam mesh needs a BEAM3* element type, and the diagnostic for writing SOLID or WALL on a LINE2 cell names the CELL type rather than the element type. Three arms on the upstream deck tests/input_files/beam3r_line2_static_test1.4C.yaml (five BEAM3R LINE2 cells with TRIADS, MAT_BeamReissnerElastHyper), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: the untouched deck exits 0 with 'processor 0 finished normally'; rewriting the element type as SOLID exits 1 with \"Element 'SOLID' does not seem to know cell type 'line2'.\" and as WALL with the matching \"Element 'WALL' does not seem to know cell type 'line2'.\", both from core/fem/general/element/4C_fem_general_element_definition.cpp line 29. That file is the generic element-definition lookup, which is the point: SOLID and WALL are registered element types that register volume and surface cell types only, so the ELEMENT TYPE is found and the CELL TYPE is not. An earlier version of the entry attributed this to 'Unknown type' from parobjectfactory.cpp — a real 4C message on a different path that is never reached here — and CLAIMED_PAROBJECTFACTORY_TEXTS=0 keeps that correction pinned.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BEAM3R=0",
+    "EXIT_SOLID=1",
+    "EXIT_WALL=1",
+    "processor 0 finished normally",
+    "BASE_BEAM_ELEMENTS=5",
+    "Element 'SOLID' does not seem to know cell type 'line2'.",
+    "Element 'WALL' does not seem to know cell type 'line2'.",
+    "4C_fem_general_element_definition.cpp",
+    "CLAIMED_PAROBJECTFACTORY_TEXTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_BEAM3R=1",
+    "EXIT_SOLID=0",
+    "EXIT_WALL=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the SOLID arm: leave BEAM3R in place. The cell-type rejection disappears and EXIT_SOLID becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/ BEAM3R LINE2 / SOLID LINE2 /' \"$BASE\" > \"$TMP/solid.yaml\"",
+      "to": "sed 's/ BEAM3R LINE2 / BEAM3R LINE2 /' \"$BASE\" > \"$TMP/solid.yaml\""
+    },
+    {
+      "note": "remove the pathology from the WALL arm the same way. EXIT_WALL becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/ BEAM3R LINE2 / WALL LINE2 /'  \"$BASE\" > \"$TMP/wall.yaml\"",
+      "to": "sed 's/ BEAM3R LINE2 / BEAM3R LINE2 /'  \"$BASE\" > \"$TMP/wall.yaml\""
+    }
+  ]
+}

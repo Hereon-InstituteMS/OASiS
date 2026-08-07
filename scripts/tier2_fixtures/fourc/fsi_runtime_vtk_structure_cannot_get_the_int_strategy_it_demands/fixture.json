@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#14 -- the conflict and its cause are confirmed, the Signal text is FALSIFIED, and the message's own advice is proved useless. Adding IO/RUNTIME VTK OUTPUT/STRUCTURE to upstream fsi_fp_mono_fs_ga_ga.4C.yaml aborts before time step 1 with 'Runtime output is not available in the old structure time integration! You need to take the new one, i.e. set `INT_STRATEGY: Standard`!' from structure/4C_structure_timint.cpp line 262 -- not 'inconsistent integration strategy', which appears in neither arm. Doing exactly what that message says, INT_STRATEGY: \"Standard\" in STRUCTURAL DYNAMIC, reproduces the identical abort at the identical line (SETTING_INT_STRATEGY_HELPS=no), which is the executable form of the entry's own remark that the override happens inside the FSI adapter and not in the user input: there is no deck the user can write that satisfies the check, the section has to be removed. The control without the section runs to 'processor 0 finished normally' with OK (6). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 14,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "VTK_ARMS_REQUEST_STRUCTURE_OUTPUT=1",
+    "STANDARD_ARM_SETS_INT_STRATEGY=1",
+    "EXIT_NOVTK=0",
+    "EXIT_VTKDEFAULT=1",
+    "EXIT_VTKSTANDARD=1",
+    "processor 0 finished normally",
+    "OK (6)",
+    "Runtime output is not available in the old structure time integration!",
+    "4C_structure_timint.cpp",
+    "VTKDEFAULT_TIME_STEPS_RUN=0",
+    "VTKSTANDARD_TIME_STEPS_RUN=0",
+    "SETTING_INT_STRATEGY_HELPS=no",
+    "CLAIMED_INCONSISTENT_STRATEGY_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NOVTK=1",
+    "EXIT_VTKDEFAULT=0",
+    "EXIT_VTKSTANDARD=0",
+    "VTK_ARMS_REQUEST_STRUCTURE_OUTPUT=0",
+    "SETTING_INT_STRATEGY_HELPS=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: do not request runtime VTK structure output at all. Both bad arms become working decks, VTK_ARMS_REQUEST_STRUCTURE_OUTPUT becomes 0, EXIT_VTKDEFAULT and EXIT_VTKSTANDARD become 0 and SETTING_INT_STRATEGY_HELPS flips to yes (all forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "REQUEST_RUNTIME_VTK_STRUCTURE=yes",
+    "to": "REQUEST_RUNTIME_VTK_STRUCTURE=no"
+  }
+}

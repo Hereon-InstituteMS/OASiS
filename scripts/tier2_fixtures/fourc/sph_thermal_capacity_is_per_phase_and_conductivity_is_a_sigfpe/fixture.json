@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#10. Two neighbouring thermal material keys, opposite failure modes. THERMALCAPACITY dropped from the BOUNDARY material only aborts with a message that NAMES the phase, and CAPACITY_BLAMES_THE_FLUID=no confirms it names boundaryphase rather than the fluid -- so the message is actionable. THERMALCONDUCTIVITY dropped from the FLUID material only is not validated anywhere: the run is killed by SIGFPE with zero PROC 0 ERROR blocks and zero diagnostics mentioning conductivity (both counted). CONDUCTIVITY_REACHED_RESULT_TESTS=no rules out the plausible-sounding alternative that the temperature field merely freezes -- the run does not finish at all. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_NOCAPBOUND=1",
+    "EXIT_BASE=0",
+    "BASE_PASSES=yes",
+    "thermal capacity for particles of type 'boundaryphase' not positive!",
+    "CAPACITY_ABORT_NAMES_THE_PHASE=yes",
+    "CAPACITY_BLAMES_THE_FLUID=no",
+    "EXIT_NOCONDFLUID=136",
+    "CONDUCTIVITY_IS_A_SIGNAL=yes",
+    "CONDUCTIVITY_FOURC_ERROR_BLOCKS=0",
+    "CONDUCTIVITY_DIAGNOSTICS=0",
+    "CONDUCTIVITY_REACHED_RESULT_TESTS=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "CAPACITY_ABORT_NAMES_THE_PHASE=no",
+    "CAPACITY_BLAMES_THE_FLUID=yes",
+    "CONDUCTIVITY_IS_A_SIGNAL=no",
+    "CONDUCTIVITY_REACHED_RESULT_TESTS=yes",
+    "EXIT_NOCONDFLUID=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

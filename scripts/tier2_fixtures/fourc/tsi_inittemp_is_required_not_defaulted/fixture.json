@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#3. One HEX8 SOLIDSCATRA cube in free expansion, THEXPANS 1.2e-05, L 1, thermal field clamped at 393. INITTEMP 293 gives dispx = alpha*(393-293)*L = 1.2e-03 and INITTEMP 0 gives alpha*(393-0)*L = 4.716e-03, a factor 3.93 larger (ZERO_REF_RATIO_IS_393_OVER_100=True) — the rule that INITTEMP is the zero-thermal-strain reference holds and is measured. The Signal is false: omitting INITTEMP does NOT default to 0. MAT_Struct_ThermoStVenantK requires it, so the deck is rejected in MATERIALS before any element is built — \"Failed to match specification in section 'MATERIALS'\" from 4C_global_data_read.cpp, 'Could not match this input' from 4C_io_input_spec_builders.cpp, and the candidate dump line \"[X] Expected parameter 'INITTEMP'\" — exit 1, OMITTED_REACHED_RESULT_TEST=0. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_REFERENCED=0",
+    "EXIT_ZERO_REF=0",
+    "EXIT_OMITTED=1",
+    "dispx    at node   2\t is CORRECT",
+    "ZERO_REF_RATIO_IS_393_OVER_100=True",
+    "Failed to match specification in section 'MATERIALS'",
+    "Could not match this input",
+    "Expected parameter 'INITTEMP'",
+    "4C_io_input_spec_builders.cpp",
+    "OMITTED_REACHED_RESULT_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_REFERENCED=1",
+    "EXIT_ZERO_REF=1",
+    "EXIT_OMITTED=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the third arm an INITTEMP after all. The deck then parses and runs, so the MATERIALS parse error and EXIT_OMITTED=1 disappear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"\"           393.0 0.0012   > \"$TMP/omitted.yaml\"",
+    "to": "deck \"      INITTEMP: 293\n\" 393.0 0.0012   > \"$TMP/omitted.yaml\""
+  }
+}

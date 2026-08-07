@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::poisson#5 — the automatic BDF2 start-up, pinned by an exact equality plus two controls. The same TRANSP TRI3 deck run transiently for 1, 2 and 4 steps under TIMEINTEGR 'BDF2', under 'One_Step_Theta' with THETA 1.0 (backward Euler) and under 'One_Step_Theta' with THETA 0.5 (Crank-Nicolson). After ONE step BDF2 equals theta=1 to the last printed digit (-1.03720705871334119e-02 both) and does NOT equal theta=0.5 (-1.92074586861208652e-02); after two (-9.87597190103298508e-03 vs -6.67581529324708534e-03) and four (1.74671975931461332e-02 vs 2.16653993710578044e-02) steps BDF2 parts company with backward Euler. The theta=0.5 control rules out an equality that would hold against anything, and the later steps rule out BDF2 never engaging. 4C prints 'BDF2       STEP = 1/4' on the very step that is not BDF2, the same word on all four (BDF2_BANNER_STEPS=4), and announces no switch (STARTUP_ANNOUNCED=0). Matches src/scatra/4C_scatra_timint_bdf2.cpp. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "poisson",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "STEPS_1 BDF2=-1.03720705871334119e-02 THETA1=-1.03720705871334119e-02 THETA05=-1.92074586861208652e-02",
+    "STEPS_2 BDF2=-9.87597190103298508e-03 THETA1=-6.67581529324708534e-03 THETA05=-1.63377596820519257e-02",
+    "STEPS_4 BDF2=1.74671975931461332e-02 THETA1=2.16653993710578044e-02 THETA05=1.72330553242506929e-02",
+    "is WRONG --> actresult=",
+    "FIRST_STEP_IS_BACKWARD_EULER=yes",
+    "FIRST_STEP_IS_NOT_CRANK_NICOLSON=yes",
+    "LATER_STEPS_DIFFER=yes",
+    "BDF2       STEP = 1/4",
+    "BDF2_BANNER_STEPS=4",
+    "STARTUP_ANNOUNCED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FIRST_STEP_IS_BACKWARD_EULER=no",
+    "FIRST_STEP_IS_NOT_CRANK_NICOLSON=no",
+    "LATER_STEPS_DIFFER=no",
+    "BDF2= THETA1="
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: run the 'BDF2' arm as One_Step_Theta too. Every step then agrees with the theta=1 control, LATER_STEPS_DIFFER flips to no and the printed BDF2 banner disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"timeintegr\\\":\\\"BDF2\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "pois \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"theta\\\":1.0,\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "break the equality: make the theta=1 control theta=0.5 as well. The one-step equality fails and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"theta\\\":1.0,\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "pois \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"theta\\\":0.5,\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "break the discriminating control the other way: make the theta=0.5 arm theta=1 as well. FIRST_STEP_IS_NOT_CRANK_NICOLSON flips to no and the fixture must go red — that assertion is what makes the first-step equality mean backward Euler specifically.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"theta\\\":0.5,\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "pois \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"theta\\\":1.0,\\\"numstep\\\":$ns,\\\"dt\\\":0.005,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    }
+  ]
+}

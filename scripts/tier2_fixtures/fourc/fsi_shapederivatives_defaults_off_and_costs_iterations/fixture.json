@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#4 and a FALSIFICATION. The entry called SHAPEDERIVATIVES: true REQUIRED for monolithic FSI and said that false leaves the Newton iteration with linear instead of quadratic convergence. In 4C the parameter is declared with .default_value = false (src/inpar/4C_inpar_fsi.cpp) and the upstream 2D driven-cavity monolithic-fluidsplit benchmark fsi_dc_mono_fs_ga_ga.4C.yaml does not mention the key at all (UPSTREAM_SETS_SHAPEDERIVATIVES=0). Run as shipped it converges every one of its 10 time steps, matches all nine pinned results and takes 81 Newton steps; with SHAPEDERIVATIVES: true added it also converges, also matches all nine results, and takes 87 -- six MORE. So the flag is optional, off unless requested, and on this benchmark switching it on lengthens the solve. Both arms had the deck's relative MueLu xml path rewritten to an absolute one; that edit is identical in both arms. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "UPSTREAM_SETS_SHAPEDERIVATIVES=0",
+    "EXIT_DEFAULT=0",
+    "EXIT_SHAPEDERIV=0",
+    "OK (9)",
+    "processor 0 finished normally",
+    "NEWTON_STEPS_SHAPEDERIVATIVES_OFF=81",
+    "NEWTON_STEPS_SHAPEDERIVATIVES_ON=87",
+    "DEFAULT_TIME_STEPS_RUN=10",
+    "DEFAULT_NONCONVERGENCE=0",
+    "VERDICT: SHAPEDERIVATIVES_ON_COSTS_MORE_NEWTON_STEPS=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEFAULT=1",
+    "EXIT_SHAPEDERIV=1",
+    "VERDICT: SHAPEDERIVATIVES_ON_COSTS_MORE_NEWTON_STEPS=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: run the supposedly REQUIRED flag in BOTH arms. The two arms become identical, the off-arm count rises from 81 to 87 and the verdict flips to 'no' (a forbidden token), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "SHAPEDERIV_IN_BAD_ARM=false",
+    "to": "SHAPEDERIV_IN_BAD_ARM=true"
+  }
+}

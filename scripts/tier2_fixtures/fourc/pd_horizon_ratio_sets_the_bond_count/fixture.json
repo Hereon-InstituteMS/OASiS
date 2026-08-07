@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#3, and a correction to how it was worded. The rule (set m = INTERACTION_HORIZON / PERIDYNAMIC_GRID_SPACING deliberately, do not leave it at 2) survives, but the quoted error table against an analytic elasticity solution is not reachable from a 4C run and the deck shows no plateau at m = 3-4: sweeping m = 2,3,4,5 on upstream particle_sph_2d_pdbody_gravity.4C.yaml moves particle 132 monotonically further from the m = 3 reference. What IS directly observable is the line 4C prints once per run, 'Number of initialized peridynamic bonds on this proc: N' — the discrete horizon neighbourhood, growing like m^2 in 2-D: 753 at m=2, 1512 at m=3, 2260 at m=4, 3155 at m=5. BIN_SIZE_LOWER_BOUND is raised from 5 to 8 in every arm so the m=4/m=5 arms clear the horizon<=bin assertion; the m=3 arm still passes the deck's own result tests, proving the raise is inert. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_M3=0",
+    "EXIT_M2=1",
+    "processor 0 finished normally",
+    "M3_RESULT_TEST_FAILURES=0",
+    "M2_RESULT_TEST_FAILURES=8",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "Number of initialized peridynamic bonds on this proc: 753",
+    "BONDS_M4=2260",
+    "BONDS_M5=3155",
+    "HORIZON_ANSWER_PLATEAUS_ABOVE_M3=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_M3=1",
+    "EXIT_M2=0",
+    "BONDS_M2=1512",
+    "HORIZON_ANSWER_PLATEAUS_ABOVE_M3=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the m=2 arm the upstream horizon. Its bond count and result-test verdict then coincide with the m=3 arm, so BONDS_M2 becomes 1512 and M2_RESULT_TEST_FAILURES becomes 0 — the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "arm 2.0 M2",
+    "to": "arm 3.0 M2"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#5, and the execution that CORRECTED it. The rule holds — S2I coupling needs both the dynamics subsection and the interface conditions — but the entry's section name and its Signal are both wrong. 'DESIGN SURF S2I COUPLING CONDITIONS' is not a section name on this build ('is not a valid section name.'); the real ones are DESIGN S2I KINETICS / DESIGN S2I MESHTYING <SURF|LINE> CONDITIONS (REAL_CONDITION_SECTIONS=2 in upstream elch_2D_quad4_s2i_butlervolmer_cycling, which passes 16 result tests). Omitting the kinetics block does not 'compile but never apply the BV kinetics': it aborts with \"For each 'S2IKinetics' or 'S2ISCLCoupling' condition a corresponding 'S2IMeshtying' or 'S2INoEvaluation' condition has to be defined!\" from src/scatra/4C_scatra_utils.cpp. Omitting SCALAR TRANSPORT DYNAMIC/S2I COUPLING instead aborts with 'Type of mortar meshtying for scatra-scatra interface coupling not recognized!' from src/scatra/4C_scatra_timint_meshtying_strategy_s2i.cpp. Neither omission reaches a result test, so there is no silent ~0 electrode current to look for. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_BASELINE=0",
+    "BASELINE_PASSED=16",
+    "EXIT_NO_KINETICS=1",
+    "EXIT_NO_S2I_SECTION=1",
+    "EXIT_CLAIMED_NAME=1",
+    "processor 0 finished normally",
+    "For each 'S2IKinetics' or 'S2ISCLCoupling' condition a corresponding 'S2IMeshtying' or 'S2INoEvaluation' condition has to be defined!",
+    "4C_scatra_utils.cpp",
+    "Type of mortar meshtying for scatra-scatra interface coupling not recognized!",
+    "4C_scatra_timint_meshtying_strategy_s2i.cpp",
+    "Section 'DESIGN SURF S2I COUPLING CONDITIONS' is not a valid section name.",
+    "NO_KINETICS_REACHED_RESULT_TEST=0",
+    "NO_S2I_SECTION_REACHED_RESULT_TEST=0",
+    "REAL_CONDITION_SECTIONS=2"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASELINE=1",
+    "EXIT_NO_KINETICS=0",
+    "EXIT_NO_S2I_SECTION=0",
+    "EXIT_CLAIMED_NAME=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the kinetics arm: keep the condition block. Its abort disappears, EXIT_NO_KINETICS becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "(T/\"no_kinetics.yaml\").write_text(t[:i] + t[j:])",
+      "to": "(T/\"no_kinetics.yaml\").write_text(t)"
+    },
+    {
+      "note": "remove the pathology from the dynamics arm: keep SCALAR TRANSPORT DYNAMIC/S2I COUPLING. Its abort disappears, EXIT_NO_S2I_SECTION becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "(T/\"no_s2i_section.yaml\").write_text(t.replace(sec, \"\"))",
+      "to": "(T/\"no_s2i_section.yaml\").write_text(t)"
+    },
+    {
+      "note": "remove the pathology from the name arm: leave the real section name in place. The 'not a valid section name' line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace(\"DESIGN S2I KINETICS LINE CONDITIONS:\",\n              \"DESIGN SURF S2I COUPLING CONDITIONS:\"))",
+      "to": "    t)"
+    }
+  ]
+}

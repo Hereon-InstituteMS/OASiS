@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::particles#4, confirmed and sharpened. Upstream particle_sph_2d_pdbody_gravity.4C.yaml packs its pdphase body at a measured lattice pitch of 1.00 and declares PERIDYNAMIC_GRID_SPACING: 1.0. Changing ONLY the declared number, leaving every particle where it was, is accepted in complete silence: at 1.05 and at 0.5 the bond list is still exactly 1512 pairs (the neighbour search uses the horizon, not this key), all 3001 steps run, and there are zero lines matching spacing / mismatch / does not match. But 8 of the 10 result values are wrong in both cases — particle 132 lands at posx 7.84206011165002970e+00 for the five per cent slip and 7.59349841769532219e+00 for the factor of two, against the reference 7.92632290305826448e+00. So the entry understates it: a five per cent mismatch already destroys the answer, and in 2-D the bond force carries dx^4, making the factor-of-two case a sixteen-fold error in every bond stiffness. 4C performs no check at all, which is why the entry's advice to measure the pitch from the particle coordinates yourself is the only defence. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "MEASURED_LATTICE_PITCH=1.00",
+    "EXIT_MATCHED=0",
+    "EXIT_OFF5PCT=1",
+    "EXIT_HALF=1",
+    "processor 0 finished normally",
+    "MATCHED_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "BONDS_OFF5PCT=1512",
+    "BONDS_HALF=1512",
+    "OFF5PCT_STEPS_RUN=3001",
+    "HALF_STEPS_RUN=3001",
+    "OFF5PCT_SPACING_WARNINGS=0",
+    "HALF_SPACING_WARNINGS=0",
+    "OFF5PCT_FAILURES=8",
+    "is WRONG --> actresult= 7.84206011165002970e+00",
+    "HALF_FAILURES=8",
+    "is WRONG --> actresult= 7.59349841769532219e+00"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MATCHED=1",
+    "EXIT_OFF5PCT=0",
+    "EXIT_HALF=0",
+    "OFF5PCT_FAILURES=0",
+    "HALF_FAILURES=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the five-per-cent arm: leave PERIDYNAMIC_GRID_SPACING at the upstream 1.0 so it matches the lattice. That arm then reproduces the baseline, OFF5PCT_FAILURES becomes 0 and EXIT_OFF5PCT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  PERIDYNAMIC_GRID_SPACING: 1.0/  PERIDYNAMIC_GRID_SPACING: 1.05/' \"$BASE\" > \"$TMP/off5pct.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/off5pct.yaml\""
+    },
+    {
+      "note": "remove the pathology from the factor-of-two arm as well: it too falls back to the reference answer, HALF_FAILURES becomes 0 and the 7.59349841769532219e+00 evidence disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  PERIDYNAMIC_GRID_SPACING: 1.0/  PERIDYNAMIC_GRID_SPACING: 0.5/'  \"$BASE\" > \"$TMP/half.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/half.yaml\""
+    }
+  ]
+}

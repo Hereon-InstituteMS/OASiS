@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#5, both halves executed. TWO-WAY: upstream tsi_lincompression_iterstaggdisp (tsi_iterstagg) with ITEMAX 100 converges and all result tests pass with zero complaints; ITEMAX 1 stops early and gives T(x=0) = 3.42210895306495843e+02 against the converged 3.47234354640127151e+02 and ux(x=2) = -3.79939319465025183e-01 against -3.79818756585035555e-01. So the rule holds, but 'looks like the right answer' does not: 4C prints '>>>>>> not converged in itemax steps!' — 10 occurrences against 0 in the baseline — and the measured deviation here is 1.4% on temperature and 0.03% on displacement, not the catalogued 5-20%. ONE-WAY: upstream tsi_lincompression_1waydisp (tsi_oneway) with ITEMAX 1 and with ITEMAX 10 make exactly the same number of linear-solver calls, 120 each, taken from 4C's own TimeMonitor call counts, and both pass every result test. That falsifies 'ITEMAX > 1 on a one-way problem wastes wall-clock, each extra iteration recomputes the second field': tsi_oneway makes one pass per step whatever ITEMAX says. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "EXIT_TWOWAY_CONVERGED=0",
+    "EXIT_TWOWAY_ITEMAX1=1",
+    "EXIT_ONEWAY_ITEMAX1=0",
+    "EXIT_ONEWAY_ITEMAX10=0",
+    "TWOWAY_CONVERGED_COMPLAINTS=0",
+    "TWOWAY_ITEMAX1_COMPLAINTS=10",
+    ">>>>>> not converged in itemax steps!",
+    "is WRONG --> actresult= 3.42210895306495843e+02, givenresult= 3.47234354640127151e+02",
+    "is WRONG --> actresult=-3.79939319465025183e-01",
+    "ONEWAY_ITEMAX1_SOLVE_CALLS=120",
+    "ONEWAY_ITEMAX10_SOLVE_CALLS=120",
+    "ONEWAY_EXTRA_ITERATIONS_COST_SOLVES=no",
+    "is CORRECT",
+    "processor 0 finished normally"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TWOWAY_CONVERGED=1",
+    "EXIT_TWOWAY_ITEMAX1=0",
+    "EXIT_ONEWAY_ITEMAX10=1",
+    "TWOWAY_ITEMAX1_COMPLAINTS=0",
+    "ONEWAY_EXTRA_ITERATIONS_COST_SOLVES=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave ITEMAX at 100 on the two-way deck. The coupling then converges, the 'not converged in itemax steps' complaints drop to zero, the result tests pass and EXIT_TWOWAY_ITEMAX1 becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  ITEMAX: 100/  ITEMAX: 1/' \"$TWO\"",
+    "to": "sed 's/  ITEMAX: 100/  ITEMAX: 100/' \"$TWO\""
+  }
+}

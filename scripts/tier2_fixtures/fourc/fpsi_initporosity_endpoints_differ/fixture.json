@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::fpsi#3, and a FALSIFICATION of its Signal. The entry claimed both INITPOROSITY endpoints 'trigger DIVISION BY ZERO in Darcy flow (NaN appears in fluid velocity at the first iteration)'. On upstream fpsi_ofsiinterface.4C.yaml the endpoints behave oppositely: INITPOROSITY 0.0 kills the process with SIGFPE, 'Invalid floating point operation', inside Mat::PAR::PoroLawNeoHooke::compute_porosity — the porous constitutive law, not Darcy flow — with zero 4C error lines, no result-test section and no NaN ever printed (CLAIMED_NAN_AT_POROSITY_ZERO=0); INITPOROSITY 1.0 does not crash at all, completes the run, prints no porosity remark, and simply returns a different answer caught only by the deck's own 2 result tests. The silent endpoint is 1.0. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fpsi",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "ZERO_ARM_INITPOROSITY:0.0",
+    "ONE_ARM_INITPOROSITY:1.0",
+    "EXIT_MID=0",
+    "EXIT_ZERO=136",
+    "EXIT_ONE=1",
+    "OK (2)",
+    "processor 0 finished normally",
+    "Signal: Floating point exception (8)",
+    "Signal code: Invalid floating point operation (7)",
+    "PoroLawNeoHooke",
+    "Result check failed with 2 errors out of 2 tests",
+    "is WRONG --> actresult=",
+    "ZERO_4C_ERROR_LINES=0",
+    "ZERO_REACHED_RESULT_TEST=0",
+    "CLAIMED_NAN_AT_POROSITY_ZERO=0",
+    "ONE_REACHED_RESULT_TEST=1",
+    "ONE_FAILED_TESTS=2",
+    "ONE_POROSITY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MID=1",
+    "EXIT_ZERO=0",
+    "EXIT_ONE=0",
+    "ZERO_ARM_INITPOROSITY:0.5",
+    "ONE_ARM_INITPOROSITY:0.5",
+    "ONE_FAILED_TESTS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the zero-endpoint pathology: give that arm the upstream porosity. ZERO_ARM_INITPOROSITY:0.5 is a forbidden token, EXIT_ZERO stops being 136 and the SIGFPE lines vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "POROSITY_ZERO=0.0",
+      "to": "POROSITY_ZERO=0.5"
+    },
+    {
+      "note": "remove the one-endpoint pathology: give that arm the upstream porosity. ONE_FAILED_TESTS drops to 0 (a forbidden token) and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "POROSITY_ONE=1.0",
+      "to": "POROSITY_ONE=0.5"
+    }
+  ]
+}

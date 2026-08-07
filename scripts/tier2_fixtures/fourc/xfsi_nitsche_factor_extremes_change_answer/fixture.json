@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#3. The rule (the Nitsche penalty must be tuned) holds, but the entry named no 4C key and described symptoms 4C never prints. The key is NIT_STAB_FAC in XFLUID DYNAMIC/STABILIZATION, a dimensionless factor with default 35 -- the mu/h_cut scaling is applied internally through VISC_STAB_TRACE_ESTIMATE and VISC_STAB_HK, so the entry's 'gamma_N in [10,100]*mu/h_cut' is the right magnitude for the wrong quantity. On the upstream monolithic deck xfsi_3D_boxes, NIT_STAB_FAC 0.001 and 1e12 each leave the run healthy -- Newton converges, 'Checking results of 7 tests' is reached -- and each fails six of the seven pinned values. No interface-jump or condition-number diagnostic is ever printed. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 3,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DEFAULT=0",
+    "EXIT_LO=1",
+    "EXIT_HI=1",
+    "processor 0 finished normally",
+    "DEFAULT_RESULT_FAILURES=0",
+    "LO_RESULT_FAILURES=6",
+    "HI_RESULT_FAILURES=6",
+    "LO_REACHED_RESULT_TEST=1",
+    "HI_REACHED_RESULT_TEST=1",
+    "is WRONG --> actresult=",
+    "CLAIMED_JUMP_OR_COND_TEXT=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the low arm: leave NIT_STAB_FAC at its default. LO_RESULT_FAILURES drops to 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  VISC_ADJOINT_SYMMETRY: \"no\"/  VISC_ADJOINT_SYMMETRY: \"no\"\\n  NIT_STAB_FAC: 0.001/'  \"$BASE\" > \"$TMP/lo.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/lo.yaml\""
+    },
+    {
+      "note": "remove the pathology from the high arm: leave NIT_STAB_FAC at its default. HI_RESULT_FAILURES drops to 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  VISC_ADJOINT_SYMMETRY: \"no\"/  VISC_ADJOINT_SYMMETRY: \"no\"\\n  NIT_STAB_FAC: 1.0e12/' \"$BASE\" > \"$TMP/hi.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/hi.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEFAULT=1",
+    "EXIT_LO=0",
+    "EXIT_HI=0",
+    "LO_RESULT_FAILURES=0",
+    "HI_RESULT_FAILURES=0"
+  ]
+}

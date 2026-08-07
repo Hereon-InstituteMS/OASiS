@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#0, and the execution that FALSIFIED its Signal. The entry said an 'ENC' run produces ZERO potential drop where 'divi' resolves the double-layer voltage. Two upstream decks — elch_2D_tertiary_twoEqu_ENC_varParams_ndb_2iter and ..._divi_... — differ in exactly one line (the diff is 2 lines, both EQUPOT) and assert the SAME ten reference values, potential included; both pass all ten at the decks' own 1e-11, so where both closures are legal they agree. Reading the ENC potential directly gives -6.52714792918474840e-02 at node 1 and -6.45850392235840232e-02 at node 97: neither zero nor flat (ENC_POTENTIAL_IS_IDENTICALLY_ZERO=no). Where the material demands 'divi', ENC is not a silent wrong answer but a hard abort — 'Newman material must be combined with divi closing equation for electric potential!' from src/scatra_ele/4C_scatra_ele_calc_service_elch_diffcond.cpp, shown on upstream elch_2D_DLcap_linearKinetics. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "ENC_VS_DIVI_DIFFERING_LINES=2",
+    "ENC_VS_DIVI_DIFF_IS_ONLY_EQUPOT=2",
+    "EXIT_ENC=0",
+    "EXIT_DIVI=0",
+    "ENC_TESTS_PASSED=10",
+    "DIVI_TESTS_PASSED=10",
+    "is WRONG --> actresult=-6.52714792918474840e-02",
+    "ENC_POTENTIAL_IS_IDENTICALLY_ZERO=no",
+    "EXIT_NEWMAN_DIVI=0",
+    "EXIT_NEWMAN_ENC=1",
+    "Newman material must be combined with divi closing equation for electric potential!",
+    "4C_scatra_ele_calc_service_elch_diffcond.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ENC=1",
+    "EXIT_DIVI=1",
+    "EXIT_NEWMAN_ENC=0",
+    "ENC_POTENTIAL_IS_IDENTICALLY_ZERO=yes",
+    "ENC_VS_DIVI_DIFFERING_LINES=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the Newman arm: leave it on 'divi'. The abort naming the requirement disappears, EXIT_NEWMAN_ENC becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/EQUPOT: \"divi\"/EQUPOT: \"ENC\"/' \"$NEWMAN\" > \"$TMP/newman_enc.yaml\"",
+      "to": "cp \"$NEWMAN\" \"$TMP/newman_enc.yaml\""
+    },
+    {
+      "note": "collapse the ENC/divi comparison: point both arms at the same deck. The one-line difference that licences the agreement claim vanishes, ENC_VS_DIVI_DIFFERING_LINES becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "ENC=$(upstream elch_2D_tertiary_twoEqu_ENC_varParams_ndb_2iter.4C.yaml) || exit 3",
+      "to": "ENC=$(upstream elch_2D_tertiary_twoEqu_divi_varParams_ndb_2iter.4C.yaml) || exit 3"
+    }
+  ]
+}

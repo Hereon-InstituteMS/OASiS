@@ -129,83 +129,92 @@ class XFEMFluidGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "[Input] XFEM fluid does NOT use ALE mesh motion. "
-                    " The mesh is fixed (Eulerian) and the interface "
-                    "cuts through elements.  Do not include ALE "
-                    "DYNAMIC. Signal: parser warns `ALE DYNAMIC "
-                    "ignored under XFEM` or runtime "
-                    "`incompatible ALE+XFEM combination`; if ALE is "
-                    "active, the velocity field includes a "
-                    "non-physical mesh-displacement contribution. "
-                    "(Audit 2026-06-02.)"
+                    '[Input] XFEM fluid does NOT use ALE mesh motion. The mesh is '
+                    'fixed (Eulerian) and the interface cuts through elements. An '
+                    'ALE DYNAMIC section is NOT rejected, though: 4C reads it, '
+                    'ignores it, and says nothing, so the deck runs and reproduces '
+                    'the Eulerian answer. What does break is asking the fluid '
+                    'ELEMENT block for ALE kinematics. Signal: with NA: ALE the run '
+                    "parses and then aborts at the first assembly with 'Cannot find "
+                    "state dispnp in discretization fluid' from "
+                    '4C_fem_discretization.hpp -- a missing-state message that '
+                    'names neither XFEM nor ALE. Keep NA: Euler; do not expect a '
+                    'warning about a leftover ALE DYNAMIC block. (Audit 2026-06-02; '
+                    'corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Numerical] Ghost-penalty stabilisation is "
-                    "critical for cut elements with very small volume "
-                    "fractions.  Without it, the system matrix "
-                    "becomes severely ill-conditioned or singular. "
-                    "Signal: linear solver fails on cut-cell time "
-                    "steps with `Belos: condition number > 1e16` or "
-                    "`solver diverged after 0 iterations`; the cut "
-                    "fraction at the failing step is < 1e-3. (Audit "
-                    "2026-06-02.)"
+                    '[Numerical] Ghost-penalty stabilisation matters for cut '
+                    'elements with very small volume fractions, but its absence is '
+                    'an ACCURACY failure, not a solver failure. Signal: with '
+                    'GHOST_PENALTY_STAB: false (or GHOST_PENALTY_FAC: 0.0) the run '
+                    "completes its Newton loop, reaches 'Checking results of N "
+                    "tests' and reports different values; no condition number is "
+                    'printed, no factorisation fails, and a direct solver such as '
+                    "UMFPACK is untroubled. There is no 'Belos: condition number' "
+                    "or 'solver diverged after 0 iterations' message in 4C. Detect "
+                    'this by comparing against a reference, not by watching the '
+                    'solver. (Audit 2026-06-02; corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Input] The interface must be described either "
-                    "by a level-set field or a cutter boundary mesh. "
-                    " If neither is provided, no XFEM enrichment is "
-                    "applied and the solution reverts to standard "
-                    "FEM. Signal: result matches a standard "
-                    "(non-enriched) reference exactly, with no jump "
-                    "in pressure/velocity at the expected interface "
-                    "location; XFEM diagnostic prints `0 enriched "
-                    "elements`. (Audit 2026-06-02.)"
+                    '[Input] The interface must be described by a level-set field '
+                    'or a cutter boundary mesh. If no XFEM coupling condition is '
+                    'present, 4C does NOT fall back to standard FEM. Signal: it '
+                    "aborts in Cut::CutWizard::safety_checks with 'You have to call "
+                    "PrepareCut() before you can call the Cut-routine' from "
+                    '4C_cut_cutwizard.cpp, before any time step completes, so no '
+                    'result test is reached and there is no non-enriched answer to '
+                    'compare with. 4C prints no count of enriched elements at any '
+                    'point. (Audit 2026-06-02; corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Input] For two-phase problems, two fluid "
-                    "materials must be defined -- one for each side "
-                    "of the interface.  The XFEM framework selects "
-                    "the correct material based on the sign of the "
-                    "level-set function. Signal: 4C aborts with "
-                    "`XFEM: material map needs MAT_NEGATIVE and "
-                    "MAT_POSITIVE` or the two-phase problem behaves "
-                    "as single-phase (density/viscosity uniform "
-                    "across the interface). (Audit 2026-06-02.)"
+                    '[Input] Two-phase level-set XFEM is not configured through a '
+                    'material map. DESIGN XFEM LEVELSET TWOPHASE VOL CONDITIONS '
+                    'takes only E, COUPLINGID, LEVELSETFIELDNO, BOOLEANTYPE and '
+                    'COMPLEMENTARY -- there are no MAT_NEGATIVE or MAT_POSITIVE '
+                    'keys anywhere in 4C, and adding them is rejected as unmatched '
+                    'condition input. Signal: a correctly spelled two-phase '
+                    'condition parses and then dies in Element::location_vector '
+                    "with 'wrong number of nodes' from 4C_fem_general_element.cpp; "
+                    'the only upstream decks that mention the condition leave it as '
+                    'an empty list. Treat two-phase XFEM as unavailable rather than '
+                    'mis-specified. (Audit 2026-06-02; corrected by execution '
+                    '2026-08-06.)'
                 ),
                 (
-                    "[Numerical] Cut elements require special "
-                    "integration rules.  The VOLUME_GAUSS_POINTS_BY "
-                    "parameter controls this.  'Tessellation' is "
-                    "more robust; 'MomentFitting' is more efficient "
-                    "but may fail for complex cut geometries. "
-                    "Signal: MomentFitting failures show runtime "
-                    "warning `MomentFitting did not converge for "
-                    "element X — falling back to Tessellation` or "
-                    "NaN residual on a cut step; switching to "
-                    "Tessellation removes the warning. (Audit "
-                    "2026-06-02.)"
+                    '[Numerical] Cut elements need a special integration rule, '
+                    'chosen with VOLUME_GAUSS_POINTS_BY. Tessellation and '
+                    'DirectDivergence are the usable values. Signal: MomentFitting '
+                    'does not warn and does not fall back -- it terminates the '
+                    'process with SIGSEGV inside '
+                    'Core::FE::GaussPointsComposite::num_points, so the log ends '
+                    "with 'Signal: Segmentation fault (11)' and no 4C-level "
+                    'diagnostic at all. If a cut run dies without a PROC 0 ERROR '
+                    'block, check this key first. (Audit 2026-06-02; corrected by '
+                    'execution 2026-08-06.)'
                 ),
                 (
-                    "[Numerical] The Nitsche penalty parameter "
-                    "(NITSCHE_PENALTY_PARAMETER) must be large "
-                    "enough to enforce the interface condition but "
-                    "not so large that it causes ill-conditioning. "
-                    " Typical values are O(10)--O(100). Signal: too "
-                    "low -> interface jump condition violation > 5% "
-                    "(visible discontinuity offset in post-"
-                    "processing); too high -> linear-solver "
-                    "condition number > 1e14, Newton stalls. "
-                    "(Audit 2026-06-02.)"
+                    '[Numerical] The Nitsche penalty knob is NIT_STAB_FAC in XFLUID '
+                    'DYNAMIC/STABILIZATION (default 35), with NIT_STAB_FAC_TANG for '
+                    'the tangential term; the viscous scaling by element size is '
+                    'applied internally through VISC_STAB_TRACE_ESTIMATE and '
+                    'VISC_STAB_HK. There is no NITSCHE_PENALTY_PARAMETER key. '
+                    "Signal: the wrong name fails with 'Could not match this input' "
+                    "and 4C lists the section's real keys, including NIT_STAB_FAC. "
+                    'Mis-setting the real key gives wrong results rather than a '
+                    'solver stall, and on problems the space reproduces exactly it '
+                    "changes nothing, because Nitsche's method is consistent. "
+                    '(Audit 2026-06-02; corrected by execution 2026-08-06.)'
                 ),
                 (
-                    "[Output] Output for XFEM problems may produce "
-                    "multiple VTU files (one per sub-domain).  Use "
-                    "appropriate post-processing to visualise the "
-                    "enriched fields. Signal: visualize('list') "
-                    "shows fluid_subdomain_0-*.vtu, "
-                    "fluid_subdomain_1-*.vtu rather than a single "
-                    "fluid-*.vtu; loading just one of them shows "
-                    "only half the domain. (Audit 2026-06-02.)"
+                    '[Output] An XFEM fluid writes NO VTU files, per sub-domain or '
+                    'otherwise. Signal: with IO/RUNTIME VTK OUTPUT and IO/RUNTIME '
+                    'VTK OUTPUT/FLUID enabled, a plain Fluid problem produces '
+                    'fluid-*.vtu plus a .pvd, while the same configuration on a '
+                    'Fluid_XFEM problem produces neither, exits 0, and never '
+                    'mentions that the requested output was skipped. Read XFEM '
+                    'results from the legacy Ensight .result file, or set '
+                    'OUTPUT_GMSH with GMSH_SOL_OUT and read the Gmsh .pos files. '
+                    '(Audit 2026-06-02; corrected by execution 2026-08-06.)'
                 ),
             ],
             "typical_experiments": [

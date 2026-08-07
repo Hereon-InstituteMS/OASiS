@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::multiscale#7. The entry told an agent to 'use the MULTISCALE micro-output writer (separate VTU per Gauss point)' without naming it. It is RUNTIMEOUTPUT_GP, a key on MAT_Struct_Multiscale taking all / none / first_gp_only, and what it emits is one whole output tree per Gauss point named res_microdis<N>_el<E>_gp<G>-vtk-files/ — the naming is the only way to tell which RVE a file belongs to, so the fixture asserts a concrete example of it. Flipping MAT 1 from all to none on upstream sohex8_multiscale_macro drops the per-Gauss-point trees from 26 to 2; both arms exit 0, both pass all three result tests, and nothing is printed about the micro output being off. That is the trap: an agent who never sets the key gets a clean, complete, silent run with the micro scale simply absent. Each arm runs in its own directory because 4C writes VTU trees relative to the working directory. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "multiscale",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ALL=0",
+    "EXIT_NONE=0",
+    "processor 0 finished normally",
+    "ALL_TESTS_CORRECT=3",
+    "NONE_TESTS_CORRECT=3",
+    "ALL_GP_TREES=26",
+    "NONE_GP_TREES=2",
+    "res_microdis1_el",
+    "-vtk-files",
+    "NONE_OUTPUT_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ALL=1",
+    "EXIT_NONE=1",
+    "ALL_GP_TREES=0",
+    "NONE_GP_TREES=26"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave RUNTIMEOUTPUT_GP at 'all' in the second arm. Both arms then emit 26 per-Gauss-point trees, NONE_GP_TREES becomes 26, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/      RUNTIMEOUTPUT_GP: all/      RUNTIMEOUTPUT_GP: none/' macro.yaml > d_none/macro.yaml",
+    "to": "cp macro.yaml d_none/macro.yaml"
+  }
+}

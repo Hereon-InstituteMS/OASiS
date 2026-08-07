@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#6, and the execution that FALSIFIED its Signal. The entry said SUPG on a pure-diffusion ELCH 'damps physical concentration gradients by 5-20%'. On the diffusion-conduction framework (DIFFCOND_FORMULATION: true, upstream elch_2D_tertiary_twoEqu_ENC_varParams_ndb_2iter) you never get a damped answer: 4C refuses with 'No stabilization is necessary for solving the ELCH diffusion-conduction framework!!' from src/scatra/4C_scatra_timint_elch.cpp, exit 1, while the no_stabilization arm passes all ten result tests. The advice is therefore enforced, not a quiet degradation to watch for. The second half measures the case where the choice IS free — dilute Nernst-Planck, upstream elch_1D_10ele_3ions_stab_fdcheck with FDCHECK stripped from both arms — and finds the two settings do not differ by a small percentage but by order unity (NP_CHANGE_IS_A_SMALL_PERTURBATION=no; first recorded species 1.0067277204039389 with SUPG against 2.1950001357541145 without), because that deck is convection-dominated and the stabilisation is doing real work. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DC_NOSTAB=0",
+    "EXIT_DC_SUPG=1",
+    "DC_NOSTAB_PASSED=10",
+    "processor 0 finished normally",
+    "No stabilization is necessary for solving the ELCH diffusion-conduction framework!!",
+    "4C_scatra_timint_elch.cpp",
+    "NP_VALUES_READ=10 10",
+    "NP_SUPG_FIRST_VALUE=1.0067277204039389",
+    "NP_NOSTAB_FIRST_VALUE=2.1950001357541145",
+    "NP_STABILISATION_CHANGES_CONCENTRATIONS=yes",
+    "NP_CHANGE_IS_A_SMALL_PERTURBATION=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DC_SUPG=0",
+    "EXIT_DC_NOSTAB=1",
+    "NP_STABILISATION_CHANGES_CONCENTRATIONS=no",
+    "NP_CHANGE_IS_A_SMALL_PERTURBATION=yes",
+    "NP_SUPG_FIRST_VALUE=none"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave the diffusion-conduction deck unstabilised. The refusal disappears, EXIT_DC_SUPG becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed -e 's/  STABTYPE: \"no_stabilization\"/  STABTYPE: \"SUPG\"/' \\\n    -e 's/  DEFINITION_TAU: \"Zero\"/  DEFINITION_TAU: \"Taylor_Hughes_Zarins\"/' \\\n    \"$DIFF\" > \"$TMP/dc_supg.yaml\"",
+      "to": "cp \"$DIFF\" \"$TMP/dc_supg.yaml\""
+    },
+    {
+      "note": "collapse the Nernst-Planck comparison: leave the second arm stabilised too. The two agree, NP_STABILISATION_CHANGES_CONCENTRATIONS flips to no and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "(T/\"np_nostab.yaml\").write_text(rec.replace(\n    old, 'SCALAR TRANSPORT DYNAMIC/STABILIZATION:\\n  STABTYPE: \"no_stabilization\"\\n  DEFINITION_TAU: \"Zero\"'))",
+      "to": "(T/\"np_nostab.yaml\").write_text(rec)"
+    }
+  ]
+}

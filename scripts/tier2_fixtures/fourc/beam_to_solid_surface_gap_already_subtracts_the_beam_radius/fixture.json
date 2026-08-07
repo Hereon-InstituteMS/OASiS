@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#4, which execution FALSIFIED. 4C's beam-to-solid surface contact gap already subtracts the beam cross-section radius, so gap = 0 means the beam's OUTER SURFACE touches the solid, not its centerline, and there is no offset for the user to add. Upstream beam3r_herm2line3_static_beam_to_solid_surface_contact_ironing_penalty_gap_variation_segmentation.4C.yaml was run three ways differing only in the beam interaction radius: with no INTERACTIONRADIUS 4C derives 0.4 from MOMIN2 as (4*Iyy/pi)^0.25 and all six result tests pass; INTERACTIONRADIUS 0.4 gives the identical verdict, pinning the derived default; INTERACTIONRADIUS 0.2 fails all six. Reading the gap array 4C writes into its own contact visualization output at the first step, where the two arms are still in the same configuration, every one of the 18 gap values in the thin-beam arm exceeds its counterpart by exactly 0.200000 — the radius difference — and the correct-radius arm's minimum initial gap is zero to below 1e-12. If the gap were the bare centerline distance the radius could not enter at all. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C; both arms instrumented identically (ascii VTK, per-step output, absolute path to the deck's NOX xml), the radius being the only difference.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "DERIVED_DEFAULT_RADIUS=0.4",
+    "EXIT_RDEFAULT=0",
+    "EXIT_REXPLICIT=0",
+    "EXIT_RHALF=1",
+    "processor 0 finished normally",
+    "PID  0 currently monitors    16 beam contact pairs",
+    "RDEFAULT_FAILURES=0",
+    "REXPLICIT_FAILURES=0",
+    "RHALF_FAILURES=6",
+    "GAP_POINTS_STEP1=18",
+    "GAP_SHIFT_STEP1_IS_UNIFORM=yes",
+    "GAP_SHIFT_STEP1=0.200000",
+    "MIN_GAP_STEP1_RDEFAULT_IS_ZERO_TO_1E-12=yes",
+    "MIN_GAP_STEP1_RHALF=0.200000",
+    "CLAIMED_GAP_IGNORES_BEAM_RADIUS=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_RDEFAULT=1",
+    "EXIT_RHALF=0",
+    "RHALF_FAILURES=0",
+    "GAP_SHIFT_STEP1=0.000000",
+    "CLAIMED_GAP_IGNORES_BEAM_RADIUS=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the contrast: give the thin-beam arm the same 0.4 radius as the reference. The gap shift collapses to 0.000000, CLAIMED_GAP_IGNORES_BEAM_RADIUS flips to yes, RHALF_FAILURES becomes 0 and EXIT_RHALF becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(os.path.join(d, \"rhalf.yaml\"),     \"w\").write(t.replace(anchor, anchor + \"\\n      INTERACTIONRADIUS: 0.2\"))",
+      "to": "open(os.path.join(d, \"rhalf.yaml\"),     \"w\").write(t.replace(anchor, anchor + \"\\n      INTERACTIONRADIUS: 0.4\"))"
+    },
+    {
+      "note": "break the pin on the derived default: give the explicit arm 0.2 instead of 0.4. REXPLICIT_FAILURES stops being 0 and EXIT_REXPLICIT becomes 1, so the evidence that 4C's own derived radius equals the explicit 0.4 is gone and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(os.path.join(d, \"rexplicit.yaml\"), \"w\").write(t.replace(anchor, anchor + \"\\n      INTERACTIONRADIUS: 0.4\"))",
+      "to": "open(os.path.join(d, \"rexplicit.yaml\"), \"w\").write(t.replace(anchor, anchor + \"\\n      INTERACTIONRADIUS: 0.2\"))"
+    }
+  ]
+}

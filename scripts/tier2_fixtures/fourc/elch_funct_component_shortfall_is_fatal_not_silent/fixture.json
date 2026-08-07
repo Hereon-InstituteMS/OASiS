@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::electrochemistry#3, and the execution that FALSIFIED it. The entry said a multi-component FUNCT missing one COMPONENT 'silently sets that scalar to 0 — visible as discontinuous initial concentration plot for the missing species'. Deleting the last COMPONENT of the initial-field FUNCT on upstream elch_1D_10ele_3ions_stab_fdcheck (COMPONENTS_IN_BASELINE=8 -> COMPONENTS_IN_SHORT=7) aborts on the first evaluation with 'There are 4 expressions but tried to access component 4' from core/utils/src/functions/4C_utils_function.cpp. The run never reaches its result tests (SHORT_FUNCT_REACHED_RESULT_TEST=0), so there is no field to plot and nothing silent about it (MISSING_COMPONENT_IS_SILENTLY_ZERO=no). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "electrochemistry",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "COMPONENTS_IN_BASELINE=8",
+    "COMPONENTS_IN_SHORT=7",
+    "EXIT_BASELINE=0",
+    "EXIT_SHORT_FUNCT=1",
+    "BASELINE_PASSED=10",
+    "processor 0 finished normally",
+    "There are 4 expressions but tried to access component 4",
+    "4C_utils_function.cpp",
+    "SHORT_FUNCT_REACHED_RESULT_TEST=0",
+    "MISSING_COMPONENT_IS_SILENTLY_ZERO=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SHORT_FUNCT=0",
+    "MISSING_COMPONENT_IS_SILENTLY_ZERO=yes",
+    "COMPONENTS_IN_SHORT=8"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep every COMPONENT. The two decks become identical, COMPONENTS_IN_SHORT rises to 8, the function-index abort disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(tail, \"RESULT DESCRIPTION:\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

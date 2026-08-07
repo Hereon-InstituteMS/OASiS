@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#3. 4C DOES compute a DEM critical time step and DOES check it -- and only warns. At 20x the deck's own step the warning is printed once per step (WARN_LINES counted against the 50 configured steps, WARN_IS_ONE_PER_STEP=yes), the time loop still reaches the end, the run still reaches the result-test manager (REACHED_RESULT_TESTS=yes), nothing in the time loop aborts (ABORTED_IN_THE_TIME_LOOP=no) and the only real symptom is VERDICTS_WRONG. SOURCE_FILE_MENTIONED=no records that the warning is a bare stream write with no file reference, unlike every FOUR_C_THROW in the module -- so a log filter keyed on 'PROC 0 ERROR' misses it entirely. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 rebuilds every probe deck from the untouched upstream file, so the pathology is absent; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BIGDT=1",
+    "larger than critical time step",
+    "WARN_LINES=50",
+    "WARN_IS_ONE_PER_STEP=yes",
+    "REACHED_RESULT_TESTS=yes",
+    "ABORTED_IN_THE_TIME_LOOP=no",
+    "SOURCE_FILE_MENTIONED=no",
+    "VERDICTS_WRONG=4"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "WARN_LINES=0",
+    "WARN_IS_ONE_PER_STEP=no",
+    "VERDICTS_WRONG=0",
+    "ABORTED_IN_THE_TIME_LOOP=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the broken deck(s) straight from the untouched upstream deck, so the thing being claimed is simply absent. The diagnostic then never appears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

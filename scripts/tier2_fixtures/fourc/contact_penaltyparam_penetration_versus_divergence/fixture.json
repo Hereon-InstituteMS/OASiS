@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::contact#2 — PENALTYPARAM traded off across five decades on one self-contained two-block mortar penalty deck (two unit cubes 0.1 apart, upper one pushed down 0.3 over ten steps). Penetration is computed from 4C's own report of the two facing corner nodes, forced to print by an unmatchable RESULT DESCRIPTION. Soft penalties converge happily while the bodies interpenetrate, and from 1e6 upward NOX aborts with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp. Two corrections to the entry. Its recommended starting value of 1e3 does NOT satisfy its own stated 5 %-of-edge-length acceptance rule on this problem (RECOMMENDED_1E3_MEETS_5PCT_RULE=no), so 1e3 is a first bracket rather than a default. And the promised condition-number warning is not an observable: CONDITION_NUMBER_WARNINGS=0 on the diverged arm, so the only signal at the stiff end is the Newton failure itself. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_P0=1",
+    "EXIT_P4=1",
+    "EXIT_P6=1",
+    "STEPS_P0=10",
+    "STEPS_P2=10",
+    "STEPS_P3=10",
+    "STEPS_P4=10",
+    "is WRONG --> actresult=",
+    "Contact-Normal-Active-Set-Size = 4",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "PENETRATION_FRACTION_1e6=no_solution",
+    "SOFTEST_PENETRATES_OVER_10PCT=yes",
+    "PENETRATION_FALLS_WITH_PENALTY=yes",
+    "RECOMMENDED_1E3_MEETS_5PCT_RULE=no",
+    "CONDITION_NUMBER_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_P6=0",
+    "STEPS_P0=0",
+    "SOFTEST_PENETRATES_OVER_10PCT=no",
+    "PENETRATION_FALLS_WITH_PENALTY=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology at the soft end: give the softest arm the tuned penalty. Its penetration then drops below 10 % and the monotone ordering across arms collapses, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"1.0e0\" > \"$TMP/p0.yaml\"",
+      "to": "deck \"1.0e4\" > \"$TMP/p0.yaml\""
+    },
+    {
+      "note": "remove the pathology at the stiff end: give the diverging arm the tuned penalty. It then converges, so the NOX abort and PENETRATION_FRACTION_1e6=no_solution both disappear and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"1.0e6\" > \"$TMP/p6.yaml\"",
+      "to": "deck \"1.0e4\" > \"$TMP/p6.yaml\""
+    }
+  ]
+}

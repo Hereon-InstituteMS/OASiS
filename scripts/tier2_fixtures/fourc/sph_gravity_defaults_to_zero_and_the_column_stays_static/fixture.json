@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#7, confirmed by execution and made exact. Deleting the single GRAVITY_ACCELERATION line from upstream particle_sph_1d_hydrostatic_freesurface_densityintegration_cubicspline_adami.4C.yaml leaves the column not approximately static but bit-static: the probe particle reports posx = 4.84999999999999964e+00 (its start), velx = 0.00000000000000000e+00 and density = 1.00000000000000000e+00 (exactly INITDENSITY), against 4.81167849295583760, -3.50289401431777894e-05 and 1.00015521027962739 with gravity. 4C prints no warning about a missing or zero body force — grep for 'gravity' or 'body force' in the log returns nothing — so on a deck you wrote yourself the only symptom is a physically dead simulation. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "GRAVITY_LINES_REMOVED=1",
+    "EXIT_WITHGRAVITY=0",
+    "EXIT_NOGRAVITY=1",
+    "processor 0 finished normally",
+    "WITHGRAVITY_FAILURES=0",
+    "NOGRAVITY_WARNINGS=0",
+    "NOGRAVITY_FAILURES=3",
+    "is WRONG --> actresult= 4.84999999999999964e+00",
+    "is WRONG --> actresult= 0.00000000000000000e+00",
+    "is WRONG --> actresult= 1.00000000000000000e+00",
+    "COLUMN_IS_EXACTLY_STATIC=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHGRAVITY=1",
+    "EXIT_NOGRAVITY=0",
+    "GRAVITY_LINES_REMOVED=0",
+    "COLUMN_IS_EXACTLY_STATIC=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep GRAVITY_ACCELERATION in the second arm. The column settles as the deck expects, GRAVITY_LINES_REMOVED becomes 0, the result tests pass and EXIT_NOGRAVITY becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "grep -v 'GRAVITY_ACCELERATION' \"$BASE\" > \"$TMP/nogravity.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nogravity.yaml\""
+  }
+}

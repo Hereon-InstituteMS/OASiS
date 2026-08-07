@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#5 — the 4C symbolic-expression parser knows 'pi', and its two failure modes are different and arrive at different times. Writing the manufactured solution with 'pi'/'2*pi' instead of baked-in numeric literals gives BIT-IDENTICAL nodal values (PI_IS_BIT_IDENTICAL_TO_LITERAL=yes; node 41 reads 2.25000000000000000e+00 either way), so the generator's use of literals is a precaution, not a requirement. A syntax error dies at input read before any discretisation exists (MALFORMED_REACHED_DISCRETISATION=0), echoing the expression with a caret under the offending character plus 'Expected closing parenthesis.' from core/utils/src/functions/4C_utils_symbolic_expression.cpp. An unknown SYMBOL is a different failure and a later one: it parses, the discretisation is built (UNKNOWN_SYMBOL_REACHED_DISCRETISATION=yes), and only the first evaluation reports \"Missing variables foo to evaluate expression '1.0 + foo*x'\" from 4C_utils_symbolic_expression_details.hpp. NUMSTEP 0 makes the result test report the function evaluation itself. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "PI_VALUES_READ=2",
+    "PI_IS_BIT_IDENTICAL_TO_LITERAL=yes",
+    "is WRONG --> actresult= 2.25000000000000000e+00",
+    "Error while parsing:",
+    "1.0 + sin(pi*x",
+    "Expected closing parenthesis.",
+    "4C_utils_symbolic_expression.cpp",
+    "MALFORMED_REACHED_DISCRETISATION=0",
+    "Missing variables foo to evaluate expression '1.0 + foo*x'",
+    "4C_utils_symbolic_expression_details.hpp",
+    "UNKNOWN_SYMBOL_REACHED_DISCRETISATION=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "PI_IS_BIT_IDENTICAL_TO_LITERAL=no",
+    "PI_VALUES_READ=0",
+    "UNKNOWN_SYMBOL_REACHED_DISCRETISATION=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the syntax arm: close the parenthesis. The parser error and its caret line vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "\\\"u_override\\\":\\\"1.0 + sin(pi*x\\\"",
+      "to": "\\\"u_override\\\":\\\"1.0 + sin(pi*x)\\\""
+    },
+    {
+      "note": "remove the pathology from the unknown-symbol arm: use a variable the parser has. The 'Missing variables foo' line vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "\\\"u_override\\\":\\\"1.0 + foo*x\\\"",
+      "to": "\\\"u_override\\\":\\\"1.0 + 2*x\\\""
+    },
+    {
+      "note": "break the pi claim: write a value that is not pi where 'pi' was. The two arms then disagree, PI_IS_BIT_IDENTICAL_TO_LITERAL flips to no and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "WITH_PI='1 + (1*sin(pi*x)*sin(pi*y) + 0.5*x)*cos(2*pi*t)'",
+      "to": "WITH_PI='1 + (1*sin(3.14*x)*sin(3.14*y) + 0.5*x)*cos(2*3.14*t)'"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::beams#0, and a FALSIFICATION of the whole claim. The entry said beams CANNOT use Exodus mesh files and that 'inline YAML is the only path', quoting 'beam element type not supported in Exodus' from 4C_io_meshreader.cpp. Neither the string nor that behaviour exists. This fixture ships a six-node Exodus mesh and solves a BEAM3R LINE2 cantilever entirely from it \u2014 STRUCTURE GEOMETRY: FILE with an ELEMENT_BLOCKS entry BEAM3R/LINE2, clamped and loaded via ENTITY_TYPE node_set_id \u2014 exit 0, ten steps, '5 cells of type line2'. The Exodus reader maps BAR2/BAR3 onto line2/line3, which is what beams need. The narrower true statement, which replaces the claim, is about the TRIAD FIELD: the reader takes coordinates, cell blocks and node sets and nothing else, so NODAL_ROTATION_VECTORS cannot be fed from Exodus and aborts with \"The cell data does not contain the key 'TRIADS'.\" from core/io/src/4C_io_mesh.hpp, while omitting the triad source entirely fails the element spec with 'Could not match this input'. Use a literal TRIADS in the element block, remembering it is one triad set shared by every element of that block. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf); note this build has FOUR_C_WITH_VTK off, so the .vtu route used by the upstream *_triads_from_mesh decks cannot be exercised here and Exodus is the mesh format under test.",
+  "backend": "fourc",
+  "physics": "beams",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_LITERAL=0",
+    "EXIT_FROMMESH=1",
+    "EXIT_NOTRIADS=1",
+    "Read mesh from file",
+    "Mesh consists of 6 points and 5 cells organized in 1 cell-blocks and 2 point-sets.",
+    "cells of type line2",
+    "processor 0 finished normally",
+    "EXODUS_BEAM_STEPS=10",
+    "The cell data does not contain the key 'TRIADS'.",
+    "4C_io_mesh.hpp",
+    "Could not match this input",
+    "CLAIMED_EXODUS_REFUSAL_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "missing_exodus_asset",
+    "EXIT_LITERAL=1",
+    "EXIT_FROMMESH=0",
+    "EXIT_NOTRIADS=0",
+    "EXODUS_BEAM_STEPS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the triad-field arm: give it a literal TRIADS instead of asking the mesh for a field the Exodus reader never loads. That arm then runs to completion and the cell-data diagnostic vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"          NODAL_ROTATION_VECTORS: TRIADS\" > \"$TMP/from_mesh.yaml\"",
+      "to": "deck \"          TRIADS: [0, 0, 0, 0, 0, 0]\" > \"$TMP/from_mesh.yaml\""
+    },
+    {
+      "note": "remove the pathology from the third arm: supply the triad source it was missing. The element spec then matches, that arm exits 0, and 'Could not match this input' disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"                                        > \"$TMP/no_triads.yaml\"",
+      "to": "deck \"          TRIADS: [0, 0, 0, 0, 0, 0]\" > \"$TMP/no_triads.yaml\""
+    }
+  ]
+}

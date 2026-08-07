@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_airways#6, and the execution that FALSIFIED its Signal. Neither 'unknown element type for ELEMENT_BLOCK X' nor 'elementType BEAM3R has no RedAirway implementation' is emitted by 4C; both counters come out 0. What is really emitted: REDAIRWAY (the spelling the entry itself used) -> \"Unknown type 'REDAIRWAY' of finite element\" from core/comm/src/4C_comm_parobjectfactory.cpp; BEAM3R -> \"Required 'one_of' not found in input line\" from the element reader, never reaching runtime; RED_AIRWAY -> the acinus TYPE is rejected with the list of real airway TYPEs. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C on upstream deck red_airway_one_acinus_NeoHookean.4C.yaml.",
+  "backend": "fourc",
+  "physics": "reduced_airways",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_REDAIRWAY=1",
+    "EXIT_BEAM=1",
+    "EXIT_REDAIR=1",
+    "processor 0 finished normally",
+    "Unknown type 'REDAIRWAY' of finite element",
+    "4C_comm_parobjectfactory.cpp",
+    "Required 'one_of' not found in input line",
+    "Valid options are: CompliantResistive|ConvectiveViscoElasticRLC|InductoResistive|RLC|Resistive|ViscoElasticRLC",
+    "CLAIMED_ELEMENT_BLOCK_TEXT=0",
+    "CLAIMED_BEAM3R_RUNTIME_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_REDAIRWAY=0",
+    "EXIT_BEAM=0",
+    "EXIT_REDAIR=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the wrong-element-name pathology: keep RED_ACINUS in the arm that used REDAIRWAY. The ParObject factory diagnostic vanishes, EXIT_REDAIRWAY becomes 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/1 RED_ACINUS LINE2/1 REDAIRWAY LINE2/'  base.yaml > redairway.yaml",
+      "to": "cp base.yaml redairway.yaml"
+    },
+    {
+      "note": "remove the beam-element pathology: keep RED_ACINUS in the BEAM3R arm. The element-reader abort vanishes, EXIT_BEAM becomes 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/1 RED_ACINUS LINE2/1 BEAM3R LINE2/'     base.yaml > beam.yaml",
+      "to": "cp base.yaml beam.yaml"
+    },
+    {
+      "note": "remove the airway/acinus mix-up: keep RED_ACINUS where RED_AIRWAY was substituted. The TYPE enumeration vanishes, EXIT_REDAIR becomes 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/1 RED_ACINUS LINE2/1 RED_AIRWAY LINE2/' base.yaml > redair.yaml",
+      "to": "cp base.yaml redair.yaml"
+    }
+  ]
+}

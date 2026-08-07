@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::cardiac_monodomain#0. On upstream scatra_myocard_FHN_material the Neumann stimulus is on only over three 2-unit windows ([0,2], [350,352], [850,852]). dt = 0.1 gives phi = 0.778036 and the deck's result test CORRECT; dt = 1.0 gives 0.798323, silently 2.6% off; dt = 5.0 gives EXACTLY 0.0 -- every sample of the stimulus curve misses every window, the source is never applied, and there is no action potential. The run still converges, reaches the result test and prints no stimulus warning (DTBIG_STIMULUS_WARNINGS=0). Note this fixture also pins the working-directory rule for IFPACK_XML_FILE: without xml/preconditioner/ifpack.xml in the cwd the deck dies in Teuchos with status 134 and no PROC 0 ERROR banner. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiac_monodomain",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_DT01=0",
+    "EXIT_DT1=1",
+    "EXIT_DTBIG=1",
+    "DT01_TESTS_CORRECT=1",
+    "processor 0 finished normally",
+    "actresult=7.98323321325498769e-01",
+    "is WRONG --> actresult= 0.00000000000000000e+00",
+    "DTBIG_REACHED_RESULT_TEST=1",
+    "VERDICT: COARSE_DT_PRODUCES_AN_ACTION_POTENTIAL=no",
+    "DTBIG_STIMULUS_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DT01=1",
+    "EXIT_DTBIG=0",
+    "DTBIG_REACHED_RESULT_TEST=0",
+    "VERDICT: COARSE_DT_PRODUCES_AN_ACTION_POTENTIAL=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the coarse arm a time step that still samples the 2-unit stimulus windows. An action potential appears, the exactly-zero result disappears, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "COARSE_DT=5.0",
+    "to": "COARSE_DT=0.1"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::porous_media#5 and the execution that FALSIFIED its Signal. Deleting CLONING MATERIAL MAP from upstream poro_2D_quad4_linporo.4C.yaml aborts with 'At least one material pairing required in --CLONING MATERIAL MAP.' from core/fem/src/general/utils/4C_fem_general_utils_createdis.hpp, raised inside clone_discretization<PoroElast::Utils::PoroelastCloneStrategy>. The quoted 'CloningMaterialMap missing for porofluid -> solid' does not exist (CLAIMED_CLONINGMATERIALMAP_TEXT=0), and the alternative the entry offered — a silent decoupled run — cannot happen either, because the second field is never created and no result test is reached (UNMAPPED_RESULT_TESTS_PERFORMED=0). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "porous_media",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MAPPED=0",
+    "EXIT_UNMAPPED=1",
+    "processor 0 finished normally",
+    "At least one material pairing required in --CLONING MATERIAL MAP.",
+    "4C_fem_general_utils_createdis.hpp",
+    "FAILS_IN_POROELAST_CLONE_STRATEGY=2",
+    "UNMAPPED_RESULT_TESTS_PERFORMED=0",
+    "CLAIMED_CLONINGMATERIALMAP_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MAPPED=1",
+    "EXIT_UNMAPPED=0",
+    "FAILS_IN_POROELAST_CLONE_STRATEGY=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the CLONING MATERIAL MAP in the second arm. The clone succeeds, EXIT_UNMAPPED becomes 0 and the diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(blk, \"\", 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

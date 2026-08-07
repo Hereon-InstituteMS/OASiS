@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#6, exercising #7 alongside it. Four probes on the same two upstream friction decks. TangentialLinSpringDamp over NormalHertz is refused with a message that names the restriction exactly. FRICT_COEFF_TANG: 0.0 and FRICT_COEFF_ROLL: 0.0 are REFUSED, so 'frictionless' cannot be written as a zero coefficient -- the wording, 'invalid input parameter ... for this kind of contact law', reads like a malformed value rather than an out-of-range one, and is the same message a missing key gives. Dropping POISSON_RATIO from the tangential deck shows it is validated by the FRICTION handlers, not by any normal contact law. STEPS_BEFORE_ABORT=0 counts the TIME: lines across all four logs, pinning that every one of them fires at setup. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_HERTZ=1",
+    "EXIT_ZEROTANG=1",
+    "EXIT_ZEROROLL=1",
+    "EXIT_NOPOISSON=1",
+    "EXIT_TANBASE=0",
+    "tangential contact law only valid with linear normal contact law!",
+    "NONLINEAR_NORMAL_REFUSED=yes",
+    "invalid input parameter FRICT_COEFF_TANG for this kind of contact law!",
+    "ZERO_TANG_FRICTION_REFUSED=yes",
+    "invalid input parameter FRICT_COEFF_ROLL for this kind of contact law!",
+    "ZERO_ROLL_FRICTION_REFUSED=yes",
+    "invalid input parameter POISSON_RATIO (expected in range ]-1.0; 0.5])!",
+    "POISSON_IS_A_FRICTION_KEY=yes",
+    "STEPS_BEFORE_ABORT=0",
+    "TANBASE_CLEAN=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "NONLINEAR_NORMAL_REFUSED=no",
+    "ZERO_TANG_FRICTION_REFUSED=no",
+    "ZERO_ROLL_FRICTION_REFUSED=no",
+    "POISSON_IS_A_FRICTION_KEY=no",
+    "EXIT_ZEROTANG=0",
+    "EXIT_HERTZ=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  },
+  "covers": [
+    "particle_dem:6",
+    "particle_dem:7"
+  ]
+}

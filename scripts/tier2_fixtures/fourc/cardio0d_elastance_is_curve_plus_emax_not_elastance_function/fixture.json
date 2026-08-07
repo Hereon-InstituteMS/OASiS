@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::cardiovascular0d#1, and the execution that corrected its Signal. There is no ELASTANCE_FUNCTION parameter (ELASTANCE_FUNCTION_IS_A_PARAMETER=0; adding it fails to match CARDIOVASCULAR 0D-STRUCTURE COUPLING/SYS-PUL CIRCULATION PARAMETERS) and no T_S or T_D either (T_S_OR_T_D_IN_UPSTREAM_DECK=0). The real inputs on upstream cardiovascular0d_syspulcirculation_0d_heart are E_at_min/E_at_max and E_v_min/E_v_max per side plus four activation curves, Atrium_act_curve_l/r and Ventricle_act_curve_l/r (ACTIVATION_CURVES_IN_UPSTREAM_DECK=4), which point at FUNCT blocks carrying the systolic and diastolic timing. Collapsing every max onto its min -- constant elastance -- is accepted silently and does kill the pumping: 16 of 24 result tests wrong, p_v_l 1.04605 -> 0.83208 and mitral inflow q_vin_l -0.03333 -> +1.4856e+04. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiovascular0d",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_CONSTANTE=1",
+    "EXIT_ELASTFUN=1",
+    "BASE_TESTS_CORRECT=24",
+    "CONSTANTE_TESTS_WRONG=16",
+    "processor 0 finished normally",
+    "Result check failed with 16 errors out of 24 tests",
+    "is WRONG --> actresult= 8.32077637010497528e-01",
+    "is WRONG --> actresult= 1.48562620624439314e+04",
+    "Could not match this input",
+    "CARDIOVASCULAR 0D-STRUCTURE COUPLING/SYS-PUL CIRCULATION PARAMETERS:",
+    "ELASTANCE_FUNCTION_IS_A_PARAMETER=0",
+    "T_S_OR_T_D_IN_UPSTREAM_DECK=0",
+    "ACTIVATION_CURVES_IN_UPSTREAM_DECK=4"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_CONSTANTE=0",
+    "EXIT_ELASTFUN=0",
+    "CONSTANTE_TESTS_WRONG=0",
+    "ELASTANCE_FUNCTION_IS_A_PARAMETER=1"
+  ],
+  "_mutation": {
+    "note": "remove the constant-elastance pathology: leave the left-ventricular E_v_max at its contractile value. Fewer result tests fail, the p_v_l and q_vin_l numbers change, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "CONSTANT_E_V_MAX_L=1.2e-05",
+    "to": "CONSTANT_E_V_MAX_L=7e-05"
+  }
+}
