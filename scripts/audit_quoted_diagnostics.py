@@ -160,7 +160,23 @@ _NOT_A_DIAGNOSTIC = re.compile(
     # A weak-form / expression fragment: arithmetic operators outside of any
     # sentence. `(sigma*n - sigma.Other()*n) * v * ds(skeleton=True)` is UFL an
     # author is showing, not text a library prints.
-    r"|^[^A-Z]*[*+]\s*\w+.*\)\s*$",
+    r"|^[^A-Z]*[*+]\s*\w+.*\)\s*$"
+    # A UFL FORM: anything ending in an integration measure. `inner(curl(s),
+    # curl(s))*dx` and `(1.0 - theta) * ufl.dot(...) * ufl.dx` are weak forms
+    # to WRITE. No library prints a measure at the end of a sentence, so this
+    # cannot swallow a real diagnostic.
+    r"|\*\s*(?:ufl\.)?d[xsSPvc](?:\([^)]*\))?\s*$"
+    # A CALL EXPRESSION: starts with a (dotted) name immediately applied, and
+    # contains no ": " — every Python and C++ diagnostic that mentions a call
+    # carries the exception class or a colon before the explanation, so
+    # requiring its absence keeps `create_matrix(): incompatible function
+    # arguments` judgeable while excusing `action(a, u) - L`,
+    # `ufl.as_vector((Az.dx(1), -Az.dx(0)))` and
+    # `fem.Expression(expr, W.element.interpolation_points())`.
+    r"|^(?![^:]*:\s)[\w.]+\(.*\)[\w.\s)+*/-]*$"
+    # A CONFIGURATION key/value pair: `snes_monitor: None` is a PETSc option an
+    # author is telling the reader to SET, not a line the solver prints.
+    r"|^[\w.]+\s*:\s*(?:None|''|\"\"|True|False|-?[\d.]+)\s*$",
     re.IGNORECASE)
 
 # Dependency trees whose messages legitimately surface through a backend.
@@ -200,14 +216,57 @@ _QUOTE_CHARS = "'\"`"
 # reported separately: still visible, never counted as a defect.
 _RETRACTION_CUES = re.compile(
     r"(?:older|earlier|previous|prior|former)\s+(?:quote|claim|wording|text|"
-    r"message|version)"
+    r"message|version|signals?|catalog)"
+    # "previously quoted", "used to quote", "this entry used to claim"
+    r"|previously\s+(?:quoted|claimed|stated|said)"
+    r"|used\s+to\s+(?:quote|claim|say|state|describe)"
     r"|(?:the\s+)?(?:claimed|alleged|purported|supposed)\b"
     r"|is\s+in\s+no\b|does\s+not\s+exist|do\s+not\s+exist|never\s+appears?"
     r"|is\s+not\s+emitted|are\s+not\s+emitted|nowhere\s+in\b"
     r"|no\s+such\s+(?:string|message|error)"
     r"|(?:was|is)\s+(?:fabricated|invented|falsified|retracted|wrong)"
-    r"|not\s+found\s+anywhere|appears?\s+in\s+neither",
+    r"|not\s+found\s+anywhere|appears?\s+in\s+neither"
+    # WIDENED after the FEniCSx pass. Sixteen of 57 flagged strings were
+    # entries doing exactly the right thing — recording, in the entry, that a
+    # message does NOT exist — and the cue list simply did not know the
+    # phrasing. Punishing an honest retraction is the one failure this screen
+    # must not have, because the response is to stop retracting.
+    #
+    #   "does NOT reproduce" / "do NOT reproduce"    x7
+    #   "does not appear in current UFL"             x2
+    #   "is emitted by nothing in dolfinx"           x3
+    #   "There is no 'TypeError: ...'"               x1
+    #   "is NOT observable"                          x1
+    #   "understates it by thirty orders"            x1
+    #   "are absent from dolfinx"                    x1
+    r"|(?:does|do|did)\s+not\s+(?:reproduce|appear|hold|apply)"
+    r"|(?:is|are|was|were)\s+(?:absent|missing)\s+from\b"
+    r"|(?:is|are)\s+emitted\s+by\s+nothing"
+    r"|there\s+(?:is|are)\s+no\b"
+    r"|(?:is|are)\s+not\s+observable"
+    r"|understates?\b|overstates?\b"
+    r"|neither\s+reproduces?\b"
+    # A name quoted INSIDE one of Python's own name-not-found messages is
+    # being reported as missing, by the message itself. `AttributeError:
+    # module 'dolfinx' has no attribute 'PETScKrylovSolver'` is an entry
+    # stating that PETScKrylovSolver does not exist — demanding the corpus
+    # contain it inverts the claim and accuses the entry of inventing the very
+    # name it is warning about.
+    r"|has\s+no\s+attribute|no\s+attribute\s+named"
+    r"|cannot\s+import\s+name|no\s+module\s+named"
+    # Attribution elsewhere: the entry says the text comes from the CALLER's
+    # own script or from a hypothetical buggy wrapper, not from the backend.
+    # Demanding it appear in the backend's source accuses the entry of
+    # fabricating a message it never claimed the backend prints.
+    r"|(?:a|the)\s+(?:script|wrapper|caller|driver|user\s+code)\b"
+    r"[^;.]{0,60}?(?:prints?|reports?|says?|emits?)",
     re.IGNORECASE)
+
+# A quoted phrase that the sentence goes on to call a CHECK is a description of
+# a test the reader might write, not a message the software prints:
+#     "...tidy enough to pass any 'is it finite / is it O(1)' check"
+_ROLE_IS_NOT_A_MESSAGE = re.compile(
+    r"^\s*(?:check|test|guard|assertion|sanity|heuristic)\b", re.IGNORECASE)
 
 # A retraction governs only its OWN clause. Both bounds were learned from
 # getting it wrong on the real corpus:
@@ -221,7 +280,20 @@ _RETRACTION_CUES = re.compile(
 #     retraction and a documented absence was reported as a fabrication.
 #
 # So: look back to the nearest clause boundary, and forward a short distance.
-_CLAUSE_BOUNDARY = re.compile(r"[;.]|\s--\s|\s—\s")
+#
+# THE DASH IS NOT A CLAUSE BOUNDARY, and treating it as one cost two more false
+# accusations on the FEniCSx corpus. A retraction is very often written as an
+# em-dash PARENTHETICAL, with the retracted strings inside it:
+#
+#     Both strings this entry used to quote — 'A' and 'B' — are absent from
+#     dolfinx
+#
+# The opening dash cut "used to quote" out of A's backward window and the
+# closing dash cut "are absent from" out of B's forward window, so a sentence
+# whose entire subject is a retraction registered as none. A dash pair sets
+# off a phrase; it does not end the assertion, which is what this window is
+# trying to bound. `;` and `.` do, and they are what the bleed test needs.
+_CLAUSE_BOUNDARY = re.compile(r"[;.]")
 _BACK_WINDOW = 120
 _FORWARD_WINDOW = 60
 
@@ -237,6 +309,8 @@ def _is_retracted(text: str, start: int, end: int) -> bool:
     if _RETRACTION_CUES.search(back):
         return True
     fwd = text[end:end + _FORWARD_WINDOW]
+    if _ROLE_IS_NOT_A_MESSAGE.search(fwd):
+        return True
     m = _CLAUSE_BOUNDARY.search(fwd)
     if m:
         fwd = fwd[:m.start()]
@@ -310,6 +384,38 @@ def signal_of(entry: str) -> str:
     return m.group(1) if m else ""
 
 
+# Text the RUNTIME wraps around a message, which is therefore never in the
+# source that emits it. Stripping these is not leniency — leaving them on makes
+# the check unable to confirm a correct quote, which is worse than useless: it
+# reports the honest thing and the fabricated thing identically.
+#
+#   * The exception CLASS. A Python traceback reads "TypeError: <message>",
+#     and the library only ever wrote <message> — the class name is prepended
+#     by the interpreter as it formats the traceback. Quoting the line as the
+#     user sees it is exactly what an entry SHOULD do, and before this strip
+#     every such entry was unconfirmable. It cost seven false accusations in
+#     one FEniCSx run, every one of them against text measured from a live run
+#     hours earlier: "ValueError: Unexpected complex value in real expression."
+#     is in ufl/algorithms/remove_complex_nodes.py, and "RuntimeError: Rank
+#     mismatch between Constant and function space in DirichletBC" is in
+#     dolfinx's cpp.abi3.so. Only the seven leading characters were missing.
+#
+#   * The MPI RANK prefix. PETSc stamps "[0] " on every line of a parallel
+#     diagnostic, and "[0]PETSC ERROR: " on the stderr form. The literal in
+#     libpetsc is the bare message. Worse than a plain miss: static_parts
+#     splits on digits, so "[0] Zero pivot row 0 value 0." was searched for as
+#     "] Zero pivot row" — a leading bracket that appears nowhere, turning a
+#     stock PETSc message into four separate accusations.
+_RUNTIME_WRAPPER = re.compile(
+    r"^\s*(?:\[\d+\]\s*(?:PETSC\s+ERROR:\s*)?)?"     # MPI rank / PETSc stderr
+    r"(?:(?:\w+\.)*\w*(?:Error|Exception|Warning):\s+)?")  # exception class
+
+
+def strip_runtime_wrapper(fragment: str) -> str:
+    """Drop the rank prefix and exception class the runtime adds."""
+    return _RUNTIME_WRAPPER.sub("", fragment, count=1).strip()
+
+
 def static_parts(fragment: str) -> list[str]:
     """Split a message on the bits a program fills in at runtime.
 
@@ -317,6 +423,7 @@ def static_parts(fragment: str) -> list[str]:
     from the run. Matching the whole string would report a genuine message as
     fabricated, which is the failure mode this checker must not have.
     """
+    fragment = strip_runtime_wrapper(fragment)
     # Split on: numbers, quoted sub-values, paths, angle-bracket placeholders,
     # ellipses, and the format placeholders the codes use.
     parts = re.split(
@@ -463,7 +570,40 @@ def search_roots(backend: str) -> tuple[list[Path], list[Path], list[str]]:
         shared = _py_package_paths(SHARED_DEPS)
         shared.extend(vendored_lib_dirs(shared))
         shared.extend(linked_libraries(shared))
+        shared.extend(cpython_runtime(own))
     return own, shared, missing
+
+
+def cpython_runtime(package_dirs: list[Path]) -> list[Path]:
+    """libpython, which writes a good share of every Python backend's errors.
+
+    `TypeError`, `AttributeError`, `SystemError` and their text are produced by
+    the INTERPRETER, not by the library the user was calling. An entry that
+    quotes the traceback line it saw is quoting CPython, and searching only the
+    backend for it is looking in the wrong building.
+
+    Measured: `returned a result with an exception set` — the full quoted line
+    being `SystemError: <cyfunction EPS.solve at 0x...> returned a result with
+    an exception set`, reproduced live from a SLEPc solve — is in
+    libpython3.12.so.1.0 and in nothing else on this machine. Without this root
+    it was reported as a fabricated FEniCSx diagnostic, twice.
+
+    Not reachable through DT_NEEDED: CPython extension modules on Linux do not
+    link libpython, they resolve its symbols from the running interpreter. So
+    it has to be found by prefix, and it goes in SHARED (it may confirm a
+    message, never license an absence verdict).
+    """
+    out: list[Path] = []
+    for d in package_dirs:
+        for parent in d.parents:
+            if parent.name == "site-packages":
+                libdir = parent.parent.parent
+                for cand in sorted(libdir.glob("libpython3*.so*")):
+                    real = cand.resolve()
+                    if real.is_file() and real not in out:
+                        out.append(real)
+                break
+    return out
 
 
 def longest_found_prefix(fragment: str, roots: list[Path],
@@ -497,6 +637,103 @@ def longest_found_prefix(fragment: str, roots: list[Path],
             break
         if grep_literal(cand, roots):
             return cand
+    return ""
+
+
+def longest_found_suffix(fragment: str, roots: list[Path],
+                         floor: int = MIN_STATIC_FRAGMENT) -> str:
+    """The same idea from the other end, because interpolation goes there too.
+
+    `longest_found_prefix` assumes the runtime fills in the TAIL. Half the time
+    it fills in the HEAD, and then a prefix search fails on its very first
+    word. nanobind writes
+
+        "<function name>(): incompatible function arguments"
+
+    so the literal in dolfinx's cpp.abi3.so is `incompatible function
+    arguments` and the quoted line starts with `create_matrix():`, which is in
+    no binary because nanobind builds it from the bound signature. Searching
+    only forwards reported both nanobind messages as fabricated — two more
+    accusations against text captured from a live run.
+
+    THE HEAD MUST LOOK LIKE AN INTERPOLATED VALUE, and without that condition
+    this probe is actively harmful. A message's TAIL is often generic English,
+    so an unconstrained suffix search excuses inventions wholesale. Measured on
+    a deliberately fabricated set, it waved through three of ten:
+
+        "ADIOS2 VTX only supports Lagrange elements"
+                              <= "supports Lagrange elements"
+        "cannot assemble: form has not been compiled"
+                              <= "has not been compiled"
+        "solver exploded during the quadrature loop"
+                              <= "the quadrature loop"
+
+    None of those three is emitted by anything; the tail merely reads like
+    something that would be. A screen that excuses fabrications is worse than
+    one that flags real text, because nobody investigates a pass.
+
+    So the part being skipped has to be a single token — the shape of a name
+    the runtime substitutes (`create_matrix():`, `__init__():`) — and not a
+    run of prose. That keeps both nanobind messages and rejects all three
+    inventions above.
+    """
+    words = fragment.split()
+    for n in range(len(words)):
+        if n > 1:
+            break  # skipping more than one token is prose, not interpolation
+        cand = " ".join(words[n:])
+        if len(cand) < floor:
+            break
+        if grep_literal(cand, roots):
+            return cand
+    return ""
+
+
+# printf conversions, commonest first — CPython and the C++ codes use these.
+_PRINTF_CONVERSIONS = ("%s", "%U", "%i", "%d", "%zu", "%ld", "%.200s")
+_MIN_TEMPLATE = 14
+
+
+def assembled_from_template(fragment: str, roots: list[Path]) -> str:
+    """Does the corpus hold a FORMAT STRING that produces this text?
+
+    The last honest gap. Some messages are interpolated in the MIDDLE, so
+    neither a prefix nor a suffix search can reach them, and no literal search
+    ever will. CPython's missing-argument error is the type case:
+
+        libpython3.12.so.1.0:  %U() missing %i required %s argument%s: %U
+        what the user sees:    TypeError: NonlinearProblem.__init__() missing
+                               1 required keyword-only argument:
+                               'petsc_options_prefix'
+
+    Every word of that is CPython's, the entry quoted it correctly, and it was
+    reported ABSENT four times because the count and the word `keyword-only`
+    sit between the anchors. Reporting a template hit as ASSEMBLED — never as
+    PRESENT, never as ABSENT — is the accurate answer: the corpus demonstrably
+    contains the machinery that prints this, and no stronger claim is
+    available from a literal search.
+
+    Probes three-word windows with the middle token replaced by a conversion,
+    which is cheap (a few dozen greps) and only runs on the accusation path.
+    On the case above it finds `missing %i required` and `required %s
+    argument`, both in libpython.
+    """
+    # Runs on the WHOLE fragment, not on the pieces static_parts produced —
+    # those are split AT the interpolated values, so the anchors this needs to
+    # bridge have already been separated into different pieces. Passing parts
+    # was measured and found the template for none of the four CPython cases.
+    words = strip_runtime_wrapper(fragment).split()
+    for i in range(len(words) - 2):
+        left = words[i].lstrip("'\"([")
+        right = words[i + 2].rstrip(":;,.'\")]")
+        if not left or not right:
+            continue
+        for conv in _PRINTF_CONVERSIONS:
+            cand = f"{left} {conv} {right}"
+            if len(cand) < _MIN_TEMPLATE:
+                continue
+            if grep_literal(cand, roots):
+                return cand
     return ""
 
 
@@ -739,15 +976,24 @@ def audit_backend(backend: str) -> dict:
             if any(grep_literal(p, all_roots) for p in parts):
                 present += 1
                 continue
-            # Not present whole. Before accusing, look for the longest leading
-            # piece — compiled backends assemble messages at runtime, and a
-            # substantial hit means the entry matches the source's format
-            # string rather than inventing it.
+            # Not present whole. Before accusing, look for the piece that IS
+            # there — compiled backends and the interpreter assemble messages
+            # at runtime, and a substantial hit means the entry matches the
+            # source's format string rather than inventing it. Three probes,
+            # because interpolation happens at all three places: the tail
+            # (prefix search), the head (suffix search) and the middle
+            # (printf template). Each was added after it caught a real message
+            # the previous ones reported as fabricated.
             prefix = ""
-            for p in parts:
-                prefix = longest_found_prefix(p, all_roots)
+            for probe in (longest_found_prefix, longest_found_suffix):
+                for p in parts:
+                    prefix = probe(p, all_roots)
+                    if prefix:
+                        break
                 if prefix:
                     break
+            if not prefix:
+                prefix = assembled_from_template(frag, all_roots)
             if prefix:
                 assembled.append({
                     "file": str(path.relative_to(REPO)),
@@ -800,6 +1046,16 @@ def main() -> int:
             for a in r["fragments_absent"][:20]:
                 print(f"    ABSENT  {a['file']}")
                 print(f"            {a['fragment']}")
+            # ASSEMBLED is NOT a pass. It says a format string consistent with
+            # the quote exists, which is the strongest thing a literal search
+            # can say about an interpolated message — and it is also where a
+            # fabrication shaped like a real one would hide. Measured on a
+            # deliberately invented set, one of twelve landed here. Printing
+            # the bucket keeps that one visible instead of silently clean.
+            for a in r["fragments_assembled"][:20]:
+                print(f"    assembled (unresolved) {a['file']}")
+                print(f"            {a['fragment']}")
+                print(f"            template in corpus: {a['matched_prefix']}")
         total = sum(len(r["fragments_absent"]) for r in results)
         unknown = [r["backend"] for r in results if r["verdict"].startswith("UNKNOWN")]
         print(f"\n{total} quoted diagnostics not found in the software that is "
