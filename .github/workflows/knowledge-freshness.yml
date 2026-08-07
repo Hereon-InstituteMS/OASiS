@@ -104,7 +104,16 @@ jobs:
                  tests/test_fixture_keys_point_at_real_claims.py \
                  tests/test_assembled_payload_is_clean.py \
                  tests/test_gate_cannot_see_answers.py \
+                 tests/test_fixtures_carry_a_mutation_control.py \
+                 tests/test_named_input_keys_exist.py \
                  -v -s 2>&1 | tee /tmp/catalog-test.log
+        # test_named_input_keys_exist skips every backend whose corpus is not
+        # installed on the runner, and CI has none of the solvers — so here it
+        # asserts almost nothing. That is deliberate and it is not sufficient:
+        # the gate's real work happens on the machine with the solvers, and the
+        # skip messages in this log are the record of how much went unchecked.
+        # Read them; a run where everything skipped is not a run where
+        # everything passed.
         # Only swallow failures on the weekly cron so the auto-issue step
         # can still run.  On PRs and pushes we WANT the workflow to fail
         # so the check is gating.
