@@ -477,19 +477,33 @@ KNOWLEDGE = {
             #     b'Modelpart contains elements or conditions with '
             #     b'geometries for which no VTK-output is implemented!'
             #
-            # so a fixed-string search for the whole sentence returns 0 files
+            # so a fixed-string search for the WHOLE SENTENCE returns 0 files
             # whether you write one space or two between "with" and
-            # "geometries", and the message looks invented. It is not: the
-            # execution above prints it. On this build (Kratos 10.4.3 at
-            # /mnt/kratos-tier2/kv) the slot renders EMPTY, giving one space;
-            # a build where it renders non-empty shows an extra token there,
-            # which is why the same message has been reported with two.
-            # The same shape hides several other true Kratos diagnostics: every
-            # KRATOS_ERROR prepends "Error: " at runtime, so the literal in the
-            # binary is an INTERIOR run of what the user sees, and any search
-            # anchored at the left edge of the message finds nothing.
-            # PROPERTIES_ID (see the material_assignation_table entry) is split
-            # the same way.
+            # "geometries". It is not invented: the execution above prints it.
+            # On this build (Kratos 10.4.3 at /mnt/kratos-tier2/kv) the slot
+            # renders EMPTY, giving one space; a build where it renders
+            # non-empty shows an extra token there, which is why the same
+            # message has been reported with two.
+            #
+            # BE PRECISE ABOUT WHAT FAILED HERE, because the honest version is
+            # less flattering than the convenient one. The project's own
+            # auditor was NOT fooled by this string. audit_quoted_diagnostics
+            # falls back to longest_found_prefix when a whole fragment misses,
+            # and the leading run "Modelpart contains elements or conditions
+            # with" IS a literal, so even the older left-anchored version
+            # resolved it and never flagged the entry. What produced the wrong
+            # deletion was a hand-run `grep -r -a -F` of the full sentence,
+            # returning 0 and being read as proof — going around the guard that
+            # exists for exactly this. Grep the interior, or use the auditor.
+            #
+            # A DIFFERENT and genuinely harder shape sits next to it: every
+            # KRATOS_ERROR prepends "Error: " at runtime, so for those the
+            # literal in the binary is an INTERIOR run and NO leading-prefix
+            # search can reach it -- "Error: STEP not found in process info of
+            # SpheresPart." scores 0 at every leading slice while
+            # "not found in process info of" is present. Those need a
+            # contiguous-window search. PROPERTIES_ID (see the
+            # material_assignation_table entry) is split the same way.
         ],
         "guidance": [
             "[Numerical] There is no automatic time step. Size dt by hand from the Rayleigh/Hertz estimate dt ~ 0.34*sqrt(m/(E*pi*R)) and set it in MaxTimeStep; the formula exists in the source (SphericContinuumParticle::Calculate for DELTA_TIME) but is never invoked by any solver path.",
