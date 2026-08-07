@@ -37,8 +37,20 @@ KNOWLEDGE = {
         "shrinks vs analytic plane-wave by factor (1 - C*k*h^2) for "
         "under-resolved meshes.",
         "[Syntax] Complex-valued mode requires dolfinx.default_scalar_type "
-        "to be np.complex128 — set via PETSC_DIR / petsc env. "
-        "Signal: 'ScalarType is not complex' error at form-compilation time.",
+        "to be np.complex128, which is a property of the PETSc BUILD and "
+        "cannot be switched at run time — it needs a separate env built "
+        "with --with-scalar-type=complex. Signal: putting an imaginary "
+        "unit in a form under a real build (the impedance term "
+        "1j*k*inner(u, v)*ds) raises, at fem.form time, "
+        "'ValueError: Unexpected complex value in real expression.' "
+        "from ufl/algorithms/remove_complex_nodes.py. The previously "
+        "quoted signal 'ScalarType is not complex' is emitted by "
+        "nothing in dolfinx, ufl, basix, ffcx, petsc4py or PETSc and "
+        "does not reproduce. The SAME form compiles without complaint "
+        "in a complex build. Check the build before the form: assert "
+        "np.issubdtype(dolfinx.default_scalar_type, np.complexfloating). "
+        "(Verified by execution 2026-08-07 in BOTH conda envs — real "
+        "`fenics` raises, complex `fenicsc` compiles; dolfinx 0.10.0.)",
     ],
 }
 

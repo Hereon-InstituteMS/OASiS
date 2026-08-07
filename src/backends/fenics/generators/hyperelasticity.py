@@ -53,11 +53,19 @@ KNOWLEDGE = {
         "[API] In dolfinx 0.9+ the nonlinear solve uses "
         "dolfinx.fem.petsc.NonlinearProblem + NewtonSolver, or the "
         "PETSc SNES API directly. Old dolfin nonlinear_variational "
-        "patterns are removed. Signal: a script using "
-        "NonlinearVariationalProblem raises ImportError 'No module "
-        "named dolfinx.fem.NonlinearVariationalProblem'; the "
-        "correct call is `from dolfinx.fem.petsc import "
-        "NonlinearProblem`. (Audit 2026-06-02.)",
+        "patterns are removed. Signal: the way a script actually "
+        "reaches for it — `from dolfinx.fem import "
+        "NonlinearVariationalProblem` — raises \"ImportError: cannot "
+        "import name 'NonlinearVariationalProblem' from 'dolfinx.fem'\" "
+        "followed by the path of dolfinx/fem/__init__.py. The "
+        "previously quoted 'No module named "
+        "dolfinx.fem.NonlinearVariationalProblem' is a "
+        "ModuleNotFoundError and only appears if the name is fed to "
+        "importlib.import_module as a dotted MODULE path, which is not "
+        "how anyone writes it; match on ImportError, not on that text. "
+        "The correct call is `from dolfinx.fem.petsc import "
+        "NonlinearProblem`. (Verified by execution 2026-08-07, "
+        "dolfinx 0.10.0.)",
     ],
 }
 

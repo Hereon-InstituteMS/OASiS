@@ -82,9 +82,15 @@ KNOWLEDGE = {
         "shape=(gdim,)) for u and basix.ufl.element("
         "'Lagrange', cell, 1) for d. dolfinx 0.10+ removed "
         "ufl.VectorElement / ufl.FiniteElement. "
-        "Signal: 'AttributeError: module ufl has no "
-        "attribute VectorElement' at fem.functionspace "
-        "construction time.",
+        "Signal: \"AttributeError: module 'ufl' has no attribute "
+        "'VectorElement'\" — the quotes around 'ufl' and "
+        "'VectorElement' are part of the message, and an earlier "
+        "wording here dropped them, so a guard matching the text "
+        "verbatim would have missed. ufl.FiniteElement gives the "
+        "same message with 'FiniteElement'. Raised at ATTRIBUTE "
+        "LOOKUP, i.e. as soon as the name is touched, not at "
+        "fem.functionspace construction. (Verified by execution "
+        "2026-08-07, dolfinx 0.10.0 / ufl 2025.2.1.)",
         "[Numerical] Length scale l0 ↔ mesh resolution: "
         "elements in the crack-band region need h ≤ l0/2 "
         "to resolve the diffuse damage profile. "
