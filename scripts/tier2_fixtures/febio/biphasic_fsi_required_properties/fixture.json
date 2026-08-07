@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic_fsi#1, and a CORRECTION to it. The claim said the material needs FOUR things and each missing one is named separately. Executed: the three PROPERTIES (<solid>, <fluid>, <permeability>) each give 'Component \"Tissue\" needs to have property \"<name>\" defined (line N)' quoting the material's own name \u2014 but <phi0> is a plain parameter with a default, and a deck without it reads, runs and reaches normal termination with no message at all. Three named errors and one silent default, not four named errors. Whether the default changes the answer is NOT asserted: on the shipped fully-constrained deck the logged fields are identical to a tolerance at phi0 = 0.2, omitted, 0.0 and 0.9, so this deck cannot see phi0. The fixture measures the solver noise floor from two identical runs and sets its tolerance from it, because this deck runs bicgstab on a non-symmetric matrix and is NOT bit-reproducible \u2014 an earlier draft of this fixture compared md5 digests and would have reported a phi0 effect that was pure round-off. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'biphasic_fsi_properties=reproduced_with_correction' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "biphasic_fsi",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "biphasic_fsi_properties=reproduced_with_correction"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

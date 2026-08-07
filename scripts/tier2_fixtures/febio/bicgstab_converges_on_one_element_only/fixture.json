@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic#4. One confined-compression biphasic deck at two refinements, identical but for the mesh: on a single hex8 bicgstab converges and the run reaches normal termination with all 10 steps; on 2x2x2 it fails at the first step with 'Linear solver failed to find solution. Aborting run.', 0 completed steps and error termination. The one-element run is the control that rules out the deck. Deck written in the fixture rather than taken from the templates, because the shipped biphasic template is fixed at one element. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 runs the \"2x2x2\" slot on the SINGLE hex8, removing the mesh bicgstab cannot get through. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'bicgstab_mesh_dependence=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "bicgstab_mesh_dependence=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

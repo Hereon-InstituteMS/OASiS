@@ -1177,7 +1177,7 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "x_dof", "y_dof", "z_dof",
             "gx_dof", "gy_dof", "gz_dof",
             "center_of_mass", "initial_stress",
-            "rigid_displacement", "shedding_period",
+            "rigid_displacement",
             # ── Output / runtime helpers ─────────────────────────
             "write_vtu", "post_vtu", "xplt", "plt",
             # A second `KSPSolve` sat here, described as a "PETSc-via-FEBio"
@@ -1188,19 +1188,16 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "ALE", "Hookean", "HGO",
             "Holzapfel_Gasser_Ogden",
             "kappa", "fiber", "Elements", "node",
-            "prescribed", "concentration", "sol",
-            "micro_rotation", "Cosserat",
-            "drainage", "tissue", "contact",
-            "fluid_pressure", "effective_concentration",
+            "prescribed", "concentration", "sol", "contact",
+            "fluid_pressure",
             # ── FEBio XML attribute / parameter lowercase tokens
             #    that show up in `<material>`/`<Element>` errors ──
             "material", "parameter", "element",
             "isotropic", "elastic", "displacement",
             "restart", "history", "cycle",
             # ── Output / plotfile observables ─────────────────
-            "plotfile_xplt", "logfile",
-            "stress_strain", "kinetic_energy",
-            "fluid_velocity", "elastic_strain",
+            "logfile",
+            "fluid_velocity",
         })
 
     code_symbols.update({

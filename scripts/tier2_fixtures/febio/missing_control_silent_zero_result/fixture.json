@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2: verifies febio::linear_elasticity#3 \u2014 a deck with no <Control> section reads SUCCESS, prints no error message at all, writes a non-empty (mesh-only, 1353 bytes vs 1629 solved) .xplt plus every requested logfile CSV, and still solves nothing (0 completed steps, E R R O R T E R M I N A T I O N, exit 1). Asserts every observable separately against a positive control that differs only by the <Control> block: read_success, absence of an ERROR box, error-termination banner, zero completed steps, non-empty .xplt, and a CSV holding exactly one *Step = 0 block. This is the fixture that justifies OASiS never accepting a FEBio run on the existence of output files. Verified 2026-08-03 on FEBio 4.12.0.86045466d. NO-BINARY BEHAVIOUR (changed 2026-08-03): a missing febio4 is now a FAILURE, not a skip. The fixture prints 'FAIL:' and returns 1, expect_in_output pins the success TOKEN rather than the bare key prefix, and 'skipped_no_binary' is in forbid_in_output. Previously all five febio fixtures printed '<key>=skipped_no_binary', returned 0 and satisfied a bare '<key>=' prefix expectation, so on a host without FEBio the rows were green while verifying nothing and the tier-2 floor certified an unrun check. RE-KEYED 2026-08-06: this fixture's pitfall_index was 5, which since the pitfall list grew now addresses a different claim. The runner key <backend>::<physics>::<index> is the ONLY thing that attributes evidence to a claim, so a drifted index silently credits the wrong one. Index is now 3. Index 5 is the Poisson-ratio v-vs-nu claim, which now has its own fixture (poisson_ratio_is_v_not_nu); index 3 is the dropped-<Control> claim this fixture actually executes. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 gives the \"no Control\" deck its <Control> section back. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'missing_control_silent=reproduced' is no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "missing_control_silent=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "skipped_no_binary"
+  ]
+}

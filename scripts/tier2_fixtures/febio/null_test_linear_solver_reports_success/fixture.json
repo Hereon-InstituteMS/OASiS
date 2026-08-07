@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2: verifies febio::biphasic#5 \u2014 <linear_solver type=\"test\"/> is a registered FELINEARSOLVER_ID factory whose NumCore/TestSolver.cpp BackSolve() zeroes the solution vector and returns true. FEBio takes zero Newton increments, declares convergence, completes every time step and ends with N O R M A L T E R M I N A T I O N and exit 0. This is the one case found on FEBio 4.12 where the banner, exit status AND a non-zero completed-step count are all satisfied by a run that solved nothing, so it is the counterexample that keeps the silent-failure checklist honest. The fixture runs one confined-compression biphasic deck twice, identical but for the linear solver, and asserts BOTH that the two runs are indistinguishable to the standard acceptance checks and that their stresses disagree (44.5% at step 2: reference sz=-3.60750105073, null solver frozen at -2.00200400802). Verified 2026-08-03 on FEBio 4.12.0.86045466d. NO-BINARY BEHAVIOUR (changed 2026-08-03): a missing febio4 is now a FAILURE, not a skip. The fixture prints 'FAIL:' and returns 1, expect_in_output pins the success TOKEN rather than the bare key prefix, and 'skipped_no_binary' is in forbid_in_output. Previously all five febio fixtures printed '<key>=skipped_no_binary', returned 0 and satisfied a bare '<key>=' prefix expectation, so on a host without FEBio the rows were green while verifying nothing and the tier-2 floor certified an unrun check. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 runs the \"test solver\" slot with the real skyline solver, removing the null linear solver that returns without solving. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'null_test_solver=clean_run_not_solved' is no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "null_test_solver=clean_run_not_solved"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "skipped_no_binary"
+  ]
+}

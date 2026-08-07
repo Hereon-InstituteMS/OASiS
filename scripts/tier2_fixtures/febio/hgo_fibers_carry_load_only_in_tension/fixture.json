@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::fiber_reinforced#1. The shipped HGO deck with fibers pointed along the load, run at +10% and -10% stretch and at k1/c = 1 and 10. The two COMPRESSION runs give the identical final stress despite the tenfold change in k1, while the two TENSION runs differ \u2014 that invariance is the proof the fiber term is gated off below unit stretch, and it is what the fixture asserts, not the (trivial) tension-compression asymmetry. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'fibers_tension_only=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "fiber_reinforced",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "fibers_tension_only=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

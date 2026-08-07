@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::elasticity_mms#2. The shipped MMS deck with every *X) / *Y) / *Z) in its <Loads> body-load expressions lowercased reads 'Reading file ...SUCCESS!' and is then killed by SIGSEGV with no ERROR box and nothing naming the bad symbol; the same deck with uppercase symbols runs to normal termination. The read_success half is required, because it is what makes an early-timestep crash in a deck with math expressions diagnosable at all. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 leaves the body-load expression in UPPERCASE coordinates in the \"wrong\" slot. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'lowercase_coordinate_symbols=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "elasticity_mms",
+  "pitfall_index": 2,
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "lowercase_coordinate_symbols=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

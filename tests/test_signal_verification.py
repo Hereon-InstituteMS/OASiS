@@ -65,7 +65,17 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 112  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 183  # cross-cutting (incl. synthetic indices).
+    # CONSOLIDATION: the dune and febio campaigns each raised this floor from a
+    # DIFFERENT baseline (108 -> 112 and 113 -> 183), so neither number
+    # describes the merged tree. Held at 183 — the highest count any single
+    # branch actually recorded in one run — and deliberately NOT raised to the
+    # 187 rows the merged snapshot now carries, because those 187 were never
+    # all green at one time on one host. The fingerprint check in the test
+    # below is what makes that safe: it fails the snapshot as unverifiable
+    # until run_tier2_fixtures.py --write-results is run against this tree.
+    #
+    # Both campaigns' provenance, kept:
     # 2026-08-03 dune knowledge-extraction pass: +4 dune fixtures, all
     # executed against the installed dune-fem 2.12.0.2 and merged into
     # tier2_results.json without disturbing the other backends' rows.
@@ -84,6 +94,14 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # dune::mixed_methods::0 was already counted; its fixture was made
     # machine-independent in the same pass (it previously hard-coded
     # one developer's absolute paths and failed everywhere else).
+    #
+    # 2026-08-06 (113 -> ... -> 183): seventy new FEBio fixtures, every one of
+    # them run here against febio4 4.12.0.86045466d, plus two re-keys
+    # that fixed mis-attributed evidence. Only the febio rows of the
+    # snapshot were rewritten; the other backends' rows are as
+    # recorded, because with the interpreter-resolution fix in place
+    # this host reproduces 52 of the 113 and that reconciliation is
+    # open work elsewhere, not a number to quietly lower here.
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -132,6 +150,52 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #      submodule, NOT top-level ngsolve — catalog drift)
     #   +1 fenics::biharmonic::0 (fem.functionspace factory vs FunctionSpace
     #      class — LLM-trap from legacy dolfin)
+    # 2026-08-03 fixture additions (108 -> 113): the first FEBio
+    # fixtures that RUN the solver, now that febio4 4.12.0 is built
+    # and installed. All five were executed on this machine before
+    # the floor was raised.
+    #   +1 febio::linear_elasticity::98 (hex8 patch test — FEBio's
+    #      first executed numerical-correctness gate: exact linear
+    #      field at the free interior node to 1.4e-17 and Cauchy
+    #      stress against the St.Venant-Kirchhoff closed form to
+    #      3.5e-11)
+    #   +1 febio::linear_elasticity::5 (a deck with no <Control>
+    #      reads SUCCESS, writes .xplt + CSVs, and solves nothing)
+    #   +1 febio::linear_elasticity::7 (a degenerate hex8 runs to
+    #      normal termination with 25% wrong stress)
+    #   +1 febio::heat::0 (an unregistered <Module type> SEGFAULTS
+    #      with no diagnostic — catalog falsification: FEBio 4.12
+    #      has no `heat` and no `biphasic-FSI` module)
+    #   +1 febio::biphasic::5 (<linear_solver type="test"/> is a
+    #      null solver that zeroes the solution vector and reports
+    #      success — the one case where the normal-termination
+    #      banner, exit 0 AND a non-zero completed-step count are
+    #      all satisfied by a run that solved nothing; found by
+    #      the critic pass over the first four fixtures)
+    #
+    # 2026-08-03, SAME DAY, SECOND PASS — the 108 -> 113 raise above
+    # was UNENFORCEABLE as written and has been repaired rather than
+    # rolled back. All five new fixtures printed
+    # "<key>=skipped_no_binary" and returned 0 when febio4 was
+    # absent, and each fixture.json expected only the bare "<key>="
+    # prefix, which that skip string satisfies. On any host without
+    # FEBio the five rows were therefore green while verifying
+    # nothing: the floor certified five checks that had not run. A
+    # floor that certifies nothing is worse than no floor, because it
+    # is read as evidence.
+    #
+    # Repair, applied to all five fixture directories:
+    #   * a missing binary now prints "FAIL: ..." and returns 1
+    #     ("FAIL:" is already in every fixture's forbid_in_output, so
+    #     the failure is recorded even if the exit status is ignored),
+    #   * expect_in_output pins the success TOKEN, not the key prefix
+    #     (e.g. "febio_patch_test=passed",
+    #     "unknown_module_segfault_count=4"), so no skip string can
+    #     satisfy it,
+    #   * "skipped_no_binary" was added to forbid_in_output.
+    # Verified both ways on this host: all five pass with febio4
+    # present and all five fail with FEBIO_BINARY pointing at a
+    # non-existent path.
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
