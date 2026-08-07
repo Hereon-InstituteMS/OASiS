@@ -16,6 +16,14 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
+# MUTATION CONTROL (see fixture.json). _shared/hp_family.cc reads T2_MUTATE and,
+# when it is 1, gives the run UNDER TEST the FESeries::Legendre smoothness
+# estimator that this fixture's whole claim is about not having. Exporting it
+# here (defaulting to 0) is what lets the recipe in fixture.json turn the
+# control permanently on without touching the shared translation unit.
+T2_MUTATE="${T2_MUTATE:-0}"
+export T2_MUTATE
+
 echo "=== hp::Refinement p-adaptivity symbols that exist in this library"
 grep -o "p_adaptivity_[a-z_]*" /home/alexander/dealii/include/deal.II/hp/refinement.h \
   | sort -u | sed 's/^/hp_refinement_symbol=/'

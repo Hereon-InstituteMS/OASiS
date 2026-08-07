@@ -18,11 +18,23 @@
 #include <deal.II/grid/grid_in.h>
 #include <deal.II/grid/tria.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 feeds the SAME reader a
+// quads-only mesh (Gmsh element type 3) instead of the triangles-only one, so
+// the simplex cells this fixture claims to read are no longer there.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -41,7 +53,21 @@ int main()
       "2 2 2 1 1 1 3 4\n"
       "$EndElements\n";
 
-  std::istringstream iss(gmsh_triangles_only);
+  // The same four nodes, but one QUAD (type 3) — used only by the
+  // mutation control.
+  const std::string gmsh_quads_only =
+      "$MeshFormat\n2.2 0 8\n$EndMeshFormat\n"
+      "$Nodes\n4\n"
+      "1 0 0 0\n"
+      "2 1 0 0\n"
+      "3 1 1 0\n"
+      "4 0 1 0\n"
+      "$EndNodes\n"
+      "$Elements\n1\n"
+      "1 3 2 1 1 1 2 3 4\n"   // quad (type 3)
+      "$EndElements\n";
+
+  std::istringstream iss(mutate() ? gmsh_quads_only : gmsh_triangles_only);
   Triangulation<2> tria;
   GridIn<2> grid_in;
   grid_in.attach_triangulation(tria);

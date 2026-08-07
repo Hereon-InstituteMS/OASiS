@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 cheap fixture for poisson#2: hyper_rectangle with colorize=true assigns distinct boundary_ids {0,1,2,3} in 2D — exact contract from GridGenerator. Structural query, no PDE needed.",
+  "_comment": "Tier-2 cheap fixture for poisson#2: hyper_rectangle with colorize=true assigns distinct boundary_ids {0,1,2,3} in 2D — exact contract from GridGenerator. Structural query, no PDE needed. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook passes colorize=false to the same GridGenerator::hyper_rectangle call. The count then reads n_distinct_boundary_ids=1 and the expectation `n_distinct_boundary_ids=4` goes missing, which is what proves the number is counted from the mesh and not printed as a constant. Proved KILLED 2026-08-07.",
   "backend": "dealii",
   "physics": "poisson",
   "pitfall_index": 2,
@@ -8,5 +8,11 @@
     "n_distinct_boundary_ids=4",
     "hyper_rectangle"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "remove the phenomenon under test: build the same rectangle with colorize=false, so every face keeps boundary_id 0",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }

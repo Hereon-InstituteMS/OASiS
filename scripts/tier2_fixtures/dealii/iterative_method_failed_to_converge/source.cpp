@@ -11,9 +11,21 @@
 #include <deal.II/lac/sparsity_pattern.h>
 #include <deal.II/lac/vector.h>
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology — the
+// one-iteration cap — and lets CG run to convergence on this SPD system.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -43,7 +55,9 @@ int main()
   Vector<double> b(n), x(n);
   b(0) = 1.0;
 
-  SolverControl ctrl(1, 1e-15);  // only ONE iteration allowed
+  const unsigned int max_iter = mutate() ? 100u : 1u;
+  const double       tol      = mutate() ? 1e-10 : 1e-15;
+  SolverControl ctrl(max_iter, tol);  // only ONE iteration allowed
   SolverCG<Vector<double>> cg(ctrl);
   try
   {

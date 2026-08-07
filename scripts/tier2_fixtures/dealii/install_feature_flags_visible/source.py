@@ -58,7 +58,24 @@ FEATURES_OF_INTEREST = [
 ]
 
 
+# MUTATION CONTROL (see fixture.json). T2_MUTATE=1 points the same probe at a
+# DIFFERENT deal.II on this host, whose parallel feature flags are the mirror
+# image of the ones normally found. The report changes completely — which
+# config.h was read is printed as `config_h_path=`, so the two runs are told
+# apart by eye — and every expectation still matches. That is the finding.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+MUTATION_CANDIDATES = [
+    Path.home() / "dealii" / "build" / "include" / "deal.II"
+    / "base" / "config.h",
+    Path.home() / "dealii" / "include" / "deal.II" / "base" / "config.h",
+]
+
+
 def find_config() -> Path | None:
+    if MUTATE:
+        for p in MUTATION_CANDIDATES:
+            if p.is_file():
+                return p
     cp = os.environ.get("CONDA_PREFIX")
     if cp:
         p = Path(cp) / "include" / "deal.II" / "base" / "config.h"

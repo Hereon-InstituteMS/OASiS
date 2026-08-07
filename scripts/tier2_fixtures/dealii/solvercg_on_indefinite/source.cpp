@@ -20,9 +20,22 @@
 #include <deal.II/lac/sparsity_pattern.h>
 #include <deal.II/lac/vector.h>
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology: the
+// matrix becomes diag(1, +1), which is SPD, so CG is entitled to converge and
+// nothing is raised. The fixture STILL PASSES — see fixture.json.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -34,7 +47,7 @@ int main()
   sp.copy_from(dsp);
   SparseMatrix<double> A(sp);
   A.set(0, 0, 1.0);
-  A.set(1, 1, -1.0);
+  A.set(1, 1, mutate() ? 1.0 : -1.0);
 
   Vector<double> b(2), x(2);
   b(0) = 1.0;

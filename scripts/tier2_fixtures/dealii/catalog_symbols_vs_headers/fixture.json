@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (dg_transport::96, an index no pitfall occupies): cross-checks the element catalog against the installed deal.II headers. RE-KEYED 2026-08-06 off dg_transport::0, the make_flux_sparsity_pattern claim, which it does not touch. This is a Layer-A catalog scanner, not evidence for a numerical pitfall, and it must not occupy a live claim's slot. dg_transport::0 is now correctly recorded as uncovered.",
+  "_comment": "Tier-2 SYNTHETIC (dg_transport::96, an index no pitfall occupies): cross-checks the element catalog against the installed deal.II headers. RE-KEYED 2026-08-06 off dg_transport::0, the make_flux_sparsity_pattern claim, which it does not touch. This is a Layer-A catalog scanner, not evidence for a numerical pitfall, and it must not occupy a live claim's slot. dg_transport::0 is now correctly recorded as uncovered. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook adds one symbol, SolverNotInDealII, that is declared in no header of the install. The scan then reports catalog_missing=['SolverNotInDealII'], the expectation `catalog_missing=[]` goes missing and the forbidden token `FAIL:` appears — proof that the list is computed from the headers rather than printed empty. Proved KILLED 2026-08-07 with CONDA_PREFIX=/usr. ENVIRONMENT, read this before trusting a run: find_include() looks only at $CONDA_PREFIX/include/deal.II and at the hard-coded /home/hermann/miniconda3/envs/ofa-dealii/include/deal.II — ANOTHER MACHINE'S HOME DIRECTORY. Neither exists on this host, so with no CONDA_PREFIX set the fixture prints 'FAIL: no deal.II include dir found', misses all four expectations and trips its own forbid — it is RED before any mutation, and the mutation verdict there would be vacuous. The KILLED verdict above was obtained with CONDA_PREFIX=/usr, which makes it scan /usr/include/deal.II (9.1.1); /home/alexander/dealii/include is the 9.8.0-pre tree the rest of the deal.II fixtures are documented against and is not in the candidate list either.",
   "backend": "dealii",
   "physics": "dg_transport",
   "pitfall_index": 96,
@@ -14,5 +14,11 @@
     "Traceback",
     "FAIL:"
   ],
-  "covers": []
+  "covers": [],
+  "_mutation": {
+    "note": "ask the same header scan for one more symbol that is declared in no deal.II header, so catalog_missing stops being empty",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

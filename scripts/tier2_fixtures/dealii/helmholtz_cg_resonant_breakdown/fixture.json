@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 cheap fixture for helmholtz#0: SolverCG fails on the indefinite/singular Helmholtz operator (K - k^2 M) when k^2 is placed at an eigenvalue of K. SolverControl::NoConvergence is raised after max_steps. NOTE: the catalog Signal originally said 'breakdown immediately' — the empirical observable in deal.II 9.1.1 is NoConvergence at max_steps, not a literal breakdown call. Signal text rewritten to match reality. Falsifiability classification stays cheap, method stays exception_class.",
+  "_comment": "Tier-2 cheap fixture for helmholtz#0: SolverCG fails on the indefinite/singular Helmholtz operator (K - k^2 M) when k^2 is placed at an eigenvalue of K. SolverControl::NoConvergence is raised after max_steps. NOTE: the catalog Signal originally said 'breakdown immediately' — the empirical observable in deal.II 9.1.1 is NoConvergence at max_steps, not a literal breakdown call. Signal text rewritten to match reality. Falsifiability classification stays cheap, method stays exception_class. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook sets k^2 = 0, leaving the same tridiagonal operator minus the resonant shift. CG then converges, the expectation `SolverControl::NoConvergence` goes missing and the forbidden token `SolverCG_converged_OK` appears. Proved KILLED 2026-08-07.",
   "backend": "dealii",
   "physics": "helmholtz",
   "pitfall_index": 0,
@@ -10,5 +10,11 @@
   ],
   "forbid_in_output": [
     "SolverCG_converged_OK"
-  ]
+  ],
+  "_mutation": {
+    "note": "remove the pathology: set k^2 = 0, so the operator is the plain SPD Laplacian and CG converges",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }

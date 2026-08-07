@@ -40,6 +40,14 @@ CATALOG_SYMBOLS = (
 )
 PHANTOM_TYPO = "interpolate_difference"
 
+# MUTATION CONTROL (see fixture.json). This fixture is an inventory scan, so
+# the pathology it can be deprived of is the QUESTION: T2_MUTATE=1 asks the
+# same scan of the same headers for one more symbol that is declared nowhere
+# in deal.II, and `catalog_missing` then stops being empty.
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    CATALOG_SYMBOLS = CATALOG_SYMBOLS + ("SolverNotInDealII",)
+
 
 def find_include() -> Path | None:
     cp = os.environ.get("CONDA_PREFIX")

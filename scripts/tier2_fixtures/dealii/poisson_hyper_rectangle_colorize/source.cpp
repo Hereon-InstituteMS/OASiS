@@ -7,17 +7,30 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <set>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the phenomenon
+// under test by passing colorize=false, so the generator hands every face the
+// same boundary_id and n_distinct_boundary_ids drops to 1.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
   Triangulation<2> tria;
   GridGenerator::hyper_rectangle(
       tria, Point<2>(0, 0), Point<2>(1, 1),
-      /*colorize=*/true);
+      /*colorize=*/!mutate());
 
   std::set<types::boundary_id> ids;
   for (auto cell = tria.begin_active(); cell != tria.end(); ++cell)

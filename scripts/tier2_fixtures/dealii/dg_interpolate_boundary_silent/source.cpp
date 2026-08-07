@@ -9,14 +9,29 @@
 #include <deal.II/base/types.h>
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/fe/fe_dgq.h>
+#include <deal.II/fe/fe_q.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 #include <deal.II/numerics/vector_tools.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology —
+// the DG space — and interpolates the same boundary values onto a CONTINUOUS
+// FE_Q(1), which has boundary dofs to fill, so the map is no longer empty.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -24,9 +39,13 @@ int main()
   GridGenerator::hyper_cube(tria);
   tria.refine_global(2);
 
-  FE_DGQ<2> fe(1);
+  std::unique_ptr<FiniteElement<2>> fe;
+  if (mutate())
+    fe = std::make_unique<FE_Q<2>>(1);
+  else
+    fe = std::make_unique<FE_DGQ<2>>(1);
   DoFHandler<2> dh(tria);
-  dh.distribute_dofs(fe);
+  dh.distribute_dofs(*fe);
 
   std::map<types::global_dof_index, double> boundary_values;
   VectorTools::interpolate_boundary_values(

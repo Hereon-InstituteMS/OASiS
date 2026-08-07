@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for dealii dg_transport#6: DoFTools::make_hanging_node_constraints on an FE_DGQ DoFHandler does not raise and does not complain \u2014 it returns normally with an EMPTY constraint set, which is why a DG run that thinks it is constraining hanging nodes is constraining nothing. RE-KEYED 2026-08-06: this fixture was committed against dg_transport::5, a claim about FE_DGQHermite matrix-free wall-time that it does not measure at all. dg_transport::5 is now correctly recorded as uncovered.",
+  "_comment": "Tier-2 for dealii dg_transport#6: DoFTools::make_hanging_node_constraints on an FE_DGQ DoFHandler does not raise and does not complain — it returns normally with an EMPTY constraint set, which is why a DG run that thinks it is constraining hanging nodes is constraining nothing. RE-KEYED 2026-08-06: this fixture was committed against dg_transport::5, a claim about FE_DGQHermite matrix-free wall-time that it does not measure at all. dg_transport::5 is now correctly recorded as uncovered. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook swaps FE_DGQ(1) for FE_Q(1) on the identical locally-refined mesh. make_hanging_node_constraints then returns a NON-empty set and the expectation `n_constraints=0` goes missing. Proved KILLED 2026-08-07.",
   "backend": "dealii",
   "physics": "dg_transport",
   "pitfall_index": 6,
@@ -11,5 +11,11 @@
   "forbid_in_output": [],
   "covers": [
     "dg_transport::6"
-  ]
+  ],
+  "_mutation": {
+    "note": "remove the pathology: distribute a CONTINUOUS FE_Q(1) on the same non-conforming mesh, where make_hanging_node_constraints has hanging nodes to constrain",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }
