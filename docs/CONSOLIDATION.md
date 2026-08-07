@@ -912,3 +912,35 @@ check that takes a tolerance has to be asked which tolerance it means.
 
 After both: `validation` empty, and with a review on record the same run comes
 back VERIFIED with the floor named in its coverage section.
+
+### The same shape three times, in three different checks
+
+Once found, it kept being found. Every check that judges a coupling had been
+written assuming the residual means what `tol` says it means:
+
+    check_convergence          quoted `tol` in a NOT CONVERGED message on a run
+                               judged at the floor  (fixed on the branch itself)
+    the criterion notice       sat in `warnings`, which `couple` copies into the
+                               findings list  -> NOT VERIFIED
+    check_residual_blocks      compared blocks against `tol`, so a run held to
+                               8.3e-03 was faulted for blocks moving by more
+                               than 1.0e-08  -> NOT VERIFIED
+    check_interface_sensitivity  faulted the participant for being stochastic,
+                               in a branch whose own message says "hidden state
+                               ... OR IT IS STOCHASTIC"  -> NOT VERIFIED
+
+Each was found only by running the merged tool again after fixing the previous
+one, because one finding is enough to stamp NOT VERIFIED and the first one masks
+the rest. **The rule that would have found all four at once: when a feature
+changes what a number MEANS, every consumer of that number is a candidate, and
+the list of consumers is enumerable — grep for the parameter.**
+
+The last of the four is the interesting one, because the honest fix is not to
+silence the check but to move it to the channel that says what it could not
+decide. With a MEASURED floor, "the response cannot be told apart from run-to-
+run drift" is a true statement about the instrument rather than about the
+coupling, and the thing that CAN decide it is the monolithic comparison — which
+is what the coverage note now says. The half that must not weaken does not: a
+participant whose export does not move at all is still a finding, floor or no
+floor. That took a second pass, because signal = 0 also satisfies
+`signal <= noise * margin` and the first guard routed it to coverage.
