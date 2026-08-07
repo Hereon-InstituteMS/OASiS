@@ -175,6 +175,208 @@ class Problem:
 DEFAULT = Problem()
 
 
+# ── the VECTOR problem: plane-strain elasticity, displacement AND traction ──
+#
+# Everything above exchanges ONE SCALAR across the interface. This exchanges a
+# two-component displacement and a two-component traction, in both directions,
+# which is the primitive every multiphysics coupling (TSI, FSI, contact) is
+# built on and the thing a scalar fixture cannot establish.
+#
+# The problem is a plane-strain bimaterial strip [xl, xr] x [y0, y1] split at
+# x = xi, with a PRESCRIBED DISPLACEMENT on the whole outer boundary (the two
+# outer x-faces and both y-faces) taken from a field that is piecewise linear
+# in (x, y):
+#
+#     u_x = a_i (x - x_i0) + c_i + p y        a_i, b_i per block
+#     u_y = b_i (x - x_i0) + d_i + r y        p, r global
+#
+# Strains are constant in each block, so sigma is constant in each block, so
+# div sigma = 0 and the field is an exact solution. Continuity of u and of
+# sigma . e_x across x = xi fixes a_i, b_i from the totals (dux, duy) and the
+# two global gradients (p, r). P1/Q1 reproduce it EXACTLY — it is a patch test
+# — so the only error left in a converged coupling is the coupling itself, and
+# the tolerances can be tight enough that a wrong Poisson ratio cannot hide.
+#
+# THREE PROPERTIES THIS IS BUILT FOR, none of which the scalar problem has:
+#
+#   * BOTH COMPONENTS ARE ALIVE. u_x, u_y, t_x and t_y are all non-zero at the
+#     interface, so a coupling that drops or scrambles a component is visible.
+#   * THE INTERFACE STATE VARIES ALONG THE INTERFACE. p and r make u_x and u_y
+#     linear in y on the interface, so a mapping between two non-matching
+#     interface meshes has something to get wrong. With a constant profile,
+#     ANY mapping — including one that interleaves the components — reproduces
+#     it, and the non-matching-mesh claim would be vacuous.
+#   * THE Y-FACES ARE PRESCRIBED, NOT TRACTION-FREE, AND THAT IS DELIBERATE.
+#     With traction-free y-faces each block can BEND, the bending compliance
+#     scales as L^3 against L^1 for the axial one, and the Steklov spectrum of
+#     the two-subdomain iteration opens up to [0.049, 2.07] — measured. The
+#     single theta the driver applies then converges the x component while
+#     DIVERGING the y one: measured here, theta = 1/(1+rho_x) with the y-faces
+#     free left u_x settling on the exact answer while u_y oscillated with
+#     growing amplitude, and the run reported only "did not converge". Clamping
+#     the y-faces removes the bending modes; the spectrum tightens to
+#     [0.25, 0.64], mesh-independently, and one theta serves both components.
+#     This is a real property of vector coupling, not a detail: see
+#     vector_relaxation_needs_the_worst_component.
+
+@dataclass(frozen=True)
+class VectorProblem:
+    """Plane-strain bimaterial strip, split at `xi`, prescribed displacement on
+    the whole outer boundary. Lengths in m, E in Pa, u in m."""
+    xl: float = 0.0
+    xi: float = 0.55       # the interface — equal halves by default, see rho
+    xr: float = 1.1
+    y0: float = 0.0
+    y1: float = 0.4
+    el: float = 1000.0     # left Young's modulus
+    er: float = 2500.0     # right Young's modulus
+    nul: float = 0.3       # left Poisson ratio (plane strain)
+    nur: float = 0.3       # right Poisson ratio
+    dux: float = 1.0e-3    # total u_x across the strip
+    duy: float = 4.0e-4    # total u_y across the strip
+    p: float = 3.0e-4      # du_x/dy, global — makes u_x vary ALONG the interface
+    r: float = 5.0e-4      # du_y/dy, global
+
+    # ── material ──
+    @staticmethod
+    def _lame(e: float, nu: float) -> tuple[float, float]:
+        return e * nu / ((1.0 + nu) * (1.0 - 2.0 * nu)), e / (2.0 * (1.0 + nu))
+
+    @property
+    def lam_l(self) -> float:
+        return self._lame(self.el, self.nul)[0]
+
+    @property
+    def mu_l(self) -> float:
+        return self._lame(self.el, self.nul)[1]
+
+    @property
+    def lam_r(self) -> float:
+        return self._lame(self.er, self.nur)[0]
+
+    @property
+    def mu_r(self) -> float:
+        return self._lame(self.er, self.nur)[1]
+
+    @property
+    def ml(self) -> float:
+        """P-wave modulus lambda + 2 mu of the left block."""
+        return self.lam_l + 2.0 * self.mu_l
+
+    @property
+    def mr(self) -> float:
+        return self.lam_r + 2.0 * self.mu_r
+
+    @property
+    def ll(self) -> float:
+        return self.xi - self.xl
+
+    @property
+    def lr(self) -> float:
+        return self.xr - self.xi
+
+    # ── the closed form ──
+    @property
+    def sxx(self) -> float:
+        """sigma_xx, constant over the whole strip."""
+        return ((self.dux + self.r * (self.lam_l * self.ll / self.ml
+                                      + self.lam_r * self.lr / self.mr))
+                / (self.ll / self.ml + self.lr / self.mr))
+
+    @property
+    def sxy(self) -> float:
+        """sigma_xy, constant over the whole strip."""
+        return ((self.duy + self.p * (self.xr - self.xl))
+                / (self.ll / self.mu_l + self.lr / self.mu_r))
+
+    @property
+    def al(self) -> float:
+        return (self.sxx - self.lam_l * self.r) / self.ml
+
+    @property
+    def ar(self) -> float:
+        return (self.sxx - self.lam_r * self.r) / self.mr
+
+    @property
+    def bl(self) -> float:
+        return self.sxy / self.mu_l - self.p
+
+    @property
+    def br(self) -> float:
+        return self.sxy / self.mu_r - self.p
+
+    def u_exact(self, x, y):
+        """The exact displacement (u_x, u_y) at (x, y). Accepts arrays."""
+        import numpy as np
+        x = np.asarray(x, float)
+        y = np.asarray(y, float)
+        left = x <= self.xi + 1e-12
+        ux = np.where(left, self.al * (x - self.xl),
+                      self.al * self.ll + self.ar * (x - self.xi)) + self.p * y
+        uy = np.where(left, self.bl * (x - self.xl),
+                      self.bl * self.ll + self.br * (x - self.xi)) + self.r * y
+        return ux, uy
+
+    def u_iface(self, y):
+        return self.u_exact(np.full_like(np.asarray(y, float), self.xi), y)
+
+    def t_export(self, side: str) -> tuple[float, float]:
+        """What `side` ("left"/"right") must export as `normal_fluxes`.
+
+        The convention is q_out = -(sigma . n_own), the SAME one the scalar
+        participants use for heat, so the two sides' exports cancel and the
+        Neumann side applies the partner's numbers unchanged. n_own = +e_x on
+        the left, -e_x on the right.
+        """
+        s = 1.0 if side == "left" else -1.0
+        return (-s * self.sxx, -s * self.sxy)
+
+    def poly(self, position: str) -> tuple[tuple, tuple]:
+        """The outer-boundary Dirichlet polynomial (UDX, UDY) for one block:
+        u = (c0 + c1 x + c2 y + c3 y^2). c3 is zero for this problem — it is
+        there so the same participant script can be driven off a field that is
+        NOT an exact solution, which is how the genuinely-2-D arrangement is
+        made (see vector_bar_edits)."""
+        if position == "left":
+            return ((0.0, self.al, self.p, 0.0), (0.0, self.bl, self.r, 0.0))
+        return ((self.al * self.ll - self.ar * self.xi, self.ar, self.p, 0.0),
+                (self.bl * self.ll - self.br * self.xi, self.br, self.r, 0.0))
+
+    # ── the relaxation the driver needs ──
+    @property
+    def rho_x(self) -> float:
+        """Interface conductance ratio for the x component, left over right."""
+        return (self.ml / self.ll) / (self.mr / self.lr)
+
+    @property
+    def rho_y(self) -> float:
+        """...and for the y component. EQUAL to rho_x only when the two blocks
+        share a Poisson ratio: M/mu = 2(1-nu)/(1-2nu) is independent of E, so
+        equal nu makes the two ratios collapse to one number and one theta
+        serves both components. Different nu splits them, and the single theta
+        the driver applies must then be chosen for the WORST of the two."""
+        return (self.mu_l / self.ll) / (self.mu_r / self.lr)
+
+    def rho(self, dirichlet_side: str) -> tuple[float, float]:
+        if dirichlet_side == "left":
+            return self.rho_x, self.rho_y
+        return 1.0 / self.rho_x, 1.0 / self.rho_y
+
+    def theta_opt(self, dirichlet_side: str) -> float:
+        """theta = 1/(1 + max_c rho_c).
+
+        The driver's iteration is JACOBI, so its amplification per component is
+        sqrt((1-theta)^2 + rho_c theta^2) — the same expression the scalar
+        knowledge uses — and it is below one only while theta < 2/(1+rho_c).
+        The binding component is the LARGEST rho, so the max is not a
+        conservative choice but the only one that converges: with rho_y above
+        1 + 2 rho_x, theta = 1/(1+rho_x) diverges on y while x settles."""
+        return 1.0 / (1.0 + max(self.rho(dirichlet_side)))
+
+
+VECTOR_DEFAULT = VectorProblem()
+
+
 # ── the elastic analogue FEBio solves (FEBio 4 has no heat module) ──────────
 
 @dataclass(frozen=True)
