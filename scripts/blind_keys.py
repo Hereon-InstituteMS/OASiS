@@ -173,6 +173,51 @@ def cmd_status(args):
     return 0
 
 
+def cmd_audit(args):
+    """Sweep every problem through the leak gate, decrypting in memory if needed.
+
+    Works whatever state the keys are in (except sealed), so the audit does not
+    have to be sequenced before encryption and cannot quietly become a no-op.
+    Coverage is reported, because a sweep that examined nothing must not read
+    as a pass.
+    """
+    kv = _vault()
+    from blind_eval.leakgate import scan
+    if kv.is_sealed(KEYS):
+        print("keys are sealed; unseal first (scripts/blind_keys.py unseal)")
+        return 2
+    problems = sorted(p for p in (CAMPAIGN / "problems").iterdir()
+                      if (p / "task.txt").is_file())
+    encrypted = any((KEYS / p.name / "key.json.enc").is_file() for p in problems)
+    pw = getpass.getpass("key passphrase: ") if encrypted else None
+
+    checked, leaking = 0, []
+    for pdir in problems:
+        kdir = KEYS / pdir.name
+        kpath = next((q for q in (kdir / "key.json.enc", kdir / "key.json")
+                      if q.is_file()), None)
+        if kpath is None:
+            print(f"  {pdir.name:4} NO KEY — not audited")
+            continue
+        key = kv.load_key(kpath, pw)
+        rep = scan((pdir / "task.txt").read_text(), key, pdir.name)
+        checked += 1
+        worst = [f for f in rep.findings
+                 if f.severity in ("CRITICAL", "HIGH", "MEDIUM")]
+        print(f"  {pdir.name:4} {'LEAK' if worst else 'clean':5} "
+              f"{','.join(f.rule for f in worst) or ''}")
+        for f in worst:
+            print(f"        [{f.severity}] {f.detail[:160]}")
+        if worst:
+            leaking.append(pdir.name)
+    print(f"\naudited {checked}/{len(problems)} problems")
+    if checked != len(problems):
+        print("INCOMPLETE — unaudited problems are not known to be blind")
+        return 1
+    print(f"VERDICT: {'FAIL — ' + ', '.join(leaking) if leaking else 'PASS — all blind'}")
+    return 1 if leaking else 0
+
+
 def cmd_preflight(args):
     """Every control that must hold before a campaign may start."""
     kv = _vault()
@@ -215,6 +260,7 @@ def main():
     sub.add_parser("unseal").set_defaults(fn=cmd_unseal)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     sub.add_parser("preflight").set_defaults(fn=cmd_preflight)
+    sub.add_parser("audit").set_defaults(fn=cmd_audit)
     v = sub.add_parser("verify")
     v.add_argument("--manifest", default=str(MANIFEST))
     v.add_argument("--keys", default=str(KEYS))

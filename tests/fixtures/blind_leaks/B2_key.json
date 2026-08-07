@@ -1,0 +1,27 @@
+{
+  "id": "B2",
+  "code": "dealii",
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "exact_solution": "(x*y/5 + 1)*sin(pi*x)*sin(pi*y)",
+  "source_term": "(-pi*(x*sin(pi*y) + pi*(x*y + 5)*cos(pi*y))*sin(pi*x)*cos(pi*y) - pi*(2*x*cos(pi*y) - pi*(x*y + 5)*sin(pi*y))*(2*exp(x) + sin(pi*y))*sin(pi*x) + (y*sin(pi*x) + pi*(x*y + 5)*cos(pi*x))*sin(pi*y)**2 - pi*(2*y*cos(pi*x) - pi*(x*y + 5)*sin(pi*x))*(2*exp(x) + sin(pi*y))*sin(pi*y))*exp(-x)/5",
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "mesh_N": [
+    8,
+    16,
+    32,
+    64
+  ],
+  "qoi": "convergence order of the L2 error",
+  "source_term_verified": true,
+  "residual": "0",
+  "homogeneous_boundary": true
+}

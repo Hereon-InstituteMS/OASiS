@@ -4,8 +4,9 @@ A leak gate that has only ever been run on clean inputs is not known to work.
 So this suite drives it from both ends:
 
   * the two leaks the pre-existing campaign's own DESIGN.md admits to (``B1``,
-    ``D3``), plus one it does not know about (``B2``), taken from the real
-    on-disk task texts rather than reconstructions;
+    ``D3``), plus one it does not know about (``B2``) — the genuine task texts
+    and keys as they shipped, frozen under ``fixtures/blind_leaks/`` so the
+    evidence outlives the fix, not reconstructions written to pass;
   * the four leaks in the older HOE-v2 prompt generator, verbatim;
   * negative controls that would fire a naive gate — above all a source term
     packed with ``sin(pi x)``, which is the false alarm that ruined an earlier
@@ -26,24 +27,28 @@ import sympy as sp
 from blind_eval import derive, keyvault, leakgate, selfconv
 from blind_eval.spec import BlindSpec, Probe
 
-CAMPAIGN = Path("/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind")
-needs_campaign = pytest.mark.skipif(
-    not (CAMPAIGN / "problems").is_dir(),
-    reason="campaign3_blind problem set not present")
+# The three real leaks are frozen as fixtures rather than read from the live
+# campaign.  Reading the campaign was self-defeating: rebuilding B1, B2 and D3
+# removed the very leaks these tests exist to fire on, so the proof that the
+# gate works evaporated at exactly the moment the defect was fixed.  A gate's
+# evidence has to outlive the bug it found.
+LEAKS = Path(__file__).resolve().parent / "fixtures" / "blind_leaks"
+needs_fixtures = pytest.mark.skipif(
+    not LEAKS.is_dir(), reason="frozen leak fixtures not present")
 
 X, Y = derive.X, derive.Y
 
 
 def _load(pid):
-    task = (CAMPAIGN / "problems" / pid / "task.txt").read_text()
-    key = json.loads((CAMPAIGN / "keys" / pid / "key.json").read_text())
+    task = (LEAKS / f"{pid}_task.txt").read_text()
+    key = json.loads((LEAKS / f"{pid}_key.json").read_text())
     return task, key
 
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. The gate fires on REAL leaks
 # ══════════════════════════════════════════════════════════════════════
-@needs_campaign
+@needs_fixtures
 @pytest.mark.parametrize("pid,expect_rule", [
     ("B1", "L4_PRINTED_SUBSUM"),   # DESIGN.md: "leaks by naked inspection"
     ("D3", "L4_PRINTED_SUBSUM"),   # DESIGN.md: the other admitted one
@@ -56,7 +61,7 @@ def test_gate_fires_on_admitted_real_leaks(pid, expect_rule):
         f"{pid}: expected {expect_rule}, got {[f.rule for f in rep.findings]}"
 
 
-@needs_campaign
+@needs_fixtures
 def test_gate_finds_a_leak_the_design_did_not_know_about():
     """B2 embeds 4*pi**2 * u_exact; DESIGN.md lists only B1 and D3."""
     task, key = _load("B2")
@@ -66,7 +71,7 @@ def test_gate_finds_a_leak_the_design_did_not_know_about():
                for r in rules), f"B2 embedding not detected; got {rules}"
 
 
-@needs_campaign
+@needs_fixtures
 def test_b1_leak_is_real_not_a_gate_artefact():
     """One PRINTED term of B1's source term is exactly 12*pi**2 * u_exact."""
     _, key = _load("B1")

@@ -1,0 +1,60 @@
+{
+  "id": "D3",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "kratos"
+  ],
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "exact_solution": {
+    "A": "(x**2 + x)*sin(pi*y)",
+    "B": "(11*x/20 - 97*(x - 3/5)**2/54 + 63/100)*sin(pi*y)"
+  },
+  "source_term": {
+    "A": "pi**2*x**2*sin(pi*y) + pi**2*x*sin(pi*y) - 2*sin(pi*y)",
+    "B": "-194*pi**2*x**2*sin(pi*y)/27 + 487*pi**2*x*sin(pi*y)/45 - pi**2*sin(pi*y)/15 + 388*sin(pi*y)/27"
+  },
+  "components": [
+    "u"
+  ],
+  "interface": "the line x = 3/5, where the two materials meet",
+  "extent_a": [
+    [
+      0.0,
+      0.6
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "extent_b": [
+    [
+      0.6,
+      1.5
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "qoi": "convergence order of the L2 error of the coupled temperature field",
+  "graded_against": "hidden manufactured solution (true error)",
+  "verified": true,
+  "verification_detail": "resA=0; resB=0; jump_u=0; jump_flux=0; outer: all outer traces vanish"
+}
