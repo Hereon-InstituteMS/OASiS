@@ -63,16 +63,16 @@ STUB_TEMPLATES = {
     # 2026-08-07: every fourc row that used to sit here has been replaced by a
     # deck that was executed on the installed binary (see
     # src/backends/fourc/decks.py and tests/test_fourc_reference_stubs.py), so
-    # nothing here is a fourc row any more except the two porous-media
-    # variants that are still honest stubs.
+    # nothing here is a fourc row any more. The set is empty: no backend in
+    # this tree currently ships a stub template. Kept rather than deleted, so
+    # the next one that does has an obvious place to be declared and gets
+    # tagged instead of shipping silently.
     #
     # One claim removed with them: the note above used to say XFEM was blocked
     # because "xfem cut needs Qhull" and this build lacks it. It does not lack
     # it — the build has FOUR_C_WITH_QHULL:BOOL=ON, lib4C.so links
     # libqhull.so.6, and the XFEM decks run in both Tessellation and
     # DirectDivergence cut modes.
-    ("fourc", "porous_media", "terzaghi_2d"),
-    ("fourc", "porous_media", "consolidation_3d"),
 }
 
 

@@ -5,6 +5,8 @@ WHY THIS MODULE EXISTS
 `prepare_simulation(fourc, <physics>)` used to answer 27 of 4C's 49 catalog
 physics with a comment block that said, in as many words, "Not a runnable
 input — the user must supply the case-specific mesh + material parameters."
+This module is what it answers with instead: 29 decks over 24 physics, every
+one of them executed.
 Every other backend in this project ships a fillable skeleton for every physics
 it advertises (deal.II 27/27, scikit-fem 22/22, FEBio 17/17, SPARTA 10/10). 4C,
 the backend the project is named around, was the exception — and it is the one
@@ -206,6 +208,30 @@ DECKS: tuple[Deck, ...] = (
             "DIFF1/DIFF2/DIFF3 are along fibre and the two cross-fibre "
             "directions, so an isotropic-looking material is still "
             "orientation-dependent.",
+        ),
+    ),
+    Deck(
+        physics="contact", variant="penalty_3d",
+        filename="contact_penalty_3d.4C.yaml", np=1,
+        upstream="contact3D_lin_penalty.4C.yaml + "
+                 "contact3D_symmetry_penalty_new_struct.4C.yaml",
+        summary="Mortar penalty contact between two separate bodies: a stiff "
+                "punch descends across an initial gap onto a clamped soft "
+                "foundation and indents it.",
+        evidence="4C's per-step 'Total ACTIVE nodes' reads 0 for the first "
+                 "nine steps and 5 then 9 from step 10 — exactly where the "
+                 "prescribed descent closes the 0.05 gap. The foundation node "
+                 "under the punch moves -4.19e-02 while a corner outside the "
+                 "patch reaches only -1.46e-02, so this is local indentation "
+                 "and not rigid translation.",
+        pitfalls=(
+            "LM_SHAPEFCN: Dual needs LM_DUAL_CONSISTENT: none, or "
+            "contact_strategy_factory.cpp:263 throws 'Consistent dual shape "
+            "functions in boundary elements only for Lagrange multiplier "
+            "strategy.'",
+            "This is the two-body mortar route. The other contact variant, "
+            "inline_penalty_3d, is a single inline block and teaches the "
+            "self-contact/simple case instead.",
         ),
     ),
     Deck(
@@ -427,6 +453,57 @@ DECKS: tuple[Deck, ...] = (
             "The hardening law is Voce plus linear: "
             "sigma_y = YIELD + ISOHARD*e_p + (SATHARDENING - YIELD)*"
             "(1 - exp(-HARDEXPO*e_p)).",
+        ),
+    ),
+    Deck(
+        physics="porous_media", variant="terzaghi_2d",
+        filename="porous_media_terzaghi_2d.4C.yaml", np=1,
+        upstream="poro_2D_quad4_br_stsplit_nbc.4C.yaml + "
+                 "poro_2D_quad4_linporo.4C.yaml",
+        summary="Terzaghi one-dimensional consolidation: a saturated soil "
+                "column loaded at the drained top surface, with the pore "
+                "pressure carrying the load initially and dissipating over "
+                "time as the skeleton takes it up.",
+        evidence="Base pore pressure 9.903e-01 at the end of the load ramp "
+                 "(99.0% of the applied q, the undrained Terzaghi limit) "
+                 "falling monotonically to 6.322e-03; settlement -1.836e-04 -> "
+                 "-8.957e-04, converging on the drained oedometric value "
+                 "q*H/E_oed = 9.0e-04.",
+        pitfalls=(
+            "Poroelasticity requires the SAME THETA in STRUCTURAL "
+            "DYNAMIC/ONESTEPTHETA and in FLUID DYNAMIC, or "
+            "poroelast_base.cpp:182 throws 'porous media problem is limited in "
+            "functionality'.",
+            "Runtime VTK output needs STRUCTURAL DYNAMIC INT_STRATEGY: "
+            "Standard; the old integrator throws 'Runtime output is not "
+            "available in the old structure time integration!'",
+            "In 2-D the porofluid VTU 'pressure' array is all NaN and the pore "
+            "pressure lands in the THIRD component of 'velocity' — "
+            "FluidImplicitTimeInt::write_runtime_output hardcodes three "
+            "velocity components. The 3-D output is fine.",
+        ),
+    ),
+    Deck(
+        physics="porous_media", variant="consolidation_3d",
+        filename="porous_media_consolidation_3d.4C.yaml", np=1,
+        upstream="poro_3D_hex8_stat.4C.yaml + poro_2D_quad4_linporo.4C.yaml",
+        summary="Three-dimensional consolidation under a surface load, the "
+                "HEX8 counterpart of the Terzaghi column.",
+        evidence="Base pressure 9.910e-01 -> 6.278e-03 and settlement "
+                 "-1.833e-04 -> -8.957e-04, agreeing with the independent 2-D "
+                 "deck to three digits — the right cross-check for a problem "
+                 "that is one-dimensional in the physics.",
+        pitfalls=(
+            "There is no SOLIDH8PORO element. It appears in zero files of the "
+            "4C source, zero upstream decks and is absent from the grammar "
+            "index; earlier OASiS knowledge named it as the 3-D poro element. "
+            "The real ones are SOLIDPORO_PRESSURE_VELOCITY_BASED (used here, "
+            "and the only one the 25 upstream Poroelasticity decks use), "
+            "SOLIDPORO_PRESSURE_VELOCITY_BASED_P1 (porosity as a 4th nodal "
+            "unknown, needs PHYSICAL_TYPE: Poro_P1) and "
+            "SOLIDPORO_PRESSURE_BASED (no fluid-velocity field; belongs to the "
+            "pressure-based multiphase module, not to Poroelasticity).",
+            "See the terzaghi_2d note on matching THETA.",
         ),
     ),
     Deck(

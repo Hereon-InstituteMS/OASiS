@@ -555,62 +555,6 @@ class FourcBackend(SolverBackend):
         # Map (physics, variant) → (problemtype, description,
         # required sections, pitfalls).
         stubs: dict[tuple[str, str], dict] = {
-            ("porous_media", "terzaghi_2d"): {
-                "problemtype": "Poroelasticity",
-                "summary": ("Terzaghi 1-D consolidation "
-                            "benchmark — saturated soil "
-                            "column under instantaneously "
-                            "applied surface load, pore "
-                            "pressure dissipates over time."),
-                "needs": ["MAT_FluidPoro (for the fluid "
-                          "phase) + MAT_Struct_StVenantKirchhoff "
-                          "or PLN_ELASTIC (for the solid "
-                          "skeleton)",
-                          "STRUCTURE GEOMETRY with "
-                          "WALLQ4PORO elements (NOT plain "
-                          "WALL — the poro suffix is "
-                          "required)",
-                          "POROELASTICITY DYNAMIC with "
-                          "monolithic coupling (NOT "
-                          "partitioned for the consolidation "
-                          "stage)",
-                          "Drainage BC at the top surface "
-                          "(zero pore pressure)"],
-                "pitfalls": ["Time scale: poro is "
-                             "DYNAMIC formulation — slow "
-                             "load ramp >>10 * H/sqrt(E/rho) "
-                             "to avoid elastic waves",
-                             "Permeability k too small → "
-                             "no consolidation in run time; "
-                             "rule of thumb t_final >> H^2 "
-                             "/ (c_v) where c_v = k*E/mu_f"],
-            },
-            ("porous_media", "consolidation_3d"): {
-                "problemtype": "Poroelasticity",
-                "summary": ("3-D consolidation under "
-                            "distributed surface load — "
-                            "axisymmetric or rectangular "
-                            "footprint; HEX8 SOLIDH8PORO "
-                            "elements."),
-                "needs": ["Same MAT_FluidPoro + solid "
-                          "skeleton as terzaghi_2d",
-                          "STRUCTURE GEOMETRY with "
-                          "SOLIDH8PORO (3D variant)",
-                          "POROELASTICITY DYNAMIC with "
-                          "monolithic coupling",
-                          "Drainage BC on the loaded "
-                          "surface"],
-                "pitfalls": ["Element-locking: at low "
-                             "permeability, the standard "
-                             "displacement-based formulation "
-                             "locks volumetrically; use "
-                             "u-p mixed (SOLIDH8PORO is "
-                             "p1-p1 stabilised) or check "
-                             "for incompressibility "
-                             "locking",
-                             "Slow load ramp same as "
-                             "terzaghi_2d"],
-            },
             # ── Deep multiphysics rows that genuinely need a
             #    case-specific mesh (often TWO meshes), a second
             #    input file, patient-derived topology, an explicit

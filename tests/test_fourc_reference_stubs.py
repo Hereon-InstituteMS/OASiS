@@ -74,13 +74,17 @@ PROMOTED_ROWS = [
     ("plasticity", "nonlinear_3d"),
     ("fluid_turbulence", "les_channel_3d"),
     ("brownian_dynamics", "brownian_3d"),
-]
-
-# The honest remainder. Each must still announce itself as non-runnable.
-STILL_STUB_ROWS = [
+    ("contact", "penalty_3d"),
     ("porous_media", "terzaghi_2d"),
     ("porous_media", "consolidation_3d"),
 ]
+
+# The honest remainder. Each must still announce itself as non-runnable.
+# Empty as of 2026-08-07: every fourc row the stub catalog carried now has a
+# deck that was executed on the installed binary. Kept as a list rather than
+# deleted, because the machinery that keeps a stub honest is still there and
+# the next physics that cannot be templated belongs here, not in silence.
+STILL_STUB_ROWS: list[tuple[str, str]] = []
 
 
 class TestFourcPromotedRows(unittest.TestCase):
