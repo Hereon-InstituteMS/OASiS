@@ -15,5 +15,9 @@
     "Traceback",
     "FAIL:"
   ],
-  "timeout_seconds": 240
+  "timeout_seconds": 240,
+  "covers": [
+    "auxiliary_overview::0"
+  ],
+  "_key_correction": "The fixture's physics field says '_auxiliary_overview', with a leading underscore; the registry key that get_knowledge() answers to is 'auxiliary_overview' without one. The fallback key '_auxiliary_overview::0' therefore named no claim and this fixture credited nothing, while the claim it verifies sat uncovered. Adding an explicit covers list fixes the link without touching the physics field that the runner groups by. Index confirmed against the claim text."
 }
