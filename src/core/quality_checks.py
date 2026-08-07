@@ -320,6 +320,24 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     """
     w = []
 
+    def _npts(e):
+        co = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
+        try:
+            return len(co) if co is not None else None
+        except TypeError:
+            return None
+
+    # WHEN TO INTEGRATE. Two sides that sample the interface at the SAME number
+    # of points are directly comparable and their sums are the right quantity —
+    # a redistribution along the interface then cancels in the sum exactly, which
+    # is what makes it the flux-PROFILE check's job to catch rather than this
+    # one's. Two sides with DIFFERENT point counts are not comparable at all:
+    # 41 samples against 31 of the same physical flux differ by the sampling, not
+    # by the physics, and only an arclength integral removes that. So integrate
+    # exactly when the discretisations differ.
+    _integrate = (_npts(export_a) is not None and _npts(export_b) is not None
+                  and _npts(export_a) != _npts(export_b))
+
     def _flux(e):
         f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
         if f is None:
@@ -329,8 +347,32 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
         # component. Summing every component into one number lets a +x imbalance
         # cancel a -y one and report perfect conservation across an interface
         # that conserves nothing.
-        return (a.reshape(-1, a.shape[-1]).sum(axis=0)
-                if a.ndim >= 2 and a.shape[-1] > 1 else _np.array([a.sum()]))
+        v = (a.reshape(-1, a.shape[-1]) if a.ndim >= 2 and a.shape[-1] > 1
+             else a.reshape(-1, 1))
+        co = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
+        # INTEGRATE OVER ARCLENGTH, do not just add the samples up. The two
+        # participants discretise the SAME interface with DIFFERENT point
+        # counts — that is the normal case for non-matching meshes — so a plain
+        # sum compares 41 samples against 31 and reports a large imbalance for a
+        # coupling that conserves exactly. Measured on the shipped participant
+        # pairs: nets of 313.8 against -240 for two fields that agree to 1e-5
+        # pointwise. The trapezoid below is the quantity
+        # knowledge/coupling-revision introduced for this, kept here inside
+        # feature/coupling-robustness's per-component structure so both hold.
+        # Falls back to the plain sum when there are no coordinates to integrate
+        # against, which is what the scalar unit tests hand in.
+        try:
+            c = _np.asarray(co, float) if co is not None else None
+        except (TypeError, ValueError):
+            c = None
+        if (_integrate and c is not None and c.ndim == 2
+                and len(c) == len(v) and len(v) > 1):
+            order = _np.lexsort(tuple(c[:, k] for k in range(c.shape[1] - 1, -1, -1)))
+            cs, vs = c[order], v[order]
+            ds = _np.linalg.norm(_np.diff(cs, axis=0), axis=1)
+            if float(_np.sum(ds)) > 0:
+                return _np.sum(0.5 * (vs[:-1] + vs[1:]) * ds[:, None], axis=0)
+        return v.sum(axis=0)
 
     va, vb = _flux(export_a), _flux(export_b)
     if va is None or vb is None:
