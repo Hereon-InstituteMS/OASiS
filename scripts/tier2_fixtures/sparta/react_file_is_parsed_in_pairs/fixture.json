@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for sparta chemistry: 'react <style> <file>' never validates the file type. ReactBird consumes data lines in PAIRS, so a file with an ODD number of data lines (ar.vss, a one-line junk file) is accepted in silence with zero reactions, while an EVEN-line junk file aborts with 'Invalid reaction formula in file'. The only count is the '#-of-reactions' line under 'Gas reaction tallies:', and it counts entries PARSED — declaring only 2 of the 5 species leaves it at 45 while no reaction can fire. 'react qk' on a tce file is accepted without complaint. COVERS (added 2026-08-06): chemistry:0 via the odd/even line-count cases and the '#-of-reactions' tally line, and chemistry:1 via qk_style_on_a_tce_file_is_accepted — the style is never cross-checked against the file. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 points the odd-line case at the real reaction file (air.tce) instead of ar.vss, removing the wrong-file-type mistake and nothing else; that run then reports 45 parsed reactions instead of 0. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and this expect_in_output string goes False and disappears: odd_line_file_loads_silently_with_zero_reactions=True. It is the only one of the six checks that a mutation of this kind can move: qk_style_on_a_tce_file_is_accepted and undeclared_species_do_not_change_the_parsed_count assert that SPARTA fails to NOTICE something, so removing the mistake leaves them true by construction; real_reaction_file_parses and tally_block_only_appears_with_a_react_command are healthy-case controls; even_line_junk_file_aborts_loudly would need its own mutation, on a different deck. Re-verify: cd scripts/tier2_fixtures/sparta/react_file_is_parsed_in_pairs && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "chemistry",
+  "pitfall_index": 0,
+  "covers": [
+    "chemistry:0",
+    "chemistry:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "odd_line_file_loads_silently_with_zero_reactions=True",
+    "even_line_junk_file_aborts_loudly=True",
+    "real_reaction_file_parses=True",
+    "qk_style_on_a_tce_file_is_accepted=True",
+    "undeclared_species_do_not_change_the_parsed_count=True",
+    "tally_block_only_appears_with_a_react_command=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

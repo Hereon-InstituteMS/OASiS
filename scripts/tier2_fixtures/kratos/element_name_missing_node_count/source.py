@@ -5,13 +5,20 @@ node count: SmallDisplacementElement2D3N, not SmallDisplacement2D'.
 The wrong shorter name is not in the Kratos Registry, so
 CreateNewElement raises RuntimeError 'Element ... is not
 registered'.
+
+Mutation control: T2_MUTATE=1 registers the element under its full registered name SmallDisplacementElement2D4N, i.e. with the node-count suffix the pathology omits. The element is then created and the RuntimeError 'not registered' disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=element_name_given_its_node_count_suffix")
 
 
 def main() -> int:
@@ -27,7 +34,9 @@ def main() -> int:
     try:
         # Wrong: no node-count suffix. Should be
         # SmallDisplacementElement2D4N or similar.
-        mp.CreateNewElement("SmallDisplacement2D", 1, [1, 2, 3, 4], prop)
+        name = ("SmallDisplacementElement2D4N" if MUTATE
+                else "SmallDisplacement2D")
+        mp.CreateNewElement(name, 1, [1, 2, 3, 4], prop)
     except Exception:
         traceback.print_exc()
         return 1

@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: 'compute temp' does not subtract the streaming velocity, so it reports T_thermal + m|vstream|^2/(3 kB). The fixture measures the offset against that formula for argon at 1000 m/s and confirms it is negligible at 10 m/s — the inflation scales with species mass and the SQUARE of the stream speed, so 'compute temp is always wrong in a flow' would be the wrong lesson. 'compute thermal/grid' removes the per-cell mean and stays thermal. Both runs exit 0 with no warning. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 reads the temperature offset from the STREAMING-SUBTRACTED estimator (compute thermal/grid) instead of the biased global `compute temp`, at the same 1000 m/s flow -- it removes the estimator that counts bulk motion as heat, not the flow. The measured offset drops from ~1600 K (matching m*v^2/3kB = 1600.7) to 1.5 K. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: offset_matches_m_v2_over_3kB=True, slow_flow_offset_is_negligible=True. Re-verify: cd scripts/tier2_fixtures/sparta/compute_temp_includes_streaming_velocity && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 4,
+  "covers": [
+    "rarefied_flow:4"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "all_runs_exit_zero=True",
+    "no_warnings=True",
+    "offset_matches_m_v2_over_3kB=True",
+    "thermal_grid_stays_near_thermal=True",
+    "slow_flow_offset_is_negligible=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

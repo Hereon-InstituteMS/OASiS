@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: TWO CableNet process wrappers, both exercised. (a) Pitfall kratos.cable_net #12 says a displacement_data / force_data LENGTH MISMATCH is reported by numpy.polyfit in the Python wrapper BEFORE the C++ constructor's misleadingly-worded check can fire. CONFIRMED on 10.4.3: displacement_data=[0,1,2] with force_data=[0,1] raises TypeError 'expected x and y to have same length' from the wrapper; the C++ message about 'only two nodes for each spring allowed' is never reached. (b) Pitfall kratos.cable_net #13 says SlidingEdgeProcess is broken through every user path. CONFIRMED that it is unusable, but WITH A DIFFERENT FAILURE THAN CLAIMED: the claim predicts NameError 'name model_part_name is not defined' at sliding_edge_process.py:32. Measured, the wrapper does not get that far — it builds a parameter set its own C++ defaults reject, and ValidateAndAssignDefaults raises 'The item with name \"angled_initial_line\" is present in this Parameters but NOT in the default values'. The wrapper's schema and the C++ schema disagree, which is the same defect the claim describes from the other side; the specific NameError it names is not what a user sees. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 gives the empirical-spring process displacement_data and force_data of EQUAL length (3 and 3), removing the mismatch that is the pathology, so numpy.polyfit no longer raises and the Factory call succeeds. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: mismatched_arrays_raised=True, raiser=TypeError, observed=numpy_polyfit_same_length, cablenet_process_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/cablenet_process_wrappers_fail && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 12,
+  "mode": "python",
+  "expect_in_output": [
+    "mismatched_arrays_raised=True",
+    "raiser=TypeError",
+    "observed=numpy_polyfit_same_length",
+    "sliding_edge_wrapper_raised=True",
+    "observed=validate_and_assign_defaults_rejects_own_key",
+    "cablenet_process_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 300
+}

@@ -28,15 +28,22 @@ Neither registered. The real registered name is
 This fixture asserts both ends:
   * Catalog-listed wrong names fail with 'is not registered'.
   * Corrected names register successfully.
+
+Mutation control: T2_MUTATE=1 replaces the six wrong RANS/ShallowWater element names with three-node names this build actually registers (the probe loop always passes three node ids), so none is rejected and all_catalog_wrong_names_rejected goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.FluidDynamicsApplication  # required by RANS
 import KratosMultiphysics.RANSApplication  # noqa: F401
 import KratosMultiphysics.ShallowWaterApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=wrong_names_replaced_by_registered_three_node_ones")
 
 
 def main() -> int:
@@ -56,6 +63,11 @@ def main() -> int:
         "ShallowWaterElement2D3N",
         "ShallowWaterElement2D4N",
     ]
+    if MUTATE:
+        # Pathology removed: probe names this build actually registers.
+        # The loop below always passes three node ids, so only 2D3N forms.
+        wrong_names = ["RansKEpsilonKAFC2D3N", "RansKEpsilonEpsilonCWD2D3N",
+                       "RansKOmegaSSTKRFC2D3N", "BoussinesqElement2D3N"]
     all_wrong_rejected = True
     for n in wrong_names:
         ok = False

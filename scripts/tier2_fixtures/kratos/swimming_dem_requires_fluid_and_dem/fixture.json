@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: SwimmingDEM requires FluidDynamicsApplication + DEMApplication. Pitfall (kratos.swimming_dem #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both prerequisites import while SwimmingDEMApplication does not. Related measured fact for the sibling claim (swimming_dem #2): the KratosSwimmingDEMApplication wheel is still pinned at 10.4.0 and requires kratosmultiphysics==10.4.0, so installing it would DOWNGRADE a 10.4.3 core — it was deliberately not installed into this venv. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS every claimed availability flag in CASES -- it asserts the opposite of what this install actually provides, leaving the importlib.import_module probe itself untouched. All 3 importable[...] lines then disagree with themselves and app_import_mismatches goes from 0 to 3. This is the control the fixture needs: it proves the printed booleans come from a real import attempt on this build and that a wrong availability claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 3 importable[<app>]=<got>_expected=<must> lines, app_import_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/swimming_dem_requires_fluid_and_dem && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "swimming_dem",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[FluidDynamicsApplication]=True_expected=True",
+    "importable[DEMApplication]=True_expected=True",
+    "importable[SwimmingDEMApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240
+}

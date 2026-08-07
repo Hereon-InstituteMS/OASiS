@@ -21,14 +21,23 @@ is neither.
 Also locks the install-gap diagnostic: importing
 KratosMultiphysics.FSIApplication on a fresh .venv raises
 ModuleNotFoundError unless pip-installed.
+
+Mutation control: T2_MUTATE=1 adds a name the FSI build does not provide to REQUIRED_ACCEL_CLASSES, so the required set no longer matches dir(FSIApplication) and accel_classes_missing stops being empty. This proves the emptiness assertion really consults the module surface rather than restating a hard-coded list.
 """
 from __future__ import annotations
 
 import importlib
+import os
 import sys
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=required_class_set_given_a_name_the_build_does_not_provide")
 
 
 REQUIRED_ACCEL_CLASSES = {
+    *(("NoSuchConvergenceAccelerator",)
+      if os.environ.get("T2_MUTATE") == "1" else ()),
     "AitkenConvergenceAccelerator",
     "ConstantRelaxationConvergenceAccelerator",
     "IBQNMVQNConvergenceAccelerator",

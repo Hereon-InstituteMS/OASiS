@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: the generic isotropic plasticity laws' Check() demands HARDENING_CURVE, FRACTURE_ENERGY, YIELD_STRESS_TENSION and YIELD_STRESS_COMPRESSION, one at a time and in that order. Pitfall (kratos.constitutive_laws #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The ORDER in the claim's Signal is exactly right and is asserted step by step: with nothing set, 'Error: HARDENING_CURVE is not a defined value'; add HARDENING_CURVE and it asks for FRACTURE_ENERGY; then YIELD_STRESS_TENSION; then YIELD_STRESS_COMPRESSION; then it passes. FALSIFIED: the claim's last sentence, 'Plain KM.YIELD_STRESS is NOT accepted', is WRONG on 10.4.3 — setting HARDENING_CURVE + FRACTURE_ENERGY + KM.YIELD_STRESS (with neither CLA yield stress set) makes Check() PASS. This fixture pins the corrected behaviour and goes red if that ever changes. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 gives every Check() step the FULL property set instead of withholding one property at a time, removing the missing-property condition; Check then passes at every step and names nothing. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: step[0]_reported=HARDENING_CURVE, step[1]_reported=FRACTURE_ENERGY, step[2]_reported=YIELD_STRESS_TENSION, step[3]_reported=YIELD_STRESS_COMPRESSION, cl_check_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/plasticity_law_check_required_properties && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "step[0]_reported=HARDENING_CURVE",
+    "step[1]_reported=FRACTURE_ENERGY",
+    "step[2]_reported=YIELD_STRESS_TENSION",
+    "step[3]_reported=YIELD_STRESS_COMPRESSION",
+    "all_four_present_check=PASSED",
+    "plain_yield_stress_accepted=True",
+    "cl_check_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 180
+}

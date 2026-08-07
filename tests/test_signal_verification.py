@@ -102,6 +102,10 @@ class TestDealiiSignalFloor(unittest.TestCase):
     # recorded, because with the interpreter-resolution fix in place
     # this host reproduces 52 of the 113 and that reconciliation is
     # open work elsewhere, not a number to quietly lower here.
+    #
+    # 2026-08-06 sparta knowledge restructure: +10 SPARTA fixtures (that
+    # branch read the floor as 108 -> 118; the same +10 is inside the 197
+    # rows the merged snapshot now holds).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)

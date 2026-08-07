@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for sparta chemistry:6, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial) on the examples/circle geometry. 'compute surf/collision/tally' is written through 'dump tally' every 200 steps and the snapshot header 'ITEM: NUMBER OF TALLIES' is compared against SPARTA's own Nscoll column for the SAME step — two outputs of one run, so nothing is remembered; step 0, where both are trivially zero, is excluded. The successive snapshots are separately checked not to be a running total. The other three consumers all refuse the compute: 'ERROR: Stats compute does not compute scalar (../stats.cpp:678)' from stats_style, 'ERROR: Dump surf compute does not compute per-surf info (../dump_surf.cpp:567)' from dump surf, and 'ERROR: Fix ave/surf compute does not calculate per-surf values (../fix_ave_surf.cpp:146)' from fix ave/surf — the last is printed by the run and echoed, not asserted as a literal, so a future upstream rewording fails loudly rather than silently. COVERS: chemistry:6. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the compute STYLE word in the three CONSUMER decks becomes 'surf all all n' — a plain per-surf compute, same group, same mixture, same deck, same seed, same run length. The dump-tally deck is deliberately NOT mutated, so the per-step evidence is measured on the identical run in both modes. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: dump_surf_rejects_a_tally_compute=True, fix_ave_surf_refuses_a_tally_compute=True. SCOPE OF THE HOOK, stated plainly: it covers the 'only dump tally will take it' half. The one-timestep half cannot be mutation-controlled from a deck at all — no edit to any deck makes SPARTA accumulate these tallies, only a change to SPARTA would — so the_dump_header_equals_the_per_step_counter and successive_snapshots_are_not_a_running_total stay True under T2_MUTATE=1 and are NOT evidenced by this hook; what backs them is the comparison against SPARTA's own per-step counter inside one run. stats_style_rejects_a_tally_compute also stays True, correctly: stats_style refuses any per-surf compute, tally or not. Re-verify: cd scripts/tier2_fixtures/sparta/tally_computes_are_one_step_event_lists && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary and examples/circle: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "chemistry",
+  "pitfall_index": 6,
+  "covers": [
+    "chemistry:6"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "the_dump_tally_deck_runs=True",
+    "the_dump_header_equals_the_per_step_counter=True",
+    "successive_snapshots_are_not_a_running_total=True",
+    "stats_style_rejects_a_tally_compute=True",
+    "dump_surf_rejects_a_tally_compute=True",
+    "fix_ave_surf_refuses_a_tally_compute=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

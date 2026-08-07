@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: backends.kratos.generators.KNOWLEDGE is the ONLY per-physics catalog the Kratos backend consumes, and data/kratos_knowledge exports per-application constants rather than a unified KRATOS_KNOWLEDGE dict \u2014 so a get_knowledge that wrapped `from kratos_knowledge import KRATOS_KNOWLEDGE` in try/except would silently run its fallback branch forever. Pitfall (kratos._auxiliary_overview #6). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Verified against the repository as it stands: the generators catalog is a populated dict, the backend imports it, and the backend source contains no reference to kratos_knowledge at all \u2014 the dead branch the claim describes was removed and this fixture goes red if it is reintroduced. Kratos itself is imported at module scope so the fixture cannot report on a machine without it. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "generators_KNOWLEDGE_is_a_dict=True",
+    "backend_imports_generators_KNOWLEDGE=True",
+    "backend_imports_data_kratos_knowledge=False",
+    "source_of_truth_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 300
+}

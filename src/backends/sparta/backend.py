@@ -8,9 +8,13 @@ which no continuum FEM solver can do. This makes SPARTA the particle half of gen
 forced multi-paradigm couplings (e.g. DSMC gas <-> FEM solid conjugate heat transfer via
 preCICE).
 
-The full command knowledge (121 commands: syntax, examples, descriptions, all categories)
-is distilled verbatim from the SPARTA documentation into sparta_knowledge.json and served
-through get_knowledge(); the 37 worked example decks are bundled as input templates.
+Knowledge layout (restructured): the agent-facing knowledge lives in
+``generators/``, one module per physics, each exposing a KNOWLEDGE dict whose
+pitfalls carry an observable ``Signal:`` clause plus parameterised deck
+generators — the same shape the FEM backends use. ``sparta_knowledge.json``
+remains the verbatim SPARTA documentation index (121 doc pages) and the bundled
+upstream example decks; it is a LOOKUP table for validate_input and for
+on-demand syntax queries, not something pushed at the agent on every call.
 """
 
 import asyncio
@@ -29,6 +33,11 @@ from core.backend import (
     PhysicsCapability, JobHandle,
 )
 from core.registry import register_backend
+
+from .generators import (  # noqa: F401
+    BUILD_FACTS, GENERATORS, HARD_ORDERING_ERRORS, KNOWLEDGE,
+    READING_OUTPUT, SILENTLY_ACCEPTED,
+)
 
 logger = logging.getLogger("oasis.sparta")
 
@@ -209,95 +218,40 @@ def _stage_sparta_data_files(deck: str, work_dir: Path, binary: str):
     stage_deck_data_files(deck, work_dir, binary=binary)
 
 
-# ── physics capability -> {relevant commands, example template dir, pitfalls} ──
-# Each maps DSMC physics to the SPARTA commands and a verified worked example deck.
+# ── physics capability -> deck family, worked example and default variant ──
+# The agent-facing knowledge (descriptions, key commands, Signal-carrying
+# pitfalls) lives in generators/<physics>.py. This table only records what the
+# backend itself needs: the spatial dims, the upstream example directory that
+# demonstrates the physics, and the generator variant to offer by default.
 _PHYSICS = {
-    "rarefied_flow": dict(
-        desc="Rarefied / free-molecular gas flow (high Knudsen) via DSMC particles",
-        dims=[2, 3], example="free",
-        commands=["global", "species", "mixture", "create_box", "create_grid",
-                  "create_particles", "collide", "fix", "run", "stats"],
-        pitfalls="Grid cell size must be smaller than the local mean free path; "
-                 "timestep must be a fraction of the mean collision time."),
-    "collision_relaxation": dict(
-        desc="Particle-particle collisions with VSS/VHS model + internal energy relaxation",
-        dims=[2, 3], example="collide",
-        commands=["collide", "species", "mixture", "collide_modify"],
-        pitfalls="VSS parameters come from a species .vss file; without 'collide vss' the "
-                 "gas is collisionless (free-molecular only)."),
-    "hypersonic_flow": dict(
-        desc="Hypersonic rarefied flow over a body (shock, surface heat flux) — DSMC",
-        dims=[2, 3], example="adjust_temp",
-        commands=["read_surf", "surf_collide", "surf_react", "compute", "fix",
-                  "bound_modify", "create_particles", "fix emit/face"],
-        pitfalls="Resolve the shock/boundary layer with fine cells near the surface; "
-                 "run to statistical steady state before sampling surface heat flux."),
-    "surface_interaction": dict(
-        desc="Gas-surface interaction: diffuse/specular/CLL collision + surface reactions",
-        dims=[2, 3], example="adjust_temp",
-        commands=["read_surf", "surf_collide", "surf_react", "surf_modify",
-                  "compute surf", "fix surf/temp"],
-        pitfalls="surf_collide diffuse needs a wall temperature + accommodation; for "
-                 "conjugate heat transfer the wall T is updated each coupling window."),
-    "chemistry": dict(
-        desc="Gas-phase chemical reactions (TCE / QK) during DSMC collisions",
-        dims=[2, 3], example="chem",
-        commands=["react", "react_modify", "species", "collide", "mixture"],
-        pitfalls="Reaction file format (tce/qk) must match the 'react' style; ensure all "
-                 "product species are declared in the species file."),
-    "axisymmetric": dict(
-        desc="2D axisymmetric DSMC (revolved geometry, radial weighting)",
-        dims=[2], example="axi",
-        commands=["dimension", "global ... axisymmetric", "fix", "global weight"],
-        pitfalls="Use 'global ... axisymmetric yes' and radial particle weighting; the "
-                 "y=0 axis needs the correct boundary condition."),
-    "particle_emission": dict(
-        desc="Particle injection / emission from faces or surfaces (inflow boundary)",
-        dims=[2, 3], example="emit",
-        commands=["fix emit/face", "fix emit/surf", "mixture", "create_particles"],
-        pitfalls="Emission rate is set by the mixture number density + face area; mismatch "
-                 "with the freestream causes a non-physical inflow."),
-    "adaptive_grid": dict(
-        desc="Static/dynamic grid adaptation to resolve gradients (refine near shocks)",
-        dims=[2, 3], example="adapt",
-        commands=["adapt_grid", "fix adapt", "balance_grid", "compute"],
-        pitfalls="Over-refinement explodes particle count; cap refinement levels and "
-                 "rebalance the grid across MPI ranks after adaptation."),
-    "ambipolar_plasma": dict(
-        desc="Weakly-ionized (ambipolar) flow: electrons follow ions (DSMC plasma)",
-        dims=[2, 3], example="ambi",
-        commands=["fix ambipolar", "species", "collide", "react"],
-        pitfalls="Ambipolar electrons are attached to ions; the species file must define "
-                 "the electron and ion species consistently."),
-    "conjugate_heat_transfer": dict(
-        desc="DSMC gas <-> FEM solid conjugate heat transfer (the forced two-code coupling; "
-             "SPARTA writes surface heat flux, reads back wall temperature via preCICE)",
-        dims=[2, 3], example="adjust_temp",
-        commands=["surf_collide diffuse", "compute surf ... etot", "fix surf/temp",
-                  "fix field/surf", "read_surf"],
-        pitfalls=[
-            "The wall temperature is a coupling unknown updated each preCICE window; "
-            "the DSMC heat flux is statistically noisy — average over the (long) solid "
-            "thermal timescale. Explicit serial coupling is stable because solid "
-            "thermal inertia damps DSMC fluctuations.",
-            "Data files (ar.species, *.vss, *.surf) must be IN the run directory — "
-            "SPARTA opens them relative to cwd and dies with 'Cannot open species "
-            "file ...' (particle.cpp). The couple() tool auto-stages files referenced "
-            "by any in.* deck in a participant work_dir (searching the participant's "
-            "data_dir, then SPARTA_DATA_DIR, then the distribution); pass explicit "
-            "task files via the participant's data_files list.",
-            "Half-body surface files (e.g. a half-cylinder arc for a symmetric 2D "
-            "case) are OPEN curves: read_surf aborts with 'Watertight check failed "
-            "with N unmatched points' (surf.cpp). SPARTA requires surfaces to be "
-            "closed unless the open endpoints lie exactly ON a simulation-box face, "
-            "in which case the box closes them: place the endpoints on that face "
-            "(e.g. box ylo = 0 for an arc ending at y=0) and pass the 'clip' "
-            "keyword, 'read_surf <file> clip'.",
-            "compute reduce on a fix ave/surf with a SINGLE input column: reference "
-            "it as f_ID (per-surf vector), not f_ID[1] — the [1] form aborts with "
-            "'Compute reduce fix does not calculate a per-surf array' "
-            "(compute_reduce.cpp).",
-        ]),
+    "rarefied_flow": dict(dims=[2, 3], example="free",
+                          variants=["box_2d", "channel_2d"]),
+    "collision_relaxation": dict(dims=[2, 3], example="collide",
+                                 variants=["box_2d", "internal_energy_2d"]),
+    "hypersonic_flow": dict(dims=[2, 3], example="adjust_temp",
+                            variants=["circle_2d"]),
+    "surface_interaction": dict(dims=[2, 3], example="circle",
+                                variants=["circle_2d"]),
+    "chemistry": dict(dims=[2, 3], example="chem", variants=["box_3d"]),
+    "axisymmetric": dict(dims=[2], example="axi", variants=["body_2d"]),
+    "particle_emission": dict(dims=[2, 3], example="emit",
+                              variants=["channel_2d"]),
+    "adaptive_grid": dict(dims=[2, 3], example="adapt", variants=["circle_2d"]),
+    "ambipolar_plasma": dict(dims=[2, 3], example="ambi",
+                             variants=["circle_2d"]),
+    "conjugate_heat_transfer": dict(dims=[2, 3], example="adjust_temp",
+                                    variants=["circle_2d"]),
+}
+
+# Cross-cutting reference blocks, trimmed to what an agent needs while writing
+# a deck. Deliberately EXCLUDES anything host-specific: no binary paths, no
+# distribution paths, no machine-local data directories. Those belong to
+# _find_sparta_binary()/_sparta_data_dirs(), not to knowledge served to a model.
+_CROSS_CUTTING = {
+    "hard_ordering_errors": HARD_ORDERING_ERRORS,
+    "more": "build facts (compiled styles, accelerator status), the full "
+            "output-reading reference and the list of things SPARTA accepts "
+            "silently are in knowledge(topic='overview', solver='sparta')",
 }
 
 
@@ -346,79 +300,174 @@ class SpartaBackend(SolverBackend):
     def supported_physics(self) -> list[PhysicsCapability]:
         out = []
         for name, info in _PHYSICS.items():
+            kn = KNOWLEDGE.get(name, {})
             out.append(PhysicsCapability(
                 name=name,
-                description=info["desc"],
+                description=kn.get("description", name),
                 spatial_dims=info["dims"],
                 element_types=["DSMC-particles", "cartesian-grid"],
-                template_variants=[info["example"]],
+                template_variants=list(info["variants"]),
             ))
         return out
 
     def get_knowledge(self, physics: str) -> dict:
-        info = _PHYSICS.get(physics)
-        if not info:
-            # unknown physics: return the raw command index so the model can still look up
+        """Structured, physics-scoped knowledge.
+
+        Shape and size deliberately match the FEM backends: a short
+        description, the commands THIS physics needs (one line each, not the
+        verbatim manual page), the ordered deck skeleton, and the pitfalls —
+        each with an observable ``Signal:``. The 121-page command index and the
+        37 bundled example decks stay in sparta_knowledge.json and are reached
+        on demand (``examples``/``get_command_reference``), because pushing
+        them here cost tens of kilobytes per call and pushed the pitfalls past
+        the client-side truncation point.
+        """
+        if physics == "_general":
+            return KNOWLEDGE["_general"]
+        kn = KNOWLEDGE.get(physics)
+        if not kn:
             return {"error": f"unknown physics '{physics}'",
                     "available_physics": sorted(_PHYSICS.keys()),
-                    "all_commands": sorted(_KB.get("commands", {}).keys())}
+                    "all_commands": sorted(
+                        _KB.get("command_surface", {}).get("true_commands")
+                        or _KB.get("commands", {}).keys())}
+        info = _PHYSICS[physics]
+        out = dict(kn)
+        out["variants"] = list(info["variants"])
+        out["worked_example"] = (
+            f"upstream SPARTA example directory '{info['example']}' — read the "
+            f"decks from the installed distribution at examples/"
+            f"{info['example']}/in.*. NOTE: the examples() MCP tool does not "
+            f"index SPARTA (every keyword returns 'No examples found for ... "
+            f"in sparta', and action='template' returns 'Unknown solver: "
+            f"sparta'), so do not route this through it. The 37 bundled decks "
+            f"are in sparta_knowledge.json['example_templates'] but no MCP "
+            f"tool currently reads them.")
+        out["command_reference"] = (
+            "one-line syntax for the commands this physics needs is in "
+            "'key_commands' above. The full SPARTA doc page for any command is "
+            "in sparta_knowledge.json['commands'] and is returned by the "
+            "python method SpartaBackend.get_command_reference('<command>') — "
+            "which is NOT exposed as an MCP tool on this build, so an MCP "
+            "client cannot call it. Until it is wired up, treat 'key_commands' "
+            "plus knowledge(topic='input_guide', solver='sparta') as the whole "
+            "of the syntax you have.")
+        out.update(_CROSS_CUTTING)
+        return out
+
+    def get_command_reference(self, command: str) -> dict:
+        """Verbatim SPARTA doc entry for one command, fetched on demand.
+
+        This is the escape hatch that lets get_knowledge() stay small: the
+        121-entry documentation index is still shipped in
+        sparta_knowledge.json, it is just no longer pushed at the agent
+        wholesale on every knowledge() call.
+        """
         cmds = _KB.get("commands", {})
-        # resolve the relevant command docs (verbatim syntax+examples+description)
-        relevant = {}
-        for c in info["commands"]:
-            base = c.split()[0].replace("/", "_")
-            for key in (c, base, c.replace(" ", "_")):
-                if key in cmds:
-                    relevant[key] = cmds[key]
-                    break
-        tmpl = _KB.get("example_templates", {}).get(info["example"], {})
-        return {
-            "description": info["desc"],
-            "spatial_dims": info["dims"],
-            # pitfalls as a LIST (one curated DSMC pitfall per physics), matching
-            # every other backend — a bare string made catalog tests see it as
-            # "no pitfalls" (and the signal counter count characters).
-            "pitfalls": [info["pitfalls"]] if isinstance(info["pitfalls"], str)
-                        else list(info["pitfalls"]),
-            "relevant_commands": relevant,
-            "worked_example": {"dir": info["example"], "decks": tmpl},
-            "solver": "SPARTA DSMC; run: spa_serial -in <script>",
-            "unit_systems": "SI (global ... gridcut ... ; fnum sets real-particles-per-simulator)",
-        }
+        key = command.strip()
+        # ' '->'_' and '/'->'_' must also be tried TOGETHER. Applying them only
+        # separately made every real slash form fall through to the bare
+        # key.split()[0] page: 'fix ave/surf', 'fix emit/face', 'fix surf/temp'
+        # and 'fix ave/time' all returned the generic 'fix' page and
+        # 'compute thermal/grid' the generic 'compute' page, silently, even
+        # though fix_ave_surf / fix_emit_face / fix_surf_temp /
+        # compute_thermal_grid all exist as keys. Slashes are the real deck
+        # syntax (upstream decks use 'fix emit/face' 25 times).
+        for cand in (key, key.replace(" ", "_"), key.replace("/", "_"),
+                     key.replace(" ", "_").replace("/", "_"),
+                     key.replace("_", " "),
+                     key.split()[0] if key.split() else key):
+            if cand in cmds:
+                # the entry carries its own "command" field (the deck form,
+                # e.g. "compute grid"); "doc_page" is the index key we matched.
+                return {"doc_page": cand, **cmds[cand]}
+        return {"error": f"no documentation entry for '{command}'",
+                "note": "compute/fix/dump STYLES are documented under their "
+                        "page name, e.g. 'compute_grid' for 'compute <ID> "
+                        "grid ...'",
+                "available": sorted(cmds)[:40]}
 
     def generate_input(self, physics: str, variant: str, params: dict) -> str:
         info = _PHYSICS.get(physics)
         if not info:
             raise ValueError(f"Unknown physics '{physics}'. "
                              f"Available: {', '.join(sorted(_PHYSICS))}")
-        decks = _KB.get("example_templates", {}).get(variant or info["example"], {})
-        if not decks:
-            raise ValueError(f"No example template for '{variant or info['example']}'")
-        # pick the primary input deck (in.<name>), apply simple param substitution
-        primary = sorted(decks, key=lambda k: (("in." not in k), len(k)))[0]
-        deck = decks[primary]
-        for k, v in (params or {}).items():
-            deck = deck.replace(f"${{{k}}}", str(v))
-        return deck
+        variant = variant or info["variants"][0]
+        # Resolve the EXACT variant only. A second, unconditional lookup of
+        # f"{physics}_{info['variants'][0]}" used to sit here, which meant any
+        # unrecognised variant silently returned the default deck for that
+        # physics — generate_input('chemistry', 'box_2d') handed back the 3d
+        # chemistry deck and generate_input('hypersonic_flow', 'box_2d') handed
+        # back the circle deck, with no error and nothing in the deck saying so.
+        # It also made the ValueError at the end of this method unreachable.
+        gen = GENERATORS.get(f"{physics}_{variant}")
+        if gen:
+            return gen(params or {})
+        # fall back to the bundled upstream example deck for this variant
+        decks = _KB.get("example_templates", {}).get(variant, {})
+        if decks:
+            primary = sorted(decks, key=lambda k: (("in." not in k), len(k)))[0]
+            deck = decks[primary]
+            for k, v in (params or {}).items():
+                deck = deck.replace(f"${{{k}}}", str(v))
+            return deck
+        available = ", ".join(sorted(
+            k for k in GENERATORS if k.startswith(physics + "_")))
+        raise ValueError(f"Unknown variant '{variant}' for physics "
+                         f"'{physics}'. Available: {available}")
 
     def validate_input(self, content: str) -> list[str]:
         errors = []
-        cmds = _KB.get("commands", {})
-        nonblank = [l for l in content.splitlines()
-                    if l.strip() and not l.strip().startswith("#")]
+        # SPARTA continues a command onto the next line when the line ends in
+        # '&' (src/input.cpp). Joining those first is not cosmetic: without it
+        # the continuation line's first word ('combine', 'maxlevel', ...) is
+        # read as a command name and every multi-line fix adapt / adapt_grid
+        # deck is falsely rejected.
+        joined, buf = [], ""
+        for raw in content.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.endswith("&"):
+                buf += line[:-1].rstrip() + " "
+                continue
+            joined.append(buf + line)
+            buf = ""
+        if buf:
+            # A '&' with no line after it leaves the last command incomplete.
+            # SPARTA does NOT wave this through: 'run 10 &' as the final line
+            # of an otherwise valid deck aborts with
+            # 'ERROR: Illegal run command (../run.cpp:103)'. Joining without
+            # this check turned that abort into a silent validate_input pass.
+            errors.append(
+                "Deck ends with a dangling '&' line continuation — the last "
+                "command is never completed. SPARTA aborts on this (e.g. "
+                "'run 10 &' as the final line gives 'ERROR: Illegal run "
+                "command (../run.cpp:103)').")
+            joined.append(buf.rstrip())
+        nonblank = joined
         if not nonblank:
             errors.append("Empty SPARTA input script")
             return errors
-        # a valid DSMC deck needs a run/grid; check first tokens are known commands
-        known = set(cmds.keys()) | {c.split("_")[0] for c in cmds}
+        # The parser surface is the 66 commands the BUILD accepts, NOT the 121
+        # documentation-page names in _KB['commands'] — 55 of those (compute_grid,
+        # fix_ave_surf, dump_image, surf_react_adsorb, suffix, ...) are doc filenames
+        # that the binary rejects with "ERROR: Unknown command: ... (../input.cpp:244)".
+        # Validating against the doc index waved those through. (Fixed 2026-08-03 after
+        # feeding each form to spa_serial.)
+        surface = _KB.get("command_surface", {})
+        known = set(surface.get("true_commands") or [])
+        if not known:  # knowledge file predates the command_surface block
+            cmds = _KB.get("commands", {})
+            known = set(cmds) | {c.split("_")[0] for c in cmds}
         first_tokens = {l.split()[0] for l in nonblank}
-        unknown = [t for t in first_tokens if t not in known and t not in
-                   {"variable", "label", "next", "jump", "if", "echo", "log", "shell",
-                    "print", "include", "clear", "partition", "uncompute", "unfix",
-                    "undump", "boundary", "global", "seed", "units", "package"}]
+        unknown = sorted(t for t in first_tokens if t not in known)
         if unknown:
-            errors.append(f"Unrecognized SPARTA command(s): {', '.join(sorted(unknown)[:6])}")
-        if "run" not in first_tokens and "run_file" not in first_tokens:
+            errors.append(
+                f"Unrecognized SPARTA command(s): {', '.join(unknown[:6])} — "
+                f"note that compute/fix/dump/surf_react STYLES are written "
+                f"'compute <ID> <style> ...', not 'compute_<style> ...'")
+        if "run" not in first_tokens:
             errors.append("Script has no 'run' command (DSMC will not advance)")
         return errors
 

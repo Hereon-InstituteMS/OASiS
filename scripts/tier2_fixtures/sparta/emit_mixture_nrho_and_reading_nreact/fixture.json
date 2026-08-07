@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for sparta particle_emission and chemistry: two numbers a deck will quietly get wrong. Four decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial). particle_emission:1 — two argon decks emitting on xlo differ only by an 'nrho 4e20' keyword appended to the mixture line while 'global nrho 1e20' stays put; the steady particle count comes out 4.03 times higher, so the MIXTURE value is what sets the emitted flux, and both runs exit 0 with no error and no warning. chemistry:3 — two air TCE decks differ only in the mixture temperature. At 273 K Ncoll is in the thousands per step while Nreact is 0 on every stats line AND the N, O and NO counts are strictly 0, which is a cold deck, not a broken one. At 20000 K the product counts reach five figures and keep climbing while Nreact still reads single digits on every line, because Nreact is a PER-STEP count. So Nreact cannot distinguish the two cases and the species counts can. Every assertion is a ratio between the two decks or the presence/absence of product particles; no count is pinned. COVERS: particle_emission:1, chemistry:3. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 removes both pathologies and nothing else. The 'nrho 4e20' keyword comes off the second emit deck's mixture line, so both emit decks sit at the one density 'global nrho 1e20' declares and the steady-count ratio falls from 4.03 to 1.000. And the reaction diagnostic is read from the CUMULATIVE product-species columns c_c[3..5] instead of the per-step Nreact column, at the identical temperatures and with the decks untouched, so the hot deck's diagnostic column reads [0, 13580, 14408, 14727, 14832, 14958] instead of [0, 13, 8, 10, 10, 9] against 14958 product particles. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: an_nrho_on_the_mixture_sets_the_steady_count=True, but_its_Nreact_column_stays_orders_of_magnitude_smaller=True. Re-verify: cd scripts/tier2_fixtures/sparta/emit_mixture_nrho_and_reading_nreact && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "chemistry",
+  "pitfall_index": 3,
+  "covers": [
+    "particle_emission:1",
+    "chemistry:3"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "both_emit_runs_exit_zero_with_no_warning=True",
+    "an_nrho_on_the_mixture_sets_the_steady_count=True",
+    "both_chemistry_runs_exit_zero_with_no_warning=True",
+    "the_cold_deck_still_collides_plenty=True",
+    "the_cold_deck_reports_zero_reactions_and_zero_products=True",
+    "the_hot_deck_accumulates_product_particles=True",
+    "but_its_Nreact_column_stays_orders_of_magnitude_smaller=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: DEM constitutive laws are selected by an EXACT name in MaterialsDEM.json. Pitfall (kratos.constitutive_laws #1, 'Must be registered via constitutive_law.name in MaterialsDEM.json'; the same exactness claim appears as kratos.dem #0). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The registered Python classes on DEMApplication are DEM_D_Hertz_viscous_Coulomb, DEM_D_Linear_viscous_Coulomb and DEM_KDEM; the plausible abbreviations 'Hertz_viscous_Coulomb' and 'DEM_D_Hertz' do not resolve. Nothing normalises or fuzzy-matches the string. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 5 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 5. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 5 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/dem_constitutive_law_names_exact && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DEM.DEM_D_Hertz_viscous_Coulomb]=True_expected=True",
+    "probe[DEM.DEM_D_Linear_viscous_Coulomb]=True_expected=True",
+    "probe[DEM.DEM_KDEM]=True_expected=True",
+    "probe[DEM.Hertz_viscous_Coulomb]=False_expected=False",
+    "probe[DEM.DEM_D_Hertz]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

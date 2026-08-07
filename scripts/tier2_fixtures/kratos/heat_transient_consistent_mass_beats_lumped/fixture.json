@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 NUMERICAL GATE. EXERCISES THE NUMPY/SCIPY PATH, NOT KRATOS — the heat_transient catalog template declares 'Kratos (manual assembly)'. Pitfall (kratos.heat_transient #2): 'Consistent mass matrix gives better accuracy than lumped'. NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Checked on the template's own consistent element mass (rho_cp*area/12*(ones+eye), which the template assembles) against its row-sum lumping: the two are shown to genuinely differ (consistent has non-zero off-diagonals, lumped is exactly diagonal) and to conserve the same total capacity (row sums match), and then the consistent matrix is measured to be the more accurate of the two against a well-resolved reference. Checking that the two matrices differ AND agree on row sums is what stops this being a comparison of a matrix with itself, or with a wrong one. All numbers asserted are the fixture's own output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). INDEX SHIFTED by the guidance reclassification; the claim this fixture verifies is unchanged and every #index quoted above is the current one. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 substitutes the row-sum LUMPED mass matrix for the consistent one, removing the contrast the fixture rests on; the matrix under test then has no off-diagonal entries and is exactly as accurate as the lumped one. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: consistent_has_offdiagonal=True, consistent_more_accurate=True, mass_matrix_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/heat_transient_consistent_mass_beats_lumped && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "heat_transient",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "exercises=numpy_scipy_template_path_not_kratos",
+    "consistent_has_offdiagonal=True",
+    "lumped_is_diagonal=True",
+    "row_sums_match=True",
+    "consistent_more_accurate=True",
+    "mass_matrix_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 600
+}

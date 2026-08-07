@@ -249,44 +249,38 @@ KNOWLEDGE = {
                 "MPMUpdatedLagrangianUP2D3N",
             ],
         },
+        # Registered names, checked with KratosGlobals.HasConstitutiveLaw against the
+        # installed MPMApplication 10.4.0 wheel (2026-08-03). The previous entries were
+        # family labels ("LinearElastic", "NeoHookean", "HenckyMC", "HenckyBorjaCamClay",
+        # "Johnson-Cook") — none of those five strings resolves to a law, so a
+        # Materials.json built from them fails with "not registered".
         "constitutive_laws": [
-            "LinearElastic (small strain)", "NeoHookean (finite strain)",
-            "HenckyMC (Mohr-Coulomb with Hencky strain)", "HenckyBorjaCamClay (critical state)",
-            "Johnson-Cook (rate-dependent plasticity)",
+            "LinearElasticIsotropic3DLaw / LinearElasticIsotropicPlaneStrain2DLaw / "
+            "LinearElasticIsotropicPlaneStress2DLaw / LinearElasticIsotropicAxisym2DLaw "
+            "(small strain)",
+            "HyperElasticNeoHookean3DLaw / HyperElasticNeoHookeanPlaneStrain2DLaw / "
+            "HyperElasticNeoHookeanAxisym2DLaw / HyperElasticNeoHookeanUP3DLaw "
+            "(finite strain)",
+            "HenckyMCPlastic3DLaw / HenckyMCPlasticPlaneStrain2DLaw / "
+            "HenckyMCPlasticAxisym2DLaw (Mohr-Coulomb with Hencky strain; "
+            "HenckyMCStrainSofteningPlastic* for softening)",
+            "HenckyBorjaCamClayPlastic3DLaw / HenckyBorjaCamClayPlasticPlaneStrain2DLaw "
+            "(critical state)",
+            "JohnsonCookThermalPlastic3DLaw / JohnsonCookThermalPlastic2DPlaneStrainLaw / "
+            "JohnsonCookThermalPlastic2DAxisymLaw (rate-dependent plasticity)",
         ],
         "solver_types": ["USL (Update Stress Last)", "USF (Update Stress First)", "MUSL (Modified USL)"],
         "pitfalls": [
-                        '[API] Kratos MPM element names ALL start '
-                        'with the literal prefix "MPM": '
-                        'MPMUpdatedLagrangian2D4N, '
-                        'MPMUpdatedLagrangian3D8N, '
-                        'MPMUpdatedLagrangianAxisymmetry2D4N, '
-                        'MPMUpdatedLagrangianPQ, '
-                        'MPMUpdatedLagrangianUP, etc. The prior '
-                        'catalog listed UpdatedLagrangianPQ2D / '
-                        'UpdatedLagrangianAxisym (without the MPM '
-                        'prefix) — none of those are registered. '
-                        "Signal: model_part.CreateNewElement(\"UpdatedLagrangianPQ2D\", ...) "
-                        "raises 'Error: The Element X is not "
-                        "registered!' from "
-                        "kratos/python/add_model_part_to_python.cpp; "
-                        "prepending MPM makes the call succeed. "
-                        "(Verified empirically 2026-06-01 — Tier-2 "
-                        "fixture mpm_element_naming_mpm_prefix in "
-                        "scripts/tier2_fixtures/kratos/.)",
-                        '[Numerical] Background grid must cover entire domain of particle motion '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Cell crossing instability: use GIMP or CPDI shape functions for stability '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Particles per cell: 4-16 typical (2x2 or 4x4 per cell in 2D) '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Time step: dt < h/c where h=cell size, c=wave speed '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Zero-energy modes possible with linear elements: use stabilization '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Physics] For free surface: particles leaving grid are lost (expand grid or use remeshing) '
-                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
-                    ],
+            "[API] Kratos MPM element names ALL start with the literal prefix \"MPM\": MPMUpdatedLagrangian2D4N, MPMUpdatedLagrangian3D8N, MPMUpdatedLagrangianAxisymmetry2D4N, MPMUpdatedLagrangianPQ, MPMUpdatedLagrangianUP, etc. The prior catalog listed UpdatedLagrangianPQ2D / UpdatedLagrangianAxisym (without the MPM prefix) \u2014 none of those are registered. Signal: model_part.CreateNewElement(\"UpdatedLagrangianPQ2D\", ...) raises 'Error: The Element X is not registered!' from kratos/python/add_model_part_to_python.cpp; prepending MPM makes the call succeed. (Verified empirically 2026-06-01 \u2014 Tier-2 fixture mpm_element_naming_mpm_prefix in scripts/tier2_fixtures/kratos/.)",
+        ],
+        "guidance": [
+            "[Numerical] Background grid must cover entire domain of particle motion",
+            "[Numerical] Cell crossing instability: use GIMP or CPDI shape functions for stability",
+            "[Numerical] Particles per cell: 4-16 typical (2x2 or 4x4 per cell in 2D)",
+            "[Numerical] Time step: dt < h/c where h=cell size, c=wave speed",
+            "[Numerical] Zero-energy modes possible with linear elements: use stabilization",
+            "[Physics] For free surface: particles leaving grid are lost (expand grid or use remeshing)",
+        ]
     },
 }
 

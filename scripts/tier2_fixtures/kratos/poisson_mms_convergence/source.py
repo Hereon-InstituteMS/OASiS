@@ -23,15 +23,22 @@ Note: when task #25 lands the Kratos-native CDA template,
 this gate's measured numbers will change but the floors
 should still hold (CDA's P1 element assembles the same
 weak form).
+
+Mutation control: T2_MUTATE=1 injects the defect this gate exists to catch: the source term f is sampled at the triangle's FIRST VERTEX instead of its centroid. That is an O(h) consistency error in the load, so the L2 error stops falling like h^2 and the observed EOC collapses away from 2 -- a plausible real assembly mistake that leaves the code running and the output well formed. The gate then emits FAIL: lines (a forbidden string) for the error floor and the EOC window.
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=source_term_sampled_at_a_vertex_instead_of_the_centroid")
 
 
 def run_kratos_pattern_poisson(nx: int) -> float:
@@ -75,8 +82,12 @@ def run_kratos_pattern_poisson(nx: int) -> float:
         Ke = (1.0 / (4.0 * area)) * (np.outer(b, b)
                                      + np.outer(c, c))
         # f = 2π²·sin(πx)·sin(πy) — element-centroid sample
-        xc = float(np.mean(x))
-        yc = float(np.mean(y))
+        if MUTATE:
+            # Defect injected: sample f at a vertex, not the centroid.
+            xc, yc = float(x[0]), float(y[0])
+        else:
+            xc = float(np.mean(x))
+            yc = float(np.mean(y))
         f_val = (2.0 * np.pi ** 2
                  * np.sin(np.pi * xc)
                  * np.sin(np.pi * yc))

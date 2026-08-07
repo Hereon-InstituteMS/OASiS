@@ -12,19 +12,28 @@ without that step raises:
 
 Same family as fluid#0 (VELOCITY) and linear_elasticity#9
 mode (b) (variable never added).
+
+Mutation control: T2_MUTATE=1 ADDS TEMPERATURE to the solution-step variable list before the node is created. GetSolutionStepValue then returns a value instead of raising, so the RuntimeError and its 'variables list' / 'doesn't have this variable' text disappear.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=the_solution_step_variable_is_added_before_the_node")
+
 
 def main() -> int:
     model = KM.Model()
     mp = model.CreateModelPart("Heat")
-    # NOTE: skip AddNodalSolutionStepVariable(KM.TEMPERATURE)
+    # NOTE: skip AddNodalSolutionStepVariable(KM.TEMPERATURE) unless mutated.
+    if MUTATE:
+        mp.AddNodalSolutionStepVariable(KM.TEMPERATURE)
     mp.CreateNewNode(1, 0.0, 0.0, 0.0)
     try:
         mp.Nodes[1].GetSolutionStepValue(KM.TEMPERATURE)

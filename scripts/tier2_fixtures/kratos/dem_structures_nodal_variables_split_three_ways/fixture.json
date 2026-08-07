@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2: the DEM nodal variables must be added to the STRUCTURAL model part before its Initialize(), because the transferred wall conditions reuse the structural nodes. Pitfall (kratos.dem_structures_coupling #5). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The list the claim gives is split across THREE modules, which is the practical obstacle: DEM_SURFACE_LOAD and SMOOTHED_STRUCTURAL_VELOCITY are DemStructuresCouplingApplication attributes; DELTA_DISPLACEMENT, DEM_PRESSURE, DEM_NODAL_AREA, SHEAR_STRESS, IMPACT_WEAR, NON_DIMENSIONAL_VOLUME_WEAR and TANGENTIAL_ELASTIC_FORCES are DEMApplication attributes; none of them is on core. All of them resolve through KratosGlobals.GetVariable, which is the route that works regardless. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 9 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 9. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 9 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/dem_structures_nodal_variables_split_three_ways && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "dem_structures_coupling",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[DSC.DEM_SURFACE_LOAD]=True_expected=True",
+    "probe[DSC.SMOOTHED_STRUCTURAL_VELOCITY]=True_expected=True",
+    "probe[DEM.DELTA_DISPLACEMENT]=True_expected=True",
+    "probe[DEM.DEM_PRESSURE]=True_expected=True",
+    "probe[DEM.TANGENTIAL_ELASTIC_FORCES]=True_expected=True",
+    "probe[DEM.NON_DIMENSIONAL_VOLUME_WEAR]=True_expected=True",
+    "probe[KM.DEM_PRESSURE]=False_expected=False",
+    "probe[DEM.SMOOTHED_STRUCTURAL_VELOCITY]=False_expected=False",
+    "probe[GetVariable_DEM_SURFACE_LOAD]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

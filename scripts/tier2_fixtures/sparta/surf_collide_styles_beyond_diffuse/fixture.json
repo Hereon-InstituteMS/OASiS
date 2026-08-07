@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for sparta surface_interaction:10, :11 and :12 — the wall models past diffuse and specular, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial) on the examples/circle geometry, one seed, one run length. surface_interaction:10 — the same deck run with diffuse, specular and adiabatic walls: the diffuse etot tally sets the scale and both inert walls come back below 1e-6 of it, a threshold with six decades of slack against a round-off residue, so nothing is pinned and the test would still pass if the residue were a thousand times larger. 'surf_collide W adiabatic 300.0' gives 'ERROR: Illegal surf_collide adiabatic command (../surf_collide_adiabatic.cpp:37)' — the style takes no arguments. surface_interaction:11 — the transparent MODEL on ordinary elements is NOT checked and dies in the collision routine with 'ERROR on proc 0: Collision cell volume is zero (../collide.cpp:441)', a message about neither surfaces nor transparency; the opposite direction IS checked, 'transparent surface elements with invalid collision model or reaction model (../surf.cpp:397)'; and 'read_surf ... transparent' plus 'surf_collide ... transparent' together run clean. surface_interaction:12 — cll needs five numbers ('ERROR: Illegal surf_collide cll command (../surf_collide_cll.cpp:54)') and range-checks the four coefficients ('ERROR: Surf_collide cll accommodation coeffs must be >= 0 and <= 1 (../surf_collide_cll.cpp:65)'); piston on a curved body gives 'ERROR: Surf_collide piston assigned to surface with non axis-aligned normal (../surf_collide_piston.cpp:76)' AFTER setup, not at parse time; td runs on a bare wall temperature. COVERS: surface_interaction:10, surface_interaction:11, surface_interaction:12. MUTATION CONTROL (T2_MUTATE=1, re-runnable): two edits that each remove one pathology and nothing else — the adiabatic wall becomes 'diffuse 300.0 1.0', the same model and temperature the reference deck uses, so a thermally inert wall starts exchanging energy; and the transparent-model deck's read_surf line gains the 'transparent' keyword, so elements and model agree and the cell-volume abort disappears. Geometry, seed, density, inflow, timestep and run length are untouched. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: adiabatic_transfers_no_energy=True, adiabatic_and_specular_agree=True, a_transparent_model_on_solid_elements_dies_in_the_collider=True. The cll, piston, td and argument-count assertions run on decks the hook does not touch and rest on verbatim messages carrying their own (file:line). Re-verify: cd scripts/tier2_fixtures/sparta/surf_collide_styles_beyond_diffuse && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary and examples/circle: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure. CLAIM KEYS REPOINTED 2026-08-07: a 25 kB per-physics payload ceiling (test_kratos_sparta_verified_2026_08) forced four cross-cutting claims into better-fitting rows, so the keys quoted above moved with them. The decks, the evidence and the mutation control are unchanged.",
+  "backend": "sparta",
+  "physics": "surface_interaction",
+  "pitfall_index": 10,
+  "covers": [
+    "surface_interaction:10",
+    "surface_interaction:11",
+    "surface_interaction:12"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "the_three_wall_models_all_run=True",
+    "the_diffuse_wall_tallies_energy=True",
+    "specular_transfers_no_energy=True",
+    "adiabatic_transfers_no_energy=True",
+    "adiabatic_and_specular_agree=True",
+    "adiabatic_takes_no_arguments=True",
+    "a_transparent_model_on_solid_elements_dies_in_the_collider=True",
+    "the_other_direction_is_checked_and_named=True",
+    "both_flags_together_run=True",
+    "cll_with_five_numbers_runs=True",
+    "cll_arg_count_is_checked=True",
+    "cll_coefficients_are_range_checked=True",
+    "piston_rejects_a_curved_body=True",
+    "the_piston_check_is_not_at_parse_time=True",
+    "td_takes_a_wall_temperature=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

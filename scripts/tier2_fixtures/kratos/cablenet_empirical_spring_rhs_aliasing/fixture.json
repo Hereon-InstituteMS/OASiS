@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for kratos::cable_net#2 — the uBLAS aliasing in EmpiricalSpringElement3D2N's GlobalizeVector. EXECUTED 2026-08-06 on this host with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2 build, CableNetApplication present; the repo .venv wheel cannot load here — its Kratos.so wants GLIBC_2.32 — so the runner needs KRATOS_PYTHON=/usr/bin/python3). One two-node EmpiricalSpringElement3D2N with F(dl) = 1000*dl was stretched 0.01 purely along its own axis at five orientations, and CalculateRightHandSide / CalculateLeftHandSide read directly. Printed: force magnitude 1.000000e+01 (exact) with alignment 1.000000 for the x-aligned spring; EXACTLY 0.000000e+00 for the y-aligned and z-aligned springs; 8.660254e+00 at alignment 0.985599 for the (1,1,0) spring and 8.135728e+00 at alignment 0.413888 for the (1,1,1) spring, against an exact 1.000000e+01 in every case. The axial stiffness came back 1.000000e+03 — exact — at ALL five orientations, so the claim's 'the LHS is unaffected' is confirmed and this is the right-tangent/wrong-force pathology: Newton converges quadratically onto a wrong equilibrium and the iteration count never moves. Direction is checked by the signed cosine between the returned force and the element's own unit axis, not by a norm, because a norm cannot tell a rotated force from a correct one. MUTATION EVIDENCE: replacing probe() with a correctly globalised element (magnitude = k*dl, alignment = 1, stiffness = k at every orientation) made the fixture print y_aligned_spring_force_is_exactly_zero=False, z_aligned_spring_force_is_exactly_zero=False, xy_skew_force_is_misdirected=False, xyz_skew_force_is_misdirected=False and right_tangent_with_wrong_internal_force=False, emit five FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics and CableNetApplication are imported at module scope, so with Kratos absent the process dies on the import and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 replaces the element CalculateRightHandSide force with a CORRECT reference force, F = K_SPRING * STRETCH along the spring unit axis, leaving the model, the stretch and the stiffness probe untouched. The aliasing defect the fixture detects then disappears: the y- and z-aligned springs carry a real force instead of exactly zero and the skew springs point along their own axis. It also shows the assertions respond to what Kratos actually returns rather than to the fixture own arithmetic. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: y_aligned_spring_force_is_exactly_zero=True, z_aligned_spring_force_is_exactly_zero=True, xy_skew_force_is_misdirected=True, xyz_skew_force_is_misdirected=True, xyz_skew_force_magnitude_is_wrong=True, right_tangent_with_wrong_internal_force=True, cablenet_empirical_spring_rhs_aliasing_verified=True. Re-verify: cd scripts/tier2_fixtures/kratos/cablenet_empirical_spring_rhs_aliasing && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 2,
+  "covers": [
+    "cable_net:2"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "x_aligned_spring_is_exact=True",
+    "y_aligned_spring_force_is_exactly_zero=True",
+    "z_aligned_spring_force_is_exactly_zero=True",
+    "xy_skew_force_is_misdirected=True",
+    "xyz_skew_force_is_misdirected=True",
+    "xyz_skew_force_magnitude_is_wrong=True",
+    "tangent_is_correct_at_every_orientation=True",
+    "right_tangent_with_wrong_internal_force=True",
+    "cablenet_empirical_spring_rhs_aliasing_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

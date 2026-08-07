@@ -803,6 +803,74 @@ vals = u_h.as_numpy  # returns a numpy view (read/write)
    leaves the default in place with no warning.
 """
 
+_SPARTA_INPUT_GUIDE = """\
+# SPARTA Input Guide (DSMC decks)
+
+A SPARTA deck is a plain-text list of commands, one per line, executed in
+order. `&` at the end of a line continues it onto the next. `#` starts a
+comment. Run it with `spa_serial -in in.<case>` from the directory that holds
+the deck AND every data file it names — SPARTA opens data files relative to the
+current working directory. log.sparta is written to that directory.
+
+## Command order (the parser enforces most of this)
+```
+seed             12345          # MANDATORY, there is no default RNG seed
+dimension        2              # before create_box
+boundary         p ss p         # before create_box; ONE letter sets BOTH faces
+create_box       xlo xhi ylo yhi zlo zhi
+create_grid      Nx Ny Nz       # 2d requires Nz = 1
+species          ar.species Ar  # may come before create_box
+mixture          gas Ar vstream 0 0 0 temp 273.15
+global           nrho 7.07e22 fnum 7.07e11   # MUST precede create_particles
+collide          vss gas ar.vss              # omit it -> collisionless gas
+read_surf        <file>                      # needs the grid
+surf_collide     wall diffuse 300.0 1.0
+surf_modify      all collide wall            # needs surfs AND the model
+create_particles gas n 0                     # n 0 == honour nrho/fnum
+compute / fix / stats / stats_style / dump
+timestep         1e-9                        # default is 1.0 SECOND
+run              1000
+```
+
+## Boundary styles
+`o` outflow, `p` periodic, `r` specular reflect, `s` surface (needs
+`bound_modify <face> collide <sc-ID>`), `a` axisymmetric (lower y face only,
+so the y entry must be the two-letter form, e.g. `boundary o ar p`).
+
+## Getting numbers out
+A per-grid or per-surf compute cannot go straight into `stats_style`. The
+chain is compute -> fix ave/* -> compute reduce -> stats_style:
+```
+compute  q surf all all etot          # compute surf is ALWAYS an array
+fix      fq ave/surf all 1 100 100 c_q[1]
+compute  qtot reduce sum f_fq         # one fix input -> VECTOR, no bracket
+stats_style step np nscoll c_qtot
+```
+A fix ave/* fed ONE value is a vector (`f_ID`); fed two or more it is an array
+(`f_ID[1]`, `f_ID[2]`). `compute boundary` takes a mixture ID only (no group
+ID) and needs `fix ave/time ... mode vector`, read as `f_ID[face]` with
+xlo=1 xhi=2 ylo=3 yhi=4 (and zlo=5 zhi=6 in 3d).
+
+## Documentation-page names are not commands
+`compute_grid`, `fix_ave_surf`, `dump_image`, `surf_react_adsorb` and `suffix`
+are doc FILENAMES. In a deck you write `compute <ID> grid ...`,
+`fix <ID> ave/surf ...`, `dump <ID> image ...`, `surf_react <ID> adsorb ...`.
+
+## Before trusting any number
+- `ncoll` in stats_style — 0 means the gas is collisionless.
+- cell Knudsen number from `compute lambda/grid ... knall`, reduced with
+  `compute reduce min`, must be >= 1.
+- particles per cell from `compute grid all all n`, reduced with
+  `compute reduce min`, must be >= 1.
+- `compute dt/grid` gives a recommended timestep; SPARTA never compares it
+  with yours.
+
+Full per-command syntax: `SpartaBackend.get_command_reference('<command>')`.
+Per-physics pitfalls, deck skeletons and runnable templates:
+`prepare_simulation(solver='sparta', physics='<name>')`.
+"""
+
+
 _FEBIO_INPUT_GUIDE = """\
 # FEBio Input File Guide (.feb XML)
 

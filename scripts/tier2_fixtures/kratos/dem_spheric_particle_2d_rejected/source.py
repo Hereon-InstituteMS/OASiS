@@ -12,14 +12,21 @@ raises:
 
 The fix is to use SphericParticle3D and constrain DOFs in the
 out-of-plane direction.
+
+Mutation control: T2_MUTATE=1 creates the registered SphericParticle3D instead of the unregistered SphericParticle2D, removing the bad element name. The element is then created and the RuntimeError naming SphericParticle2D as 'not registered' disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.DEMApplication as DEM  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=registered_sphericparticle3d_used_instead")
 
 
 def main() -> int:
@@ -28,7 +35,8 @@ def main() -> int:
     mp.CreateNewNode(1, 0.0, 0.0, 0.0)
     prop = mp.CreateNewProperties(1)
     try:
-        mp.CreateNewElement("SphericParticle2D", 1, [1], prop)
+        name = "SphericParticle3D" if MUTATE else "SphericParticle2D"
+        mp.CreateNewElement(name, 1, [1], prop)
     except Exception:
         traceback.print_exc()
         return 1

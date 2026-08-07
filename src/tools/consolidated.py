@@ -1485,11 +1485,22 @@ def register_consolidated_tools(mcp: FastMCP):
             # does not enumerate (rare in practice).
             backend = get_backend(solver)
             all_pitfalls = {}
+            # `guidance` holds entries that are real, useful advice but have
+            # NO failure mode and NO observable — "filter radius should be
+            # > 2-3x element edge length" and the like. They used to sit in
+            # `pitfalls` carrying a boilerplate Signal clause they could not
+            # deliver on, which made symptom lookup return them alongside
+            # genuine pitfalls and diluted it. They are surfaced here under a
+            # separate top-level key so nothing is lost, but they are not
+            # pitfalls and must not be counted or matched as such.
+            guidance = {}
             if backend:
                 for p in backend.supported_physics():
                     k = backend.get_knowledge(p.name)
                     if k and "pitfalls" in k:
                         all_pitfalls[p.name] = k["pitfalls"]
+                    if k and k.get("guidance"):
+                        guidance[p.name] = k["guidance"]
             try:
                 from tools.deep_knowledge import _4C_KNOWLEDGE, _FENICS_KNOWLEDGE
                 dicts = {"fourc": _4C_KNOWLEDGE, "4c": _4C_KNOWLEDGE,
@@ -1577,6 +1588,8 @@ def register_consolidated_tools(mcp: FastMCP):
                         all_pitfalls["install_and_build_config"] = sp
                 except ImportError:
                     pass
+                if guidance:
+                    all_pitfalls["_guidance_not_pitfalls"] = guidance
                 # NARROWING. The signature has always accepted `physics` and
                 # `signal`; this branch read neither. `signal` was wired only
                 # to topic='postmortems', and `physics` was accepted and
@@ -1646,12 +1659,14 @@ def register_consolidated_tools(mcp: FastMCP):
             from tools.examples_search import (
                 _4C_INPUT_GUIDE, _FENICS_INPUT_GUIDE, _DEALII_INPUT_GUIDE,
                 _FEBIO_INPUT_GUIDE, _DUNE_INPUT_GUIDE,
+                _SPARTA_INPUT_GUIDE,
             )
             guides = {"fourc": _4C_INPUT_GUIDE, "4c": _4C_INPUT_GUIDE,
                       "fenics": _FENICS_INPUT_GUIDE, "dealii": _DEALII_INPUT_GUIDE,
                       "febio": _FEBIO_INPUT_GUIDE,
                       "dune": _DUNE_INPUT_GUIDE, "dune-fem": _DUNE_INPUT_GUIDE,
-                      "dunefem": _DUNE_INPUT_GUIDE}
+                      "dunefem": _DUNE_INPUT_GUIDE,
+                      "sparta": _SPARTA_INPUT_GUIDE, "dsmc": _SPARTA_INPUT_GUIDE}
             return guides.get(solver.lower(), f"No input guide for {solver}")
 
         elif topic == "solver_guidance" and physics:

@@ -238,23 +238,17 @@ KNOWLEDGE = {
         },
         "solver_types": ["explicit (velocity Verlet, default)", "explicit (symplectic Euler)"],
         "pitfalls": [
-                        '[Numerical] Time step must satisfy CFL: dt < min(2*sqrt(m/k)) — use DEM_timestep_safety_factor: 0.5 '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Bounding box must enclose all particles at all times (AutomaticBoundingBoxOption or manual) '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        "[Integration] MaterialsDEM.json constitutive_law name must match exactly (e.g. 'DEM_D_Hertz_viscous_Coulomb') "
-                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-                        '[Integration] MDPA uses SphericParticle3D even for 2D problems (Kratos DEM is always 3D internally) '
-                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-                        '[Integration] Wall geometry: use RigidFace3D3N elements or the walls_process_list in ProjectParameters '
-                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-                        '[Numerical] For >10k particles: enable MPI via parallel_type: MPI '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Integration] RADIUS must be set per-particle in the MDPA or via a process '
-                        "Signal: RuntimeError 'KeyError' from JSON parsing OR 'SubModelPart not found' / 'Property ID ... missing' during AnalysisStage.Initialize.",
-                        '[Numerical] Output: VTK with sphere glyphs, or GiD .post.bin format '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                    ],
+            "[Integration] MaterialsDEM.json constitutive_law name must match exactly (e.g. 'DEM_D_Hertz_viscous_Coulomb') Signal: the constitutive-law name in MaterialsDEM.json is matched verbatim: the full registered name resolves as a DEMApplication attribute while abbreviations of it raise AttributeError.",
+            "[Integration] MDPA uses SphericParticle3D even for 2D problems (Kratos DEM is always 3D internally) Signal: CreateNewElement with a 2D spelling raises RuntimeError 'The Element \"SphericParticle2D\" is not registered!' and lists the available DEM element types; only the 3D particle exists, because Kratos DEM carries 3D kinematics internally.",
+            "[Integration] Wall geometry: use RigidFace3D3N elements or the walls_process_list in ProjectParameters Signal: the wall entities are CONDITIONS, not elements: CreateNewCondition('RigidFace3D3N' / 'RigidFace3D4N', ...) constructs, while any 2D spelling (RigidFace2D2N, RigidEdge3D2N) raises 'is not registered'.",
+            "[Integration] RADIUS must be set per-particle in the MDPA or via a process Signal: RADIUS is a core KratosMultiphysics nodal variable, not a DEMApplication one \u2014 dotting it off the DEM module raises AttributeError. A particle whose RADIUS was never set keeps the silent default of zero rather than raising.",
+            "[Numerical] Output: VTK with sphere glyphs, or GiD .post.bin format Signal: VTK output goes through the core KM.VtkOutput class and the core vtk_output_process module; a ModelPart holding geometries with no VTK writer raises 'Modelpart contains elements or conditions with geometries for which no VTK-output is implemented!'.",
+        ],
+        "guidance": [
+            "[Numerical] Time step must satisfy CFL: dt < min(2*sqrt(m/k)) \u2014 use DEM_timestep_safety_factor: 0.5",
+            "[Numerical] Bounding box must enclose all particles at all times (AutomaticBoundingBoxOption or manual)",
+            "[Numerical] For >10k particles: enable MPI via parallel_type: MPI",
+        ]
     },
 }
 

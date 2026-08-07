@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for kratos::cable_net#10 — Line3DN, the shared stub geometry behind the sliding-/cable-/ring elements. EXECUTED 2026-08-06 with /usr/bin/python3 (Kratos 10.4 Release, GCC-14.2, CableNetApplication present; the repo .venv wheel needs GLIBC_2.32 and cannot load on this host, so the runner needs KRATOS_PYTHON=/usr/bin/python3). Built a SlidingCableElement3D3N and read its geometry. Printed: DomainSize() raised RuntimeError \"Error: 'DomainSize' not available for arbitrarty noded line in applications/CableNetApplication/custom_geometries/line_3d_n.h:344\" — the source's misspelling is real and the message even names the file and line; ShapeFunctionsValues() returned a 0x0 table with NO exception, which is the silent half of the same defect and contradicts the class docstring's 'quadratic shape functions'; EdgesNumber() = 0; and a FIVE-entry node list handed to the three-node SlidingCableElement3D3N was accepted in silence, the geometry reporting points_number 5 — the commented-out PointsNumber validation. PARTIAL COVERAGE RECORDED, NOT HIDDEN: the claim's headline Signal names ShapeFunctionValue, and the pybind11 Geometry binding does not expose ShapeFunctionValue, PointsLocalCoordinates, LumpingFactors, IsInside or InverseOfJacobian (5 of 5 absent, printed), so that exact call cannot be provoked from Python on this host; the identical KRATOS_ERROR text is reachable through DomainSize and that is what is asserted. Also measured but not gated: Area() returns 2.0 while Volume() raises 'Calling base class Volume method'. MUTATION EVIDENCE: substituting a repaired geometry — DomainSize implemented, a 3x3 shape-function table, PointsNumber validated at construction — made the fixture print domain_size_raised=False, shape_functions_returned_empty_without_raising=False and five_node_list_accepted_silently=False, emit three FAIL: lines, drop the _verified sentinel and return 2. KratosMultiphysics, StructuralMechanicsApplication and CableNetApplication are imported at module scope, so with Kratos absent the process dies on import and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 builds the geometry from StructuralMechanics CableElement3D2N, which carries a real Line3D2N geometry, instead of CableNet SlidingCableElement3D3N stub. DomainSize() then answers instead of raising the misspelled KRATOS_ERROR and ShapeFunctionsValues() returns a populated table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: domain_size_raised=True, domain_size_message_has_source_typo=True, shape_functions_returned_empty_without_raising=True, edges_number=0, five_node_geometry_points_number=5, cablenet_line3dn_stub_geometry_verified=True. Re-verify: cd scripts/tier2_fixtures/kratos/cablenet_line3dn_stub_geometry && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 10,
+  "covers": [
+    "cable_net:10"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "domain_size_raised=True",
+    "domain_size_message_has_source_typo=True",
+    "shape_functions_returned_empty_without_raising=True",
+    "edges_number=0",
+    "five_node_list_accepted_silently=True",
+    "five_node_geometry_points_number=5",
+    "cxx_only_signal_methods_absent_from_binding=5_of_5",
+    "cablenet_line3dn_stub_geometry_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

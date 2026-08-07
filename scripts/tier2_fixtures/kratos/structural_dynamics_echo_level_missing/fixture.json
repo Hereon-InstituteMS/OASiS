@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2: the problem_data section MUST include 'echo_level'; Kratos accesses it during stage initialisation without a default. Pitfall (kratos.structural_dynamics #7). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). This is the structural_dynamics copy of the claim; the linear_elasticity copy (#7 there) has its own fixture, echo_level_missing. Measured: Parameters('{\"problem_name\":\"x\"}')['echo_level'] raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' — a C++ Parameters::GetValue error, NOT a Python KeyError and not from RunSolutionLoop, exactly as this entry's corrected wording says. Adding the key makes the same lookup succeed. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 3 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 3. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 3 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/structural_dynamics_echo_level_missing && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "structural_dynamics",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[lookup_missing_echo_level]=False_expected=False",
+    "probe[lookup_present_echo_level]=True_expected=True",
+    "probe[Has_reports_absent]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
