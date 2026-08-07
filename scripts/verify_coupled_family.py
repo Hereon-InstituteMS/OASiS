@@ -195,7 +195,13 @@ NOT_SOLVED_HERE = {
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
+    ap.add_argument("--from-keys", action="store_true",
+                    help="verify the SHIPPED instances by loading their sealed "
+                         "keys, rather than rebuilding from the family")
     a = ap.parse_args()
+    if a.from_keys:
+        return main_from_keys(Path("/home/alexander/Schreibtisch/"
+                                   "qwen_uplift_test/campaign3_blind/keys"))
 
     out = {}
     for fn in B.BUILDERS:
@@ -285,6 +291,72 @@ def main():
     print("\nEvery solved instance grades at its theoretical order, and the "
           "key-free and key-based orders agree.")
     return 0
+
+
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Verifying the instances that will ACTUALLY be graded
+# ──────────────────────────────────────────────────────────────────────
+# Rebuilding from a demonstration seed verifies the FAMILY. That is most of what
+# matters — gradeability is a property of the construction, the geometry and the
+# probe grid — but it is not the shipped instance. This mode loads the sealed
+# key, solves the instance that will actually be graded, and prints only orders.
+# The materials below are PUBLIC: every one of them is stated in the task text.
+PUBLIC_MATERIALS = {
+    "D1": ("tensor", [[1, sp.Rational(1, 2)], [sp.Rational(1, 2), 2]],
+           [[3, sp.Rational(1, 2)], [sp.Rational(1, 2), 5]], 0.0),
+    "D3": ("scalar", 1, 4, 0.0),
+    "D6": ("scalar", 1, 1000, 0.0),
+    "D7": ("scalar", 1, 3, 12.0),
+}
+
+
+def verify_from_key(pid, keys_dir: Path):
+    """Solve the SHIPPED instance, from its sealed key. Prints orders only."""
+    kp = keys_dir / pid / "key.json"
+    if not kp.is_file():
+        return {"solver": "key not readable (sealed or encrypted)",
+                "note": "unseal to verify the shipped instance"}
+    key = json.loads(kp.read_text())
+    spec_path = (REPO / "campaign3_blind" / "problems" / pid /
+                 "spec_public.json")
+    spec = json.loads(spec_path.read_text())
+    kind, ka, kb, react = PUBLIC_MATERIALS[pid]
+    if kind == "tensor":
+        KA, KB = sp.Matrix(ka), sp.Matrix(kb)
+    else:
+        KA, KB = sp.Integer(ka) * sp.eye(2), sp.Integer(kb) * sp.eye(2)
+    fields = {s: sp.sympify(key["exact_solution"][s]) for s in ("A", "B")}
+    sources = {s: sp.sympify(key["source_term"][s]) for s in ("A", "B")}
+    out = verify_dn(spec, fields, sources, (KA, KB), reaction_b=react)
+    out["evidence_grade"] = spec["evidence_grade"]
+    out["contrast"] = spec["material_contrast"]
+    out["source"] = "shipped instance, from its sealed key"
+    return out
+
+
+def main_from_keys(keys_dir: Path):
+    out = {}
+    for pid in sorted(PUBLIC_MATERIALS):
+        out[pid] = verify_from_key(pid, keys_dir)
+    bad = []
+    print(f"{'id':<4}{'phase1':>9}{'phase2':>9}{'agree':>7}{'flux jump':>11}  source")
+    for pid, r in out.items():
+        p1 = r.get("phase1_order_mesh_halving")
+        p2 = r.get("phase2_order_true_error")
+        if p1 is None:
+            print(f"{pid:<4}{'--':>9}{'--':>9}{'--':>7}{'--':>11}  {r['solver']}")
+            continue
+        agree = abs(p1 - p2) <= 0.5
+        fj = max(r["flux_jump"])
+        print(f"{pid:<4}{p1:9.3f}{p2:9.3f}{str(agree):>7}{fj:11.2e}  {r['source']}")
+        if abs(p2 - 2.0) > 0.4 or not agree:
+            bad.append(pid)
+    dest = REPO / "data" / "coupled_shipped_instance_verification.json"
+    dest.write_text(json.dumps(out, indent=2, default=float))
+    print(f"\nwrote {dest}")
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

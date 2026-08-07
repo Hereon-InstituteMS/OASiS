@@ -1,13 +1,13 @@
 {
   "schema": "oasis-blind-campaign-commitment/1",
   "campaign": "campaign3_blind",
-  "generated_utc": "2026-08-07T15:59:18Z",
+  "generated_utc": "2026-08-07T16:07:37Z",
   "note": "Committed BEFORE any evaluation run. Proves that the grader which graded is the grader that was designed, and that the task texts were not edited after results were seen.",
   "entries": [
     {
       "path": "DESIGN.md",
-      "bytes": 38397,
-      "sha256": "411adeadcbd66e9636001a54dd4fcc49a9bf1755fc72d070e9938dbb52fb734e",
+      "bytes": 40682,
+      "sha256": "b9cc7ff38f67ba6b7ccff858eea3e39239e3eea6143f906ee50384d97ee1005e",
       "in_git": true
     },
     {
@@ -117,8 +117,8 @@
     },
     {
       "path": "problems/D1/task.txt",
-      "bytes": 4611,
-      "sha256": "eac8f573d144fc2612ea4619610a5133d64bc1318b4e2f31421d5fd14143f68f",
+      "bytes": 4617,
+      "sha256": "ae3e9f3f29a6f58edc08eb739884954a98632f85078fb901baad1e3ca9500b91",
       "in_git": true
     },
     {
@@ -129,8 +129,8 @@
     },
     {
       "path": "problems/D2/task.txt",
-      "bytes": 5400,
-      "sha256": "ee6844e8ef3971dd91614b1982b7377052247a74d24995861a9be08d369876c0",
+      "bytes": 5435,
+      "sha256": "b6005d464343a93562d8ab345d3fc90350bcdd2f4b1a08661807999a4c8c6a3a",
       "in_git": true
     },
     {
@@ -141,8 +141,8 @@
     },
     {
       "path": "problems/D3/task.txt",
-      "bytes": 4494,
-      "sha256": "3836937eaa36cf12bd3d9503fe309d0fb49fac103aa8cec7926bee512769ad5c",
+      "bytes": 4522,
+      "sha256": "020009fcf64abeff96bc119b23995a7c0247a5b80c25149590189eaeef3d2939",
       "in_git": true
     },
     {
@@ -153,8 +153,8 @@
     },
     {
       "path": "problems/D4/task.txt",
-      "bytes": 5529,
-      "sha256": "db9139e074dd21b6e659c4eb14a918ba01a49290ca7bd1785539336f8faa090d",
+      "bytes": 5597,
+      "sha256": "ee3a56fe785fa115979c9a41d2afbc400ce87f99daffac980de7886f795af3f9",
       "in_git": true
     },
     {
@@ -165,8 +165,8 @@
     },
     {
       "path": "problems/D5/task.txt",
-      "bytes": 6246,
-      "sha256": "eb5fa75e3d60e68294f6d755a602e40ce9ab7e38e43dd078a3357f0b87305a65",
+      "bytes": 6305,
+      "sha256": "7f27b89d5c5236d4e0bc3d836ec94cdd96656a66f887704f946790a00c1ebf66",
       "in_git": true
     },
     {
@@ -177,8 +177,8 @@
     },
     {
       "path": "problems/D6/task.txt",
-      "bytes": 4604,
-      "sha256": "ad740eb018b4fe567c82cca539fdea5da26793676a49a7fb15905ab63bd14740",
+      "bytes": 4647,
+      "sha256": "f2edb2ca48d8a0a9e6f4e2b9ef2961cdc6b0383e5bca6eaed5d9c5cb63183ddd",
       "in_git": true
     },
     {
@@ -189,8 +189,8 @@
     },
     {
       "path": "problems/D7/task.txt",
-      "bytes": 4599,
-      "sha256": "a372a6022a179c891af2ff7460458ce2fae1f5be01de75d0e2720e981d5d753f",
+      "bytes": 4612,
+      "sha256": "b5865253a209c13284913c58222e4d3fa76656ae8e9d5b9cddc4f42bee695673",
       "in_git": true
     },
     {
@@ -201,8 +201,8 @@
     },
     {
       "path": "problems/D8/task.txt",
-      "bytes": 5307,
-      "sha256": "bbabce6b48aa0c4794f5ccfaf082d252312082b0dd4f5873e9fbdeac7033b929",
+      "bytes": 5362,
+      "sha256": "74c25768bc707e70b30cf54506d74b13409fe6b6b664e4997db4754605e823cc",
       "in_git": true
     },
     {
@@ -218,5 +218,5 @@
       "in_git": true
     }
   ],
-  "manifest_sha256": "3713f712fc4d5a88e1b74d80736d0ebdfe68bef5f1419acb03889b570ddf64e5"
+  "manifest_sha256": "2ec1df41368c6701fef9199c193c3b4041ce48b7aebc56cfeef2f77acf9e66c4"
 }

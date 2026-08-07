@@ -642,15 +642,22 @@ sequence and probe grid the task prescribes, and both grading phases computed:
 
 | id | contrast | phase 1 (mesh halving) | phase 2 (true error) | agree | flux jump | solver |
 |---|---|---|---|---|---|---|
-| D1 | K11 1:3, K22 2:5 | 1.890 | 1.901 | yes | 5.6e-15 | partitioned DN |
+| D1 | K11 1:3, K22 2:5 | 1.830 | 1.854 | yes | 1.2e-14 | partitioned DN |
 | D2 | 1:6 | — | — | — | — | not solved here (3D) |
-| D3 | 1:4 | 1.940 | 1.955 | yes | 4.8e-15 | partitioned DN |
-| D4 | mu 1:3 | 1.872 | 1.931 | yes | — | monolithic reference |
-| D4 | mu 1:3 | 1.838 | 1.838 | yes | 5.2e-15 | partitioned DN (vector) |
-| D5 | 1:5/2 and 1:2 | 1.875 | 1.935 | yes | — | monolithic reference |
-| D6 | 1:1000 | 1.958 | 1.976 | yes | 6.1e-15 | partitioned DN |
-| D7 | 1:3 | 1.929 | 1.944 | yes | 4.8e-15 | partitioned DN |
+| D3 | 1:4 | 1.840 | 1.862 | yes | 1.3e-14 | partitioned DN |
+| D4 | mu 1:3 | 1.827 | 1.909 | yes | — | monolithic reference |
+| D4 | mu 1:3 | 1.838 | 1.838 | yes | 5.2e-15 | partitioned DN (VECTOR) |
+| D5 | 1:5/2 and 1:2 | 1.889 | 1.941 | yes | — | monolithic, notched domain |
+| D6 | 1:1000 | 1.960 | 1.978 | yes | 6.0e-15 | partitioned DN |
+| D7 | 1:3 | 1.817 | 1.847 | yes | 1.7e-14 | partitioned DN |
 | D8 | 1:4 | — | — | — | — | not solved here (transient) |
+
+Four of them were additionally re-solved **from their sealed keys**, so what was
+measured is the instance that will actually be graded and not a rebuild from the
+same family: D1 1.830/1.854, D3 1.839/1.869, D6 1.961/1.977, D7 1.854/1.875, all
+agreeing between phases with a flux jump at roundoff. That mode prints orders
+only and is how a shipped instance can be checked without anything being
+disclosed.
 
 The key-free and key-based orders agree everywhere they are both defined, which
 is the cross-check that catches a wrong sealed solution. The two-sided flux jump

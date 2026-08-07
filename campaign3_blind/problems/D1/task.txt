@@ -6,8 +6,8 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), anisotropic conductivity K = [[3, 1/2], [1/
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: -div(K grad u) = f in each subdomain
 COEFFICIENTS: anisotropic conductivity K = [[1, 1/2], [1/2, 2]] in subdomain A; anisotropic conductivity K = [[3, 1/2], [1/2, 5]] in subdomain B
-SOURCE TERM: f(x, y) = in subdomain A: -12*x**3*y + x**3 - 9*x**2*y**2 + 43*x**2*y/2 + 4*x**2/3 - 6*x*y**3 + 23*x*y**2/2 - 14*x*y/3 - 23*x/8 + 10*y**3/3 - 121*y**2/48 - 23*y/8 + 11/16
-               in subdomain B: -10*x**3*y/9 + 5*x**3/54 - x**2*y**2/3 + 13*x**2*y/9 + 19*x**2/108 - 2*x*y**3/3 + 4*x*y**2/9 + 253*x*y/108 - 271*x/864 + 5*y**3/18 + 17*y**2/72 - 2123*y/864 - 37/144
+SOURCE TERM: f(x, y) = in subdomain A: -18*x**3*y + 10*x**3 - 27*x**2*y**2/2 + 135*x**2*y/2 - 109*x**2/6 - 9*x*y**3 + 165*x*y**2/4 - 325*x*y/6 + 13*x/3 + 35*y**3/4 - 95*y**2/6 + 19*y/12 + 11/8
+               in subdomain B: -5*x**3*y/3 + 25*x**3/27 - x**2*y**2/2 + 80*x**2*y/9 - 23*x**2/27 - x*y**3 + 10*x*y**2/3 + 79*x*y/432 - 871*x/432 + 5*y**3/3 - 95*y**2/288 - 14159*y/864 + 931/864
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes

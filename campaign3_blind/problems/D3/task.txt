@@ -6,8 +6,8 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), thermal conductivity k = 4
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: -div(k grad u) = f in each subdomain
 COEFFICIENTS: thermal conductivity k = 1 in subdomain A; thermal conductivity k = 4 in subdomain B
-SOURCE TERM: f(x, y) = in subdomain A: -6*x**3*y + x**3/2 + 153*x**2*y/16 - 27*x**2/64 - 6*x*y**3 + 3*x*y**2/2 + 45*x*y/64 + 51*y**3/16 - 27*y**2/64 - 177*y/64
-               in subdomain B: -3*x**3*y/8 + x**3/32 + 9*x**2*y/32 + 9*x**2/128 - 3*x*y**3/8 + 3*x*y**2/32 + 765*x*y/512 - 135*x/2048 + 3*y**3/32 + 9*y**2/128 - 1383*y/1024 - 675/4096
+SOURCE TERM: f(x, y) = in subdomain A: 6*x**3*y - 2*x**3/5 + 79*x**2*y/16 - 1519*x**2/240 + 6*x*y**3 - 6*x*y**2/5 - 1059*x*y/80 + 45*x/8 + 79*y**3/48 - 1519*y**2/240 + 281*y/60
+               in subdomain B: 3*x**3*y/8 - x**3/40 + 107*x**2*y/32 - 827*x**2/480 + 3*x*y**3/8 - 3*x*y**2/40 - 393*x*y/2560 - 293*x/512 + 107*y**3/96 - 827*y**2/480 - 129031*y/15360 + 4935/1024
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes

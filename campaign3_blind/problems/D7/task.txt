@@ -6,8 +6,8 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), diffusivity k = 3, linear reaction coeffici
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: subdomain A: -div(k grad u) = f ; subdomain B: -div(k grad u) + c*u = f
 COEFFICIENTS: subdomain A: k = 1 ; subdomain B: k = 3 and c = 12. The two subdomains solve DIFFERENT equations.
-SOURCE TERM: f(x, y) = in subdomain A: -6*x**3*y + x**3/2 + 10*x**2*y - 11*x**2/24 - 6*x*y**3 + 3*x*y**2/2 + 3*x*y/8 + 10*y**3/3 - 11*y**2/24 - 23*y/8
-               in subdomain B: 4*x**3*y**3/9 - x**3*y**2/9 - x**3*y + x**3/18 - 5*x**2*y**3/9 - x**2*y**2/9 + 3*x**2*y/2 + x**2/18 - 25*x*y**3/18 + 59*x*y**2/144 + 33*x*y/16 - 35*x/288 + 10*y**3/9 + 91*y**2/288 - 257*y/96 - 25/192
+SOURCE TERM: f(x, y) = in subdomain A: 6*x**3*y - 4*x**3 - 31*x**2*y/2 + 11*x**2 + 6*x*y**3 - 12*x*y**2 + 91*x*y/6 - 121*x/18 - 31*y**3/6 + 11*y**2 - 35*y/6
+               in subdomain B: -4*x**3*y**3/9 + 8*x**3*y**2/9 + 2*x**3*y/9 - 4*x**3/9 + 16*x**2*y**3/9 - 4*x**2*y**2 - 4*x**2*y/9 + 2*x**2 + 13*x*y**3/12 - 37*x*y**2/18 + 25*x*y/72 + 13*x/36 - 289*y**3/72 + 109*y**2/12 - 55*y/144 - 85/24
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes

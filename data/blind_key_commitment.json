@@ -1,7 +1,7 @@
 {
   "schema": "oasis-blind-key-commitment/1",
   "campaign": "campaign3_blind",
-  "generated_utc": "2026-08-07T15:59:18Z",
+  "generated_utc": "2026-08-07T16:07:37Z",
   "keys_dir": "/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind/keys",
   "algorithm": "SHA-256 over the key file as stored",
   "encryption": "AES-256-GCM, scrypt(n=32768,r=8,p=1)",
@@ -51,52 +51,52 @@
     },
     {
       "path": "D1/key.json",
-      "bytes": 1884,
-      "sha256": "b948a253c8e95b46bc3f736a5a2aeea6827ca9e793d5db2951d46cbca0c9cdb3",
+      "bytes": 1922,
+      "sha256": "f2ebd093fecfd022c88a210170ec9234ffbb2dcd4116fa81ab52265d9c3b9d5e",
       "encrypted": false
     },
     {
       "path": "D2/key.json",
-      "bytes": 3157,
-      "sha256": "5ad433d64d6cef0f9ee1d6abd80aa29cedc22ba99e44f8c9a3089bcde806747c",
+      "bytes": 3254,
+      "sha256": "5b852d2623ca0fd58b7c12c9f7b02e868818778a75a1b53cea2d91963598b9bd",
       "encrypted": false
     },
     {
       "path": "D3/key.json",
-      "bytes": 1868,
-      "sha256": "1bf695583f9397c29bc973247f166b47edbbf09e0643e038d734d382deeed784",
+      "bytes": 1920,
+      "sha256": "1caa5839026803287abecf60c7692fd9bc8e4d39954bdac2588eafb4463d121b",
       "encrypted": false
     },
     {
       "path": "D4/key.json",
-      "bytes": 3044,
-      "sha256": "2d9f776a288cb132eab792d06a2918c065caa536b202e66307f68c21174f5e97",
+      "bytes": 3185,
+      "sha256": "9f6eecc2f262e716a548f2c4be6492ae64a8a1ce6cd2be6f555d065a72518529",
       "encrypted": false
     },
     {
       "path": "D5/key.json",
-      "bytes": 4037,
-      "sha256": "a29246c017c84755c9524cbb97889ad9dc127be4eb72dd866fd423aa98f8e1ef",
+      "bytes": 4167,
+      "sha256": "da93d615e2a00caba3e93f5afcef13d1ceadb12c5b7241b1a5ddb9f97c16ef1e",
       "encrypted": false
     },
     {
       "path": "D6/key.json",
-      "bytes": 2119,
-      "sha256": "db29c97191cf607b0ed3e8d4868add28255d1270a8bc504ba8c3779a1882cbf0",
+      "bytes": 2205,
+      "sha256": "e07be05e4cf2d92d1d25507391dc4372aa9700d6775ddd708df3d973018f369d",
       "encrypted": false
     },
     {
       "path": "D7/key.json",
-      "bytes": 1873,
-      "sha256": "26c1b321aa1f4542c44ff821390f9fa9087299018c13ae9bb9fc57d0d76da772",
+      "bytes": 1909,
+      "sha256": "5683abf1eb3e3d44461ec5c4e5201d288be9bfab50ff6dd121cea0ed8a395f80",
       "encrypted": false
     },
     {
       "path": "D8/key.json",
-      "bytes": 2572,
-      "sha256": "b5dbcb6076abf2faec944b8a85e5a6c053b083841b93091c8a2bbcbedbf86a37",
+      "bytes": 2674,
+      "sha256": "eb730901f137d875a13cbbf5e4440f83be53a971d97e9acd3fdeef5d3cfd538b",
       "encrypted": false
     }
   ],
-  "manifest_sha256": "319bb1e8502c8de440e4d3224e01bdd603dc23bfd08327bd577b0b497fa92895"
+  "manifest_sha256": "0dc15bb0de7aa107f6f62bb2d8219f93a93cd80e4b84a1228e739b6b568c452e"
 }

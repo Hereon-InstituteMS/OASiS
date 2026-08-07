@@ -1,0 +1,94 @@
+{
+  "D1": {
+    "phase1_order_mesh_halving": 1.8304735830798777,
+    "phase2_order_true_error": 1.8539458872068533,
+    "true_errors": [
+      0.008517766844931343,
+      0.002388218518811255,
+      0.0006518371421898296
+    ],
+    "flux_jump": [
+      1.9141717776187166e-15,
+      6.6438006526867674e-15,
+      1.2416787597185168e-14
+    ],
+    "coupling_iterations": [
+      15,
+      14,
+      14
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "K11 1:3, K22 2:5",
+    "source": "shipped instance, from its sealed key"
+  },
+  "D3": {
+    "phase1_order_mesh_halving": 1.838684565206854,
+    "phase2_order_true_error": 1.8692676649542581,
+    "true_errors": [
+      0.0012562416073303468,
+      0.00035011511235515043,
+      9.411566152979266e-05
+    ],
+    "flux_jump": [
+      1.4077769707210237e-15,
+      3.378300245351475e-15,
+      1.0065477211021954e-14
+    ],
+    "coupling_iterations": [
+      12,
+      12,
+      12
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:4",
+    "source": "shipped instance, from its sealed key"
+  },
+  "D6": {
+    "phase1_order_mesh_halving": 1.9609102821059534,
+    "phase2_order_true_error": 1.9772217273382324,
+    "true_errors": [
+      0.0009791140593541669,
+      0.0002509354334504296,
+      6.315782866245042e-05
+    ],
+    "flux_jump": [
+      8.897703853135558e-16,
+      4.169504172025336e-15,
+      7.35049369698494e-15
+    ],
+    "coupling_iterations": [
+      5,
+      5,
+      5
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:1000",
+    "source": "shipped instance, from its sealed key"
+  },
+  "D7": {
+    "phase1_order_mesh_halving": 1.8543491266693108,
+    "phase2_order_true_error": 1.8749297973796648,
+    "true_errors": [
+      0.0013961137389183254,
+      0.00038541245701250923,
+      0.0001037768737088991
+    ],
+    "flux_jump": [
+      2.203303348419188e-15,
+      5.254547547681167e-15,
+      1.019947848674887e-14
+    ],
+    "coupling_iterations": [
+      14,
+      14,
+      14
+    ],
+    "solver": "partitioned DN",
+    "evidence_grade": 1,
+    "contrast": "1:3",
+    "source": "shipped instance, from its sealed key"
+  }
+}
