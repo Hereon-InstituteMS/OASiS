@@ -66,6 +66,34 @@ is worse than it looks: on a measured fluid traction a cubic missed the peak by
 emitted FUNCT and the handed-in samples is printed and put in exports meta ->
 `fit`, because that number is the only thing standing between you and a load you
 never noticed was wrong.
+
+WHAT DOES NOT WORK — 4C's DBC REACTION MONITOR IN 2-D
+-----------------------------------------------------
+`TAG: "monitor_reaction"` on a DIRICH condition plus an `IO/MONITOR STRUCTURE
+DBC` section is the only way to make 4C report an interface force back, and both
+keys are real.  Solid::MonitorDbc is nevertheless 3-D only — `DIM` is a
+hard-coded 3 — and it fails on a 2-D structure in two different ways:
+
+  * it asks every monitored node for its THIRD dof.  A 2-D node has two, so the
+    request lands on the next node's dof; for the node holding the highest gid
+    there is no next node and 4C aborts with
+        Cannot find gid=<2*n_nodes> in Core::LinAlg::Vector<double>
+    in Core::FE::extract_values, called from MonitorDbc::get_reaction_moment.
+    Numbering the mesh so that a non-monitored node comes last dodges this.
+  * its reference-area computation reads the same uninitialised memory and
+    prints `ref_area` as garbage — 7.96e+88 on one run, `inf` on the next.  When
+    it comes out `inf`, 4C's floating-point trap fires on the very next
+    evaluation and the run dies in the PREDICTOR, before any solve:
+        Floating Point Exception: OVERFLOW
+        ERROR - NOX::Nln::Group::compute_f_and_jacobian - evaluation failed!
+    This is non-deterministic: measured 2 aborts in 8 runs of one deck, 0 in 20
+    runs of the same deck.  A default that fails one run in four is not a
+    default, hence MONITOR_REACTION=False.
+
+The reaction FORCE path itself is sound: when the monitor did run, the two clamp
+reactions summed to the applied Neumann resultant to 12 significant digits.  So
+MONITOR_REACTION=True is a good one-off conservation check and a bad standing
+setting.
 """
 import csv
 import json
@@ -98,9 +126,15 @@ FOURC_LD   = ""          # 4C dependency lib dir, or "" to inherit the env
 TRACTION_FIT = "exact"   # "exact" = piecewise-linear heaviside form (no fit
                          # error); "poly" = least-squares polynomial of FIT_DEG
 FIT_DEG    = 3           # only used by TRACTION_FIT="poly"
-MONITOR_REACTION = True  # ask 4C for the clamp reaction forces, so the applied
+MONITOR_REACTION = False  # ask 4C for the clamp reaction forces, so the applied
                          # interface force is checked against 4C's own numbers.
-                         # Falls back automatically if 4C refuses (see below).
+                         # OFF by default because Solid::MonitorDbc is 3-D ONLY
+                         # and fails two ways on a 2-D structure — see the
+                         # WHAT DOES NOT WORK note below. The reaction FORCES it
+                         # produces are correct when it runs, so turn it on for
+                         # a one-off conservation check; the wrapper retries
+                         # without it if 4C aborts, so it cannot lose you a run,
+                         # only a second.
 # ─────────────────────────────────────────────────────────────────────────
 
 GAUSS2 = (np.array([-1.0, 1.0]) / np.sqrt(3.0), np.array([1.0, 1.0]))
@@ -317,8 +351,9 @@ def main():
     t0 = time.time()
     r = run_4c(deck, "out")
     if r.returncode != 0 and monitor:
-        # Solid::MonitorDbc is 3-D only. Losing the equilibrium check is better
-        # than losing the solve, so retry once without it — but say so.
+        # Solid::MonitorDbc is 3-D only and dies non-deterministically in 2-D
+        # (see the module docstring). Losing the equilibrium check is better than
+        # losing the solve, so retry once without it — but say so.
         print("[4C solid] reaction monitor refused by 4C, retrying without it. "
               f"4C said: {_first_error(r.stdout)}", flush=True)
         monitor = False
