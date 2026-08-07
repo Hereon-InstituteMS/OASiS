@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::particles#11. The two phase-mapping strings in PARTICLE DYNAMIC look redundant and fail completely differently. Dropping PHASE_TO_DYNLOADBALFAC gives a clean abort that NAMES the offending phase. Dropping PHASE_TO_MATERIAL_ID -- or leaving it in but naming a phase no particle uses -- segfaults: exit 139, zero PROC 0 ERROR blocks and zero phase-related diagnostics (both counted, not inferred), before the first TIME: line. The last probe repeats the material-map omission on an SPH deck to establish that this is engine-level, not a DEM quirk. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_NOMATID=139",
+    "EXIT_WRONGMATID=139",
+    "EXIT_NODLB=1",
+    "EXIT_SPHNOMATID=139",
+    "Signal: Segmentation fault (11)",
+    "MISSING_MATID_SEGFAULTS=yes",
+    "NOMATID_FOURC_ERROR_BLOCKS=0",
+    "NOMATID_PHASE_DIAGNOSTICS=0",
+    "NOMATID_STEPS_PRINTED=0",
+    "WRONG_MATID_ALSO_SEGFAULTS=yes",
+    "particle type 'phase1' of initial particle not defined!",
+    "MISSING_DYNLOADBALFAC_NAMES_THE_PHASE=yes",
+    "SPH_SIDE_SEGFAULTS_TOO=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "MISSING_MATID_SEGFAULTS=no",
+    "EXIT_NOMATID=0",
+    "MISSING_DYNLOADBALFAC_NAMES_THE_PHASE=no",
+    "SPH_SIDE_SEGFAULTS_TOO=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The symptom never appears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

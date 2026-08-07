@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::particles#13, and the fixture that falsified its own first draft. The draft said cutting BIN_SIZE_LOWER_BOUND below the method's interaction distance trips the check. On the DEM deck it does, with both numbers printed. On the SPH deck the SAME edit, in the same direction, does NOT fire the check at all: the run passes and its verdict lines are BIT-IDENTICAL to the untouched deck (SPH_CUT_BOUND_IS_BIT_IDENTICAL=yes, cmp on the extracted lines). The mechanism, read back out of 4C_particle_interaction_base.cpp::check_particle_interaction_distance_concerning_bin_size, is that the comparison is against min_bin_size() -- the bin the ENGINE chose -- while the input key is only a floor, so whether the check fires depends on the domain box as much as on the key. The entry now says that, and warns against reading a passing run as evidence the bound is adequate. Last probe is the trap that motivates the entry: widening MAX_RADIUS on a radius distribution trips the check on a deck whose BINNING STRATEGY was never touched (WIDER_TOUCHED_THE_BIN_SIZE=no). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 13,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_DEMSMALL=1",
+    "EXIT_WIDER=1",
+    "EXIT_LNBASE=0",
+    "the particle interaction distance is larger than the minimal bin size (",
+    "DEM_BIN_REFUSED=yes",
+    "SPH_BIN_REFUSED=no",
+    "SPH_SMALL_BIN_STILL_PASSES=yes",
+    "SPH_CUT_BOUND_IS_BIT_IDENTICAL=yes",
+    "SOURCE_FILE=4C_particle_interaction_base.cpp",
+    "DEM_ABORTS_AT_SETUP=0",
+    "LNBASE_PASSES=yes",
+    "WIDENING_MAX_RADIUS_TRIPS_THE_SAME_CHECK=yes",
+    "WIDER_TOUCHED_THE_BIN_SIZE=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "DEM_BIN_REFUSED=no",
+    "SPH_BIN_REFUSED=yes",
+    "SPH_CUT_BOUND_IS_BIT_IDENTICAL=no",
+    "WIDENING_MAX_RADIUS_TRIPS_THE_SAME_CHECK=no",
+    "WIDER_TOUCHED_THE_BIN_SIZE=yes",
+    "EXIT_DEMSMALL=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The symptom never appears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}
