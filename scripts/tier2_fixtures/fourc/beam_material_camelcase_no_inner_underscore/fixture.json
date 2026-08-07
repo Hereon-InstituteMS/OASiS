@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fourc beam#: beam material names use CamelCase WITHOUT inner underscores: MAT_BeamReissnerElastHyper (NOT MAT_Beam_Reissner_ElastHyper). 4C 2026.3 MATERIALS section schema lists 7 real beam materials including _ByModes variants and TorsionFree (for BEAM3EB). Catalog previously had 3 underscore-separated names — none exist. Also: BEAM3R supports LINE2/LINE3/LINE4/LINE5 (catalog missed LINE5), BEAM3K supports LINE2/LINE3/LINE4 (catalog missed LINE4). Verified 2026-06-01.",
+  "_comment": "Tier-2 for fourc beam#: beam material names use CamelCase WITHOUT inner underscores: MAT_BeamReissnerElastHyper (NOT MAT_Beam_Reissner_ElastHyper). 4C 2026.3 MATERIALS section schema lists 7 real beam materials including _ByModes variants and TorsionFree (for BEAM3EB). Catalog previously had 3 underscore-separated names — none exist. Also: BEAM3R supports LINE2/LINE3/LINE4/LINE5 (catalog missed LINE5), BEAM3K supports LINE2/LINE3/LINE4 (catalog missed LINE4). Verified 2026-06-01. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the probe demands the three underscore-separated names 4C does NOT define, treats a real CamelCase name as historical-wrong, and probes BEAM3R for LINE6 / BEAM3K for LINE9. All four expectations disappear - missing_required_materials and historical_wrong_in_schema report non-empty sets, line5_in_b3r and line4_in_b3k become False. Proved KILLED 2026-08-07. Also repaired on 2026-08-07: the fixture read only 4C_schema.json, a post-build product of create-schema-files that this host's build never generated, so it reported 'FAIL: 4C_schema.json not found' and was red for an environmental reason; it now falls back to 4C_metadata.yaml, the generator's own input, which the build tree does carry.",
   "backend": "fourc",
   "physics": "beams",
   "pitfall_index": 9,
@@ -13,5 +13,11 @@
   "forbid_in_output": [
     "Traceback",
     "FAIL:"
-  ]
+  ],
+  "_mutation": {
+    "note": "remove the assumption that the probe measures at all: ask the SAME artefact for the underscore-separated names the old catalog used (4C does not define them) and for cell types past the end of each beam's list. missing_required_materials, historical_wrong_in_schema, line5_in_b3r and line4_in_b3k all flip, so the fixture must go red. A positive control: this fixture reads 4C's own compiled input description, so the pathology cannot be injected into 4C from outside; what the mutation removes is the possibility that the four verdicts are printed rather than computed.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }
