@@ -826,3 +826,19 @@ task now says it explicitly:
   its path remains unproven and the preflight still refuses it.
 * The seven non-D4 instances have no recorded throwaway run through their named
   path.
+
+## 5. A cost, not a defect: the leak gate is slow on polynomial instances
+
+`test_every_problem_passes_the_leak_gate` runs the full symbolic gate over every
+problem with a readable key. `embedded_multiple` compares each term of the
+source against each term of the hidden field with `sp.simplify`, which on the
+larger polynomial instances (D5's four cells, D8's transient sources) takes
+minutes each; on a loaded machine the test did not complete inside this session.
+
+It is not weakened here, and nobody should weaken it in response to the runtime.
+The gate is enforced unconditionally at BUILD time — `build_coupled_v2.py`
+refuses to write any instance whose task text does not come back CLEAN, and all
+eight did on the shipped build — and a standalone audit over the eight rebuilt
+instances was run separately and returned `leaking: none`. The test is a second,
+independent check of the same property; it should be run deliberately as the
+pre-campaign audit rather than expected to finish inside a quick suite run.
