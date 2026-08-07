@@ -480,23 +480,33 @@ class FourcBackend(SolverBackend):
                 "summary": ("SPH dam-break: 2D rectangular "
                             "column of fluid collapsing onto a "
                             "rigid floor under gravity."),
-                "needs": ["MAT_PARTICLE with SPH_FLUID "
-                          "particle type (density, "
-                          "DYN_VISCOSITY, BULK_MODULUS, "
-                          "SOUNDSPEED)",
+                "needs": ["MAT_ParticleSPHFluid (the material "
+                          "name is case-sensitive and appears "
+                          "in 60 upstream decks)",
                           "PARTICLE_PHASE for the fluid "
                           "column + a boundaryphase for the "
                           "floor/walls",
                           "PARTICLE DYNAMIC with explicit "
                           "time integration + appropriate "
                           "CFL"],
-                "pitfalls": ["SOUNDSPEED too low → fluid "
-                             "compresses unrealistically; "
-                             "rule of thumb c >= 10 * v_max",
-                             "SMOOTHING_LENGTH too small → "
-                             "spurious tensile-instability "
-                             "voids; rule of thumb h ~ 1.3 * "
-                             "particle spacing"],
+                "pitfalls": ["[Input] There is no SOUNDSPEED key "
+                             "and no SMOOTHING_LENGTH key in 4C's "
+                             "SPH input. Both were previously "
+                             "served here as required material "
+                             "parameters, one with a numeric "
+                             "tuning rule; neither appears in any "
+                             "file of 4C's source or in any of "
+                             "its 2171 upstream decks. Signal: "
+                             "writing either into MATERIALS "
+                             "aborts with \"Failed to match "
+                             "specification in section "
+                             "'MATERIALS'\" — the same message a "
+                             "mis-cased real key produces, so the "
+                             "message alone does not tell you "
+                             "which mistake you made. Check names "
+                             "against `4C -p`, which dumps the "
+                             "accepted grammar from the binary. "
+                             "(Verified 2026-08-07)"],
             },
             ("porous_media", "terzaghi_2d"): {
                 "problemtype": "Poroelasticity",
