@@ -66,9 +66,23 @@ STEEL, STRONG = M.STEEL, M.STRONG
 
 # Which mesh each side uses. Deliberately different, in both directions, so
 # every exchange goes through a real non-matching mesh-to-mesh map.
-MESH_T = (40, 10)
-MESH_M = (32, 8)
-MESH_MONO = (80, 20)
+MESH_T = (64, 16)
+MESH_M = (56, 14)
+MESH_MONO = (160, 40)
+
+# THE CONVERGENCE TOLERANCE IS 1e-12 AND IT WAS MEASURED, not chosen for looking
+# tight. `couple` also checks each exchanged block SEPARATELY, against tol*10,
+# because a global relative norm is set by the largest-magnitude block and a
+# small one can still be moving underneath it. On this coupling the strain
+# block's worst entry-wise relative change runs ~5x the global residual, and it
+# has a roundoff floor near 2e-12. So:
+#   tol=1e-10  the strain block is 1.4e-09 against a limit of 1e-09 -> FINDING
+#   tol=1e-12  blocks 2e-12..8e-12 against 1e-11                    -> clean
+#   tol=1e-13  the strain block sits on its 2e-12 floor, limit 1e-12 -> FINDING
+# The middle one is the only setting where the run is converged in every block
+# it exchanges. Neither of the other two is "wrong" — they are runs whose
+# per-block convergence OASiS declines to certify, which is the check working.
+TOL = 1e-12
 
 
 def shipped_tsi(kind: str, backend: str) -> Path:
@@ -146,7 +160,7 @@ def amplification(p: TsiProblem, theta: float) -> float:
 def run_tsi(tag: str, backend_thermal: str, backend_mech: str,
             p: TsiProblem | None = None, mesh_t=MESH_T, mesh_m=MESH_M,
             theta: float | None = None, accelerator: str = "constant",
-            max_iter: int = 300, tol: float = 1e-10,
+            max_iter: int = 300, tol: float = TOL,
             coupling: float = 1.0, thermal_reads: bool = True,
             mech_reads: bool = True, alpha_mech: float | None = None,
             with_tool_monolithic: bool = True, quiet: bool = False) -> dict:
@@ -253,25 +267,41 @@ def compare_to_monolithic(tag: str, run: dict, coupling: float = 1.0,
 
 def assert_run_clean(tag: str, run: dict, expect_one_way: bool = False) -> bool:
     """Convergence, an empty validation block, and — the discriminator for a
-    coupling that only looks alive — that both participants responded to their
-    imports and that their answers actually DEPEND on them."""
+    coupling that only looks alive — that every participant that declares an
+    import responded to it and that its answer actually DEPENDS on it.
+
+    `expect_one_way` is for the direction controls, which are run by removing an
+    edge from the coupling graph. `couple` reports exactly one finding for that,
+    and the control asserts it is exactly that one and nothing else — which
+    checks the tool's own one-way detector at the same time. It is a FINDING and
+    not a coverage note because a one-way graph iterated to "convergence" has
+    converged to nothing; the escape the tool names (max_iter=1) is not usable
+    here, because the surviving thermal -> mechanical edge still needs a second
+    pass to carry the temperature across.
+    """
     res = run["result"]
     if not L.check(bool(res.get("converged")), f"{tag}_did_not_converge",
                    str(res.get("error"))[:300]):
         return False
-    ok = L.check(not res.get("validation"), f"{tag}_validation_not_empty",
-                 "; ".join(res.get("validation") or [])[:400])
-    print(f"{tag}_validation_empty={bool(ok)}")
+    val = list(res.get("validation") or [])
+    if expect_one_way:
+        ok = L.check(len(val) == 1 and val[0].startswith("ONE-WAY coupling:"),
+                     f"{tag}_one_way_not_reported_as_expected",
+                     f"expected exactly the ONE-WAY finding, got {val}")
+        print(f"{tag}_tool_reported_one_way={bool(ok)}")
+    else:
+        ok = L.check(not val, f"{tag}_validation_not_empty",
+                     "; ".join(val)[:400])
+        print(f"{tag}_validation_empty={bool(ok)}")
     resp = res.get("responsiveness") or {}
     sens = res.get("interface_sensitivity") or {}
-    want = ["mech"] if expect_one_way else ["thermal", "mech"]
-    for n in want:
+    for n in (["mech"] if expect_one_way else ["thermal", "mech"]):
         ok &= L.check(resp.get(n) == "responsive", f"{tag}_{n}_unresponsive",
                       f"responsiveness={resp.get(n)!r}")
-        s = (sens.get(n) or {}).get("S")
-        print(f"{tag}_{n}_sensitivity_S={s}")
-        ok &= L.check(s is not None and s > 1e-6, f"{tag}_{n}_insensitive",
-                      f"finite-difference interface sensitivity S={s!r}: this "
+        sv = (sens.get(n) or {}).get("S")
+        print(f"{tag}_{n}_sensitivity_S={sv}")
+        ok &= L.check(sv is not None and sv > 1e-6, f"{tag}_{n}_insensitive",
+                      f"finite-difference interface sensitivity S={sv!r}: this "
                       f"participant's answer does not depend on what it is handed")
     return bool(ok)
 
@@ -279,28 +309,99 @@ def assert_run_clean(tag: str, run: dict, expect_one_way: bool = False) -> bool:
 # ── the check the whole thing exists for ──────────────────────────────────
 
 def reverse_direction_is_active(tag: str, two_way: dict, one_way: dict,
-                                agreement: float, margin: float = 50.0) -> bool:
-    """Does switching the mechanical -> thermal direction off change the answer,
-    and by ENOUGH to be a signal rather than the agreement tolerance?
+                                residual: float, ratio_tol: float = 0.05
+                                ) -> bool:
+    """Is the mechanical -> thermal direction DOING SOMETHING, and the RIGHT
+    something? This is the check the whole capability rests on.
 
-    `agreement` is how far the two-way coupled run sat from its monolithic
-    reference. The effect has to be much larger than that, or "the answer moved"
-    is indistinguishable from noise in the comparison. `margin` is how much
-    larger; it is reported either way.
+    Two questions, and only the second is hard:
+
+      1. Does switching it off move the answer at all, by more than the
+         iteration's own numerical noise? The two runs use the SAME meshes and
+         the same participants, so discretisation error is common mode and
+         cancels: the only floor is the coupling residual. A coupling whose
+         reverse direction is decorative gives zero here, and must be reported
+         as one-way rather than called two-way.
+
+      2. Does it move the answer BY THE RIGHT AMOUNT? A participant that
+         exchanged the wrong quantity, the wrong sign or the wrong units would
+         also move when switched off — and would land somewhere else. So the
+         coupled difference field is compared against the SAME difference taken
+         between the two-way and one-way MONOLITHIC solves, which were computed
+         independently and never partitioned. This is a difference of
+         differences, so it is insensitive to the discretisation error that
+         limits the plain agreement check, and it is the strongest statement
+         available here: the reverse direction is not merely alive, it carries
+         the right physics.
     """
     a, b = two_way["theta_field"], one_way["theta_field"]
     if a.shape != b.shape:
-        return L.check(False, f"{tag}_shape_mismatch",
-                       f"{a.shape} vs {b.shape}")
+        return L.check(False, f"{tag}_shape_mismatch", f"{a.shape} vs {b.shape}")
+    p = two_way["problem"]
     scale = float(np.max(np.abs(a))) or 1.0
-    eff = float(np.max(np.abs(a - b))) / scale
+    d_coupled = a - b
+    eff = float(np.max(np.abs(d_coupled))) / scale
+    floor = max(abs(float(residual)), 1e-15)
+    print(f"{tag}_delta={p.delta:.6f}")
     print(f"{tag}_reverse_direction_effect_rel={eff:.3e}")
-    print(f"{tag}_agreement_with_monolithic_rel={agreement:.3e}")
-    print(f"{tag}_reverse_over_agreement={eff / max(agreement, 1e-30):.1f}")
-    ok = L.check(eff > margin * agreement, f"{tag}_reverse_direction_is_inert",
+    print(f"{tag}_reverse_over_iteration_noise={eff / floor:.3e}")
+    ok = L.check(eff > 1e3 * floor, f"{tag}_reverse_direction_is_inert",
                  f"suppressing mechanical->thermal moved the temperature field "
-                 f"by only {eff:.3e} relative, against an agreement tolerance of "
-                 f"{agreement:.3e}. This coupling is EFFECTIVELY ONE-WAY and must "
-                 f"be reported as such.")
+                 f"by only {eff:.3e} relative, against an iteration residual of "
+                 f"{floor:.3e}. This coupling is EFFECTIVELY ONE-WAY and must be "
+                 f"reported as such, not called two-way.")
+
+    ref2 = monolithic(p, 1.0)
+    ref1 = monolithic(p, 0.0)
+    co = two_way["theta_coords"]
+    d_ref = (_interp(ref2["coordinates"], ref2["theta"], co)
+             - _interp(ref1["coordinates"], ref1["theta"], co))
+    den = float(np.linalg.norm(d_ref)) or 1e-30
+    mism = float(np.linalg.norm(d_coupled - d_ref)) / den
+    print(f"{tag}_reverse_effect_vs_monolithic_relL2={mism:.3e}")
+    ok &= L.check(mism <= ratio_tol, f"{tag}_reverse_direction_wrong_size",
+                  f"the coupled two-way-minus-one-way difference is {mism:.3e} "
+                  f"away from the same difference taken between the two "
+                  f"monolithic solves — the reverse direction moves the answer, "
+                  f"but not by the amount the physics says")
     print(f"{tag}_both_directions_active={bool(ok)}")
     return bool(ok)
+
+
+def full_pair_check(tag: str, backend_thermal: str, backend_mech: str,
+                    p: TsiProblem | None = None, rtol: float = 5e-3,
+                    **kw) -> dict:
+    """The whole battery for ONE (thermal code, structural code) arrangement.
+
+    Everything a two-way TSI claim needs, in the order a reader should want it:
+    it converged; it agrees with an un-split solve of the same problem; both
+    participants' answers demonstrably depend on what they are handed; switching
+    the reverse direction off moves the answer, by the amount the physics says
+    and not merely by something.
+
+    Returns the two-way run so a caller can compare arrangements against each
+    other.
+    """
+    p = p or STRONG
+    print(f"--- {tag}: thermal={backend_thermal} mech={backend_mech} "
+          f"delta={p.delta:.6f} theta={theta_opt(p):.6f} "
+          f"amplification(theta=1)={amplification(p, 1.0):.4f}")
+    two = run_tsi(f"{tag}_2way", backend_thermal, backend_mech, p=p, **kw)
+    if not assert_run_clean(f"{tag}_2way", two):
+        return two
+    n_t = len(two["theta_coords"])
+    n_m = len(two["evol_coords"])
+    print(f"{tag}_exchange_points={n_t}/{n_m}")
+    L.check(n_t != n_m, f"{tag}_matching_meshes",
+            f"both sides exchanged on {n_t} points, so the claim about "
+            f"NON-matching meshes was not exercised")
+    print(f"{tag}_meshes_nonmatching={bool(n_t != n_m)}")
+    compare_to_monolithic(f"{tag}_2way", two, coupling=1.0, rtol=rtol)
+
+    one = run_tsi(f"{tag}_1way", backend_thermal, backend_mech, p=p,
+                  thermal_reads=False, **kw)
+    assert_run_clean(f"{tag}_1way", one, expect_one_way=True)
+    compare_to_monolithic(f"{tag}_1way", one, coupling=0.0, rtol=rtol)
+    reverse_direction_is_active(tag, two, one,
+                                residual=float(two["result"]["residual"]))
+    return two

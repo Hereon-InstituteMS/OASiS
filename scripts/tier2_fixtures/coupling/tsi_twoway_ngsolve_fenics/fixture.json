@@ -1,0 +1,50 @@
+{
+  "_comment": "COUPLING tier-2. A SECOND cross-code pair for two-way TSI, so the capability belongs to the coupling path rather than to one pairing that happened to work: NGSolve thermal with FEniCSx structural, and scikit-fem thermal with NGSolve structural. NGSolve is the hard participant on purpose — netgen gives it an UNSTRUCTURED mesh while dolfinx and scikit-fem both use a tensor-product triangulation here, so every exchange in these arrangements maps between a regular grid and an irregular cloud, in both directions, and no node can coincide with a partner node by accident. It is also a different structural discretisation: VectorH1 order 2 with per-component Dirichlet boundaries (dirichletx= / dirichlety=), where a plain dirichlet= would clamp both components and silently turn transverse rollers into a built-in edge. Same battery as the other pair fixtures: convergence, monolithic agreement, interface sensitivity per participant, and the reverse-direction control checked both for size and against the monolithic two-way-minus-one-way difference.",
+  "_mutation": [
+    {
+      "note": "Kill the reverse direction. Both arrangements converge faster and every iteration-level check passes; the monolithic comparison and `reverse_direction_is_active` are what fail.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(0.0 * float(coupling)),"
+    },
+    {
+      "note": "Export the volumetric strain from THIS participant's nodes but hand the partner the coordinates shifted by a quarter of the body. The interpolation then samples the strain field in the wrong place — a mesh-to-mesh mapping error, which is the failure mode a volume coupling on non-matching meshes has and an interface coupling does not. It converges: a wrong but consistent map still has a fixed point.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"X0, X1\": f\"0.0, {p.lx!r}\", \"Y0, Y1\": f\"0.0, {p.ly!r}\",\n            \"NX, NY\": f\"{mesh[0]}, {mesh[1]}\",\n            \"E_MOD\": repr(p.e_mod)",
+      "to": "\"X0, X1\": f\"0.0, {p.lx * 0.75!r}\", \"Y0, Y1\": f\"0.0, {p.ly!r}\",\n            \"NX, NY\": f\"{mesh[0]}, {mesh[1]}\",\n            \"E_MOD\": repr(p.e_mod)"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "tsi_twoway_ngsolve_fenics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 7200,
+  "expect_in_output": [
+    "ngsolve_T_fenics_M_2way_converged=True",
+    "ngsolve_T_fenics_M_2way_validation_empty=True",
+    "ngsolve_T_fenics_M_meshes_nonmatching=True",
+    "ngsolve_T_fenics_M_2way_matches_monolithic=True",
+    "ngsolve_T_fenics_M_1way_tool_reported_one_way=True",
+    "ngsolve_T_fenics_M_both_directions_active=True",
+    "skfem_T_ngsolve_M_2way_converged=True",
+    "skfem_T_ngsolve_M_2way_validation_empty=True",
+    "skfem_T_ngsolve_M_meshes_nonmatching=True",
+    "skfem_T_ngsolve_M_2way_matches_monolithic=True",
+    "skfem_T_ngsolve_M_1way_tool_reported_one_way=True",
+    "skfem_T_ngsolve_M_both_directions_active=True",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "_converged=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "_both_directions_active=False",
+    "_meshes_nonmatching=False",
+    "_tool_reported_one_way=False",
+    "failures_count=1"
+  ]
+}

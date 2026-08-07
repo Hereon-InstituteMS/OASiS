@@ -1,4 +1,4 @@
-"""FEniCSx (dolfinx) STRUCTURAL half of a TWO-WAY thermo-structural coupling.
+"""NGSolve STRUCTURAL half of a TWO-WAY thermo-structural (TSI) coupling.
 
 CONTRACT (do not change): runs in its work_dir with no arguments, reads
 imports.json (written every iteration; it is `{}` on iteration 1), writes
@@ -21,13 +21,18 @@ WHY THE VOLUMETRIC STRAIN AND NOT THE DISPLACEMENT. The energy equation couples
 to d/dt tr(eps), not to u. Exporting u would make the thermal side
 differentiate a field it had interpolated off a foreign mesh — a derivative of
 an interpolant, one order of accuracy down. Exporting the strain takes that
-derivative in the space where u actually lives.
+derivative in the space where u lives.
 
-DISPLACEMENT ORDER. u is quadratic (P2) and T linear (P1), so tr(eps(u)) is
-piecewise linear: the same space the temperature lives in. With P1 displacement
-the strain is piecewise CONSTANT, one order below the temperature, and the
-coupled answer settles on a slightly different fixed point than the monolithic
-one for that reason alone.
+DISPLACEMENT ORDER. u is quadratic (VectorH1 order 2) and T linear, so
+tr(eps(u)) is piecewise linear: the space the temperature lives in. With linear
+displacement the strain is piecewise CONSTANT, one order below the temperature,
+and the coupled answer settles on a slightly different fixed point than the
+monolithic one for that reason alone.
+
+BOUNDARY CONDITIONS PER COMPONENT. `dirichletx=` / `dirichlety=` constrain ONE
+component of VectorH1 on a named boundary; a plain `dirichlet=` would clamp
+BOTH and turn transverse rollers into a fully built-in edge, which changes the
+problem without changing anything visible in the iteration.
 
 UNITS: SI throughout (m, K, Pa). PLANE STRAIN, so lambda and mu are the 3-D
 Lame constants and eps_zz = 0.
@@ -36,10 +41,10 @@ import json
 from pathlib import Path
 
 import numpy as np
-import ufl
-from dolfinx import default_scalar_type, fem, mesh as dmesh
-from dolfinx.fem.petsc import LinearProblem
-from mpi4py import MPI
+from netgen.geom2d import SplineGeometry
+from ngsolve import (VERTEX, BilinearForm, CoefficientFunction, GridFunction,
+                     H1, InnerProduct, LinearForm, Mesh, NodeId, Sym,
+                     TaskManager, VectorH1, div, dx, grad)
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 
 # ── EDIT THIS BLOCK ─ every number below is an ARBITRARY PLACEHOLDER.
@@ -47,7 +52,7 @@ from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 PARTNER    = "thermal"    # the thermal participant's `name` in couple(...)
 X0, X1     = 0.0, 2.0     # the body (BOTH participants use the same body)
 Y0, Y1     = 0.0, 0.5
-NX, NY     = 32, 8        # this participant's OWN mesh; need not match the partner
+NX, NY     = 32, 8        # sets netgen's maxh; the mesh is UNSTRUCTURED
 E_MOD      = 2.1e11       # Young's modulus, Pa
 NU         = 0.3          # Poisson ratio
 BETA       = 6.3e7        # thermal stress modulus (3*lam+2*mu)*alpha, Pa/K
@@ -56,7 +61,7 @@ THETA_INIT = 10.0         # iteration-1 fallback for the imported theta = T-T_re
 
 LAM = E_MOD * NU / ((1.0 + NU) * (1.0 - 2.0 * NU))
 MU = E_MOD / (2.0 * (1.0 + NU))
-GEOM_TOL = 1e-9 * max(X1 - X0, Y1 - Y0)
+MAXH = min((X1 - X0) / NX, (Y1 - Y0) / NY)
 
 
 def read_imports():
@@ -87,55 +92,54 @@ def sample(imp, key, fallback, pts):
 
 imp = read_imports()
 
-domain = dmesh.create_rectangle(MPI.COMM_WORLD, [[X0, Y0], [X1, Y1]],
-                                [NX, NY], dmesh.CellType.triangle)
-Vu = fem.functionspace(domain, ("Lagrange", 2, (domain.geometry.dim,)))
-Vt = fem.functionspace(domain, ("Lagrange", 1))
-pts = Vt.tabulate_dof_coordinates()[:, :2]      # where fields are exchanged
+geo = SplineGeometry()
+geo.AddRectangle((X0, Y0), (X1, Y1), bcs=("bottom", "right", "top", "left"))
+mesh = Mesh(geo.GenerateMesh(maxh=MAXH))
 
-theta = fem.Function(Vt)
-theta.x.array[:] = sample(imp, "values", THETA_INIT, pts)
+fesq = H1(mesh, order=1)                   # where fields are exchanged
+vdof = np.array([fesq.GetDofNrs(NodeId(VERTEX, i))[0] for i in range(mesh.nv)], int)
+pts = np.array([mesh.vertices[i].point for i in range(mesh.nv)], float)[:, :2]
 
-u, v = ufl.TrialFunction(Vu), ufl.TestFunction(Vu)
-eu, ev = ufl.sym(ufl.grad(u)), ufl.sym(ufl.grad(v))
-a = (2.0 * MU * ufl.inner(eu, ev) + LAM * ufl.tr(eu) * ufl.tr(ev)) * ufl.dx
-L = fem.Constant(domain, default_scalar_type(BETA)) * theta * ufl.div(v) * ufl.dx
+theta_nodal = sample(imp, "values", THETA_INIT, pts)
+gth = GridFunction(fesq)
+gth.vec[:] = 0.0
+for i, d in enumerate(vdof):
+    gth.vec[int(d)] = float(theta_nodal[i])
 
-fdim = domain.topology.dim - 1
-domain.topology.create_connectivity(fdim, domain.topology.dim)
+# u_x = 0 on x = X0 ("left"); u_y = 0 on y = Y0/Y1 ("bottom"/"top")
+fes = VectorH1(mesh, order=2, dirichletx="left", dirichlety="bottom|top")
+u, v = fes.TnT()
+a = BilinearForm(fes)
+a += (2.0 * MU * InnerProduct(Sym(grad(u)), Sym(grad(v)))
+      + LAM * div(u) * div(v)) * dx
+f = LinearForm(fes)
+f += BETA * gth * div(v) * dx
 
+gfu = GridFunction(fes)
+gfu.vec[:] = 0.0
 
-def _bc(sub: int, where):
-    Vs = Vu.sub(sub)
-    Q, _ = Vs.collapse()
-    facets = dmesh.locate_entities_boundary(domain, fdim, where)
-    dofs = fem.locate_dofs_topological((Vs, Q), fdim, facets)
-    z = fem.Function(Q)
-    z.x.array[:] = 0.0
-    return fem.dirichletbc(z, dofs, Vs)
+m = BilinearForm(fesq)
+p_, w_ = fesq.TnT()
+m += p_ * w_ * dx
 
+with TaskManager():
+    a.Assemble()
+    f.Assemble()
+    r = f.vec.CreateVector()
+    r.data = f.vec - a.mat * gfu.vec
+    gfu.vec.data += a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky") * r
+    # volumetric strain, L2-projected onto the order-1 space
+    m.Assemble()
+    fq = LinearForm(fesq)
+    fq += div(gfu) * w_ * dx
+    fq.Assemble()
+    gev = GridFunction(fesq)
+    gev.vec.data = m.mat.Inverse(fesq.FreeDofs(),
+                                 inverse="sparsecholesky") * fq.vec
 
-# u_x = 0 on x = X0; u_y = 0 on y = Y0 and y = Y1 (transverse rollers)
-bcs = [_bc(0, lambda x: np.isclose(x[0], X0, atol=GEOM_TOL)),
-       _bc(1, lambda x: np.isclose(x[1], Y0, atol=GEOM_TOL)),
-       _bc(1, lambda x: np.isclose(x[1], Y1, atol=GEOM_TOL))]
-
-uh = LinearProblem(a, L, bcs=bcs, petsc_options_prefix="tsi_me",
-                   petsc_options={"ksp_type": "preonly",
-                                  "pc_type": "lu"}).solve()
-
-# volumetric strain, L2-projected onto P1 so it lands on the exchange nodes
-p_, q_ = ufl.TrialFunction(Vt), ufl.TestFunction(Vt)
-eh = LinearProblem(p_ * q_ * ufl.dx, ufl.div(uh) * q_ * ufl.dx,
-                   petsc_options_prefix="tsi_ev",
-                   petsc_options={"ksp_type": "preonly",
-                                  "pc_type": "lu"}).solve()
-evol = eh.x.array.real
-ux = uh.x.array.real[0::domain.geometry.dim]
-
-print(f"[fenics mech] n={len(evol)} "
-      f"theta_in=[{theta.x.array.min():.6f},{theta.x.array.max():.6f}] "
-      f"ux=[{ux.min():.6e},{ux.max():.6e}] "
+evol = np.array([gev.vec[int(d)] for d in vdof], float)
+print(f"[ngsolve mech] n={len(evol)} "
+      f"theta_in=[{theta_nodal.min():.6f},{theta_nodal.max():.6f}] "
       f"e=[{evol.min():.6e},{evol.max():.6e}]")
 
 Path("exports.json").write_text(json.dumps({

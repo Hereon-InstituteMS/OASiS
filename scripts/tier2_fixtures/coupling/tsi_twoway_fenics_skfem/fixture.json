@@ -1,0 +1,54 @@
+{
+  "_comment": "COUPLING tier-2. TWO-WAY TSI across TWO CODES — FEniCSx and scikit-fem — in BOTH arrangements, because the two halves are not a relabelling of each other: the thermal side owns the reverse direction's source term and the Dirichlet data, the structural side owns the thermal stress and the strain projection, and the two codes build those differently (dolfinx projects the strain out of a vector-P2 space through a PETSc solve, scikit-fem out of its own). Every exchange crosses non-matching meshes in both directions. Each arrangement is put through the whole battery: convergence, agreement with an un-split monolithic re-solve, per-participant interface sensitivity, and the reverse-direction control (suppressed through the coupling graph, then checked against the one-way monolithic reference AND against the monolithic two-way-minus-one-way difference). Finally the two arrangements are compared against EACH OTHER, which is the only check here that could catch a bias both share with the reference.",
+  "_mutation": [
+    {
+      "note": "Kill the reverse direction. Both arrangements still converge and still agree with each other — they are now both one-way — so the arrangement-agreement check stays green and only the monolithic comparison and `reverse_direction_is_active` fail. That is the point: agreeing with your twin is not evidence.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(0.0 * float(coupling)),"
+    },
+    {
+      "note": "Give the structural half a thermal stress modulus 25% away from the thermal half's. The coupled runs stay internally consistent and converge; only the monolithic comparison sees that both codes are now solving a different problem.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"E_MOD\": repr(p.e_mod), \"NU\": repr(p.nu), \"BETA\": repr(beta),",
+      "to": "\"E_MOD\": repr(p.e_mod), \"NU\": repr(p.nu), \"BETA\": repr(1.25 * beta),"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "tsi_twoway_fenics_skfem",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 7200,
+  "expect_in_output": [
+    "fenics_T_skfem_M_2way_converged=True",
+    "fenics_T_skfem_M_2way_validation_empty=True",
+    "fenics_T_skfem_M_meshes_nonmatching=True",
+    "fenics_T_skfem_M_2way_matches_monolithic=True",
+    "fenics_T_skfem_M_1way_tool_reported_one_way=True",
+    "fenics_T_skfem_M_1way_matches_monolithic=True",
+    "fenics_T_skfem_M_both_directions_active=True",
+    "skfem_T_fenics_M_2way_converged=True",
+    "skfem_T_fenics_M_2way_validation_empty=True",
+    "skfem_T_fenics_M_meshes_nonmatching=True",
+    "skfem_T_fenics_M_2way_matches_monolithic=True",
+    "skfem_T_fenics_M_1way_tool_reported_one_way=True",
+    "skfem_T_fenics_M_1way_matches_monolithic=True",
+    "skfem_T_fenics_M_both_directions_active=True",
+    "arrangements_agree=True",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "_converged=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "_both_directions_active=False",
+    "_meshes_nonmatching=False",
+    "_tool_reported_one_way=False",
+    "arrangements_agree=False",
+    "failures_count=1"
+  ]
+}

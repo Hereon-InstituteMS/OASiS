@@ -1,4 +1,4 @@
-"""FEniCSx (dolfinx) THERMAL half of a TWO-WAY thermo-structural (TSI) coupling.
+"""NGSolve THERMAL half of a TWO-WAY thermo-structural (TSI) coupling.
 
 CONTRACT (do not change): runs in its work_dir with no arguments, reads
 imports.json (written every iteration; it is `{}` on iteration 1), writes
@@ -14,28 +14,29 @@ fields, so there is no interface, no normal and no flux to balance):
 The last term is THE MECHANICAL -> THERMAL DIRECTION. `e = tr(eps(u))` is the
 volumetric strain imported from the structural participant and
 `beta = (3 lambda + 2 mu) * alpha` is the thermal stress modulus. Drop it and
-the coupling is one-way — a different and much weaker capability. `COUPLING` is
-that switch, so a COUPLING=0.0 run is the control that shows the reverse
-direction does something.
+the coupling is one-way. `COUPLING` is that switch, so a COUPLING=0.0 run is
+the control that shows the reverse direction does something.
 
   Exchanged quantity IN  : volumetric strain e = tr(eps(u)), dimensionless,
                            nodal values on the PARTNER's mesh (non-matching).
   Exchanged quantity OUT : temperature CHANGE theta = T - T_ref in K, nodal
                            values on THIS mesh.
 
-EXPORT THE TEMPERATURE CHANGE, NOT THE ABSOLUTE TEMPERATURE. The driver's
-convergence test is a RELATIVE norm, so an exchanged quantity carrying a large
-constant offset makes that norm small for free — the same coupling exchanging T
-in kelvin and in celsius reports residuals a factor of ~20 apart. The offset
-also makes the temperature block dominate the global norm, so the strain block,
-which is what is actually still moving, hides behind it and the run stops early.
-theta is in any case the only thing the constitutive law sees.
+NETGEN'S MESH IS UNSTRUCTURED, so this participant's exchange points are a
+genuinely irregular cloud and its partner's map onto them cannot be a lucky
+node-for-node hit. That is the point of using it in a pair.
 
-THE SIGN IS THE SILENT-WRONG. Compressing a body heats it and expanding it cools
-it, so the term enters with a PLUS on the left-hand side as written above.
+EXPORT THE TEMPERATURE CHANGE, NOT THE ABSOLUTE TEMPERATURE. The driver's
+convergence test is a RELATIVE norm, so a quantity carrying a large constant
+offset makes that norm small for free — the same coupling exchanging T in
+kelvin and in celsius reports residuals a factor of ~20 apart, and the offset
+makes the temperature block dominate the global norm so the strain block hides
+behind it.
+
+THE SIGN IS THE SILENT-WRONG. Compressing a body heats it and expanding it
+cools it, so the term enters with a PLUS on the left-hand side as written above.
 Flipping it converges just as prettily onto a temperature field wrong by twice
-the coupling effect, and no convergence, balance or finiteness check can see
-that — only a monolithic or native TSI comparison can.
+the coupling effect; only a monolithic or native TSI comparison sees that.
 
 UNITS: SI throughout (m, s, K, Pa, W/(m K), J/(m^3 K)). `RHO_C` is the
 VOLUMETRIC heat capacity rho*c, not the specific one.
@@ -44,10 +45,9 @@ import json
 from pathlib import Path
 
 import numpy as np
-import ufl
-from dolfinx import default_scalar_type, fem, mesh as dmesh
-from dolfinx.fem.petsc import LinearProblem
-from mpi4py import MPI
+from netgen.geom2d import SplineGeometry
+from ngsolve import (VERTEX, BilinearForm, CoefficientFunction, GridFunction,
+                     H1, LinearForm, Mesh, NodeId, TaskManager, dx, grad)
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 
 # ── EDIT THIS BLOCK ─ every number below is an ARBITRARY PLACEHOLDER.
@@ -55,7 +55,7 @@ from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 PARTNER   = "mech"        # the structural participant's `name` in couple(...)
 X0, X1    = 0.0, 2.0      # the body (BOTH participants use the same body)
 Y0, Y1    = 0.0, 0.5
-NX, NY    = 40, 10        # this participant's OWN mesh; need not match the partner
+NX, NY    = 40, 10        # sets netgen's maxh; the mesh is UNSTRUCTURED
 K_COND    = 52.0          # thermal conductivity k, W/(m K)
 RHO_C     = 3.297e6       # volumetric heat capacity rho*c, J/(m^3 K)
 DT        = 1.0e4         # the time step of the single implicit step, s
@@ -70,6 +70,7 @@ EVOL_OLD  = 2.2285714285714287e-3   # volumetric strain at the START of the step
 EVOL_INIT = 2.2285714285714287e-3   # iteration-1 fallback for the imported strain
 # ─────────────────────────────────────────────────────────────────────────
 
+MAXH = min((X1 - X0) / NX, (Y1 - Y0) / NY)
 GEOM_TOL = 1e-9 * max(X1 - X0, Y1 - Y0)
 
 
@@ -87,10 +88,9 @@ def sample(imp, key, fallback, pts):
     """Map the partner's nodal samples onto THIS participant's nodes.
 
     The driver does no interpolation. For a VOLUME coupling the partner's points
-    are a scattered 2-D cloud rather than a line, so `np.interp` is not enough:
-    linear interpolation over the partner's own triangulation, with a
-    nearest-neighbour fallback for the few points that land a rounding error
-    outside its convex hull.
+    are a scattered 2-D cloud rather than a line, so linear interpolation over
+    the partner's own triangulation, with a nearest-neighbour fallback for the
+    few points that land a rounding error outside its convex hull.
     """
     if not imp or not imp.get("coordinates"):
         return np.full(pts.shape[0], float(fallback))
@@ -107,39 +107,50 @@ def sample(imp, key, fallback, pts):
 
 imp = read_imports()
 
-domain = dmesh.create_rectangle(MPI.COMM_WORLD, [[X0, Y0], [X1, Y1]],
-                                [NX, NY], dmesh.CellType.triangle)
-V = fem.functionspace(domain, ("Lagrange", 1))
-pts = V.tabulate_dof_coordinates()[:, :2]
+geo = SplineGeometry()
+geo.AddRectangle((X0, Y0), (X1, Y1), bcs=("bottom", "right", "top", "left"))
+mesh = Mesh(geo.GenerateMesh(maxh=MAXH))
 
-evol = fem.Function(V)
-evol.x.array[:] = sample(imp, "values", EVOL_INIT, pts)
+fes = H1(mesh, order=1, dirichlet="left|right")
+u, v = fes.TnT()
 
-T, s = ufl.TrialFunction(V), ufl.TestFunction(V)
-c = fem.Constant(domain, default_scalar_type(RHO_C / DT))
-a = c * T * s * ufl.dx + fem.Constant(domain, default_scalar_type(K_COND)) * \
-    ufl.dot(ufl.grad(T), ufl.grad(s)) * ufl.dx
-L = c * fem.Constant(domain, default_scalar_type(T_OLD)) * s * ufl.dx \
-    - fem.Constant(domain, default_scalar_type(COUPLING * T_REF * BETA / DT)) * \
-    (evol - fem.Constant(domain, default_scalar_type(EVOL_OLD))) * s * ufl.dx
+# order 1 -> exactly one dof per vertex, so the exchange points are the vertices
+vdof = np.array([fes.GetDofNrs(NodeId(VERTEX, i))[0] for i in range(mesh.nv)], int)
+pts = np.array([mesh.vertices[i].point for i in range(mesh.nv)], float)[:, :2]
 
-g = fem.Function(V)
+evol_nodal = sample(imp, "values", EVOL_INIT, pts)
+gfe = GridFunction(fes)
+gfe.vec[:] = 0.0
+for i, d in enumerate(vdof):
+    gfe.vec[int(d)] = float(evol_nodal[i])
+
+a = BilinearForm(fes)
+a += (RHO_C / DT) * u * v * dx + K_COND * grad(u) * grad(v) * dx
+f = LinearForm(fes)
+f += CoefficientFunction(RHO_C / DT * T_OLD) * v * dx
+f += (-COUPLING * T_REF * BETA / DT) * (gfe - CoefficientFunction(EVOL_OLD)) * v * dx
+
+gfu = GridFunction(fes)                    # also carries the Dirichlet data
+gfu.vec[:] = 0.0
 hot = np.where(np.abs(pts[:, 0] - X0) < GEOM_TOL)[0]
 cold = np.where(np.abs(pts[:, 0] - X1) < GEOM_TOL)[0]
-g.x.array[hot] = T_HOT + T_HOT_DY * (pts[hot, 1] - Y0) / (Y1 - Y0)
-g.x.array[cold] = T_COLD
-bcs = [fem.dirichletbc(g, np.unique(np.concatenate([hot, cold])))]
+for i in hot:
+    gfu.vec[int(vdof[i])] = T_HOT + T_HOT_DY * (pts[i, 1] - Y0) / (Y1 - Y0)
+for i in cold:
+    gfu.vec[int(vdof[i])] = T_COLD
 
-uh = LinearProblem(a, L, bcs=bcs, petsc_options_prefix="tsi_th",
-                   petsc_options={"ksp_type": "preonly",
-                                  "pc_type": "lu"}).solve()
-sol = uh.x.array.real
+with TaskManager():
+    a.Assemble()
+    f.Assemble()
+    r = f.vec.CreateVector()
+    r.data = f.vec - a.mat * gfu.vec
+    gfu.vec.data += a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky") * r
 
-print(f"[fenics thermal] n={len(sol)} coupling={COUPLING} "
-      f"e_in=[{evol.x.array.min():.6e},{evol.x.array.max():.6e}] "
+sol = np.array([gfu.vec[int(d)] for d in vdof], float)
+print(f"[ngsolve thermal] n={len(sol)} coupling={COUPLING} "
+      f"e_in=[{evol_nodal.min():.6e},{evol_nodal.max():.6e}] "
       f"T=[{sol.min():.6f},{sol.max():.6f}]")
 
-# exports.json LAST: the driver takes its existence as proof of success.
 Path("exports.json").write_text(json.dumps({
     "field_name": "temperature_change",
     "n_points": int(len(sol)),

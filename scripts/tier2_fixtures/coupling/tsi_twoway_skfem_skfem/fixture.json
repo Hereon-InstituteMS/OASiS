@@ -1,0 +1,58 @@
+{
+  "_comment": "COUPLING tier-2. TWO-WAY thermo-structural interaction through the generic `couple` path, same code on both halves. One backward-Euler step of linear coupled thermoelasticity: the thermal participant solves the energy equation including the T_ref*beta*d/dt tr(eps) term and imports the volumetric strain; the structural participant solves quasi-static elasticity with the thermal stress and imports the temperature change. Both occupy the WHOLE body and exchange volume fields on non-matching meshes — this is a field coupling, not a domain decomposition, so `couple`'s interface-conservation checks report themselves as not-run and the verification is: convergence with a relaxation that is actually needed (at delta~1.25 the un-relaxed iteration diverges), agreement with an un-split monolithic re-solve, and the two direction controls. The reverse direction is switched off THROUGH THE COUPLING GRAPH (`imports_from=[]`) and separately through the participant's own COUPLING switch, and the fixture checks the two routes agree. It also checks the reference solver itself first, by an identity that needs no reference values: in uniaxial strain the two-way solve at rho_c must equal the one-way solve at rho_c*(1+delta).",
+  "_mutation": [
+    {
+      "note": "Kill the reverse direction outright. The coupling still converges — faster, in fact — and every check that only looks at the iteration is satisfied. What must fail: the two-way run now equals the ONE-WAY monolithic reference instead of the two-way one, and `reverse_direction_is_active` sees a suppression that changes nothing. This is the mutation that decides whether the fixture is testing a TWO-way coupling or a one-way one with extra steps.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(0.0 * float(coupling)),"
+    },
+    {
+      "note": "Flip the SIGN of the mechanical -> thermal term. Expanding a body would then heat it instead of cooling it. At the exaggerated coupling strength this also destabilises the iteration (the composite map's eigenvalues move from +-i*sqrt(delta) to +-sqrt(delta) real), so it fails as a non-convergence; at a real metal's delta it converges cleanly onto a temperature field wrong by twice the coupling effect, which is the silent-wrong shape and is caught only by the monolithic comparison.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(-float(coupling)),"
+    },
+    {
+      "note": "Give the STRUCTURAL half a thermal stress modulus 25% away from the thermal half's. The coupled run stays internally consistent — it converges, both participants respond, both directions are active, and nothing in the iteration is unusual — because both halves are simply solving a different problem than the one the reference solves. Only the monolithic comparison sees it. This is the same silent-wrong shape as the conductivity mutation in the heat pairs.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"E_MOD\": repr(p.e_mod), \"NU\": repr(p.nu), \"BETA\": repr(beta),",
+      "to": "\"E_MOD\": repr(p.e_mod), \"NU\": repr(p.nu), \"BETA\": repr(1.25 * beta),"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "tsi_twoway_skfem_skfem",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 5400,
+  "expect_in_output": [
+    "reference_steel_identity_holds=True",
+    "reference_strong_identity_holds=True",
+    "strong_2way_converged=True",
+    "strong_2way_validation_empty=True",
+    "strong_2way_matches_monolithic=True",
+    "strong_1way_tool_reported_one_way=True",
+    "strong_1way_matches_monolithic=True",
+    "strong_both_directions_active=True",
+    "steel_2way_converged=True",
+    "steel_2way_validation_empty=True",
+    "steel_2way_matches_monolithic=True",
+    "steel_1way_tool_reported_one_way=True",
+    "steel_1way_matches_monolithic=True",
+    "steel_both_directions_active=True",
+    "pairs_run=1",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "_converged=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "_both_directions_active=False",
+    "_identity_holds=False",
+    "_tool_reported_one_way=False",
+    "failures_count=1"
+  ]
+}

@@ -53,22 +53,21 @@ def body() -> None:
         print(f"reference_{name}_identity_holds="
               f"{bool(dev < 1e-4 and size > 1e3 * dev)}")
 
-    for tag, p, margin in (("strong", T.STRONG, 500.0), ("steel", T.STEEL, 50.0)):
+    for tag, p in (("strong", T.STRONG), ("steel", T.STEEL)):
         print(f"--- {tag}: delta={p.delta:.6f} theta_opt={T.theta_opt(p):.6f} "
               f"amplification(theta=1)={T.amplification(p, 1.0):.4f}")
         two = T.run_tsi(f"{tag}_2way", "skfem", "skfem", p=p)
         if not T.assert_run_clean(f"{tag}_2way", two):
             continue
-        errs = T.compare_to_monolithic(f"{tag}_2way", two, coupling=1.0)
+        T.compare_to_monolithic(f"{tag}_2way", two, coupling=1.0)
 
         # the reverse direction switched off THROUGH THE COUPLING GRAPH
         one = T.run_tsi(f"{tag}_1way", "skfem", "skfem", p=p,
                         thermal_reads=False)
         T.assert_run_clean(f"{tag}_1way", one, expect_one_way=True)
         T.compare_to_monolithic(f"{tag}_1way", one, coupling=0.0)
-        T.reverse_direction_is_active(tag, two, one,
-                                      agreement=max(errs.values()),
-                                      margin=margin)
+        T.reverse_direction_is_active(
+            tag, two, one, residual=float(two["result"]["residual"]))
 
         # ... and through the participant's own physics switch. Same answer, or
         # one of the two routes is not doing what it says.

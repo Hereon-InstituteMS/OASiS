@@ -68,14 +68,23 @@ class TsiProblem:
     discrete problem as well as the continuous one, which is why `evol_old` can
     be a constant rather than a field.
     """
-    lx: float = 0.02
-    ly: float = 0.005
+    # METRE SCALE, and that is not cosmetic: 4C's TSI matches the structure and
+    # thermo discretisations with a geometric octree whose default tolerance is
+    # ABSOLUTE 1e-3 (Coupling::Adapter::Coupling::match_nodes). On a
+    # millimetre-scale mesh distinct nodes fall inside it, collapse, and the run
+    # dies with "Did not get 1:1 correspondence ... masternodes.size()=324,
+    # coupling.size()=320" — an error about node counts that is really about
+    # absolute geometric scale. Keeping every element edge well above 1e-3 m
+    # avoids it. The problem is unchanged: scaling lengths by s and dt by s^2
+    # leaves theta(x/L), tr(eps) and delta identical.
+    lx: float = 2.0
+    ly: float = 0.5
     e_mod: float = 2.1e11
     nu: float = 0.3
     alpha: float = 1.2e-4      # thermal expansion coefficient, 1/K
     k_cond: float = 52.0
     rho_c: float = 3.297e6
-    dt: float = 1.0
+    dt: float = 1.0e4
     t_ref: float = 293.0
     t_old: float = 303.0
     t_hot: float = 323.0
@@ -203,10 +212,15 @@ def solve_monolithic(p: TsiProblem, nx: int = 80, ny: int = 20,
     u, T = sol[:nu_], sol[nu_:]
     evol = solve(asm(mass, tb), asm(evol_rhs, tb, uh=ub.interpolate(u)))
     ix = ub.split_indices()[0]
-    return {"coordinates": tb.doflocs.T.tolist(),
-            "theta": (T - p.t_ref).tolist(),
-            "evol": evol.tolist(),
-            "n": int(nt_),
+    # Report everything indexed BY MESH VERTEX, so temperature, strain and
+    # displacement line up entry for entry even though they live in different
+    # spaces (P1 and vector P2).
+    tv, uv = tb.nodal_dofs[0], ub.nodal_dofs[0]
+    return {"coordinates": m.p.T.tolist(),
+            "theta": (T[tv] - p.t_ref).tolist(),
+            "evol": evol[tv].tolist(),
+            "ux": u[uv].tolist(),
+            "n": int(m.p.shape[1]),
             "ux_max": float(np.max(np.abs(u[ix]))),
             "theta_mean": float(np.mean(T - p.t_ref)),
             "evol_mean": float(np.mean(evol)),

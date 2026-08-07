@@ -48,8 +48,8 @@ from skfem.helpers import ddot, sym_grad, trace
 # ── EDIT THIS BLOCK ─ every number below is an ARBITRARY PLACEHOLDER.
 #    Replace ALL of them with your problem's geometry, material and BCs.
 PARTNER   = "thermal"     # the thermal participant's `name` in couple(...)
-X0, X1    = 0.0, 0.02     # the body (BOTH participants use the same body)
-Y0, Y1    = 0.0, 0.005
+X0, X1    = 0.0, 2.0      # the body (BOTH participants use the same body)
+Y0, Y1    = 0.0, 0.5
 NX, NY    = 32, 8         # this participant's OWN mesh; need not match the partner
 E_MOD     = 2.1e11        # Young's modulus, Pa
 NU        = 0.3           # Poisson ratio

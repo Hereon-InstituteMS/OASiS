@@ -57,12 +57,12 @@ from skfem.helpers import dot, grad
 # ── EDIT THIS BLOCK ─ every number below is an ARBITRARY PLACEHOLDER.
 #    Replace ALL of them with your problem's geometry, material and BCs.
 PARTNER   = "mech"        # the structural participant's `name` in couple(...)
-X0, X1    = 0.0, 0.02     # the body (BOTH participants use the same body)
-Y0, Y1    = 0.0, 0.005
+X0, X1    = 0.0, 2.0      # the body (BOTH participants use the same body)
+Y0, Y1    = 0.0, 0.5
 NX, NY    = 40, 10        # this participant's OWN mesh; need not match the partner
 K_COND    = 52.0          # thermal conductivity k, W/(m K)
 RHO_C     = 3.297e6       # volumetric heat capacity rho*c, J/(m^3 K)
-DT        = 1.0           # the time step of the single implicit step, s
+DT        = 1.0e4         # the time step of the single implicit step, s
 T_REF     = 293.0         # stress-free / thermoelastic reference temperature, K
 T_OLD     = 303.0         # temperature at the START of the step (uniform), K
 T_HOT     = 323.0         # Dirichlet temperature on x = X0, K
