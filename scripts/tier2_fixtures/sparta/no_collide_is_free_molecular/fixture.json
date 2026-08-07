@@ -16,6 +16,8 @@
   ],
   "forbid_in_output": [
     "Traceback",
-    "FAIL:"
-  ]
+    "FAIL:",
+    "SKIP:"
+  ],
+  "_vacuity_fix": "The no-binary path prints 'SKIP: no SPARTA binary found' and exits 0, and SKIP: was not forbidden \u2014 so on a machine without SPARTA this fixture PASSED having verified nothing. 'SKIP:' added to forbid_in_output so an absent binary records a failure instead of a false pass. Same defect knowledge/kratos-sparta fixed in generators_execute_on_installed_build; the gate found eight more."
 }
