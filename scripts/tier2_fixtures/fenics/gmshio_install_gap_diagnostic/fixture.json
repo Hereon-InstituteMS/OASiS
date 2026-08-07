@@ -1,20 +1,26 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (stokes::90, the sentinel range the coverage metric excludes): reports whether dolfinx.io.gmshio and the gmsh module are importable in this environment. RE-KEYED 2026-08-06 off stokes::7, an index no pitfall occupies, and one with nothing to do with Stokes — not one fenics pitfall mentions gmsh at all. An install diagnostic is worth keeping; it is not evidence for a numerical claim. MUTATION CONTROL 2026-08-07: NONE, and deliberately so — this fixture does not discriminate. All three asserted strings are labels the script prints unconditionally, so gmshio_present=True and gmshio_present=False pass alike; three staged copies differing only in which module the two probes import were run through scripts/run_tier2_fixtures.py and ALL THREE PASSED. The full measurement is in the _mutation note below. That same run also showed this fixture's stated diagnosis is wrong on this host: gmsh 4.15.1 IS importable in the conda env `fenics`, and dolfinx.io.gmshio is missing only because dolfinx 0.10.0 renamed the submodule to dolfinx.io.gmsh (which imports fine). Reported, not tuned.",
+  "_comment": "Tier-2 (stokes::90, the sentinel range the coverage metric excludes): tells a RENAME apart from an INSTALL GAP for dolfinx's Gmsh reader. REWRITTEN 2026-08-07 after two separate defects, both measured. DEFECT 1, the diagnosis was wrong: the fixture's prose blamed a missing `gmsh` package, but gmsh 4.15.1 imports fine in the conda env `fenics`; `dolfinx.io.gmshio` is absent because dolfinx 0.10.0 RENAMED the submodule to `dolfinx.io.gmsh`, which imports and carries model_to_mesh / read_from_msh / create_mesh / MeshData. An agent given the old diagnosis would install a package it already has and still not find the module. DEFECT 2, it asserted no value: all three expected strings ('gmshio_present=', 'gmsh_present=', 'catalog_uses_gmshio=') were labels the script printed unconditionally, so gmshio_present=True and gmshio_present=False passed alike -- three staged copies differing only in which modules the probes imported were run through scripts/run_tier2_fixtures.py on 2026-08-07 and ALL THREE PASSED. It now asserts the VERDICT, and the two causes are discriminated by the one observation that separates them: whether `gmsh` itself imports. gmsh present + gmshio missing => a rename, use dolfinx.io.gmsh; gmsh missing => a real install gap. OBSERVED, copied from the run: gmshio_present=False; replacement_module=dolfinx.io.gmsh; replacement_present=True; gmsh_present=True; gmsh_pyver=4.15.1; entry_points_available=['model_to_mesh', 'read_from_msh', 'create_mesh', 'MeshData']; VERDICT=gmshio_was_renamed_to_dolfinx_io_gmsh. Verified by execution 2026-08-07 against dolfinx 0.10.0 / gmsh 4.15.1.",
   "backend": "fenics",
   "physics": "stokes",
   "pitfall_index": 90,
   "mode": "python",
   "expect_in_output": [
-    "gmshio_present=",
-    "gmsh_present=",
-    "catalog_uses_gmshio="
+    "gmshio_present=False",
+    "replacement_present=True",
+    "gmsh_present=True",
+    "entry_points_available=['model_to_mesh', 'read_from_msh', 'create_mesh', 'MeshData']",
+    "VERDICT=gmshio_was_renamed_to_dolfinx_io_gmsh"
   ],
   "forbid_in_output": [
     "Traceback",
-    "FAIL:"
+    "FAIL:",
+    "VERDICT=gmsh_install_gap"
   ],
   "covers": [],
   "_mutation": {
-    "note": "NOT MUTABLE, recorded deliberately, and NON-DISCRIMINATING. All three asserted strings — 'gmshio_present=', 'gmsh_present=', 'catalog_uses_gmshio=' — are LABELS this script prints unconditionally; no value is asserted, so no environment answer can turn the fixture red. Measured, not assumed, on 2026-08-07: three staged copies were evaluated through scripts/run_tier2_fixtures.py, identical except for which module the two probes import — (A) as shipped, giving gmshio_present=False / gmsh_present=True; (B) both probes pointed at modules that ARE importable (dolfinx.io, numpy), giving gmshio_present=True / gmsh_present=True; (C) both pointed at modules that are NOT (dolfinx.io.definitely_not_here, nope_pkg), giving gmshio_present=False / gmsh_present=False. ALL THREE PASSED. A from/to recipe could still be written (rename a label and the grep misses it), but it would only prove the string is printed by this script, not that the fixture can detect the install gap it is named after, so none is declared. SEPARATE FINDING, same run: the fixture's stated diagnosis is wrong on this host. Its prose blames a missing gmsh package, but gmsh 4.15.1 IS importable in the conda env `fenics`; dolfinx.io.gmshio is absent because dolfinx 0.10.0 RENAMED the submodule to dolfinx.io.gmsh, which imports fine and carries create_mesh / MeshData. Left unedited on purpose — reporting a fixture that does not discriminate is worth more than tuning one."
+    "note": "MUTATION CONTROL, RUN AND PROVED TO KILL 2026-08-07 -- and this fixture had none before, deliberately, because in its old form nothing could make it red. T2_MUTATE=1 points the fallback probe at dolfinx.io.definitely_not_installed, which is what an env WITHOUT the replacement looks like. Measured side by side: shipped gives replacement_present=True, entry_points_available=['model_to_mesh', 'read_from_msh', 'create_mesh', 'MeshData'], VERDICT=gmshio_was_renamed_to_dolfinx_io_gmsh; mutated gives replacement_present=False, entry_points_available=[], VERDICT=gmsh_install_gap. Three of the five expected strings go missing and the forbidden VERDICT=gmsh_install_gap appears, so the fixture fails its own expectations twice over. The verdict, not a label, is what is asserted.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
   }
 }
