@@ -509,7 +509,7 @@ static int block_sweep_regimes()
   std::cout << "jacobi_over_block_coarsest=" << ratio_coarse
             << " jacobi_over_block_finest=" << ratio_fine << std::endl;
   const bool ratio_grows = ratio_fine > 3.0 * ratio_coarse;
-  std::cout << "speedup_ratio_grows_by_more_than_3x_across_refinements="
+  std::cout << "jacobi_over_block_iteration_ratio_grows_by_more_than_3x_across_refinements="
             << (ratio_grows ? "true" : "false") << std::endl;
   // The entry's clause (e): point SSOR is not reliably poor, because an SSOR
   // sweep also follows the DoF ordering.

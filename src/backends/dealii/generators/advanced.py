@@ -1943,7 +1943,7 @@ KNOWLEDGE = {
                         "on the matrix-free diagonal, with EITHER "
                         "LinearAlgebra::distributed::Vector<double> or a "
                         "plain dealii::Vector<double> — no MPI required."),
-        "performance": ("The honest claim is MEMORY, not a fixed speed "
+        "performance": ("[Performance] The honest claim is MEMORY, not a fixed speed "
                         "factor. Measured for a 3D FE_Q(4) Laplace operator: "
                         "SparseMatrix::memory_consumption() was tens of MB "
                         "against under 1 MB for MatrixFree::memory_"

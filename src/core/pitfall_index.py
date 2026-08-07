@@ -114,6 +114,10 @@ CANONICAL_CATEGORIES = {
     "firstrun": "Integration",
     "buildconfig": "Integration",
     "portability": "Integration",
+    # deal.II's [Build] arrived separately with knowledge/dealii-verify, as a
+    # SINGLE tag rather than a compound one. Whether Assert is compiled in is a
+    # build-time fact, so it sits on the same axis as [Integration][BuildConfig].
+    "build": "Integration",
 }
 
 # `_cross.py` carries the cross-backend collation pitfalls — the ones that only

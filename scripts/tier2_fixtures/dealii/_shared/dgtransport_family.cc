@@ -1555,7 +1555,7 @@ static int renumbering_and_gmres()
   const unsigned int other = block_steps[under_test == 2 ? 1 : 2];
   std::cout << "block_ssor_steps_under_test=" << test
             << " block_ssor_steps_other_ordering=" << other << std::endl;
-  std::cout << "ordering_under_test_is_the_slower_one=" << yesno(test > other)
+  std::cout << "ordering_under_test_needs_more_block_ssor_steps=" << yesno(test > other)
             << std::endl;
   std::cout << "VERDICT="
             << (none_same

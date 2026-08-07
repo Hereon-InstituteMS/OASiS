@@ -299,7 +299,7 @@ KNOWLEDGE = {
             "(7) triangulation.execute_coarsening_and_refinement()."
         ),
         "choose_p_over_h": (
-            "REQUIRED whenever both h- and p-flags can be set on the "
+            "[Numerical] REQUIRED whenever both h- and p-flags can be set on the "
             "same cell, which is exactly what steps (2) and (4) above "
             "produce. Without it a cell flagged for BOTH is refined in "
             "h AND raised in p at once, which is not what the "

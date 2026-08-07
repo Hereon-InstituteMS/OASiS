@@ -560,7 +560,7 @@ CRITICAL_KNOWLEDGE: dict = {
             "ones that produced a WRONG mesh without complaining."
         ),
         "general_cell_vertex_order": (
-            "GridGenerator::general_cell(tria, vertices, colorize) "
+            "[Mesh] GridGenerator::general_cell(tria, vertices, colorize) "
             "expects the vertices in deal.II's LEXICOGRAPHIC vertex "
             "order, not in cyclic (counter-clockwise) order. In 2D "
             "that is (x_lo,y_lo), (x_hi,y_lo), (x_lo,y_hi), "
@@ -584,7 +584,7 @@ CRITICAL_KNOWLEDGE: dict = {
             "trap above."
         ),
         "curved_domains_need_a_manifold_AND_a_mapping": (
-            "On a curved domain TWO things are needed and they do "
+            "[Mesh] On a curved domain TWO things are needed and they do "
             "different jobs. The MANIFOLD (SphericalManifold, "
             "CylindricalManifold, TransfiniteInterpolationManifold, an "
             "OpenCASCADE surface) tells refinement where to place NEW "
@@ -659,7 +659,7 @@ CRITICAL_KNOWLEDGE: dict = {
             "PreconditionBlockSOR versus PreconditionBlockSSOR."
         ),
         "PreconditionBlock_family_has_a_precondition": (
-            "PreconditionBlockSSOR / BlockSOR / BlockJacobi invert the "
+            "[Numerical] PreconditionBlockSSOR / BlockSOR / BlockJacobi invert the "
             "DIAGONAL BLOCKS of the given block_size. That is only "
             "meaningful when those blocks are real sub-problems — the "
             "intended case is a DISCONTINUOUS element with "
