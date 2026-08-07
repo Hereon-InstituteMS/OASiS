@@ -6,9 +6,10 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), diffusivity k = 3, linear reaction coeffici
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: subdomain A: -div(k grad u) = f ; subdomain B: -div(k grad u) + c*u = f
 COEFFICIENTS: subdomain A: k = 1 ; subdomain B: k = 3 and c = 12. The two subdomains solve DIFFERENT equations.
-SOURCE TERM: f(x, y) = in subdomain A: 6*x**3*y - 4*x**3 - 31*x**2*y/2 + 11*x**2 + 6*x*y**3 - 12*x*y**2 + 91*x*y/6 - 121*x/18 - 31*y**3/6 + 11*y**2 - 35*y/6
-               in subdomain B: -4*x**3*y**3/9 + 8*x**3*y**2/9 + 2*x**3*y/9 - 4*x**3/9 + 16*x**2*y**3/9 - 4*x**2*y**2 - 4*x**2*y/9 + 2*x**2 + 13*x*y**3/12 - 37*x*y**2/18 + 25*x*y/72 + 13*x/36 - 289*y**3/72 + 109*y**2/12 - 55*y/144 - 85/24
+SOURCE TERM: f(x, y) = in subdomain A: 9*x**3*y + x**3/3 - 17*x**2*y/4 + 13*x**2/36 + 9*x*y**3 + x*y**2 - 41*x*y/3 - 11*x/18 - 17*y**3/12 + 13*y**2/36 + 19*y/18
+               in subdomain B: -2*x**3*y**3/3 - 2*x**3*y**2/27 + 47*x**3*y/27 + x**3/27 - 14*x**2*y**3/9 - 14*x**2*y**2/27 + 119*x**2*y/27 + 7*x**2/27 + 193*x*y**3/72 + 83*x*y**2/216 - 2413*x*y/432 - 59*x/432 + 577*y**3/144 + 547*y**2/432 - 8741*y/864 - 145/288
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
+INTERFACE CORNERS: at the points where the interface meets the outer boundary, the outer boundary condition above applies on BOTH subdomains. Those points belong to the outer boundary, not to the interface, on either side.
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes
 MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
@@ -39,7 +40,7 @@ that subdomain's own solution and its own material, with the unit normal
 pointing OUT of that subdomain. The two subdomains therefore use opposite
 normals at the same physical point.
 
-INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43
+INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, 1/4 + (i+0.5)*1/2/44) for i = 0, 1, ..., 43. These cover the INTERIOR of the interface only: the two points where the interface meets the outer boundary are corners of the split problem and the recovered flux there does not converge, so they are not graded
 
 (3) COUPLING HISTORY. For every mesh level write
     residual_level<k>.csv

@@ -6,11 +6,13 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), lambda = 577, mu = 1155
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: -div(sigma(u)) = f, sigma(u) = 2*mu*sym(grad(u)) + lambda*div(u)*I   (plane strain)
 COEFFICIENTS: subdomain A: lambda = 577, mu = 385 (E = 962885/962, nu = 577/1924); subdomain B: lambda = 577, mu = 1155 (E = 4667355/1732, nu = 577/3464). The shear modulus jumps by a factor 3 across the interface; lambda is the same on both sides.
-SOURCE TERM: f(x, y) = f_x = -6930*x**2*y**3 + 13860*x**2*y**2 - 7623*x**2*y + 924*x**2 - 233190*x*y**3 + 466380*x*y**2 - 256509*x*y + 31092*x - 12123*y**5/5 + 8082*y**4 + 3649*y**3/5 - 80036*y**2/5 + 10582*y - 3848/3
-               f_y = -484920*x**2*y**2 + 646560*x**2*y - 177804*x**2 - 8658*x*y**4 + 23088*x*y**3 + 106812*x*y**2/5 - 246312*x*y/5 + 14817*x - 24543*y**4 + 65448*y**3 - 269973*y**2/5 + 65448*y/5   (subdomain A)
-               f_x = 683403930*x**2*y**3/20209 - 1366807860*x**2*y**2/20209 + 751744323*x**2*y/20209 - 91120524*x**2/20209 + 119875883240*x*y**3/424389 - 239751766480*x*y**2/424389 + 131863471564*x*y/424389 - 47950353296*x/1273167 + 2070921*y**5/245 - 1380614*y**4/49 - 2033574012737*y**3/8487780 + 2248808974109*y**2/4243890 - 1010521144831*y/3395112 + 91865558621/2546334
-               f_y = 83333255*x**2*y**2/98 - 166666510*x**2*y/147 + 183333161*x**2/588 + 3586835172*x*y**4/141463 - 9564893792*x*y**3/141463 - 15267497246453*x*y**2/11317040 + 15784001511221*x*y/8487780 - 2423090857*x/4704 + 19858175159*y**4/565852 - 39716350318*y**3/424389 + 876985832981*y**2/3233440 - 4709112219419*y/16975560 + 223092925/3136   (subdomain B)
+SOURCE TERM: f(x, y) = f_x = 1925*x**2*y**3 - 12705*x**2*y**2/4 + 5775*x**2*y/4 - 1155*x**2/8 + 16160*x*y**3 - 26664*x*y**2 + 12120*x*y - 1212*x + 1347*y**5/2 - 14817*y**4/8 - 70225*y**3/4 + 249927*y**2/8 - 14430*y + 1443
+               f_y = 40410*x**2*y**2 - 44451*x**2*y + 20205*x**2/2 + 2405*x*y**4 - 5291*x*y**3 - 154425*x*y**2/2 + 176361*x*y/2 - 20205*x + y**4 - 11*y**3/5 + 3*y**2/2 - 3*y/10   (subdomain A)
+               f_x = 114670215*x**2*y**3/20209 - 756823419*x**2*y**2/80836 + 344010645*x**2*y/80836 - 68802129*x**2/161672 + 4626054365*x*y**3/141463 - 30531958809*x*y**2/565852 + 13878163095*x*y/565852 - 2775632619*x/1131704 + 694971*y**5/490 - 7644681*y**4/1960 - 3789621133*y**3/161672 + 983747070681*y**2/22634080 - 91620331455*y/4526816 + 18324066291/9053632
+               f_y = 19963605*x**2*y**2/196 - 43919931*x**2*y/392 + 19963605*x**2/784 + 601844886*x*y**4/141463 - 6620293746*x*y**3/707315 - 80834126781*x*y**2/646688 + 6484224752889*x*y/45268160 - 206001885*x/6272 + 4276653309*y**4/1131704 - 47043186399*y**3/5658520 - 239355229167*y**2/9053632 + 442112296887*y/12933760 - 100684125/12544   (subdomain B)
+NOTE: the normal and shear interface stiffness ratios of this material pair differ by an order of magnitude (both follow from the Lame parameters and subdomain widths above). A single scalar relaxation factor chosen for one component can diverge in the other; a componentwise or worst-component choice is safer.
 OUTER BOUNDARY CONDITIONS: u = 0 (both components) on the entire outer boundary
+INTERFACE CORNERS: at the points where the interface meets the outer boundary, the outer boundary condition above applies on BOTH subdomains. Those points belong to the outer boundary, not to the interface, on either side.
 INTERFACE CONDITIONS: the displacement vector and the traction sigma.n (BOTH components) must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: vector Lagrange P1 elements in both codes
 MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
@@ -41,7 +43,7 @@ that subdomain's own solution and its own material, with the unit normal
 pointing OUT of that subdomain. The two subdomains therefore use opposite
 normals at the same physical point.
 
-INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43
+INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, 1/4 + (i+0.5)*1/2/44) for i = 0, 1, ..., 43. These cover the INTERIOR of the interface only: the two points where the interface meets the outer boundary are corners of the split problem and the recovered flux there does not converge, so they are not graded
 
 (3) COUPLING HISTORY. For every mesh level write
     residual_level<k>.csv

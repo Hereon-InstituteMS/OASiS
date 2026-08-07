@@ -27,7 +27,7 @@
   "iface_header": "x, y, z, u, qn",
   "qn_name": "qn",
   "qn_desc": "conductive flux qn = -(K grad u) . n_out",
-  "probe_iface": "the 441 points (x, y, z) = (5/8, (i+0.5)/21, (j+0.5)/21) for i, j = 0, 1, ..., 20, ordered with j varying fastest",
+  "probe_iface": "the 441 points (x, y, z) = (5/8, 1/4 + (i+0.5)*1/2/21, 1/4 + (j+0.5)*1/2/21) for i, j = 0, 1, ..., 20, ordered with j varying fastest. These cover the INTERIOR of the interface only: where the interface meets the outer boundary the recovered flux does not converge, so the edges are not graded",
   "mesh_N": [
     8,
     16,
@@ -68,6 +68,11 @@
     ]
   ],
   "probe_M": 21,
+  "iface_graded_band": [
+    0.25,
+    0.75
+  ],
+  "iface_clearance_reason": "the interface ends are Dirichlet-Neumann corners of the split problem; the recovered flux there does not converge under refinement, so grading them would fail a correct submission",
   "material_contrast": "1:6",
   "evidence_grade": 1,
   "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",

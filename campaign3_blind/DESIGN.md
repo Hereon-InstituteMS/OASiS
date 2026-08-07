@@ -646,15 +646,17 @@ sequence and probe grid the task prescribes, and both grading phases computed:
 | D2 | 1:6 | — | — | — | — | not solved here (3D) |
 | D3 | 1:4 | 1.840 | 1.862 | yes | 1.3e-14 | partitioned DN |
 | D4 | mu 1:3 | 1.827 | 1.909 | yes | — | monolithic reference |
-| D4 | mu 1:3 | 1.838 | 1.838 | yes | 5.2e-15 | partitioned DN (VECTOR) |
+| D4 | mu 1:3 | 1.771 | 1.821 | yes | 1.0e-14 | partitioned DN (VECTOR), 21-22 iters |
 | D5 | 1:5/2 and 1:2 | 1.889 | 1.941 | yes | — | monolithic, notched domain |
 | D6 | 1:1000 | 1.960 | 1.978 | yes | 6.0e-15 | partitioned DN |
 | D7 | 1:3 | 1.817 | 1.847 | yes | 1.7e-14 | partitioned DN |
 | D8 | 1:4 | — | — | — | — | not solved here (transient) |
 
+The D4 partitioned row uses the worst-component relaxation of Amendment 3 §2.
+
 Four of them were additionally re-solved **from their sealed keys**, so what was
 measured is the instance that will actually be graded and not a rebuild from the
-same family: D1 1.830/1.854, D3 1.839/1.869, D6 1.961/1.977, D7 1.854/1.875, all
+same family: D1 1.826/1.851, D3 1.848/1.874, D6 1.958/1.978, D7 1.816/1.847, all
 agreeing between phases with a flux jump at roundoff. That mode prints orders
 only and is how a shipped instance can be checked without anything being
 disclosed.

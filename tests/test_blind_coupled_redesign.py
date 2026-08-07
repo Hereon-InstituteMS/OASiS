@@ -474,8 +474,12 @@ def _synthetic_submission(tmp_path, spec, flux_factor_b=1.0):
                       newline="") as f:
                 wr = csv.writer(f)
                 wr.writerow(["x", "y", "u", "qn"])
+                # The graded band excludes the interface ENDS, where the split
+                # problem has a Dirichlet-Neumann corner; a submission that
+                # reported the ends would be refused, which is the point.
+                blo, bhi = spec.get("iface_graded_band", [0.0, 1.0])
                 for i in range(M):
-                    Y = (i + 0.5) / M
+                    Y = blo + (i + 0.5) * (bhi - blo) / M
                     u = math.sin(3 * xi) * Y * (1 - Y)
                     q = math.cos(3 * xi) * Y * (1 - Y)
                     wr.writerow([xi, Y, u,

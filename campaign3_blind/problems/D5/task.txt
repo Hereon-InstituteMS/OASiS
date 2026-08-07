@@ -7,11 +7,12 @@ INTERFACE: the bent polyline consisting of the segment x = 1/2, 0 < y < 1/2 and 
 EQUATION: -div(k grad u) = f, with k piecewise constant
 COEFFICIENTS: k = 1 on (0,1/2)x(0,1/2); k = 5/2 on (1/2,1)x(0,1/2); k = 5 on (1/2,1)x(1/2,1); k = 2 on (0,1/2)x(1/2,1). The contrast is 1:5/2 across the vertical leg of the interface and 1:2 across the horizontal leg.
 SOURCE TERM: f(x, y) =
-               on (0,1/2)x(0,1/2): 3*x**4*y/2 - 11*x**4/16 - 12*x**3*y**2 - 57*x**3*y/10 + 873*x**3/160 + 3*x**2*y**3 + 459*x**2*y**2/40 + 5529*x**2*y/800 - 311*x**2/50 - 6*x*y**4 - 57*x*y**3/10 + 9063*x*y**2/800 - 5193*x*y/640 + 1533*x/800 + 13*y**4/5 + 367*y**3/200 - 311*y**2/50 + 1623*y/640
-               on (0,1/2)x(1/2,1): 3*x**4*y/8 - 5*x**4/32 - 3*x**3*y**2/2 - 117*x**3*y/40 + 105*x**3/64 + 3*x**2*y**3/4 + 81*x**2*y**2/80 + 1293*x**2*y/400 - 529*x**2/320 - 3*x*y**4/4 - 117*x*y**3/40 + 6867*x*y**2/1600 - 2631*x*y/3200 - 2703*x/3200 + 13*y**4/40 + 887*y**3/800 - 619*y**2/320 - 27*y/400 + 909/1600
-               on (1/2,1)x(0,1/2): 12*x**4*y/125 - 11*x**4/250 - 48*x**3*y**2/25 - 78*x**3*y/125 + 741*x**3/1000 + 24*x**2*y**3/125 + 207*x**2*y**2/125 + 141*x**2*y/250 - 2689*x**2/4000 - 24*x*y**4/25 - 78*x*y**3/125 + 3303*x*y**2/1000 - 2241*x*y/4000 - 6669*x/16000 + 8*y**4/25 + 79*y**3/500 - 7009*y**2/4000 - 267*y/16000 + 6273/16000
-               on (1/2,1)x(1/2,1): 3*x**4*y/125 - x**4/100 - 6*x**3*y**2/25 - 99*x**3*y/250 + 93*x**3/400 + 6*x**2*y**3/125 + 9*x**2*y**2/50 + 141*x**2*y/400 - 1591*x**2/8000 - 3*x*y**4/25 - 99*x*y**3/250 + 333*x*y**2/400 + 123*x*y/500 - 10737*x/32000 + y**4/25 + 239*y**3/2000 - 563*y**2/1600 - 3447*y/16000 + 6039/32000
+               on (0,1/2)x(0,1/2): 6*x**4*y/5 - 11*x**4/20 + 18*x**3*y**2 - 2547*x**3*y/200 + 1257*x**3/800 + 12*x**2*y**3/5 - 267*x**2*y**2/10 + 32313*x**2*y/2000 - 10753*x**2/8000 + 9*x*y**4 - 2547*x*y**3/200 + 9819*x*y**2/800 - 19449*x*y/4000 + 2877*x/8000 - 39*y**4/10 + 10021*y**3/2000 - 10753*y**2/8000 - 33*y/200
+               on (0,1/2)x(1/2,1): 3*x**4*y/10 - x**4/8 + 9*x**3*y**2/4 - 747*x**3*y/800 - 39*x**3/160 + 3*x**2*y**3/5 - 147*x**2*y**2/40 + 6063*x**2*y/8000 + 1121*x**2/1600 + 9*x*y**4/8 - 747*x*y**3/800 + 171*x*y**2/800 + 2151*x*y/16000 + 21*x/3200 - 39*y**4/80 + 2221*y**3/8000 + 761*y**2/1600 - 4523*y/32000 - 3981/32000
+               on (1/2,1)x(0,1/2): 48*x**4*y/625 - 22*x**4/625 + 72*x**3*y**2/25 - 2259*x**3*y/1250 + 729*x**3/5000 + 96*x**2*y**3/625 - 1932*x**2*y**2/625 + 2199*x**2*y/1250 - 227*x**2/2500 + 36*x*y**4/25 - 2259*x*y**3/1250 - 5913*x*y**2/5000 + 21951*x*y/20000 - 6561*x/80000 - 12*y**4/25 + 703*y**3/1250 + 3823*y**2/2500 - 10191*y/10000 + 4977/80000
+               on (1/2,1)x(1/2,1): 12*x**4*y/625 - x**4/125 + 9*x**3*y**2/25 - 459*x**3*y/5000 - 63*x**3/1000 + 24*x**2*y**3/625 - 51*x**2*y**2/125 + 57*x**2*y/1000 + 899*x**2/10000 + 9*x*y**4/50 - 459*x*y**3/5000 - 783*x*y**2/2000 + 8199*x*y/80000 + 6831*x/80000 - 3*y**4/50 + 103*y**3/5000 + 139*y**2/500 - 4523*y/80000 - 4827/80000
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary, INCLUDING the two faces of the removed square (x = 3/4 for y > 3/4, and y = 3/4 for x > 3/4)
+INTERFACE CORNERS: at the points where the interface meets the outer boundary, the outer boundary condition above applies on BOTH subdomains. Those points belong to the outer boundary, not to the interface, on either side.
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes
 MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32 (every material line and the notch lie on mesh lines at every level)
@@ -42,7 +43,7 @@ that subdomain's own solution and its own material, with the unit normal
 pointing OUT of that subdomain. The two subdomains therefore use opposite
 normals at the same physical point.
 
-INTERFACE PROBE POINTS: 44 points on each leg: leg 1 is (x, y) = (1/2, (i+0.5)/(2*44)) and leg 2 is (x, y) = (1/2 + (i+0.5)/(2*44), 1/2), for i = 0, 1, ..., 43. Write leg 1 first, then leg 2, 88 rows in total
+INTERFACE PROBE POINTS: 44 points on each leg, covering the INTERIOR of that leg only. Leg 1 is (x, y) = (1/2, 1/8 + (i+0.5)*(1/4)/44) and leg 2 is (x, y) = (5/8 + (i+0.5)*(1/4)/44, 1/2), for i = 0, 1, ..., 43. Write leg 1 first, then leg 2, 88 rows in total. The ends of each leg are excluded: one end of each meets the outer boundary and the other meets the corner where the two legs join, and the recovered flux does not converge at either
 
 (3) COUPLING HISTORY. For every mesh level write
     residual_level<k>.csv

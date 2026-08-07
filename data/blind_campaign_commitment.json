@@ -1,13 +1,13 @@
 {
   "schema": "oasis-blind-campaign-commitment/1",
   "campaign": "campaign3_blind",
-  "generated_utc": "2026-08-07T16:07:37Z",
+  "generated_utc": "2026-08-07T16:55:43Z",
   "note": "Committed BEFORE any evaluation run. Proves that the grader which graded is the grader that was designed, and that the task texts were not edited after results were seen.",
   "entries": [
     {
       "path": "DESIGN.md",
-      "bytes": 40682,
-      "sha256": "b9cc7ff38f67ba6b7ccff858eea3e39239e3eea6143f906ee50384d97ee1005e",
+      "bytes": 46256,
+      "sha256": "882ceb24f610f8d63c06eee8641f871d5310958f67980fff2216e07df3938d22",
       "in_git": true
     },
     {
@@ -19,8 +19,8 @@
     },
     {
       "path": "build_coupled_v2.py",
-      "bytes": 50515,
-      "sha256": "66967cb9fb0b00b9ff930265cf632f8c420280ef2dfd4567dfa13e2e8ff817e9",
+      "bytes": 55211,
+      "sha256": "1163ab6ef0e806507e2aec9cb601262160351a058e9a3f78f594cfb6e30ac1ab",
       "in_git": true
     },
     {
@@ -111,98 +111,98 @@
     },
     {
       "path": "problems/D1/spec_public.json",
-      "bytes": 1884,
-      "sha256": "17d1989a604730279fb30e3d892400b52759e5ba5ed298bd5bd6d4f8c7047250",
+      "bytes": 2367,
+      "sha256": "a4ccb5c550a7bc40eeb150ad1d9518d89618aa369bd2ac0064d2df2571d070e6",
       "in_git": true
     },
     {
       "path": "problems/D1/task.txt",
-      "bytes": 4617,
-      "sha256": "ae3e9f3f29a6f58edc08eb739884954a98632f85078fb901baad1e3ca9500b91",
+      "bytes": 5081,
+      "sha256": "f027f9ce905d2982dd94bdcff1e35ff90d8688a3363a9a81e8ad018bcf674344",
       "in_git": true
     },
     {
       "path": "problems/D2/spec_public.json",
-      "bytes": 1940,
-      "sha256": "e0a7b48e7e8450ddf3379e487faf1669cd0f66cbf62a5f73f608d74d3978c290",
+      "bytes": 2380,
+      "sha256": "3ca6aef1c4346d5db28f52cba5a01575285ecb899d8414f4aac9adaa2533e8da",
       "in_git": true
     },
     {
       "path": "problems/D2/task.txt",
-      "bytes": 5435,
-      "sha256": "b6005d464343a93562d8ab345d3fc90350bcdd2f4b1a08661807999a4c8c6a3a",
+      "bytes": 5878,
+      "sha256": "a832dacc93124cd2003cc70fd9664495bdef16c0269c2d369c7ea6647af443b3",
       "in_git": true
     },
     {
       "path": "problems/D3/spec_public.json",
-      "bytes": 1778,
-      "sha256": "25fe57a56d2ae717fdf2ced82dd91878760b0c0bc82335c76e4fd3e195555150",
+      "bytes": 2261,
+      "sha256": "cccf388c34c5e1c39980a2229f02efd430a0d77340411e9e47c8e390b1308c09",
       "in_git": true
     },
     {
       "path": "problems/D3/task.txt",
-      "bytes": 4522,
-      "sha256": "020009fcf64abeff96bc119b23995a7c0247a5b80c25149590189eaeef3d2939",
+      "bytes": 4947,
+      "sha256": "af1fe23c65b3c7fd70dadb55f11f75c50a13215a191e522f740ef72904472992",
       "in_git": true
     },
     {
       "path": "problems/D4/spec_public.json",
-      "bytes": 2140,
-      "sha256": "c5e7e3f502c4e01633d5b859ffacf614b703c5731d929737379161dd86e2b4ef",
+      "bytes": 3076,
+      "sha256": "155af99e9226c2e0d3f77bb10f08d7db1ef2bdb4ca03607b1fadd3cfe7e207bc",
       "in_git": true
     },
     {
       "path": "problems/D4/task.txt",
-      "bytes": 5597,
-      "sha256": "ee3a56fe785fa115979c9a41d2afbc400ce87f99daffac980de7886f795af3f9",
+      "bytes": 6324,
+      "sha256": "90641da76ce682aa9fba10245bd24db562e9b971062b67714e96369def2bc5fb",
       "in_git": true
     },
     {
       "path": "problems/D5/spec_public.json",
-      "bytes": 2865,
-      "sha256": "7535b8fe78b3bbbaa9f90f72b5f956931f8e66b805f7389cdcc7b5cf77ccc32d",
+      "bytes": 3340,
+      "sha256": "04650f86c6bcb44994681d5de61ba4dbcf6e04b91c4da87fc61779911486a5b6",
       "in_git": true
     },
     {
       "path": "problems/D5/task.txt",
-      "bytes": 6305,
-      "sha256": "7f27b89d5c5236d4e0bc3d836ec94cdd96656a66f887704f946790a00c1ebf66",
+      "bytes": 6825,
+      "sha256": "401667b3c64383bfcd16a4dd908b439d487742e380dc33f9ea6a3b795b301ccb",
       "in_git": true
     },
     {
       "path": "problems/D6/spec_public.json",
-      "bytes": 1914,
-      "sha256": "a0a3851756d1d8067498e4d3b049f73fb0cf8a85add6caa6aee9e484d65e4819",
+      "bytes": 2397,
+      "sha256": "c863256c839d572c818b7634c9ce06f6fce4faf68aca8fcf136a75307d0d659c",
       "in_git": true
     },
     {
       "path": "problems/D6/task.txt",
-      "bytes": 4647,
-      "sha256": "f2edb2ca48d8a0a9e6f4e2b9ef2961cdc6b0383e5bca6eaed5d9c5cb63183ddd",
+      "bytes": 5197,
+      "sha256": "d37957fa9e2e6697f574d9eebbcc044aa522656af45e995ba4077877b7b29a07",
       "in_git": true
     },
     {
       "path": "problems/D7/spec_public.json",
-      "bytes": 1850,
-      "sha256": "4e43f0b20e25b15d4c1800ccd6a4f56b072fe28d0fa2c0c7eeeaee46917e312b",
+      "bytes": 2333,
+      "sha256": "a0b3fa205eaa64af6800764b2aa93d422208d9c65cd3a14d10f74cfb8fc4a183",
       "in_git": true
     },
     {
       "path": "problems/D7/task.txt",
-      "bytes": 4612,
-      "sha256": "b5865253a209c13284913c58222e4d3fa76656ae8e9d5b9cddc4f42bee695673",
+      "bytes": 5086,
+      "sha256": "516d751efc692fe5eda2103380c65c6ff7d48617b4366eb1d86577e899bd4be3",
       "in_git": true
     },
     {
       "path": "problems/D8/spec_public.json",
-      "bytes": 2131,
-      "sha256": "27dcd7a17f563bf0d12bc0ffec8ccd9583d2d8caa9b45a327f0a091d63d99976",
+      "bytes": 2614,
+      "sha256": "30d75a0cfa4c85ba89747e125814639b60898c77ee9673aa074507374a7672fb",
       "in_git": true
     },
     {
       "path": "problems/D8/task.txt",
-      "bytes": 5362,
-      "sha256": "74c25768bc707e70b30cf54506d74b13409fe6b6b664e4997db4754605e823cc",
+      "bytes": 5805,
+      "sha256": "aab121d44b9e1c96389817a1ea63e1e50a65453eb28bb4f2add534ad44fd8a57",
       "in_git": true
     },
     {
@@ -218,5 +218,5 @@
       "in_git": true
     }
   ],
-  "manifest_sha256": "2ec1df41368c6701fef9199c193c3b4041ce48b7aebc56cfeef2f77acf9e66c4"
+  "manifest_sha256": "be69a078fc8e4cfe1dc1d719bf2fcbf607a1077e461b2eb9b2738488d8c99750"
 }

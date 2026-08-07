@@ -6,9 +6,11 @@ SUBDOMAIN B: B = (5/8, 3/2) x (0,1), thermal conductivity k = 1000
 INTERFACE: the line x = 5/8, where the two materials meet
 EQUATION: -div(k grad u) = f in each subdomain
 COEFFICIENTS: thermal conductivity k = 1 in subdomain A; thermal conductivity k = 1000 in subdomain B
-SOURCE TERM: f(x, y) = in subdomain A: -6*x**3*y/5 - 23*x**3/5 + 135021*x**2*y/20000 + 155161*x**2/40000 - 6*x*y**3/5 - 69*x*y**2/5 + 44979*x*y/4000 - 5007*x/8000 + 45007*y**3/20000 + 155161*y**2/40000 - 9807*y/1600
-               in subdomain B: -3*x**3*y/2500000 - 23*x**3/5000000 + 45033*x**2*y/10000000 - 94747*x**2/20000000 - 3*x*y**3/2500000 - 69*x*y**2/5000000 + 104694393*x*y/32000000 - 74354667*x/64000000 + 15011*y**3/10000000 - 94747*y**2/20000000 - 62904567*y/12800000 + 44886069/25600000
+SOURCE TERM: f(x, y) = in subdomain A: 12*x**3*y/5 + 4*x**3/5 + 14979*x**2*y/10000 - 55007*x**2/10000 + 12*x*y**3/5 + 12*x*y**2/5 - 53421*x*y/8000 + 5007*x/1600 + 4993*y**3/10000 - 55007*y**2/10000 + 25007*y/5000
+               in subdomain B: 3*x**3*y/1250000 + x**3/1250000 + 29967*x**2*y/5000000 - 20011*x**2/5000000 + 3*x*y**3/1250000 + 3*x*y**2/1250000 + 223980051*x*y/80000000 - 44863971*x/16000000 + 9989*y**3/5000000 - 20011*y**2/5000000 - 673779521*y/160000000 + 26975997/6400000
+NOTE: The conductance ratio is large; a fixed relaxation factor that works at unit contrast will not converge here.
 OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary
+INTERFACE CORNERS: at the points where the interface meets the outer boundary, the outer boundary condition above applies on BOTH subdomains. Those points belong to the outer boundary, not to the interface, on either side.
 INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
 DISCRETISATION: Lagrange P1 elements in both codes
 MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32
@@ -39,7 +41,7 @@ that subdomain's own solution and its own material, with the unit normal
 pointing OUT of that subdomain. The two subdomains therefore use opposite
 normals at the same physical point.
 
-INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, (i+0.5)/44) for i = 0, 1, ..., 43
+INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, 1/4 + (i+0.5)*1/2/44) for i = 0, 1, ..., 43. These cover the INTERIOR of the interface only: the two points where the interface meets the outer boundary are corners of the split problem and the recovered flux there does not converge, so they are not graded
 
 (3) COUPLING HISTORY. For every mesh level write
     residual_level<k>.csv
