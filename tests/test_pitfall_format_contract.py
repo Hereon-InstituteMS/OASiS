@@ -62,6 +62,18 @@ def _entries() -> list[tuple[Path, str]]:
     Deduplicated by (file, value): a sub-dict attached by reference to several
     physics keys is one entry to maintain, and counting it repeatedly once
     inflated a DUNE audit's total from 111 to 127.
+
+    DOCSTRINGS ARE NOT ENTRIES. A pitfall entry is a data value — an item in a
+    `pitfalls` list, a value in a knowledge dict. A module/class/function
+    docstring is documentation, and several of them legitimately explain the
+    convention using the literal token `Signal:` while describing it. Collecting
+    those made the gate demand a [Category] tag on prose that must not carry
+    one, and the only way to satisfy it was to reword correct documentation.
+    Measured when this exclusion was added during the branch consolidation:
+    1299 strings under src/backends contain `Signal:`, exactly 4 are docstrings,
+    and none of the 4 is a pitfall — so this drops false positives and nothing
+    else. (Found three separate times: _setup.py, dune/generators/__init__.py,
+    and four SPARTA modules.)
     """
     seen: set[tuple[str, str]] = set()
     out: list[tuple[Path, str]] = []
@@ -70,10 +82,20 @@ def _entries() -> list[tuple[Path, str]]:
             tree = ast.parse(py.read_text(errors="ignore"))
         except SyntaxError:
             continue
+        docstrings = set()
+        for holder in ast.walk(tree):
+            if isinstance(holder, (ast.Module, ast.ClassDef, ast.FunctionDef,
+                                   ast.AsyncFunctionDef)):
+                body = getattr(holder, "body", None)
+                if (body and isinstance(body[0], ast.Expr)
+                        and isinstance(body[0].value, ast.Constant)
+                        and isinstance(body[0].value.value, str)):
+                    docstrings.add(id(body[0].value))
         for node in ast.walk(tree):
             if (isinstance(node, ast.Constant)
                     and isinstance(node.value, str)
-                    and "Signal:" in node.value):
+                    and "Signal:" in node.value
+                    and id(node) not in docstrings):
                 k = (str(py), node.value)
                 if k not in seen:
                     seen.add(k)
