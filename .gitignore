@@ -71,3 +71,10 @@ data/build_logs/
 /webui/TEST_PROMPTS.md
 /benchmarks/probe_results/templates.md
 benchmarks/coupling_pairs/*/build_dealii/
+
+# Run artefacts. Every test run of the suite writes a session journal, and a
+# SPARTA fixture leaves a log.sparta beside its working directory. Neither is
+# source. Both were being swept up by `git add -A` and committed by accident.
+# data/sessions/ keeps only its .gitkeep under version control.
+log.sparta
+/data/sessions/session_*.json

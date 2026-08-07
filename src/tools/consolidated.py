@@ -39,6 +39,16 @@ _ABLATE_PITFALLS = os.environ.get("OFA_DISABLE_PITFALLS", "0") == "1"
 _PITFALL_KEYS = ("pitfalls", "notes", "pitfall_db_entries",
                  "general_pitfalls", "common_pitfalls")
 
+# Names that all reach the install / setup / build-config surface
+# (backends/_setup.py). A caller who needs it is by definition one who
+# has NOT got the backend working, so several plausible words are
+# accepted rather than one canonical string.
+_SETUP_TOPIC_ALIASES = frozenset({
+    "install", "installation", "setup", "install_guide",
+    "dependencies", "deps", "build_config", "build", "portability",
+    "environment", "env",
+})
+
 # The MANDATORY pre-execution critic is unconditional.
 #
 # An OFA_DISABLE_CRITIC environment ablation used to lift it, stamping an
@@ -1356,6 +1366,22 @@ def register_consolidated_tools(mcp: FastMCP):
                   narrow the response. These pitfalls belong to no
                   single backend's catalog because they only fire on
                   the delta between two.
+                - "install" — how to INSTALL a backend, how OASiS
+                  finds it, which environment variables matter, the
+                  first-run failures with the exact message each one
+                  produces, and — importantly — which claims depend on
+                  how the backend was COMPILED. Read this when a
+                  backend reports not_installed, when a run fails
+                  before any physics happens, or before trusting any
+                  claim whose signal is an assertion message (deal.II
+                  compiles those out in Release), a vendor linear
+                  solver (FEBio without MKL), a complex scalar type
+                  (dolfinx real vs complex builds) or an accelerator
+                  style (SPARTA without KOKKOS). Optional solver=...
+                  narrows it to one backend; with no solver you get
+                  every backend plus the probe commands. Also
+                  reachable as "setup", "dependencies", "build_config"
+                  and "portability".
             solver: Backend name (e.g. 'fenics', 'fourc', 'dealii', 'ngsolve')
             physics: Physics type (e.g. 'poisson', 'linear_elasticity', 'navier_stokes')
             signal: The error text you actually observed. Paste it raw —
@@ -1538,6 +1564,19 @@ def register_consolidated_tools(mcp: FastMCP):
                         f"{area} [reference only — no generator; "
                         f"write the input yourself]"] = fresh
 
+                # Install / setup / build-configuration pitfalls. Merged
+                # in here as well as being reachable at topic='install',
+                # because an agent debugging a failed run asks for
+                # 'pitfalls' and would otherwise never see that the
+                # backend's binary was never validated, or that the
+                # claim it is reading only holds on a Debug build.
+                try:
+                    from backends._setup import get_setup_pitfalls
+                    sp = get_setup_pitfalls(solver)
+                    if sp:
+                        all_pitfalls["install_and_build_config"] = sp
+                except ImportError:
+                    pass
                 # NARROWING. The signature has always accepted `physics` and
                 # `signal`; this branch read neither. `signal` was wired only
                 # to topic='postmortems', and `physics` was accepted and
@@ -1766,6 +1805,22 @@ def register_consolidated_tools(mcp: FastMCP):
             result = get_cross_backend_pitfalls(physics or signal or None)
             return json.dumps(result, indent=2)
 
+        elif topic in _SETUP_TOPIC_ALIASES:
+            # Install / setup / build-configuration knowledge.
+            # Deliberately reachable under several names: a caller
+            # who needs this is by definition one who has not got the
+            # backend working yet, and making them guess the exact
+            # topic string is the wrong place to be strict. See
+            # src/backends/_setup.py.
+            #
+            # NOT gated on _ABLATE_PITFALLS. That flag exists to
+            # withhold solver-behaviour knowledge; withholding
+            # "your Kratos wheel cannot load against this glibc"
+            # would not weaken the agent's physics reasoning, it
+            # would just make the machine look broken.
+            from backends._setup import get_setup_knowledge
+            return json.dumps(get_setup_knowledge(solver or None), indent=2)
+
         else:
             # Topics list must match the docstring + dispatch
             # branches. Audit 2026-06-01: 'postmortems' was
@@ -1778,7 +1833,10 @@ def register_consolidated_tools(mcp: FastMCP):
                 "Usage: knowledge(topic, solver, physics, signal='')\n"
                 "Topics: physics, pitfalls, postmortems, materials, "
                 "overview, coupling, tsi, precice, input_guide, "
-                "solver_guidance, hardware, cross_backend"
+                "solver_guidance, hardware, cross_backend, install\n"
+                "If a backend is not running yet, or you need to know "
+                "whether a claim depends on how it was compiled, use "
+                "topic='install' (solver=... optional)."
             )
 
     # ═══════════════════════════════════════════════════════════
@@ -1808,6 +1866,7 @@ def register_consolidated_tools(mcp: FastMCP):
             # status and the install hint that
             # check_availability() returns. (Audit 2026-06-02.)
             lines = []
+            unavailable = []
             for b in all_backends():
                 status, msg = b.check_availability()
                 core = (f"- **{b.display_name()}** ({b.name()}): "
@@ -1818,8 +1877,24 @@ def register_consolidated_tools(mcp: FastMCP):
                     # LLM does not have to call a second tool and the list stays
                     # readable.
                     core += f"\n  *{_short_reason(msg)}*"
+                    unavailable.append(b.name())
                 lines.append(core)
-            return "\n".join(lines) if lines else "No backends registered."
+            if not lines:
+                return "No backends registered."
+            if unavailable:
+                # A one-line reason is rarely enough to fix an install, and
+                # the truncated ImportError it comes from can actively
+                # mislead — Kratos's own message blames LD_LIBRARY_PATH for
+                # a glibc mismatch no path can fix. Point at the surface
+                # that carries the real diagnosis, by name, so the agent
+                # does not have to guess a topic string.
+                lines.append(
+                    "\nNot every backend above is usable. For the ones marked "
+                    "otherwise, call knowledge(topic='install', solver='"
+                    + unavailable[0] + "') — it gives the install route that "
+                    "works, the exact first-run error messages, and which "
+                    "environment variables are checked versus trusted blindly.")
+            return "\n".join(lines)
 
         elif query == "physics":
             # Show physics for ALL registered backends (same
