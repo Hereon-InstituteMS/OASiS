@@ -612,44 +612,56 @@ class PASIGenerator(BaseGenerator):
     def validate_parameters(self, params: dict[str, Any]) -> list[str]:
         issues: list[str] = []
 
-        # Check particle density
-        dens = params.get("particle_DENS") or params.get("DENS")
+        # Check particle density.  The particle materials spell it
+        # INITDENSITY; DENS belongs to the STRUCTURAL material.
+        dens = params.get("INITDENSITY") or params.get("DENS")
         if dens is not None:
             try:
                 d = float(dens)
                 if d <= 0:
-                    issues.append(f"Particle DENS must be > 0, got {d}.")
+                    issues.append(f"INITDENSITY must be > 0, got {d}.")
             except (TypeError, ValueError):
                 issues.append(
-                    f"Particle DENS must be a positive number, "
+                    f"INITDENSITY must be a positive number, "
                     f"got {dens!r}."
                 )
 
-        # Check particle radius
-        radius = params.get("RADIUS")
+        # Check particle radius.  MAT_ParticleDEM / MAT_ParticleSPHFluid
+        # spell it INITRADIUS; there is no plain RADIUS particle key.
+        radius = params.get("INITRADIUS")
         if radius is not None:
             try:
                 r = float(radius)
                 if r <= 0:
                     issues.append(
-                        f"Particle RADIUS must be > 0, got {r}."
+                        f"INITRADIUS must be > 0, got {r}."
                     )
             except (TypeError, ValueError):
                 issues.append(
-                    f"RADIUS must be a positive number, got {radius!r}."
+                    f"INITRADIUS must be a positive number, got {radius!r}."
                 )
+        if params.get("RADIUS") is not None:
+            issues.append(
+                "RADIUS is not a particle-material key.  MAT_ParticleDEM, "
+                "MAT_ParticlePD, MAT_ParticleSPHFluid and "
+                "MAT_ParticleSPHBoundary all use INITRADIUS."
+            )
 
-        # Check contact Young's modulus
-        young = params.get("YOUNG")
-        if young is not None:
-            try:
-                e = float(young)
-                if e <= 0:
-                    issues.append(f"YOUNG must be > 0, got {e}.")
-            except (TypeError, ValueError):
-                issues.append(
-                    f"YOUNG must be a positive number, got {young!r}."
-                )
+        # Check contact Young's modulus.  For DEM contact this is
+        # YOUNG_MODULUS in PARTICLE DYNAMIC/DEM; plain YOUNG is a
+        # structural-material key (ELAST_CoupNeoHooke, ELAST_CoupSVK, ...).
+        for young_key in ("YOUNG_MODULUS", "YOUNG"):
+            young = params.get(young_key)
+            if young is not None:
+                try:
+                    e = float(young)
+                    if e <= 0:
+                        issues.append(f"{young_key} must be > 0, got {e}.")
+                except (TypeError, ValueError):
+                    issues.append(
+                        f"{young_key} must be a positive number, "
+                        f"got {young!r}."
+                    )
 
         # Check BIN_SIZE_LOWER_BOUND
         bin_size = params.get("BIN_SIZE_LOWER_BOUND")

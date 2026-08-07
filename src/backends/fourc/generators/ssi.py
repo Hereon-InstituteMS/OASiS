@@ -532,14 +532,48 @@ class SSIGenerator(BaseGenerator):
                 VAL: [<potential_values>]
                 FUNCT: [<potential_time_functions>]
 
-            # S2I interface conditions
-            DESIGN SURF S2I COUPLING CONDITIONS:
+            # S2I interface conditions.
+            # There is NO "DESIGN SURF S2I COUPLING CONDITIONS" section in
+            # 4C. The real S2I family is DESIGN S2I KINETICS <GEOM>
+            # CONDITIONS (the physics) and DESIGN S2I MESHTYING <GEOM>
+            # CONDITIONS (the slave/master pairing), with the geometry word
+            # LAST: SURF, LINE or POINT. INTERFACE_SIDE is capitalised
+            # "Slave" / "Master".
+            #
+            # Butler-Volmer kinetics on the two interface faces. The slave
+            # side carries the whole model; the master side is just E,
+            # ConditionID and INTERFACE_SIDE, with no KINETIC_MODEL and no
+            # kinetic parameters at all. The two sides are paired by their
+            # shared ConditionID.
+            DESIGN S2I KINETICS SURF CONDITIONS:
               - E: <s2i_face_left>
-                S2I_KINETICS_ID: <kinetics_condition_id>
-                INTERFACE_SIDE: "slave"
+                ConditionID: 0
+                INTERFACE_SIDE: "Slave"
+                KINETIC_MODEL: "Butler-Volmer"
+                NUMSCAL: <num_scalars>
+                STOICHIOMETRIES: [<stoichiometry>]
+                E-: 1
+                K_R: <butler_volmer_rate_constant>
+                ALPHA_A: <anodic_transfer_coefficient>
+                ALPHA_C: <cathodic_transfer_coefficient>
+                IS_PSEUDO_CONTACT: false
               - E: <s2i_face_right>
-                S2I_KINETICS_ID: <kinetics_condition_id>
-                INTERFACE_SIDE: "master"
+                ConditionID: 0
+                INTERFACE_SIDE: "Master"
+
+            # Optional: an explicit slave/master pairing that points back at
+            # the kinetics condition above by its ConditionID. Only needed
+            # for mortar / non-matching interfaces; with COUPLINGTYPE
+            # "MatchingNodes" the kinetics conditions above are enough.
+            # DESIGN S2I MESHTYING SURF CONDITIONS:
+            #   - E: <s2i_face_left>
+            #     ConditionID: 0
+            #     INTERFACE_SIDE: "Slave"
+            #     S2I_KINETICS_ID: 0
+            #   - E: <s2i_face_right>
+            #     ConditionID: 0
+            #     INTERFACE_SIDE: "Master"
+            #     S2I_KINETICS_ID: 0
 
             # OCP function
             FUNCT<ocp_function_id>:
@@ -622,24 +656,34 @@ class SSIGenerator(BaseGenerator):
                     f"C_MAX must be a positive number, got {c_max!r}."
                 )
 
-        # Check coupling algorithm
+        # Check coupling algorithm.  These are the eight values 4C's
+        # SSI::SolutionSchemeOverFields enum actually accepts -- note there
+        # is NO underscore between "IterStagg" and "FixedRel"/"Aitken".
+        coupalgo_values = (
+            "ssi_OneWay_ScatraToSolid",
+            "ssi_OneWay_SolidToScatra",
+            "ssi_IterStagg",
+            "ssi_IterStaggFixedRel_ScatraToSolid",
+            "ssi_IterStaggFixedRel_SolidToScatra",
+            "ssi_IterStaggAitken_ScatraToSolid",
+            "ssi_IterStaggAitken_SolidToScatra",
+            "ssi_Monolithic",
+        )
         coupalgo = params.get("COUPALGO")
-        if coupalgo is not None and coupalgo not in (
-            "ssi_Monolithic", "ssi_IterStagg",
-            "ssi_IterStagg_FixedRel_ScatraToSolid",
-            "ssi_IterStagg_FixedRel_SolidToScatra",
-        ):
+        if coupalgo is not None and coupalgo not in coupalgo_values:
             issues.append(
-                f"COUPALGO should be 'ssi_Monolithic' or 'ssi_IterStagg' "
-                f"(or a variant), got {coupalgo!r}."
+                f"COUPALGO must be one of {', '.join(coupalgo_values)}; "
+                f"got {coupalgo!r}."
             )
 
         # Check SCATRATIMINTTYPE
         scatra_type = params.get("SCATRATIMINTTYPE")
-        if scatra_type is not None and scatra_type not in ("Elch", "Standard"):
+        if scatra_type is not None and scatra_type not in (
+            "Standard", "Elch", "Cardiac_Monodomain",
+        ):
             issues.append(
-                f"SCATRATIMINTTYPE must be 'Elch' or 'Standard', "
-                f"got {scatra_type!r}."
+                f"SCATRATIMINTTYPE must be 'Standard', 'Elch' or "
+                f"'Cardiac_Monodomain', got {scatra_type!r}."
             )
 
         # Check density
