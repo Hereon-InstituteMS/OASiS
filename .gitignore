@@ -83,3 +83,4 @@ scripts/tier2_fixtures/**/*.vtu
 scripts/tier2_fixtures/**/*.vtk
 scripts/tier2_fixtures/**/_build/
 .fxwork/
+scripts/.cache/

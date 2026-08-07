@@ -109,6 +109,399 @@ def _resolve_root(text: str) -> str:
 
 DECKS: tuple[Deck, ...] = (
     Deck(
+        physics="arterial_network", variant="single_artery_1d",
+        filename="arterial_network.4C.yaml", np=1,
+        upstream="one_d_3_artery_network.4C.yaml",
+        summary="One-dimensional blood flow through a small arterial tree: a "
+                "parent vessel bifurcating into two compliant daughter "
+                "vessels, with a periodic cardiac inflow waveform.",
+        evidence="Explicit Taylor-Galerkin integration of the area/flow "
+                 "equations completes with the junction and both reflective "
+                 "outlets active; area and flow-rate results written.",
+        pitfalls=(
+            "The reference area comes from the element line's DIAM, not from "
+            "an AREA0 material parameter — there is no AREA0 key.",
+            "The junction is closed by DESIGN NODE 1D ARTERY JUNCTION "
+            "CONDITIONS entries sharing one ConditionID; a missing partner is "
+            "not diagnosed, the tree just leaks.",
+        ),
+    ),
+    Deck(
+        physics="beam_interaction", variant="beam_contact_3d",
+        filename="beam_interaction_beam_contact.4C.yaml", np=2,
+        upstream="beam3eb_static_contact_penalty_linposquadpen_"
+                 "beamslidingoverarc.4C.yaml",
+        summary="Beam-to-beam penalty contact: a straight Kirchhoff beam is "
+                "pressed onto a bent one and slid across it over 18 "
+                "quasi-static steps.",
+        evidence="4C reports 'currently monitors 3 beam contact pairs' in "
+                 "every step, so pairs are found and the penalty law is "
+                 "evaluated.",
+        pitfalls=(
+            "SEARCH_STRATEGY: bounding_volume_hierarchy needs ArborX. On a "
+            "build without it every beam-interaction deck aborts in "
+            "4C_geometric_search_bounding_volume.hpp:79. The default "
+            "bruteforce_with_binning has no such dependency.",
+            "BINNING STRATEGY DOMAINBOUNDINGBOX must enclose the DEFORMED "
+            "geometry — pairs outside it are silently never searched.",
+        ),
+    ),
+    Deck(
+        physics="beam_interaction", variant="beam_solid_meshtying_3d",
+        filename="beam_interaction_beam_to_solid.4C.yaml", np=1,
+        upstream="beam3r_herm2line3_static_beam_to_solid_volume_meshtying_"
+                 "beam_along_solid_boundary_segmentation.4C.yaml",
+        summary="Beam-to-solid volume meshtying: a Simo-Reissner beam embedded "
+                "in a solid column, tied to it by a Gauss-point-to-segment "
+                "penalty constraint, is pulled at its overhanging tip.",
+        evidence="32 meshtying pairs monitored every step, and a solid corner "
+                 "node on the far side of the column is dragged 0.117 — load "
+                 "really crosses the tie.",
+        pitfalls=(
+            "Both condition sections (…VOLUME MESHTYING VOLUME and …LINE) and "
+            "both topology sections are mandatory. Drop either and beam and "
+            "solid pass through each other with no diagnostic.",
+            "See the beam_contact_3d note on ArborX.",
+        ),
+    ),
+    Deck(
+        physics="brownian_dynamics", variant="brownian_3d",
+        filename="brownian_dynamics.4C.yaml", np=1,
+        upstream="beam3r_herm2line3_backweuler_browndyn_crosslinking_"
+                 "beam3rline2_additional_fixed_crosslink.4C.yaml",
+        summary="Brownian dynamics of semiflexible filaments: crosslinked "
+                "beams in a periodic box under thermal forcing, integrated "
+                "with overdamped backward Euler.",
+        evidence="An otherwise identical KT: 0.0 control differs at t = 0.01 "
+                 "by max|du| = 6.6e-2 and max|d(curvature)| = 0.36 at the "
+                 "Gauss points, 22% of the deterministic curvature — the "
+                 "stochastic forcing drives the result.",
+        pitfalls=(
+            "KT defaults to 0. BROWNDYNPROB: true with KT unset is a "
+            "deterministic run wearing a Brownian label — the upstream deck "
+            "this derives from had exactly that defect.",
+            "Turning KT on with the default Cylinder_geometry_approx drag "
+            "diverges in step 2 (residual 2.67e2 -> 8.74e6, abort in "
+            "4C_solver_nonlin_nox_problem.cpp:165). Specifying "
+            "BEAMS_DAMPING_COEFF_PER_UNITLENGTH explicitly is what makes the "
+            "stochastic step size survivable.",
+            "np 1 only: at 2 ranks this aborts in 4C_binstrategy.cpp:1008 "
+            "('Node … resides outside the binning domain'). The unmodified "
+            "upstream deck fails identically, so it is inherited.",
+        ),
+    ),
+    Deck(
+        physics="cardiac_monodomain", variant="monodomain_3d",
+        filename="cardiac_monodomain.4C.yaml", np=1,
+        upstream="scatra_myocard_MV_material.4C.yaml",
+        summary="Cardiac monodomain: the reaction-diffusion equation for the "
+                "transmembrane potential coupled to the Bueno-Orovio minimal "
+                "ventricular ionic model, stimulated twice.",
+        evidence="phi at node 1 reads 0.7136 at t = 400 ms, i.e. mid-"
+                 "repolarisation of the second action potential — the AP "
+                 "actually fires rather than the field sitting at rest.",
+        pitfalls=(
+            "The element line needs TYPE CardMono and a FIBER1 direction; "
+            "DIFF1/DIFF2/DIFF3 are along fibre and the two cross-fibre "
+            "directions, so an isotropic-looking material is still "
+            "orientation-dependent.",
+        ),
+    ),
+    Deck(
+        physics="ehl", variant="ehl_3d",
+        filename="ehl.4C.yaml", np=2,
+        upstream="ehl3d_mixed.4C.yaml",
+        summary="Elastohydrodynamic lubrication: a soft neo-Hookean pad "
+                "pressed onto a sliding rigid plate with the oil film "
+                "resolved by a Reynolds equation on the pad underside, solved "
+                "monolithically with mortar contact.",
+        evidence="Newton converges quadratically with 6 to 8 active contact "
+                 "nodes in all 20 steps — the mixed lubricated/dry patch is "
+                 "genuinely resolved.",
+        pitfalls=(
+            "CONTACT DYNAMIC STRATEGY must be 'Ehl'; the ordinary contact "
+            "strategies do not carry the film coupling.",
+            "A viscosity unit slip is not a silent scaling error here — the "
+            "monolithic Newton diverges.",
+        ),
+    ),
+    Deck(
+        physics="fbi", variant="penalty_3d",
+        filename="fbi.4C.yaml", np=2,
+        upstream="fbi_mortar_solidcoupling.4C.yaml",
+        summary="Fluid-beam interaction: a slender beam immersed in a 3-D "
+                "flow, tied to the fluid by a penalty-regularised mortar "
+                "constraint, on a fluid mesh that does not conform to it.",
+        evidence="Beam displacement grows monotonically 1.8e-5 -> 2.8e-3 over "
+                 "five steps as the free stream ramps up — the fluid-to-beam "
+                 "force transfer is live.",
+        pitfalls=(
+            "SEARCH_RADIUS must cover a fluid element diagonal; too small and "
+            "the beam couples to nothing, with no error — a beam lying "
+            "entirely outside the fluid mesh also raises none.",
+            "A Dirichlet FUNCT must be SYMBOLIC_FUNCTION_OF_SPACE_TIME; the "
+            "time-only form aborts in 4C_utils_function_manager.hpp:143.",
+        ),
+    ),
+    Deck(
+        physics="fpsi", variant="monolithic_3d",
+        filename="fpsi.4C.yaml", np=1,
+        upstream="fpsi_ofsiinterface.4C.yaml",
+        summary="Monolithic fluid-porous-structure interaction: free ALE flow "
+                "next to a Darcy-saturated neo-Hookean poroelastic block and "
+                "an elastic solid, with all three interface families active.",
+        evidence="All four fields (fluid, poro structure, porofluid, ALE) "
+                 "assemble into one Newton system that converges over the "
+                 "driven ramp.",
+        pitfalls=(
+            "Three distinct condition families are needed and are easy to "
+            "confuse: DESIGN FPSI COUPLING SURF (free fluid to porous), "
+            "DESIGN FSI COUPLING SURF (free fluid to solid), and DESIGN VOLUME "
+            "POROCOUPLING CONDITION (skeleton to pore fluid).",
+            "The upstream deck declares a DSURFACE built from nodes that do "
+            "not exist; 4C accepts it because no condition references it.",
+        ),
+    ),
+    Deck(
+        physics="fsi_xfem", variant="xfem_fsi_3d",
+        filename="fsi_xfem.4C.yaml", np=2,
+        upstream="xfsi_3D_boxes.4C.yaml",
+        summary="Monolithic fixed-grid FSI: the structure surface cuts a fixed "
+                "Eulerian fluid mesh and Nitsche coupling enforces the "
+                "interface conditions, with both meshes generated inline.",
+        evidence="Traction-driven flow past the immersed rotated box completes "
+                 "with the XFEM monolithic coupling active on all six "
+                 "structure faces.",
+        pitfalls=(
+            "COUPALGO must be iter_xfem_monolithic — the ALE-based FSI "
+            "algorithms do not apply to a cut mesh.",
+            "STRUCTURE DOMAIN and FLUID DOMAIN generate both meshes inline; "
+            "the structure must lie inside the fluid box or it cuts nothing.",
+        ),
+    ),
+    Deck(
+        physics="particle_dem", variant="normal_impact_1d",
+        filename="particle_dem.4C.yaml", np=2,
+        upstream="particle_dem_1d_normalcontact_linspring_stiffset.4C.yaml",
+        summary="Discrete element method: 48 rigid spheres of two sizes fall "
+                "under gravity, collide with each other and the six walls of "
+                "the bounding box, and settle into a static pack.",
+        evidence="Potential energy falls 0.1911 -> 0.0599, kinetic energy "
+                 "decays to 5.6e-6 and contact energy stays small but "
+                 "non-zero — the pack lands and comes to rest.",
+        pitfalls=(
+            "PARTICLE_WALL_SOURCE: BoundingBox turns the six faces of "
+            "DOMAINBOUNDINGBOX into rigid walls, so a container needs no mesh "
+            "at all — but it also needs PARTICLE_WALL_MAT.",
+            "The normal stiffness is derived from MAX_VELOCITY and "
+            "REL_PENETRATION, not given directly; raising the stiffness "
+            "without lowering TIMESTEP silently violates the stability limit.",
+        ),
+    ),
+    Deck(
+        physics="particle_sph", variant="poiseuille_2d",
+        filename="particle_sph_hydrostatic.4C.yaml", np=2,
+        upstream="particle_sph_1d_hydrostatic_freesurface_densityintegration_"
+                 "cubicspline_adami.4C.yaml",
+        summary="Weakly compressible SPH: a fluid column on three boundary "
+                "layers settles under gravity to the hydrostatic density and "
+                "pressure profile.",
+        evidence="At the final time max|v| = 1.7e-12 and the pressure profile "
+                 "matches rho0*g*(H-x) to under 1% in the bulk — it really "
+                 "converges to the hydrostatic solution.",
+        pitfalls=(
+            "There is no SOUNDSPEED key. The artificial speed of sound is "
+            "sqrt(BULK_MODULUS/rho0) from MAT_ParticleSPHFluid.",
+            "INITRADIUS is the kernel support radius and must match the "
+            "kernel: 2x the spacing for a cubic spline, 3x for a quintic.",
+            "The upstream deck this derives from stops while its gravity ramp "
+            "is still at 35% of g, so it never reaches equilibrium; the ramp "
+            "was shortened here.",
+        ),
+    ),
+    Deck(
+        physics="particle_sph", variant="dam_break_2d",
+        filename="particle_sph_dambreak.4C.yaml", np=2,
+        upstream="particle_sph_2d_dambreak_freesurface_"
+                 "densitynormalizedreinit.4C.yaml",
+        summary="Two-dimensional dam break: a water column released onto a dry "
+                "bed inside a closed tank, the standard free-surface SPH "
+                "benchmark.",
+        evidence="Surge front runs 0.375 -> 1.041 and column height drops "
+                 "0.375 -> 0.241 while density stays within 0.3% of rho0 — "
+                 "the collapse is resolved and nothing is blowing up.",
+        pitfalls=(
+            "TIMESTEP must stay below roughly 0.2*spacing/c with "
+            "c = sqrt(BULK_MODULUS/rho0).",
+            "Changing the kernel changes how many boundary layers the wall "
+            "needs: two for a cubic spline, three for a quintic.",
+        ),
+    ),
+    Deck(
+        physics="pasi", variant="dem_impact_3d",
+        filename="pasi.4C.yaml", np=2,
+        upstream="pasi_twoway_norelax_particle_dem_1d_normalcontact_linspring_"
+                 "walldiscretcond.4C.yaml",
+        summary="Particle-structure interaction, partitioned two-way: a DEM "
+                "sphere presses into an elastic plate, the plate deflects, and "
+                "the deformed wall is fed back to the particle solver each "
+                "coupling iteration.",
+        evidence="The outer loop converges in all 150 steps without hitting "
+                 "ITEMAX; the particle sinks 0.500000 -> 0.498574 while the "
+                 "plate centre deflects uz = -1.0e-3 — force goes one way and "
+                 "displacement the other.",
+        pitfalls=(
+            "PARTICLE_WALL_MOVING and PARTICLE_WALL_LOADED are what make the "
+            "coupling two-way; with them false the structure is a rigid "
+            "obstacle and PASI silently degenerates to one-way.",
+            "Rayleigh K_DAMP scales with the stiffness: the upstream K_DAMP 1 "
+            "gives the plate a relaxation time 13x the simulated time, so it "
+            "never responds and the run still exits 0.",
+        ),
+    ),
+    Deck(
+        physics="plasticity", variant="linear_2d",
+        filename="plasticity_linear_2d.4C.yaml", np=1,
+        upstream="plastic_pressurisedcylinder.4C.yaml",
+        summary="Small-strain J2 (von Mises) elastoplasticity with linear "
+                "isotropic hardening, plane strain, displacement controlled "
+                "past yield.",
+        evidence="Reaction force 591 N against 4360 N for an identical deck "
+                 "with the yield stress raised out of reach — a factor 7.4, "
+                 "so the specimen is genuinely flowing plastically.",
+        pitfalls=(
+            "There is no 2-D plasticity element on this build. WALL QUAD4 with "
+            "a plasticity material aborts in 4C_w1_mat.cpp:179 ('Invalid type "
+            "of material law for wall element'); plane strain is done the way "
+            "the upstream deck does it, one layer of SOLID HEX8 with u_z "
+            "locked by a volume Dirichlet.",
+            "Removing that u_z condition turns the deck into a 3-D bar without "
+            "any diagnostic.",
+        ),
+    ),
+    Deck(
+        physics="plasticity", variant="nonlinear_3d",
+        filename="plasticity_nonlinear_3d.4C.yaml", np=1,
+        upstream="plastic_necking_eas.4C.yaml",
+        summary="Finite-strain J2 elastoplasticity: the classic necking "
+                "tensile bar, one eighth modelled with symmetry planes and a "
+                "2% taper so localisation picks a plane deterministically.",
+        evidence="Reaction force 5.417 against 221.8 for the raised-yield "
+                 "control (factor 41); the load passes a maximum at step 18 "
+                 "and the section contracts 12.8% against 7.7% elastic — "
+                 "necking and isochoric plastic flow.",
+        pitfalls=(
+            "TECH eas_mild and TECH fbar abort with SIGFPE inside "
+            "evaluate_eas_kinematics for this material (the same EAS with "
+            "StVenantKirchhoff runs), so this ships TECH none and accepts HEX8 "
+            "volumetric locking.",
+            "The hardening law is Voce plus linear: "
+            "sigma_y = YIELD + ISOHARD*e_p + (SATHARDENING - YIELD)*"
+            "(1 - exp(-HARDEXPO*e_p)).",
+        ),
+    ),
+    Deck(
+        physics="reduced_lung", variant="lung_1d",
+        filename="reduced_lung.4C.yaml", np=2,
+        upstream="reduced_lung_1d_pipe_flow_continuous.4C.yaml",
+        summary="One-dimensional compliant-tube airway flow: a pressure pulse "
+                "propagating along a pipe whose diameter halves midway, so it "
+                "partially reflects at the area change.",
+        evidence="Wave propagation and partial reflection resolved over 10000 "
+                 "steps with the flow inlet and reflecting outlet active.",
+        pitfalls=(
+            "This is PROBLEMTYPE Reduced_Lung_1D_Pipe_Flow. The other lung "
+            "problem type, Reduced_Lung (the lung-tree model), CANNOT be "
+            "written as a single file on this build: its topology comes "
+            "through from_file / from_mesh / field_reference, and the "
+            "top-level `fields:` section only offers separate_file or "
+            "from_mesh, so there is no way to give node coordinates inline. "
+            "The `constant:` alternative assigns one value to every index, "
+            "which collapses the tree — measured: 'Multiple pressure boundary "
+            "conditions assigned to node 1', then SIGFPE from a zero reference "
+            "volume once all nodes coincide.",
+            "Nearly all the physics is in one lowercase top-level section, "
+            "`reduced_lung:`, not in the usual upper-case DYNAMIC sections.",
+        ),
+    ),
+    Deck(
+        physics="ssi", variant="monolithic_elch_3d",
+        filename="ssi.4C.yaml", np=1,
+        upstream="ssi_2D_quad4.4C.yaml",
+        summary="Structure-scalar interaction: a scalar transported on a "
+                "deforming mesh, with the scatra discretisation cloned from "
+                "the structure so both fields share nodes.",
+        evidence="Staggered solid-to-scatra loop runs to completion with the "
+                 "scalar transported in conservative form on the stretched "
+                 "element.",
+        pitfalls=(
+            "The structure elements must be a *SCATRA type (WALLSCATRA, "
+            "SOLIDSCATRA, …) with a meaningful TYPE. A plain WALL/SOLID aborts "
+            "in 4C_ssi_clonestrategy.cpp:97, naming ImplType 'Undefined'.",
+            "COUPALGO chooses one-way, staggered or monolithic; the one-way "
+            "variants run happily and simply do not feed the scalar back.",
+        ),
+    ),
+    Deck(
+        physics="ssti", variant="monolithic_3d",
+        filename="ssti.4C.yaml", np=1,
+        upstream="ssti_mono_3D_3hex8_elch_s2i_butlervolmerthermo_"
+                 "growthlaw.4C.yaml",
+        summary="Structure-scalar-thermo interaction: a 1-D lithium-ion cell "
+                "(anode / electrolyte / cathode) solved monolithically for "
+                "displacement, lithium concentration, potential and "
+                "temperature at once.",
+        evidence="Four-field monolithic Newton converges with Butler-Volmer "
+                 "kinetics plus thermal contact resistance active on both "
+                 "electrode-electrolyte interfaces.",
+        pitfalls=(
+            "S2I kinetics and SSTI interface meshtying are separate condition "
+            "families and both are needed at each interface.",
+            "Electrode swelling comes from the inelastic factors of "
+            "MAT_MultiplicativeSplitDefgradElastHyper, not from a thermal "
+            "expansion coefficient on the elastic material.",
+        ),
+    ),
+    Deck(
+        physics="sti", variant="monolithic_3d",
+        filename="sti.4C.yaml", np=1,
+        upstream="sti_mono_3D_hex8_elch_s2i_butlervolmerpeltier_adiabatic_"
+                 "mortar_standard.4C.yaml",
+        summary="Monolithic scatra-thermo interaction: electrochemistry "
+                "(lithium concentration plus potential) and temperature solved "
+                "in one Newton system, coupled by Butler-Volmer-Peltier "
+                "kinetics across non-conforming mortar interfaces.",
+        evidence="Cell voltage 3.888 -> 3.728 V over 20 s at C rate 10, SOC "
+                 "100% -> 94.4/95.8%, interface current density exactly the "
+                 "applied -2.4586e-05, and non-zero Peltier and Joule heat "
+                 "fluxes across both interfaces.",
+        pitfalls=(
+            "Without ELCH CONTROL the run stops with 'Invalid type of closing "
+            "equation for electric potential'.",
+            "Set SORET to 0 and the species field still moves, not just the "
+            "temperature — Soret is a cross-coupling, not the whole coupling.",
+        ),
+    ),
+    Deck(
+        physics="xfem_fluid", variant="xfem_3d",
+        filename="xfem_fluid.4C.yaml", np=2,
+        upstream="xfluid_ls_neumann_inflow_stab.4C.yaml",
+        summary="XFEM fluid: transient incompressible Navier-Stokes on a fixed "
+                "Eulerian mesh cut by a level-set circle, with a Neumann "
+                "traction imposed on the embedded interface.",
+        evidence="Cut elements are enriched and the level-set Neumann "
+                 "condition is integrated on the embedded circle over the "
+                 "whole time loop.",
+        pitfalls=(
+            "The interface is a FUNCT level set, so refining the interface "
+            "means refining FLUID DOMAIN subdivisions — there is no interface "
+            "mesh to refine.",
+            "Ghost-penalty and mass-conservation parameters live in XFLUID "
+            "DYNAMIC/STABILIZATION, separately from the ordinary fluid "
+            "stabilisation.",
+        ),
+    ),
+    Deck(
         physics="fluid_turbulence", variant="les_channel_3d",
         filename="fluid_turbulence.4C.yaml", np=2,
         upstream="f3_cha_8x8x8_recongradl2.4C.yaml + "

@@ -15,15 +15,46 @@ This module flattens those to `A/B/C` paths RELATIVE to the section.
 from __future__ import annotations
 
 import json
+import os
 import pickle
+import subprocess
 import sys
 from pathlib import Path
 
 import yaml
 
 HERE = Path(__file__).parent
-DUMP = HERE / "fourc_params.yaml"
-CACHE = HERE / "fourc_params.index.pkl"
+# The dump is 2.8 MB of machine-generated YAML — regenerated on demand rather
+# than committed, so it can never drift from the binary it claims to describe.
+DUMP = Path(os.environ.get("FOURC_PARAMS_DUMP",
+                           HERE / ".cache" / "fourc_params.yaml"))
+CACHE = DUMP.with_suffix(".index.pkl")
+BINARY = Path(os.environ.get("FOURC_BINARY", "/home/alexander/4C/build/4C"))
+LD = os.environ.get("FOURC_LD_LIBRARY_PATH", "/opt/4C-dependencies/lib")
+
+
+def ensure_dump() -> Path:
+    """Produce the grammar dump from the installed binary if it is missing.
+
+    `4C -p` writes the complete input specification of THAT build to stdout.
+    Deriving it rather than shipping it is the point: a committed copy would
+    describe whichever binary the committer happened to have.
+    """
+    if DUMP.exists():
+        return DUMP
+    if not BINARY.is_file():
+        raise FileNotFoundError(
+            f"no grammar dump at {DUMP} and no 4C binary at {BINARY}. "
+            f"Set FOURC_BINARY, or point FOURC_PARAMS_DUMP at an existing "
+            f"`4C -p` dump.")
+    DUMP.parent.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, LD_LIBRARY_PATH=LD)
+    with open(DUMP, "w") as fh:
+        rc = subprocess.run([str(BINARY), "-p"], stdout=fh, env=env).returncode
+    if rc != 0:
+        DUMP.unlink(missing_ok=True)
+        raise RuntimeError(f"`{BINARY} -p` exited {rc}")
+    return DUMP
 
 
 class Grammar:
@@ -180,10 +211,18 @@ def get():
     global _G
     if _G is not None:
         return _G
+    ensure_dump()
+    # The pickle is keyed on this module's class, so it can only be read back
+    # through this module. Loading it from a script that imported us as
+    # `fourc_grammar_index` while the cache was written by `__main__` raises
+    # AttributeError; rebuilding is cheap enough (~7 s) that we just do it.
     if CACHE.exists() and CACHE.stat().st_mtime > DUMP.stat().st_mtime:
-        with open(CACHE, "rb") as f:
-            _G = pickle.load(f)
-        return _G
+        try:
+            with open(CACHE, "rb") as f:
+                _G = pickle.load(f)
+            return _G
+        except Exception:
+            CACHE.unlink(missing_ok=True)
     with open(DUMP) as f:
         doc = yaml.safe_load(f)
     _G = Grammar(doc)
