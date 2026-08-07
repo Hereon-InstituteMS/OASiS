@@ -1,8 +1,12 @@
 """Shared helpers for the FEBio Tier-2 fixtures.
 
-This is a MODULE, not a fixture: `scripts/run_tier2_fixtures.py` only
-walks directories, so a bare .py file next to the fixture directories is
-never mistaken for one.
+This is a PACKAGE, not a fixture: `scripts/run_tier2_fixtures.py` only
+treats a directory as a fixture if it contains `fixture.json`, so this one
+is skipped. It is a directory rather than a bare `_febio_lib.py` because the
+mutation harness stages `_`-prefixed DIRECTORIES only — as a bare file it was
+never copied into the scratch tree, so all 70 FEBio fixtures died on import
+there and their mutation verdicts came back VACUOUS_BASELINE, which reads as
+'not red' rather than 'no evidence'.
 
 Every FEBio fixture in this tree follows the same shape, and the shape is
 the point:
