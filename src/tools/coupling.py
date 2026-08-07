@@ -1117,7 +1117,9 @@ def register_coupling_tools(mcp: FastMCP):
             problem: Problem type — 'heat_dd' (heat domain decomposition),
                      'poisson_dd' (Poisson with source), 'one_way' (thermal→structural),
                      'poisson_dd_study' (relaxation parameter study),
-                     'tsi_dd' (two-way iterative TSI coupling).
+                     'tsi_dd' (REMOVED — it reported a fabricated one-iteration
+                     convergence on a run that never exchanged anything back;
+                     use `couple` with the shipped TSI participants).
             solver_a: Backend for subdomain A (default: fenics).
             solver_b: Backend for subdomain B (default: fourc).
             nx: Elements per direction per subdomain.
@@ -2198,99 +2200,60 @@ async def _twoway_tsi_coupling(
     max_iter: int, tol: float, relaxation: float,
     params: dict,
 ) -> str:
-    """Two-way iterative partitioned TSI coupling.
+    """REFUSES. `coupled_solve(problem='tsi_dd')` was never a two-way coupling.
 
-    Uses DN-like iteration for thermal-structural:
-    - Solver A (FEniCS): solve heat with displacement-dependent BCs
-    - Solver B (4C): solve structural with thermal load, extract deformation
-    - Iterate until thermal-structural equilibrium
+    What the body of this function used to do: run ONE FEniCSx heat solve, run
+    ONE 4C one-way TSI deck, and then write
 
-    For this demo, the two-way coupling is between:
-    - FEniCS: heat conduction (thermal)
-    - 4C: TSI one-way (gets temperature, computes structure)
-    - FEniCS updates heat BCs based on structural deformation (e.g. contact)
+        history = [{"iteration": 0, "residual": 0.0, ...}]
+        result  = {"converged": True, "iterations": 1,
+                   "note": "Weakly-coupled linear TSI converges in 1 iteration"}
 
-    In practice, for the paper we demonstrate the iteration loop even if the
-    problem decouples after 1-2 iterations (thermal expansion is weakly coupled).
+    into convergence.json and report "## Two-Way TSI Coupling (Iterative
+    Partitioned) ... Converged: Yes (1 iteration)". Nothing was ever exchanged
+    back from the structure to the thermal field, no fixed point was iterated,
+    and the zero residual was a literal, not a measurement. The source even said
+    so: "for the paper we demonstrate the iteration loop even if the problem
+    decouples after 1-2 iterations". The iteration loop was not demonstrated;
+    there was no loop.
+
+    That is a capability claim with no run behind it, so it is removed rather
+    than repaired in place. A genuine two-way TSI now exists through the general
+    `couple` path, where the reverse direction is a real term in a real equation
+    and is verified against a monolithic re-solve and against 4C's native
+    Thermo_Structure_Interaction — see the shipped participants
+    data/coupling_participants/participant_tsi_{thermal,mech}_{skfem,fenics,
+    ngsolve}.py and the tier-2 fixtures under
+    scripts/tier2_fixtures/coupling/tsi_*.
     """
-    nz = params.get("nz", ny)
-    E = params.get("E", 200e3)
-    nu_val = params.get("nu", 0.3)
-    alpha = params.get("alpha", 12e-6)
-    T_left = params.get("T_left", 100.0)
-    T_right = params.get("T_right", 0.0)
-
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    work_dir = _COUPLING_DIR / f"tsi_dd_{ts}"
-    work_dir.mkdir(parents=True, exist_ok=True)
-
-    start_time = time.time()
-
-    # For weakly-coupled TSI, the iteration is:
-    # 1. Solve heat (FEniCS) → temperature field
-    # 2. Solve structure (4C TSI) with temperature → displacement
-    # 3. Check if temperature field changed due to deformation
-    #    (in linear case, it doesn't → converges in 1 iteration)
-
-    # Step 1: FEniCS heat solve
-    dir_heat = work_dir / "heat"
-    dir_heat.mkdir(parents=True, exist_ok=True)
-
-    heat_script = _fenics_heat_subdomain_script(
-        x_min=0.0, x_max=1.0, y_min=0.0, y_max=1.0,
-        nx=nx, ny=ny,
-        T_left=T_left, T_right=T_right,
-        conductivity=1.0,
-        compute_flux=False,
+    return (
+        "## `coupled_solve(problem='tsi_dd')` is REMOVED\n\n"
+        "It reported `converged: True, iterations: 1, residual: 0.0` on a run "
+        "that did ONE thermal solve and ONE one-way structural solve and never "
+        "exchanged anything back. The residual was a literal, not a "
+        "measurement, and a one-way transfer was reported as a two-way "
+        "coupling.\n\n"
+        "**Use `couple` instead.** Two-way thermo-structural interaction is a "
+        "FIELD coupling: both participants own the whole body and exchange "
+        "volume fields — temperature one way, volumetric strain the other — so "
+        "there is no interface and nothing to balance across one.\n\n"
+        "  * thermal participant: solves rho_c (T-T_old)/dt - div(k grad T) + "
+        "T_ref*beta*(e - e_old)/dt = 0, imports `e = tr(eps(u))`, exports "
+        "`theta = T - T_ref`;\n"
+        "  * structural participant: solves div(sigma) = 0 with sigma = "
+        "C:eps(u) - beta*(T-T_ref)*I, imports theta, exports e.\n\n"
+        "`beta = (3*lambda + 2*mu)*alpha`. The LAST term of the energy equation "
+        "is the whole of the mechanical->thermal direction; drop it and the "
+        "coupling is one-way. Its strength is the classical coupling parameter "
+        "delta = T_ref*beta^2/(rho_c*(lambda+2mu)), which for a real metal is "
+        "~1e-2 — small, but not zero, and the only way to know your coupling is "
+        "two-way is to switch that term off and check the answer MOVES.\n\n"
+        "Ready-made participants for scikit-fem, FEniCSx and NGSolve ship in "
+        "`data/coupling_participants/participant_tsi_thermal_*.py` and "
+        "`participant_tsi_mech_*.py`; pass them to `couple` with "
+        "`imports_from` set on BOTH sides, and pass `monolithic=` so the "
+        "converged answer is checked against an un-split re-solve."
     )
-    job_heat = await backend_a.run(heat_script, dir_heat, np=1, timeout=None)
-    if job_heat.status != "completed":
-        return f"Heat solve failed: {job_heat.error}"
-
-    # Step 2: 4C TSI (one-way, using same thermal BCs)
-    dir_struct = work_dir / "structure"
-    dir_struct.mkdir(parents=True, exist_ok=True)
-
-    from backends.fourc.inline_mesh import matched_tsi_oneway_input
-    input_4c = matched_tsi_oneway_input(
-        nx=nx, ny=ny, nz=nz,
-        E=E, nu=nu_val, alpha=alpha,
-        T_left=T_left, T_right=T_right,
-    )
-    job_struct = await backend_b.run(input_4c, dir_struct, np=1, timeout=None)
-    if job_struct.status != "completed":
-        return f"4C TSI failed: {job_struct.error}"
-
-    total_time = time.time() - start_time
-
-    # For weakly-coupled linear TSI, 1 iteration suffices
-    # The "two-way" aspect is demonstrated by the iteration framework
-    history = [{
-        "iteration": 0,
-        "residual": 0.0,
-        "T_interface_mean": (T_left + T_right) / 2.0,
-        "time_s": round(total_time, 3),
-    }]
-
-    result = {
-        "problem": "tsi_dd",
-        "converged": True,
-        "iterations": 1,
-        "note": "Weakly-coupled linear TSI converges in 1 iteration",
-        "history": history,
-    }
-    (work_dir / "convergence.json").write_text(json.dumps(result, indent=2))
-
-    lines = [
-        "## Two-Way TSI Coupling (Iterative Partitioned)\n",
-        f"**Solver A:** {backend_a.display_name()} (thermal)",
-        f"**Solver B:** {backend_b.display_name()} (TSI structural)",
-        f"**Converged:** Yes (1 iteration — weakly-coupled linear problem)",
-        f"**Total time:** {total_time:.1f}s",
-        f"\nResults: {work_dir}",
-    ]
-
-    return "\n".join(lines)
 
 
 async def _l_bracket_tsi(

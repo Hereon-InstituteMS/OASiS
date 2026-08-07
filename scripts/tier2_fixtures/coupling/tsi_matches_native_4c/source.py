@@ -64,10 +64,20 @@ def _rel(got, want):
 
 def body() -> None:
     L.require_available("fourc", "fenics", "skfem")
-    p = F.FOURC_PROBLEM
+    p = F.FOURC_NATIVE
+    q = F.FOURC_COUPLED
     root = Path(tempfile.mkdtemp(prefix="t2tsi_4c_"))
     print(f"fourc_delta={p.delta:.6f}")
     print(f"fourc_linearisation_bound={F.linearisation_bound(p):.3e}")
+    print(f"fourc_coupled_linearisation_bound={F.linearisation_bound(q):.3e}")
+
+    # ── 0. every key the deck writes must be in 4C's own accepted grammar.
+    # A mis-cased key and an invented one produce the SAME "Failed to match
+    # specification" message, so `4C -p` is the only thing that can tell them
+    # apart; this asks it, by name, before anything is run.
+    bad = F.audit_deck_keys(p) + F.audit_deck_keys(q)
+    L.check(not bad, "fourc_deck_has_keys_outside_the_grammar", "; ".join(bad)[:400])
+    print(f"fourc_deck_keys_all_in_grammar={bool(not bad)}")
 
     # ── 1. is 4C's reverse direction the classical one? Asked inside 4C alone.
     f2 = F.run(root / "fourc_two_way", p, nx=NX4, two_way=True)
@@ -110,30 +120,37 @@ def body() -> None:
     L.check(eu < 1e-3, "fourc_ux_disagrees_with_monolithic", f"{eu:.3e}")
     print(f"fourc_matches_monolithic={bool(e2 < 1e-3 and e1 < 2e-4 and eu < 1e-3)}")
 
-    # ── 3. THE PARTITIONED CROSS-CODE COUPLING against 4C
-    two = T.run_tsi("cpl_2way", "fenics", "skfem", p=p)
+    # ── 3. THE PARTITIONED CROSS-CODE COUPLING against 4C, on the offset
+    # problem (see tsi_fourc.FOURC_COUPLED for why the coupled comparison
+    # cannot use the same temperatures as the identity check).
+    g2 = F.run(root / "fourc_coupled_two_way", q, nx=NX4, two_way=True)
+    g1 = F.run(root / "fourc_coupled_one_way", q, nx=NX4, two_way=False)
+    gsize = (float(np.max(np.abs(g2["T"] - g1["T"])))
+             / max(float(np.max(np.abs(g2["T"] - q.t_ref))), 1e-30))
+    print(f"fourc_coupled_reverse_direction_size={gsize:.3e}")
+    two = T.run_tsi("cpl_2way", "fenics", "skfem", p=q)
     if not T.assert_run_clean("cpl_2way", two):
         return
     xc, thc = _line(two["theta_coords"], two["theta_field"])
-    c2 = _rel(thc, np.interp(xc, f2["x"], f2["T"] - p.t_ref))
+    c2 = _rel(thc, np.interp(xc, g2["x"], g2["T"] - q.t_ref))
     print(f"coupled_vs_fourc_twoway_theta_relL2={c2:.3e}")
     L.check(c2 < 2e-3, "coupled_disagrees_with_native_fourc", f"{c2:.3e}")
     print(f"coupled_matches_native_fourc={bool(c2 < 2e-3)}")
 
     # ── 4. both reverse directions alive, and the same size
-    one = T.run_tsi("cpl_1way", "fenics", "skfem", p=p, thermal_reads=False)
+    one = T.run_tsi("cpl_1way", "fenics", "skfem", p=q, thermal_reads=False)
     T.assert_run_clean("cpl_1way", one, expect_one_way=True)
     _, tho = _line(one["theta_coords"], one["theta_field"])
     csize = float(np.max(np.abs(thc - tho))) / max(float(np.max(np.abs(thc))), 1e-30)
     print(f"coupled_reverse_direction_size={csize:.3e}")
-    d = abs(csize - size) / max(size, 1e-30)
+    d = abs(csize - gsize) / max(gsize, 1e-30)
     print(f"reverse_direction_size_vs_fourc_rel={d:.3e}")
     L.check(csize > 1e-3, "coupled_reverse_direction_is_inert",
             f"switching mechanical->thermal off moved the coupled answer by only "
             f"{csize:.3e}")
     L.check(d < 0.05, "reverse_direction_size_disagrees_with_fourc",
             f"OASiS measures the reverse direction at {csize:.3e} of the answer "
-            f"and 4C at {size:.3e} — {d:.1%} apart")
+            f"and 4C at {gsize:.3e} — {d:.1%} apart")
     print(f"both_codes_agree_on_reverse_direction={bool(csize > 1e-3 and d < 0.05)}")
     print("pairs_run=1")
 

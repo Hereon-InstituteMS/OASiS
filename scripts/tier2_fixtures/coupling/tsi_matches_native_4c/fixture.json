@@ -1,0 +1,46 @@
+{
+  "_comment": "COUPLING tier-2. The partitioned cross-code two-way TSI against 4C's NATIVE Thermo_Structure_Interaction — a production code, other authors, trilinear hexahedra instead of triangles, its own time integrators and a monolithic Newton solve of the coupled system. Four things in order: (1) 4C's own reverse direction is shown to be the classical thermoelastic one BLACK BOX, inside 4C alone, by the uniaxial-strain identity 'two-way at CAPA == one-way at CAPA*(1+delta)'; (2) 4C agrees with the in-house monolithic solve one-way and two-way; (3) the FEniCSx/scikit-fem partitioned coupling agrees with 4C; (4) suppressing the reverse direction moves the partitioned answer by the same fraction 4C's own one-way run moves. The one modelling difference is stated and bounded rather than discovered afterwards: 4C's reverse term uses the CURRENT temperature where the classical linear theory uses T_ref, so this problem is run at a 0.3 K excursion on a 293 K reference, which bounds the difference at ~1e-3 of the reverse term; the one-way agreement, where the models are identical, is printed beside the two-way one so the reader can see what the linearisation costs. Two 4C-specific pitfalls are in the deck generator's header because both were found by running: the structure<->thermo node match uses an octree with an ABSOLUTE 1e-3 tolerance (a mm-scale mesh dies with 'Did not get 1:1 correspondence'), and TOLTEMP is an ABSOLUTE increment norm on a field near 293 K, so 1e-14 is under its own roundoff floor and aborts a converged Newton as 'unconverged'.",
+  "_mutation": [
+    {
+      "note": "Kill the reverse direction in the partitioned coupling only. 4C keeps its own, so the two codes now disagree about the answer AND about the size of the reverse direction. Both the coupled-vs-4C comparison and the 'both codes agree on the reverse direction' check fail. This is the mutation that decides whether the cross-code agreement is evidence of a TWO-way coupling or only of a one-way one.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(0.0 * float(coupling)),"
+    },
+    {
+      "note": "Change 4C's expansion coefficient by 2% while the participants and the in-house reference keep theirs. Nothing inside 4C notices — its own uniaxial identity still holds, because delta moves with it — but the cross-code comparisons must fail. This is the control for the reference itself: it shows the agreement is measuring the physics and not just that both codes ran.",
+      "file": "../_lib/tsi_fourc.py",
+      "from": "\"THEXPANS\": p.alpha, \"INITTEMP\": p.t_ref,",
+      "to": "\"THEXPANS\": 1.02 * p.alpha, \"INITTEMP\": p.t_ref,"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "tsi_matches_native_4c",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 7200,
+  "expect_in_output": [
+    "fourc_reverse_term_is_classical=True",
+    "fourc_matches_monolithic=True",
+    "coupled_matches_native_fourc=True",
+    "both_codes_agree_on_reverse_direction=True",
+    "cpl_2way_converged=True",
+    "cpl_2way_validation_empty=True",
+    "cpl_1way_tool_reported_one_way=True",
+    "pairs_run=1",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "_converged=False",
+    "_validation_empty=False",
+    "fourc_reverse_term_is_classical=False",
+    "fourc_matches_monolithic=False",
+    "coupled_matches_native_fourc=False",
+    "both_codes_agree_on_reverse_direction=False",
+    "_tool_reported_one_way=False",
+    "failures_count=1"
+  ]
+}

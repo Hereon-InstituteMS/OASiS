@@ -3546,8 +3546,13 @@ def register_consolidated_tools(mcp: FastMCP):
         Any combination of these works for heat_dd and poisson_dd problems.
 
         Args:
-            problem: 'heat_dd', 'poisson_dd', 'one_way', 'tsi_dd',
-                     'poisson_dd_study', 'l_bracket_tsi', 'heat_dd_precice'
+            problem: 'heat_dd', 'poisson_dd', 'one_way',
+                     'poisson_dd_study', 'l_bracket_tsi', 'heat_dd_precice'.
+                     'tsi_dd' is REMOVED: it reported converged=True,
+                     iterations=1, residual=0.0 on a run that did one thermal
+                     solve and one one-way structural solve and never fed
+                     anything back. Two-way TSI goes through `couple` — see the
+                     shipped participant_tsi_* scripts.
             solver_a, solver_b: Backend names
             nx, ny: Elements per direction
             max_iter: Max iterations
@@ -4667,11 +4672,23 @@ def register_consolidated_tools(mcp: FastMCP):
         from any solver, extracts values at the interface plane, and formats
         them for the target solver's expected input shape.
 
+        FIELD (VOLUME) COUPLINGS: pass `interface_axis=-1`. Not every coupling
+        exchanges data on a surface. In thermo-structural interaction both
+        participants own the WHOLE body and exchange volume fields — the
+        temperature one way and the volumetric strain the other — so there is no
+        interface plane, no normal and no flux to balance, and a plane slice
+        cannot express the exchange at all. With `interface_axis=-1` every point
+        in the file is taken, `interface_coord` is ignored, and the points come
+        back in a fixed lexicographic order (the `couple` driver relaxes export
+        vectors entry by entry, so the order must not move between iterations).
+
         Args:
             source_vtu: Path to VTU result file from the source solver.
             field_name: Field to extract (e.g. 'temperature', 'displacement').
             interface_coord: Coordinate value defining the interface plane.
-            interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z).
+                Ignored when interface_axis is -1.
+            interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z), or
+                -1 for the WHOLE VOLUME (field coupling, see above).
             target_format: Output format. Options:
                 - "json"        — interface coordinates + values (default)
                 - "fenics"      — Python BoundaryCondition snippet (Dirichlet

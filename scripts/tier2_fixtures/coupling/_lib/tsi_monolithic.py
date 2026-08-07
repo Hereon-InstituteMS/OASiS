@@ -90,6 +90,20 @@ class TsiProblem:
     t_hot: float = 323.0
     t_hot_dy: float = 10.0
     t_cold: float = 303.0
+    # THE INITIAL DISPLACEMENT. False (the default) means the body starts in
+    # mechanical equilibrium with the uniform t_old, so tr(eps_old) is the
+    # uniaxial-strain value below. True means it starts UNSTRAINED at t_old —
+    # a pre-stressed initial state, and the one 4C's TSI actually has, because
+    # its structural time integrator starts from d_0 = 0 whatever INITTEMP is.
+    # The cross-code comparison therefore sets it; nothing else does.
+    #
+    # It costs the effective-capacity identity when t_old != t_ref: with
+    # e_old = 0 the energy equation becomes rho_c[(1+delta)T - T_n - delta*T_ref]
+    # /dt - k lap(T) = 0, which is the one-way equation at rho_c*(1+delta) only
+    # if T_n == T_ref. So the identity is checked on a problem with
+    # t_old == t_ref and the coupled comparison on one without, rather than
+    # asserting an identity that does not hold.
+    unstrained_start: bool = False
 
     @property
     def lam(self) -> float:
@@ -117,6 +131,8 @@ class TsiProblem:
 
     @property
     def evol_old(self) -> float:
+        if self.unstrained_start:
+            return 0.0
         return self.beta * (self.t_old - self.t_ref) / self.pwave
 
 

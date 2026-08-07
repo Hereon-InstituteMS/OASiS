@@ -88,8 +88,30 @@ from tsi_monolithic import TsiProblem
 # A tiny temperature excursion: see the header. Everything is linear in it, so
 # nothing about the coupling changes, and the one model difference between 4C
 # and the linear theory shrinks with it.
-FOURC_PROBLEM = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=293.0,
-                           t_hot=293.3, t_hot_dy=0.0, t_cold=293.0)
+#
+# TWO PROBLEMS, AND THE REASON IS NOT COSMETIC.
+#
+#   NATIVE starts at t_old == t_ref. That is what makes 4C's own uniaxial
+#   effective-capacity identity hold (see TsiProblem.unstrained_start), so it is
+#   the problem on which 4C's reverse term is identified black-box and on which
+#   4C is compared against the in-house monolithic solve. Neither of those runs
+#   a partitioned coupling.
+#
+#   COUPLED offsets every temperature above t_ref. It has to: with t_old ==
+#   t_ref the exchanged fields are ZERO over most of the body after one step
+#   (the heat has not arrived), and `couple`'s per-block convergence check —
+#   which is the worst ENTRY-WISE relative change, not a norm — then reports
+#   blocks "still changing" at 1e-06 on a run whose global residual is 8e-13.
+#   Measured, on exactly this problem. Those entries carry no information: a
+#   relative change of 1e-06 on an entry that is 1e-08 of the largest is an
+#   absolute change of 1e-14 of the field. The check is not wrong to be
+#   conservative, and the answer is not to loosen it but to exchange fields that
+#   are bounded away from zero, which an offset does.
+FOURC_NATIVE = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=293.0,
+                          t_hot=293.3, t_hot_dy=0.0, t_cold=293.0)
+FOURC_COUPLED = TsiProblem(alpha=1.2e-4, t_ref=293.0, t_old=293.3,
+                           t_hot=293.9, t_hot_dy=0.0, t_cold=293.6,
+                           unstrained_start=True)
 
 
 def linearisation_bound(p: TsiProblem) -> float:
@@ -97,6 +119,125 @@ def linearisation_bound(p: TsiProblem) -> float:
     theory's (beta*T_ref*d/dt tr eps), as a fraction of the reverse term."""
     hi = max(p.t_hot, p.t_cold, p.t_old) + max(p.t_hot_dy, 0.0)
     return abs(hi - p.t_ref) / p.t_ref
+
+
+# ── every key in the deck, against 4C's own accepted grammar ───────────────
+#
+# A MIS-CASED KEY AND AN INVENTED KEY PRODUCE THE SAME MESSAGE. 4C answers both
+# with "Failed to match specification in section '<SECTION>'", so the message
+# cannot tell them apart and a deck that fails to parse gives no clue whether
+# the key is wrong or the value is. `4C -p` dumps the grammar the binary
+# actually accepts, and that is the only thing that can. This checks the deck
+# this file generates against it, key by key, so an invented key is caught by
+# name here instead of as an opaque parse failure later.
+#
+# Sections that carry MESH DATA rather than parameters are excluded by name:
+# their content is node and element lines, not key/value pairs.
+_MESH_SECTIONS = {"NODE COORDS", "STRUCTURE ELEMENTS", "DSURF-NODE TOPOLOGY",
+                  "DVOL-NODE TOPOLOGY", "TITLE"}
+
+
+def _grammar() -> dict:
+    """`4C -p`, parsed. Cached on disk under TMPDIR — it is ~70k lines and the
+    binary takes a moment, and every fixture that audits keys wants the same
+    dump."""
+    import json as _json
+    import yaml
+    cache = Path(os.environ.get("TMPDIR", "/tmp")) / "oasis_4c_grammar.json"
+    if cache.is_file():
+        return _json.loads(cache.read_text())
+    env = dict(os.environ)
+    for cand in ("/opt/4C-dependencies/lib",):
+        if Path(cand).is_dir():
+            env["LD_LIBRARY_PATH"] = cand + os.pathsep + env.get("LD_LIBRARY_PATH", "")
+    r = subprocess.run(["stdbuf", "-oL", _find_binary(), "-p"],
+                       capture_output=True, text=True, timeout=900, env=env)
+    text = r.stdout
+    # An X11 warning on a headless box prepends bytes to the first line and
+    # turns `metadata:` into a different key; drop anything before it.
+    i = text.find("metadata:")
+    if i > 0:
+        text = text[i:]
+    doc = yaml.safe_load(text)
+    # `sections` is {"type": "all_of", "specs": [ {name, type: group, specs}, ...]}
+    # and the big repeated sub-grammars (every condition's E/NUMDOF/ONOFF/VAL/
+    # FUNCT block, the element spec inside a generated domain) are FACTORED OUT
+    # into `$references` and pulled in with `{"$ref": "<id>"}`. Not following
+    # those makes every condition section look as if it accepts no keys at all,
+    # which is how a first version of this auditor reported thirty-three
+    # perfectly valid keys as fabrications.
+    refs = doc.get("$references") or {}
+    entries = (doc.get("sections") or {}).get("specs") or []
+    out = {"sections": {}}
+    for sec in entries:
+        if isinstance(sec, dict) and isinstance(sec.get("name"), str):
+            # `type: group` sections carry `specs`; `type: list` sections
+            # (MATERIALS, FUNCT<n>, every DESIGN ... CONDITIONS) carry a single
+            # `spec` describing one entry. Reading only `specs` made every
+            # list-valued section look as if it accepted no keys at all.
+            body = sec.get("specs") if "specs" in sec else sec.get("spec")
+            out["sections"][sec["name"]] = sorted(_names(body, refs=refs))
+    if not out["sections"]:
+        raise RuntimeError("`4C -p` produced no parseable section list")
+    cache.write_text(_json.dumps(out))
+    return out
+
+
+def _names(node, acc=None, refs=None, seen=None) -> set:
+    acc = set() if acc is None else acc
+    refs = refs or {}
+    seen = set() if seen is None else seen
+    if isinstance(node, dict):
+        r = node.get("$ref")
+        if isinstance(r, (str, int)) and str(r) not in seen:
+            seen.add(str(r))
+            _names(refs.get(str(r)), acc, refs, seen)
+        if isinstance(node.get("name"), str):
+            acc.add(node["name"])
+        for k, v in node.items():
+            if k != "$ref":
+                _names(v, acc, refs, seen)
+    elif isinstance(node, list):
+        for v in node:
+            _names(v, acc, refs, seen)
+    return acc
+
+
+def audit_deck_keys(p: TsiProblem, nx: int = 4) -> list[str]:
+    """Return the sections and keys this generator writes that 4C's grammar
+    does not know. An empty list is the only acceptable result."""
+    import yaml
+    g = _grammar()["sections"]
+    bad: list[str] = []
+    d = yaml.safe_load(deck(p, nx))
+    for sec, body in d.items():
+        if sec in _MESH_SECTIONS:
+            continue
+        # 4C writes indexed sections as a pattern: FUNCT1/FUNCT2/... are all
+        # `FUNCT<n>` in the dump, and SOLVER 1 is `SOLVER <n>`.
+        key = re.sub(r"\d+$", "<n>", sec)
+        key = key if key in g else sec
+        if key not in g:
+            bad.append(f"section {sec!r} is not in 4C's grammar")
+            continue
+        allowed = set(g[key])
+        for key in _deck_keys(body):
+            if key not in allowed:
+                bad.append(f"{sec} -> {key!r} is not in 4C's grammar")
+    return bad
+
+
+def _deck_keys(body) -> set:
+    """The parameter names a deck section sets, at any nesting depth."""
+    out: set = set()
+    if isinstance(body, dict):
+        for k, v in body.items():
+            out.add(str(k))
+            out |= _deck_keys(v)
+    elif isinstance(body, list):
+        for v in body:
+            out |= _deck_keys(v)
+    return out
 
 
 def _find_binary() -> str:
