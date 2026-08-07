@@ -44,8 +44,9 @@ execution, not assumed:
     demands AZPREC Teko, and `TekoPreconditioner::setup` then demands
     TEKO_XML_FILE. The deck therefore names 4C's own recommended block
     preconditioner by absolute path.
-  * FE2 multiscale reads the RVE from a second input file through
-    `Global::read_micro_fields`; `MICROFILE` cannot be inlined.
+  * FE2 multiscale reads the RVE from a second, standalone `InputFile` through
+    `Global::read_micro_fields`, one per macro multiscale material, so
+    `MICROFILE` cannot be inlined. The deck names 4C's own RVE by path.
 
 Both resolve through `FOURC_ROOT`, the same environment variable this backend
 already uses to resolve Exodus meshes. When it is unset the deck still renders
@@ -280,7 +281,35 @@ DECKS: tuple[Deck, ...] = (
         ),
     ),
     Deck(
-        physics="particle_dem", variant="normal_impact_1d",
+        physics="multiscale", variant="fe2_3d",
+        filename="multiscale.4C.yaml", np=2,
+        upstream="sohex8_multiscale_macro.4C.yaml",
+        summary="FE2 computational homogenisation: a macro block with no "
+                "constitutive law of its own, whose stress at every Gauss "
+                "point comes from solving a boundary value problem on a micro "
+                "RVE driven by the local deformation gradient.",
+        evidence="64 independent micro problems are opened and written "
+                 "(out_microdis{1,2,3}_el*_gp*), one per macro Gauss point per "
+                 "micro discretisation — the homogenisation really runs rather "
+                 "than the macro material falling back to something local.",
+        requires_fourc_root=True,
+        pitfalls=(
+            "FE2 is intrinsically a TWO-file problem type. "
+            "Global::read_micro_fields opens a second, standalone InputFile "
+            "per macro multiscale material, so the RVE cannot be inlined; this "
+            "deck names 4C's own RVE by absolute path. Omitting MICROFILE does "
+            "not help — its default is the literal placeholder 'filename.dat', "
+            "so you get the same 'Input file does not exist' abort with a "
+            "different name.",
+            "Pointing MICROFILE at the deck itself segfaults: the recursive "
+            "read corrupts the problem registry and the backtrace surfaces in "
+            "an unrelated field's setup.",
+            "MICRODIS_NUM numbers the independent micro discretisations; two "
+            "macro materials sharing a number share one RVE.",
+        ),
+    ),
+    Deck(
+        physics="particle_dem", variant="settling_3d",
         filename="particle_dem.4C.yaml", np=2,
         upstream="particle_dem_1d_normalcontact_linspring_stiffset.4C.yaml",
         summary="Discrete element method: 48 rigid spheres of two sizes fall "
@@ -299,7 +328,7 @@ DECKS: tuple[Deck, ...] = (
         ),
     ),
     Deck(
-        physics="particle_sph", variant="poiseuille_2d",
+        physics="particle_sph", variant="hydrostatic_2d",
         filename="particle_sph_hydrostatic.4C.yaml", np=2,
         upstream="particle_sph_1d_hydrostatic_freesurface_densityintegration_"
                  "cubicspline_adami.4C.yaml",

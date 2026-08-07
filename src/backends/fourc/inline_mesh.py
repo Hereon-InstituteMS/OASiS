@@ -1433,12 +1433,20 @@ def matched_level_set_advection_input(nx: int = 16, ny: int = 16,
     hex8/hex20/hex27 cells and aborts on QUAD4.
 
     The signed-distance field is shifted by +1.0 so it has no zero
-    crossing inside the domain: builds without Qhull abort in
-    Cut::TetMesh::call_q_hull when the zero isosurface cuts a hex.
-    The corpus uses the identical workaround (levelset_gaussian_hill
-    title: "shifted by +1.0 not to run into cut troubles"). The
-    circular interface is thus the phi = 1 isoline; the advection
-    dynamics are unchanged.
+    crossing inside the domain, following the corpus deck
+    levelset_gaussian_hill ("shifted by +1.0 not to run into cut
+    troubles"). The circular interface is thus the phi = 1 isoline;
+    the advection dynamics are unchanged.
+
+    CORRECTED 2026-08-07. This shift was previously justified here as
+    a workaround for a missing Qhull ("builds without Qhull abort in
+    Cut::TetMesh::call_q_hull when the zero isosurface cuts a hex").
+    That is not true of this install: the build has
+    FOUR_C_WITH_QHULL:BOOL=ON and lib4C.so links libqhull.so.6, and
+    the same deck with the +1.0 removed -- so the zero isosurface
+    really does cut the hexes -- runs to completion, rc 0. The shift
+    is kept because it is what the corpus deck does, not because the
+    unshifted case fails.
     """
     nx = max(2, min(int(nx), 32))
     ny = max(2, min(int(ny), 32))

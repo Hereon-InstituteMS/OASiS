@@ -57,31 +57,22 @@ sys.path.insert(0, str(_REPO / "src"))
 # FourcBackend._reference_stub_template because they genuinely
 # need a case-specific mesh (often two meshes), a second input
 # file, patient-derived 1-D topology, an explicit particle cloud,
-# a wall-resolved periodic mesh, or a build feature this 4C lacks
-# (xfem cut needs Qhull). See tests/test_fourc_reference_stubs.py.
+# a wall-resolved periodic mesh. See tests/test_fourc_reference_stubs.py,
+# which now pins the opposite: those rows are executed decks.
 STUB_TEMPLATES = {
-    ("fourc", "brownian_dynamics", "brownian_3d"),
-    ("fourc", "fluid_turbulence", "les_channel_3d"),
-    ("fourc", "fsi_xfem", "xfem_fsi_3d"),
-    ("fourc", "xfem_fluid", "xfem_3d"),
-    ("fourc", "fs3i", "fs3i_3d"),
-    ("fourc", "fpsi", "monolithic_3d"),
-    ("fourc", "ehl", "ehl_3d"),
-    ("fourc", "fbi", "penalty_3d"),
-    ("fourc", "pasi", "dem_impact_3d"),
-    ("fourc", "ssi", "monolithic_elch_3d"),
-    ("fourc", "ssti", "monolithic_3d"),
-    ("fourc", "sti", "monolithic_3d"),
-    ("fourc", "cardiac_monodomain", "monodomain_3d"),
-    ("fourc", "arterial_network", "single_artery_1d"),
-    # reduced_airways/airways_1d was upgraded from a stub to a real inline-mesh
-    # template, so it is no longer tagged ⚠ STUB in prepare_simulation.
-    ("fourc", "reduced_lung", "lung_1d"),
-    ("fourc", "multiscale", "fe2_3d"),
-    ("fourc", "beam_interaction", "beam_contact_3d"),
-    ("fourc", "beam_interaction", "beam_solid_meshtying_3d"),
-    ("fourc", "particle_pd", "plate_2d"),
-    ("fourc", "particle_sph", "poiseuille_2d"),
+    # 2026-08-07: every fourc row that used to sit here has been replaced by a
+    # deck that was executed on the installed binary (see
+    # src/backends/fourc/decks.py and tests/test_fourc_reference_stubs.py), so
+    # nothing here is a fourc row any more except the two porous-media
+    # variants that are still honest stubs.
+    #
+    # One claim removed with them: the note above used to say XFEM was blocked
+    # because "xfem cut needs Qhull" and this build lacks it. It does not lack
+    # it — the build has FOUR_C_WITH_QHULL:BOOL=ON, lib4C.so links
+    # libqhull.so.6, and the XFEM decks run in both Tessellation and
+    # DirectDivergence cut modes.
+    ("fourc", "porous_media", "terzaghi_2d"),
+    ("fourc", "porous_media", "consolidation_3d"),
 }
 
 
