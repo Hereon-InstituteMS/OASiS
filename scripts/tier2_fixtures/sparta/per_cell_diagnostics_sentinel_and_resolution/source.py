@@ -174,8 +174,25 @@ print(f"a_timestep_far_above_the_recommendation_still_exits_zero="
 # a hundred times too large or a hundred times too small, and the same on a grid
 # with sixteen times fewer cells. A dt or grid study run on an equilibrium box
 # is therefore measuring nothing.
+def _mean(xs):
+    """Run-averaged, not last-sample.
+
+    This used to read r["ncoll"][-1] — ONE timestep of a Monte-Carlo code. A
+    single sample of a stochastic quantity, so the spread below was dominated by
+    shot noise rather than by physics, and whether it fell under the 0.2
+    threshold was decided by the pinned seed. Sweeping seed alone:
+
+        12345 -> 0.116   24680 -> 0.152   99991 -> 0.232 (FAIL)
+        31337 -> 0.123    5150 -> 0.031  8675309 -> 0.086
+
+    The fixture passed because 12345 was lucky. Averaging over the run is the
+    fix; re-pinning a luckier seed would only have hidden it.
+    """
+    return (sum(xs) / len(xs)) if xs else 0.0
+
+
 def rate(r, dt):
-    return (r["ncoll"][-1] / dt) if r["ncoll"] else 0.0
+    return (_mean(r["ncoll"]) / dt) if r["ncoll"] else 0.0
 
 
 rate_big = rate(big_dt, 1e-5)
@@ -196,8 +213,8 @@ def ratio(*values):
 
 timestep_rate_spread = spread(rate_big, rate_ref, rate_small)
 grid_rate_spread = spread(rate_ref, rate_coarse)
-count_ratio = ratio(big_dt["ncoll"][-1], resolved["ncoll"][-1],
-                    small_dt["ncoll"][-1])
+count_ratio = ratio(_mean(big_dt["ncoll"]), _mean(resolved["ncoll"]),
+                    _mean(small_dt["ncoll"]))
 rate_ratio = ratio(rate_big, rate_ref, rate_small)
 count_moves_more = count_ratio > 100 * rate_ratio
 

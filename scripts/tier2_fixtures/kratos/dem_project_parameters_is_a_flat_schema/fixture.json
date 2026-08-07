@@ -1,0 +1,15 @@
+{
+  "_comment": "Tier-2 for kratos.dem pitfall #0: ProjectParametersDEM.json is a flat schema, not the FEM problem_data/solver_settings layout. Executed 2026-08-07 on Kratos 10.4.3 Release with DEMApplication. The OASiS DEM generator emitted the StructuralMechanics shape -- a 'problem_data' block plus solver_settings.solver_type='dem_solver' and solver_settings.time_stepping.time_step -- and this fixture drives DEMAnalysisStage with exactly that deck. Measured: RuntimeError 'Error: Getting a value that does not exist. entry string : strategy' from kratos/sources/kratos_parameters.cpp:426, raised inside the DEMAnalysisStage constructor before any mdpa is opened, because DEM looks for solver_settings.strategy (a Python module basename such as 'sphere_strategy') and never reads solver_type. The mutated run additionally shows the SECOND error a user meets after adding the key -- 'The item with name \"domain_size\" is present in this Parameters but NOT in the default values' -- which is how one learns solver_settings is itself validated against a four-key default. WHY IT MATTERS: the cross_backend catalog_template_executes fixture records kratos::dem::2d_rc=0, but it only runs the generator half (the script that writes the files); the input.py the generator emits, which is what actually calls DEMAnalysisStage, was never executed by any gate and does not run. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the mutation ADDS the missing 'strategy' key to the FEM-shaped deck, so the deck that must fail on 'strategy' no longer does; the classification code is untouched, only the input changes. Verified: unmutated PASSES (rc=0) printing fem_schema_raises_on_strategy=True; with T2_MUTATE=1 it FAILS (rc=1), that line flips to False and dem_flat_schema_check=ok disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_project_parameters_is_a_flat_schema && $KRATOS_PYTHON source.py (passes), then T2_MUTATE=1 $KRATOS_PYTHON source.py (fails).",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "fem_schema_raises_on_strategy=True",
+    "entry string : strategy",
+    "dem_flat_schema_check=ok"
+  ],
+  "forbid_in_output": [
+    "MISMATCH"
+  ]
+}

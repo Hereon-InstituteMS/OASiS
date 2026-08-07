@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for kratos.dem pitfall #5: PARTICLE_FRICTION is not a Kratos variable. Executed 2026-08-07 on Kratos 10.4.3 Release (GCC-15.2, OpenMP) in an environment carrying all 28 applications including DEMApplication, so this is EXECUTION evidence, not source reading. Measured: KratosGlobals.GetVariable('PARTICLE_FRICTION') raises ValueError 'Kernel.GetVariable() ERROR: Variable PARTICLE_FRICTION is unknown.', while STATIC_FRICTION and DYNAMIC_FRICTION both resolve. Corroborated independently by grep -r -a -F over the installed KratosMultiphysics tree (compiled .so files included): PARTICLE_FRICTION -> 0 files, STATIC_FRICTION -> 19 files, DYNAMIC_FRICTION -> 15 files. This matters because the OASiS DEM generator emitted PARTICLE_FRICTION into both the mdpa Properties block and MaterialsDEM.json; feeding that materials file to DEMAnalysisStage raises RuntimeError 'Error: Value type for \"PARTICLE_FRICTION\" not defined'. INTERPRETER: this fixture needs a Kratos build that actually carries DEMApplication. Set KRATOS_PYTHON to one; the repo venv wheel does NOT import on this host (GLIBC_2.32 required, host has 2.31) and in any case ships only ContactStructuralMechanics, LinearSolvers and StructuralMechanics. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the mutation SWAPS the claimed-absent and claimed-present names, asserting STATIC_FRICTION is unknown and PARTICLE_FRICTION registered -- the exact inversion of this build -- while leaving the GetVariable probe untouched. Verified: unmutated the fixture PASSES (rc=0) and prints absent_name=PARTICLE_FRICTION resolves=False plus both present_name lines; with T2_MUTATE=1 it FAILS (rc=1) and those lines disappear, replaced by two MISMATCH lines on stderr. Re-verify: cd scripts/tier2_fixtures/kratos/dem_particle_friction_is_not_a_variable && $KRATOS_PYTHON source.py (passes), then T2_MUTATE=1 $KRATOS_PYTHON source.py (fails).",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "absent_name=PARTICLE_FRICTION resolves=False",
+    "present_name=STATIC_FRICTION resolves=True",
+    "present_name=DYNAMIC_FRICTION resolves=True",
+    "dem_friction_variable_check=ok"
+  ],
+  "forbid_in_output": [
+    "MISMATCH"
+  ]
+}
