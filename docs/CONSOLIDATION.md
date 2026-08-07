@@ -846,6 +846,10 @@ suite's own interpreter, before (`ffb5d1c6`) and after:
     before   3 failed, 282 passed, 3 skipped, 22 subtests passed
     after    3 failed, 286 passed, 3 skipped, 22 subtests passed
 
+Re-run once more after the four verdict-channel fixes below, unchanged:
+3 failed, 286 passed, 3 skipped, 22 subtests passed, and `diff` of the two
+failure lists is empty.
+
 The failure SET is byte-identical and all three are pre-existing: they are
 `test_signal_verification.py`'s checks against `scan_results/tier2_results.json`,
 which carries no `fixture_fingerprint` and is therefore treated as stale — which
