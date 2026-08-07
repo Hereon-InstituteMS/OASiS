@@ -260,6 +260,21 @@ def audit(backend: str, verbose: bool = False) -> dict:
                 "first_seen": seen[tok][0][0],
                 "signal": seen[tok][0][1],
             })
+    if res["entries"] == 0:
+        # "OK, 0 keys checked, 0 unresolved" is the shape of a pass, and it is
+        # what this returned for SPARTA — whose knowledge in this tree is a
+        # 509 KB command reference containing no warnings at all. A green tick
+        # for a backend nobody looked at is the most expensive kind of wrong,
+        # because a pass ends the investigation.
+        res["status"] = "NO_ENTRIES"
+        res["reason"] = (
+            f"no warning text found for {backend}: nothing under "
+            f"src/backends/{backend} carries a 'Signal:' clause, in Python or "
+            f"in JSON. Either this backend has no warnings yet, or its "
+            f"knowledge is stored in a shape the collector does not read. "
+            f"Both are worth knowing; neither is a pass.")
+        return res
+
     part = corpus_completeness(backend)
     if part:
         res["corpus_partial"] = part
