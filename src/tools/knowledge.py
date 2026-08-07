@@ -449,21 +449,183 @@ FUNCT1:
     SYMBOLIC_FUNCTION_OF_SPACE_TIME: "100.0 * (1.0 - x)"
 ```
 
-### Cross-Solver TSI Workflow
+## TWO-WAY TSI ACROSS TWO CODES, through `couple`
 
-1. FEniCS solves heat equation → temperature field
-2. 4C TSI receives same thermal BCs → solves coupled problem
-3. Compare displacements → cross-validation
-4. Verify against analytical: ΔL = α · T_avg · L (for 1D, ν=0)
+This is a FIELD coupling, not a domain decomposition, and that changes
+everything about how it is set up and checked. Both participants own the WHOLE
+body. There is no interface, no outward normal, and no flux to balance — so
+`couple`'s conservation checks report themselves as NOT RUN, and the only things
+that can catch a wrong answer are the `monolithic=` comparison and the direction
+controls below.
+
+### The two equations, and which term is which direction
+
+Mechanical (quasi-static), THE THERMAL -> MECHANICAL DIRECTION:
+
+    div(sigma) = 0,  sigma = 2 mu eps(u) + lam tr(eps(u)) I - beta (T - T_ref) I
+
+Energy (one implicit step), THE MECHANICAL -> THERMAL DIRECTION is the LAST term:
+
+    rho_c (T - T_old)/dt - div(k grad T) + T_ref*beta*(tr eps(u) - tr eps(u_old))/dt = 0
+
+with `beta = (3 lam + 2 mu) * alpha` the thermal stress modulus. Drop that last
+term and you have a ONE-WAY coupling — a different and much weaker capability.
+Most published "TSI couplings" are one-way and do not say so.
+
+### What each participant exchanges
+
+  thermal  imports the volumetric strain `e = tr(eps(u))`, exports the
+           temperature CHANGE `theta = T - T_ref` at its own nodes;
+  mech     imports `theta`, exports `e` at its own nodes.
+
+EXPORT THE TEMPERATURE CHANGE, NOT THE ABSOLUTE TEMPERATURE. The driver's
+convergence test is a RELATIVE norm, so a quantity carrying a large constant
+offset makes that norm small for free — the same coupling exchanging T in
+kelvin and in celsius reports residuals a factor of ~20 apart. Worse, the offset
+makes the temperature block dominate the global norm, so the STRAIN block hides
+behind it and the run stops while the strain is still moving. Measured on a
+converged pair: exporting absolute T, the global residual read 6e-11 while the
+strain block was still changing by 3e-09 per iteration.
+
+EXPORT THE STRAIN, NOT THE DISPLACEMENT. The energy equation couples to
+d/dt tr(eps), not to u. Exporting u makes the thermal side differentiate a field
+it interpolated off a foreign mesh — the derivative of an interpolant, one order
+of accuracy down. Use a QUADRATIC displacement space with a LINEAR temperature
+space, so tr(eps(u)) lands in the same space the temperature lives in; with
+linear displacement the strain is piecewise constant, one order below the
+temperature, and the coupled answer settles on a different fixed point for that
+reason alone.
+
+### How strong the coupling is, and what theta to use
+
+    delta = T_ref * beta^2 / (rho_c * (lam + 2 mu))
+
+is the classical thermoelastic coupling parameter and it IS the size of the
+reverse direction: in uniaxial strain the reverse coupling multiplies the
+effective heat capacity by (1 + delta). For a real metal delta ~ 1e-2 — small,
+but not zero, and four orders of magnitude above a coupling tolerance of 1e-12.
+
+delta plays exactly the role rho plays for a Dirichlet-Neumann split, so the
+same theta rule applies: the relaxed iteration's amplification is
+sqrt((1-theta)^2 + delta*theta^2), minimised at `theta = 1/(1+delta)`. At
+delta > 1 the UN-RELAXED iteration diverges (amplification sqrt(delta) > 1), so
+relaxation is not optional there.
+
+### Convergence tolerance: watch the per-block check
+
+`couple` checks each exchanged block separately against tol*10, because a
+global relative norm is set by the largest-magnitude block. The strain block's
+worst ENTRY-WISE relative change runs several times the global residual and has
+its own roundoff floor. Measured on a converged pair: tol=1e-10 left the strain
+block at 1.4e-09 against a limit of 1e-09 (a finding); tol=1e-12 was clean;
+tol=1e-13 put the block on its own floor and produced a finding again. Choose
+tol so the BLOCKS clear, not so the global norm looks small.
+
+AND KEEP THE EXCHANGED FIELDS AWAY FROM ZERO. If the initial temperature equals
+the reference temperature, both exchanged fields are ~0 over most of the body
+after one step and the per-block check — an entry-wise relative change — reports
+blocks "still changing" at 1e-06 on a run whose global residual is 8e-13. Those
+entries carry no information. Offset the initial state instead of loosening the
+check.
+
+### Proving it is actually TWO-way — do not skip this
+
+A "two-way" coupling whose reverse direction changes nothing is one-way with
+extra steps, and nothing in the iteration can tell you which you have. Two
+controls, and the second is the real one:
+
+  1. SUPPRESS the reverse direction and check the answer MOVES. You do not need
+     to edit a participant: give the thermal participant `imports_from: []` and
+     it falls back to its initial strain, which makes the (e - e_old) source
+     term identically zero. `couple` will report ONE-WAY in `validation` — that
+     is the tool confirming the control did what you asked. Both runs use the
+     SAME meshes, so discretisation error is common mode and the only floor is
+     the coupling residual.
+  2. Check it moves BY THE RIGHT AMOUNT. A participant exchanging the wrong
+     quantity, sign or unit would also move when switched off, and would land
+     somewhere else. Run the monolithic reference twice, with and without the
+     reverse term, and compare the coupled two-way-minus-one-way difference
+     against the monolithic one. That is a difference of differences, so it is
+     insensitive to the discretisation error that limits a plain agreement
+     check.
+
+THE SIGN OF THE REVERSE TERM IS THE SILENT-WRONG. Compressing a body heats it
+and expanding it cools it, so the term enters with a PLUS as written above.
+Flipping it converges just as prettily onto a temperature field wrong by twice
+the coupling effect, and no convergence, balance, finiteness or responsiveness
+check can see it. Only a monolithic or native-TSI comparison can.
+
+### Ready-made participants
+
+`data/coupling_participants/participant_tsi_thermal_{skfem,fenics,ngsolve}.py`
+and `participant_tsi_mech_{skfem,fenics,ngsolve}.py`. Each is self-contained,
+has an EDIT THIS BLOCK of placeholders, and follows the standard participant
+contract (reads imports.json, writes exports.json last). Any thermal script
+pairs with any structural script.
+
+## 4C-NATIVE TSI: FOUR THINGS THAT COST A RUN
+
+Each of these was found by running, not by reading, and each produces an error
+whose message points somewhere other than the cause.
+
+1. **THE MESH MUST BE COARSER THAN 1e-3 IN ABSOLUTE UNITS.** 4C matches the
+   structure and thermo discretisations with a geometric octree whose default
+   tolerance is an ABSOLUTE 1e-3 (Coupling::Adapter::Coupling::match_nodes).
+   Below that spacing distinct nodes collapse into one match and the run aborts
+   with `Did not get 1:1 correspondence. masternodes.size()=324 (structure),
+   coupling.size()=320 (thermo)` — a message about node COUNTS whose cause is
+   geometric SCALE. It does not change when you fix the mesh, the conditions or
+   the physics. Pose the problem at metre scale, or coarsen.
+
+2. **TOLTEMP AND TOLDISP ARE ABSOLUTE INCREMENT NORMS.** On a temperature near
+   293 K the increment norm cannot go below ~1e-12, so `TOLTEMP: 1e-14` is under
+   its own roundoff floor. 4C's default `NORMCOMBI_RESFINC: Coupl_And_Single`
+   requires the coupled residual, the coupled increment AND every field's own
+   residual and increment at once, so one unreachable tolerance is enough: a
+   Newton fully converged at iteration 3 grinds to ITEMAX and aborts with
+   `Newton unconverged in 50 iterations`, which reads as a physics failure.
+
+3. **A `Statics` STRUCTURE SILENTLY KILLS THE REVERSE DIRECTION.** 4C's coupling
+   term is assembled from the structural VELOCITY. Run the structure as
+   `DYNAMICTYPE: Statics` and there is no velocity, so the mechanical -> thermal
+   direction vanishes with no message — the run succeeds and is one-way. Use
+   `OneStepTheta` with `THETA: 1.0`, which makes v_{n+1} exactly
+   (d_{n+1} - d_n)/dt, and set a tiny `DENS` if you want the mechanics
+   quasi-static anyway.
+
+4. **ONE LINEAR SOLVER IS ENOUGH for monolithic TSI**, contrary to what the
+   upstream decks suggest. They configure a second Belos/Teko block
+   preconditioner, but `TSI DYNAMIC/MONOLITHIC: MERGE_TSI_BLOCK_MATRIX: true`
+   with a single `SOLVER 1: {SOLVER: UMFPACK}` solves the merged system
+   directly. Verified on a 320-element TSI deck.
+
+### 4C's own reverse term, and how to identify it without reading its source
+
+4C assembles `- N^T . ctemp : (B_L . d') . N . T`, i.e. `+ beta * T * d/dt
+tr(eps)` with the CURRENT temperature where the classical linear theory uses
+T_ref. If you are comparing against a linear-theory implementation, keep the
+temperature EXCURSION small relative to T_ref — everything is linear in the
+excursion, so delta, the relaxation and the relative size of the reverse
+direction are unchanged, while the model difference shrinks with it.
+
+You can confirm 4C's reverse term BLACK BOX, with no source reading: in uniaxial
+strain, 4C's two-way solve at `CAPA` must equal its `tsi_oneway` solve at
+`CAPA*(1+delta)`. If it does, the term is the classical one with the same beta.
+
+### One-way on purpose
+
+`TSI DYNAMIC: COUPALGO: tsi_oneway` with
+`TSI DYNAMIC/PARTITIONED: COUPVARIABLE: Temperature` gives thermal -> structural
+with no feedback. `COUPVARIABLE: Displacement` (the DEFAULT) gives the other
+direction, which is not what "one-way TSI" usually means.
 
 ### Pitfalls
 
 1. **Must use SOLIDSCATRA elements** — standard SOLID or WALL elements cannot couple
 2. **CLONING MAP is mandatory** — without it, 4C crashes at initialization
-3. **Two LINEAR_SOLVERs needed** — one for thermal, one for structural
-4. **THEXPANS units** — must be consistent with temperature units (1/K or 1/°C)
-5. **INITTEMP** — the reference temperature for zero thermal strain
-6. **3D only** — no 2D TSI elements available in 4C
+3. **THEXPANS units** — must be consistent with temperature units (1/K or 1/°C)
+4. **INITTEMP** — the reference temperature for zero thermal strain
+5. **3D only** — no 2D TSI elements available in 4C
 '''
 
     @mcp.tool()
