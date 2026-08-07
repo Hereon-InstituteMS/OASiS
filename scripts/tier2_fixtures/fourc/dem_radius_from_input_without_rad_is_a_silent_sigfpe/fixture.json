@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#4. INITIAL_RADIUS: RadiusFromParticleInput on a deck whose PARTICLES lines carry no RAD token leaves every radius at zero. The MIN/MAX bounds check passes -- MIN_RADIUS defaults to 0.0 and zero is inside [0, MAX_RADIUS] -- and the run is KILLED BY A SIGNAL, not by 4C: exit 136, 'Signal: Floating point exception (8)', 'Signal code: Floating point divide-by-zero (3)'. NORAD_FOURC_ERROR_BLOCKS=0 counts the PROC 0 ERROR blocks directly, so 'no 4C diagnostic' is measured rather than asserted, and NORAD_RADIUS_DIAGNOSTICS=0 counts 4C's five actual radius messages by name rather than grepping for the word. That distinction is not cosmetic: the first version of this fixture DID grep for 'radius', passed in a terminal and FAILED under the runner, because the demangled SIGFPE backtrace contains a 4C symbol carrying the word. A second attempt to say 'the word only appears in a stack frame' was environment-dependent too -- which frames get printed depends on how the process was launched -- so it was dropped rather than tuned. Only the direct count of 4C's named radius diagnostics is asserted. NORAD_STEPS_PRINTED=0 counts TIME: lines, pinning that it dies before the first step. Two controls separate the mechanism from the selector: adding MIN_RADIUS: 0.001 to the SAME deck converts the crash into the named abort 'minimum particle radius smaller than minimum allowed particle radius!', and writing RAD on every particle line makes the same selector run to normal completion. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NORAD=136",
+    "EXIT_FLOOR=1",
+    "EXIT_WITHRAD=0",
+    "NORAD_DIED_ON_A_SIGNAL=yes",
+    "Signal: Floating point exception (8)",
+    "Signal code: Floating point divide-by-zero (3)",
+    "NORAD_FOURC_ERROR_BLOCKS=0",
+    "NORAD_STEPS_PRINTED=0",
+    "minimum particle radius smaller than minimum allowed particle radius!",
+    "MIN_RADIUS_FLOOR_CATCHES_IT=yes",
+    "WITH_RAD_RUNS=yes",
+    "NORAD_RADIUS_DIAGNOSTICS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NORAD=0",
+    "NORAD_DIED_ON_A_SIGNAL=no",
+    "MIN_RADIUS_FLOOR_CATCHES_IT=no",
+    "NORAD_RADIUS_DIAGNOSTICS=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild the probe deck without the edit that introduces it (radius selector left at its material default / bounds widened far outside the draw). The symptom disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}
