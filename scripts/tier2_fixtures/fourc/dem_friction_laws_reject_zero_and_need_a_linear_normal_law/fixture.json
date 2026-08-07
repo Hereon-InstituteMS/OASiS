@@ -37,5 +37,9 @@
     "file": "cmd.sh",
     "from": "MUTATE=\"${T2_MUTATE:-0}\"",
     "to": "MUTATE=1"
-  }
+  },
+  "covers": [
+    "particle_dem:6",
+    "particle_dem:7"
+  ]
 }

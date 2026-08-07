@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#8. Deleting BOUNDARYPARTICLEFORMULATION from a deck that still has boundaryphase particles is completely silent and completely wrong: zero particle-module aborts (counted), zero of 4C's own boundary-particle diagnostics (counted by name, not by keyword -- an earlier keyword grep for 'wall' matched an unrelated timing line), the run reaches the result-test manager, and 6 of 10 verdicts move. The untouched deck passes in the same session. The second half is the distinction the entry turns on, and it is easy to get backwards: deleting every boundary PARTICLE while the phase stays in PHASE_TO_MATERIAL_ID does NOT trigger the guard (NOPARTS_TRIGGERS_THE_GUARD=no) because the container still exists; removing the phase from the maps does. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_NOFORM=1",
+    "EXIT_BASE=0",
+    "BASE_PASSES=yes",
+    "NOFORM_PARTICLE_ABORTS=0",
+    "NOFORM_BOUNDARY_DIAGNOSTICS=0",
+    "NOFORM_REACHED_RESULT_TESTS=yes",
+    "NOFORM_IS_SILENT_AND_WRONG=yes",
+    "NOPARTS_TRIGGERS_THE_GUARD=no",
+    "no boundary or rigid particles defined but a boundary particle formulation is set!",
+    "NOMAP_TRIGGERS_THE_GUARD=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "NOFORM_IS_SILENT_AND_WRONG=no",
+    "NOFORM_VERDICTS_WRONG=0",
+    "NOPARTS_TRIGGERS_THE_GUARD=yes",
+    "NOMAP_TRIGGERS_THE_GUARD=no",
+    "BASE_PASSES=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}
