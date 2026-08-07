@@ -52,11 +52,26 @@ class SSIGenerator(BaseGenerator):
             "optional_sections": [
                 "ELCH CONTROL",
                 "SSI CONTROL/ELCH",
+                "SSI CONTROL/PARTITIONED",
                 "SCALAR TRANSPORT DYNAMIC/S2I COUPLING",
                 "SCALAR TRANSPORT DYNAMIC/STABILIZATION",
                 "SCALAR TRANSPORT DYNAMIC/NONLINEAR",
                 "IO/RUNTIME VTK OUTPUT",
                 "IO/RUNTIME VTK OUTPUT/STRUCTURE",
+                # The S2I interface condition sections. The geometry word
+                # comes LAST; there is no "DESIGN SURF S2I ..." spelling and
+                # no "S2I COUPLING" condition section at all.
+                "DESIGN S2I KINETICS SURF CONDITIONS",
+                "DESIGN S2I KINETICS LINE CONDITIONS",
+                "DESIGN S2I KINETICS POINT CONDITIONS",
+                "DESIGN S2I KINETICS GROWTH SURF CONDITIONS",
+                "DESIGN S2I KINETICS GROWTH LINE CONDITIONS",
+                "DESIGN S2I MESHTYING SURF CONDITIONS",
+                "DESIGN S2I MESHTYING LINE CONDITIONS",
+                "DESIGN S2I SCL COUPLING SURF CONDITIONS",
+                # SSI's own interface conditions (structure side):
+                "DESIGN SSI INTERFACE MESHTYING SURF CONDITIONS",
+                "DESIGN SSI INTERFACE CONTACT SURF CONDITIONS",
             ],
             "materials": {
                 "MAT_MultiplicativeSplitDefgradElastHyper": {
@@ -181,6 +196,9 @@ class SSIGenerator(BaseGenerator):
                     ),
                 },
             },
+            # The complete value set of SSI CONTROL's COUPALGO.  Note the
+            # spelling: no underscore between "IterStagg" and
+            # "FixedRel"/"Aitken".
             "coupling_algorithms": {
                 "ssi_Monolithic": (
                     "Fully coupled monolithic solve.  Both fields are "
@@ -191,7 +209,33 @@ class SSIGenerator(BaseGenerator):
                     "Iterative staggered (partitioned) approach.  Fields "
                     "are solved alternately with relaxation until "
                     "convergence.  Cheaper per iteration but may need "
-                    "more iterations for strongly coupled problems."
+                    "more iterations for strongly coupled problems.  "
+                    "This is the DEFAULT, so a deck that omits COUPALGO "
+                    "is partitioned, not monolithic."
+                ),
+                "ssi_IterStaggFixedRel_ScatraToSolid": (
+                    "Iterative staggered with fixed relaxation, scatra "
+                    "solved first.  Relaxation set in SSI "
+                    "CONTROL/PARTITIONED (STARTOMEGA)."
+                ),
+                "ssi_IterStaggFixedRel_SolidToScatra": (
+                    "As above with the solid solved first."
+                ),
+                "ssi_IterStaggAitken_ScatraToSolid": (
+                    "Iterative staggered with Aitken relaxation, scatra "
+                    "first.  MINOMEGA / MAXOMEGA in SSI "
+                    "CONTROL/PARTITIONED bound the relaxation factor."
+                ),
+                "ssi_IterStaggAitken_SolidToScatra": (
+                    "As above with the solid solved first."
+                ),
+                "ssi_OneWay_ScatraToSolid": (
+                    "One-way: the scalar field drives the solid and gets "
+                    "no feedback."
+                ),
+                "ssi_OneWay_SolidToScatra": (
+                    "One-way: the solid drives the scalar field and gets "
+                    "no feedback."
                 ),
             },
             "electrochemistry_settings": {
