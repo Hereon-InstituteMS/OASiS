@@ -1,5 +1,5 @@
 {
-  "_comment": "COUPLING tier-2. Verifies the sentence under the sides table \u2014 'Every UNSTARRED yes means a real two-code coupling was run in that role on THIS install and CONVERGED; it is not copied from a tool docstring' \u2014 by parsing the table AS SERVED and, for each unstarred yes, locating the sibling coupling fixture that puts that backend on that side. The mapping is derived by ast-parsing the arrangement calls in the other fixtures, not from a list kept in step by hand, so deleting a pair fixture or adding a table row turns this red. It deliberately does NOT read a recorded results snapshot: that would make the fixture green or red according to a file rather than according to the code, and a stale snapshot is the kind of evidence the table already had too much of. Also records which cells are starred (the claim is weaker there and says so) and which are negative.",
+  "_comment": "COUPLING tier-2. Verifies the sentence under the sides table \u2014 'Every UNSTARRED yes means a real two-code coupling was run in that role on THIS install and CONVERGED; it is not copied from a tool docstring' \u2014 by parsing the table AS SERVED and, for each unstarred yes, locating the sibling coupling fixture that puts that backend on that side. The mapping is derived by ast-parsing the arrangement calls in the other fixtures, not from a list kept in step by hand, so deleting a pair fixture or adding a table row turns this red. It deliberately does NOT read a recorded results snapshot: that would make the fixture green or red according to a file rather than according to the code, and a stale snapshot is the kind of evidence the table already had too much of. A cell whose run does not go through an arrangement helper \u2014 Kratos under its own interpreter, SPARTA through a bespoke shell participant, a live pytest pair \u2014 is backed instead by a SIDES_COVERED declaration in the file that performs the run, also ast-parsed. That is weaker than a parsed arrangement call because it is written by hand, but it sits in the same file as the evidence it claims. Every cell in the table is now unstarred and backed; the fixture still records starred and negative cells so that re-introducing a star, or an unbacked yes, is visible.",
   "_mutation": {
     "note": "Stop recognising elastic arrangements, so the scan no longer sees the runs backing FEBio's two cells and both report fixtures=NONE. A coverage check is only worth anything if it goes red when the coverage disappears, and losing sight of one KIND of run is the quiet way that happens. Equivalent by-hand mutation, verified: removing pair_febio_febio from the tree entirely produced the same two failures naming the unbacked cells.",
     "file": "source.py",
@@ -13,12 +13,15 @@
   "timeout_seconds": 300,
   "expect_in_output": [
     "sides_table_rows=9",
-    "unstarred_cell=fourc/dirichlet fixtures=",
-    "unstarred_cell=febio/neumann fixtures=",
-    "starred_cell=kratos/dirichlet",
+    "unstarred_cell=fourc/dirichlet backed=True",
+    "unstarred_cell=febio/neumann backed=True",
+    "unstarred_cell=kratos/dirichlet backed=True",
+    "unstarred_cell=kratos/neumann backed=True",
+    "unstarred_cell=sparta/dirichlet backed=True",
     "negative_cell=sparta/neumann=not natively",
-    "unstarred_yes_cells=14",
-    "starred_yes_cells=3",
+    "unstarred_yes_cells=17",
+    "no_starred_cells_remain=True",
+    "every_yes_cell_is_backed=True",
     "failures_count=0"
   ],
   "forbid_in_output": [
@@ -26,6 +29,8 @@
     "FAIL:",
     "TIMEOUT",
     "fixtures=NONE",
+    "backed=False",
+    "every_yes_cell_is_backed=False",
     "failures_count=1"
   ]
 }

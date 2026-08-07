@@ -18,6 +18,9 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
+
+# See the note in tests/test_coupling_pair_fourc_kratos.py.
+SIDES_COVERED = [("dealii", "dirichlet"), ("ngsolve", "neumann")]
 sys.path.insert(0, str(REPO / "src"))
 
 PAIR_DIR = REPO / "benchmarks" / "coupling_pairs" / "dealii_ngsolve_cht"

@@ -104,17 +104,26 @@ def body() -> None:
     bad = report("mismatched", run("mismatched", CELSIUS))
 
     # ── the control agrees with the closed form ───────────────────────────
-    L.check(ok["t_rel"] < 1e-5, "control_disagrees_with_closed_form",
-            f"the consistent-units run must reproduce the closed form, got "
-            f"{ok['t_rel'] * 100:.4f}% off")
+    # Each of these three prints a VERDICT next to its percentage. The
+    # percentages are what the run measured and stay; what an expectation has
+    # to name is the comparison, because
+    # `consistent_T_disagreement_with_closed_form=` matches 0.0000pct and
+    # 41.3pct with equal enthusiasm — and this fixture's entire subject is that
+    # the second number is invisible to everything except a comparison.
+    ctrl_ok = L.check(ok["t_rel"] < 1e-5, "control_disagrees_with_closed_form",
+                      f"the consistent-units run must reproduce the closed "
+                      f"form, got {ok['t_rel'] * 100:.4f}% off")
+    print(f"consistent_matches_closed_form={bool(ctrl_ok)}")
 
     # ── and the mismatched run does NOT — by a lot ────────────────────────
-    L.check(bad["t_rel"] > 0.10, "mismatch_did_not_move_the_answer",
-            f"the mismatched run agreed with the closed form to "
-            f"{bad['t_rel'] * 100:.3f}%, so this fixture is no longer "
-            f"demonstrating a silent-wrong result at all")
-    L.check(bad["q_rel"] > 1.0, "mismatch_flux_barely_moved",
-            f"interface flux off by only {bad['q_rel'] * 100:.1f}%")
+    moved = L.check(bad["t_rel"] > 0.10, "mismatch_did_not_move_the_answer",
+                    f"the mismatched run agreed with the closed form to "
+                    f"{bad['t_rel'] * 100:.3f}%, so this fixture is no longer "
+                    f"demonstrating a silent-wrong result at all")
+    print(f"mismatched_T_disagrees_with_closed_form={bool(moved)}")
+    q_moved = L.check(bad["q_rel"] > 1.0, "mismatch_flux_barely_moved",
+                      f"interface flux off by only {bad['q_rel'] * 100:.1f}%")
+    print(f"mismatched_q_disagrees_with_closed_form={bool(q_moved)}")
 
     # ── while `couple` reports the two runs identically ───────────────────
     L.check(not bad["mentions_units"], "couple_actually_mentioned_units",
@@ -122,10 +131,12 @@ def body() -> None:
             "this fixture is out of date and the knowledge should say so")
     print(f"both_converged={ok is not None and bad is not None}")
     print(f"mismatched_validation_is_empty={not bool(bad.get('mentions_units'))}")
-    L.check(bad["balance_rel"] < 1e-4, "mismatch_broke_the_balance",
-            f"the point of this fixture is that conservation is a property of "
-            f"the fixed point and holds in the wrong units too; got "
-            f"{bad['balance_rel']:.3e}")
+    still_balanced = L.check(
+        bad["balance_rel"] < 1e-4, "mismatch_broke_the_balance",
+        f"the point of this fixture is that conservation is a property of "
+        f"the fixed point and holds in the wrong units too; got "
+        f"{bad['balance_rel']:.3e}")
+    print(f"mismatched_flux_still_balanced={bool(still_balanced)}")
 
     # ── the detector that DOES catch it, run explicitly ───────────────────
     # An independent answer for the same quantity is the only thing that

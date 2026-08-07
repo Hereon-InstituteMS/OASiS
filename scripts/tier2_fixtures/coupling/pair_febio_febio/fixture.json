@@ -12,13 +12,16 @@
   "mode": "python",
   "timeout_seconds": 2400,
   "expect_in_output": [
-    "p_wave_modulus_left=",
-    "p_wave_modulus_right=",
-    "febio_L_D_febio_R_N_iterations=",
-    "febio_L_D_febio_R_N_left_u_err=",
-    "febio_L_D_febio_R_N_flux_balance_rel=",
-    "febio_L_N_febio_R_D_iterations=",
-    "febio_L_N_febio_R_D_right_q_err=",
+    "febio_L_D_febio_R_N_converged=True",
+    "febio_L_D_febio_R_N_meshes_nonmatching=True",
+    "febio_L_D_febio_R_N_interface_u_matches_reference=True",
+    "febio_L_D_febio_R_N_interface_q_matches_reference=True",
+    "febio_L_D_febio_R_N_flux_signs_are_opposite=True",
+    "febio_L_D_febio_R_N_flux_balanced=True",
+    "febio_L_D_febio_R_N_validation_empty=True",
+    "febio_L_N_febio_R_D_converged=True",
+    "febio_L_N_febio_R_D_interface_u_matches_reference=True",
+    "febio_L_N_febio_R_D_interface_q_matches_reference=True",
     "pairs_run=2",
     "failures_count=0"
   ],
@@ -27,6 +30,12 @@
     "FAIL:",
     "TIMEOUT",
     "did_not_converge",
+    "_meshes_nonmatching=False",
+    "_interface_u_matches_reference=False",
+    "_interface_q_matches_reference=False",
+    "_flux_signs_are_opposite=False",
+    "_flux_balanced=False",
+    "_validation_empty=False",
     "failures_count=1"
   ]
 }

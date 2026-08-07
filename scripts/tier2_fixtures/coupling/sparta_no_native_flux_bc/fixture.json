@@ -12,7 +12,8 @@
   "mode": "python",
   "timeout_seconds": 300,
   "expect_in_output": [
-    "sparta_src=",
+    "sparta_payload_states_no_native_flux_bc=True",
+    "sides_table_says_sparta_neumann_not_natively=True",
     "surf_collide_styles=9",
     "thermal_styles=4",
     "thermal_names=cll,diffuse,impulsive,td",
@@ -27,6 +28,11 @@
     "Traceback",
     "FAIL:",
     "TIMEOUT",
+    "sparta_payload_states_no_native_flux_bc=False",
+    "sides_table_says_sparta_neumann_not_natively=False",
+    "fix_surf_temp_sb_prefactor=False",
+    "fix_surf_temp_fourth_root=False",
+    "doc_disclaimer_present=False",
     "failures_count=1"
   ]
 }

@@ -16,12 +16,12 @@
     "rho_dirichlet_on_soft_side=0.111111",
     "theta_opt_soft=0.900000",
     "budget_max_iter=60",
-    "swapped_theta=",
-    "swapped_headroom_factor=",
+    "swapped_theta=0.900000 converged=True",
+    "swap_converged_comfortably_inside_budget=True",
     "stiff_orientation_thetas_that_converged=0",
     "stiff_orientation_best_theta=none_converged_within_budget",
-    "swapped_T_err=",
-    "swapped_q_err=",
+    "swapped_T_matches_closed_form=True",
+    "swapped_q_matches_closed_form=True",
     "orientations_compared=2",
     "thetas_swept_in_the_bad_orientation=6",
     "failures_count=0"
@@ -31,6 +31,9 @@
     "FAIL:",
     "TIMEOUT",
     "failures_count=1",
-    "swapped_theta=0.900000 converged=False"
+    "swapped_theta=0.900000 converged=False",
+    "swap_converged_comfortably_inside_budget=False",
+    "swapped_T_matches_closed_form=False",
+    "swapped_q_matches_closed_form=False"
   ]
 }

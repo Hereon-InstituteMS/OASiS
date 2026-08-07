@@ -87,9 +87,14 @@ def body() -> None:
     if swapped["converged"]:
         headroom = BUDGET / max(swapped["iterations"], 1)
         print(f"swapped_headroom_factor={headroom:.1f}")
-        L.check(headroom >= 2.0, "swap_only_just_made_it",
-                f"'comfortably inside the budget' should not mean using "
-                f"{swapped['iterations']} of {BUDGET} iterations")
+        comfortable = L.check(
+            headroom >= 2.0, "swap_only_just_made_it",
+            f"'comfortably inside the budget' should not mean using "
+            f"{swapped['iterations']} of {BUDGET} iterations")
+        # The claim is "converged COMFORTABLY inside it", so say whether that
+        # held. `swapped_headroom_factor=` names the ratio and matches 1.0 as
+        # readily as 12.0.
+        print(f"swap_converged_comfortably_inside_budget={bool(comfortable)}")
 
     print(f"stiff_orientation_thetas_that_converged={len(converged_any)}")
     if converged_any:
@@ -107,12 +112,19 @@ def body() -> None:
         print("stiff_orientation_best_theta=none_converged_within_budget")
 
     # …and the physics of the swapped run is right, not merely convergent.
+    # `L.close` prints the error magnitude and returns the verdict; both are
+    # wanted. The magnitude is how the run reports its own number, and the
+    # verdict is the part an expectation can name — `swapped_T_err=` would
+    # match a run that arrived fast at the wrong fixed point, which is the one
+    # way this claim could be true and useless at the same time.
     if swapped["converged"]:
         ex = swapped["result"]["exports"]
         lo, hi = L.span(ex["left"]["values"])
-        L.close(0.5 * (lo + hi), p.t_iface, 1e-3, "swapped_T_err")
+        t_ok = L.close(0.5 * (lo + hi), p.t_iface, 1e-3, "swapped_T_err")
         lo, hi = L.span(ex["left"]["normal_fluxes"])
-        L.close(0.5 * (lo + hi), p.q, 5e-3, "swapped_q_err")
+        q_ok = L.close(0.5 * (lo + hi), p.q, 5e-3, "swapped_q_err")
+        print(f"swapped_T_matches_closed_form={bool(t_ok)}")
+        print(f"swapped_q_matches_closed_form={bool(q_ok)}")
     print(f"orientations_compared=2")
     print(f"thetas_swept_in_the_bad_orientation={len(SWEEP)}")
 

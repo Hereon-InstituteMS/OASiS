@@ -12,16 +12,17 @@
   "mode": "python",
   "timeout_seconds": 1200,
   "expect_in_output": [
-    "closed_form_T_iface=",
+    "mismatched_flux_still_balanced=True",
     "consistent_converged=True",
     "consistent_validation_entries=0",
     "consistent_balance_warnings=0",
-    "consistent_T_disagreement_with_closed_form=",
+    "consistent_matches_closed_form=True",
     "mismatched_converged=True",
     "mismatched_validation_entries=0",
     "mismatched_balance_warnings=0",
-    "mismatched_T_disagreement_with_closed_form=",
-    "mismatched_q_disagreement_with_closed_form=",
+    "mismatched_validation_is_empty=True",
+    "mismatched_T_disagrees_with_closed_form=True",
+    "mismatched_q_disagrees_with_closed_form=True",
     "monolithic_check_on_control=0",
     "monolithic_check_on_mismatch=1",
     "runs_compared=2",
@@ -32,6 +33,11 @@
     "FAIL:",
     "TIMEOUT",
     "mismatched_T_disagreement_with_closed_form=0.0pct",
+    "consistent_matches_closed_form=False",
+    "mismatched_T_disagrees_with_closed_form=False",
+    "mismatched_q_disagrees_with_closed_form=False",
+    "mismatched_flux_still_balanced=False",
+    "mismatched_validation_is_empty=False",
     "failures_count=1"
   ]
 }

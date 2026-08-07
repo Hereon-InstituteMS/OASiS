@@ -1,0 +1,45 @@
+{
+  "_comment": "COUPLING tier-2. This is the STRONG of the two fixtures the preCICE 'CAN' verdicts could have: a REAL two-participant preCICE coupling driven through the REGISTERED `couple_precice` tool between two backends living in two DIFFERENT interpreters (scikit-fem in the OASiS venv, FEniCSx in its own conda env), with the exchanged interface fields checked against a closed form computed in the fixture. The weaker fallback — prove only that `import precice` needs the preCICE lib directory — was not needed, so that claim is folded in as this fixture's PRECONDITION instead: `_PRECICE_CORE` says `LD_LIBRARY_PATH` is NOT optional and that without it `import precice` fails with `libprecice.so.3: cannot open shared object file`, and nothing tested it. Three interpreters are probed (OASiS venv carrying scikit-fem AND NGSolve, FEniCSx, DUNE-fem via the PYTHONPATH recipe its own payload prescribes); each must fail with that exact string when the variable is removed, import preCICE when it is present, and import preCICE together with every backend module that interpreter carries — which is the real gate, since a backend whose interpreter cannot import both cannot use `couple_precice` at all. Then the coupled run: non-matching interface meshes, serial-implicit with sub-iteration, and assertions on the interface temperature from both sides, the interface flux density from both sides WITH THE OPPOSITE SIGNS the two outward normals demand, the flux balance across the interface, and the absence of the y-variation the exact solution forbids. Checking `converged` would not be a test: `couple_precice`'s own knowledge says `converged` is exit codes plus preCICE's per-window verdict and never looks at the values, and this fixture's mutation is exactly the case that proves the point.",
+  "_mutation": {
+    "note": "Flip the sign with which the Neumann participant applies the incoming flux — the one line the served FEniCSx pattern marks 'APPLY the partner's number UNCHANGED'. Nothing the orchestrator reports changes: both participants still exit 0, preCICE still logs 'All converged', and the fixed-point iteration still converges (the map's slope flips from -CL/CR to +CL/CR, so it stays inside the unit disc). It converges to the WRONG fixed point — measured 284 K against a closed-form 306.15 K — and both sides then export the SAME sign of flux, so nothing is conserved across the interface. This is precisely the silent-wrong coupling that a `converged`-only check certifies, and it is why the fixture reads the exchanged values back out of the participants' own files instead of trusting the tool's verdict.",
+    "file": "source.py",
+    "from": "L = g * v * ds_if",
+    "to": "L = -g * v * ds_if"
+  },
+  "backend": "coupling",
+  "physics": "precice_coupled_run",
+  "pitfall_index": 18,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "interpreters_probed=3",
+    "precice_import_without_ld_path=failed",
+    "precice_import_with_ld_path=ok",
+    "every_interpreter_needs_the_lib_dir=yes",
+    "libprecice_so_3_message_from_every_interpreter=yes",
+    "every_interpreter_imports_precice_with_the_lib_dir=yes",
+    "oasis_venv_backend_modules=skfem, ngsolve",
+    "oasis_venv_precice_and_backend_modules_coexist=yes",
+    "fenicsx_precice_and_backend_modules_coexist=yes",
+    "dune_precice_and_backend_modules_coexist=yes",
+    "two_distinct_interpreters=yes",
+    "all_participant_returncodes_zero=yes",
+    "coupled_run_converged=yes",
+    "interface_meshes_non_matching=yes",
+    "implicit_subiteration_happened=yes",
+    "left_interface_T_matches_closed_form=yes",
+    "right_interface_T_matches_closed_form=yes",
+    "left_interface_T_uniform_in_y=yes",
+    "right_interface_T_uniform_in_y=yes",
+    "left_interface_q_matches_closed_form=yes",
+    "right_interface_q_matches_closed_form=yes",
+    "interface_flux_balanced=yes",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

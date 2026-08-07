@@ -22,11 +22,11 @@
     "febio_source_tree_precice_files=0",
     "binaries_probed=2",
     "probes_per_binary=4",
-    "positive_control_binary=",
+    "positive_control_found=True",
     "failures_count=0",
-    "control_ldd_precice_hits=",
-    "control_nm_D_precice_hits=",
-    "control_strings_precice_hits="
+    "control_ldd_detects_precice=True",
+    "control_nm_D_detects_precice=True",
+    "control_strings_detects_precice=True"
   ],
   "forbid_in_output": [
     "Traceback",
@@ -35,6 +35,8 @@
     "failures_count=1",
     "control_ldd_precice_hits=0",
     "control_nm_D_precice_hits=0",
-    "control_strings_precice_hits=0"
+    "control_strings_precice_hits=0",
+    "positive_control_found=False",
+    "_detects_precice=False"
   ]
 }

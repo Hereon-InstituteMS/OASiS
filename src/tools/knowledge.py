@@ -378,7 +378,7 @@ def register_knowledge_tools(mcp: FastMCP):
         return "Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
 
     @mcp.tool()
-    def get_coupling_knowledge(solver: str = "") -> str:
+    def get_coupling_knowledge(solver: str = "", signal: str = "") -> str:
         """Complete knowledge for partitioned multi-code coupling via `couple`.
 
         With no solver: the participant contract, the InterfaceData shapes, how
@@ -386,9 +386,12 @@ def register_knowledge_tools(mcp: FastMCP):
         which side each backend can take, and the failure modes.
         With a solver name: a COMPLETE runnable participant script for that
         backend plus the traps specific to it.
+        With a signal: only the failure entries matching that symptom. Describe
+        what you SAW, in your own words, with no mechanism in it — "it converged
+        but the answer is wrong", "the residual stops falling and stays there".
         """
         from tools.coupling_knowledge import coupling_knowledge
-        return coupling_knowledge(solver)
+        return coupling_knowledge(solver, signal)
 
     @mcp.tool()
     def get_tsi_knowledge() -> str:

@@ -57,6 +57,21 @@ CANON = {"fenicsx": "fenics", "4c": "fourc", "ngsolve": "ngsolve",
 
 ARRANGERS = ("heat_arrangement", "elastic_arrangement")
 
+# A run that does NOT go through one of the arrangement helpers — a bespoke
+# participant, a different interpreter, a non-FEM code — cannot be recognised by
+# parsing those calls. Rather than leave such a cell unbacked or hand-maintain a
+# list here, the file that performs the run DECLARES what it establishes:
+#
+#     SIDES_COVERED = [("kratos", "neumann")]
+#
+# read from coupling fixtures and from the live pair tests under tests/. It is
+# weaker evidence than a parsed arrangement call, because it is written by hand
+# — but it is written in the same file as the run, so a wrong entry is a lie
+# sitting next to the code that would expose it, and it is still ast-parsed from
+# source rather than kept in a table over here.
+DECLARATION = "SIDES_COVERED"
+TEST_SOURCES = L.REPO_ROOT / "tests"
+
 
 def table_rows() -> list[tuple[str, str, str]]:
     """(canonical backend, dirichlet cell, neumann cell) from the SERVED table."""
@@ -87,10 +102,28 @@ def runs_by_fixture() -> dict[tuple[str, str], list[str]]:
     runs the way a hand-maintained list would.
     """
     found: dict[tuple[str, str], list[str]] = {}
-    for src in sorted(FIXTURES.glob("*/source.py")):
-        if src.parent.name == HERE.name:
-            continue
+    sources = [(src, src.parent.name) for src in sorted(FIXTURES.glob("*/source.py"))
+               if src.parent.name != HERE.name]
+    sources += [(src, src.name) for src in
+                sorted(TEST_SOURCES.glob("test_coupling_pair_*.py"))]
+    for src, label in sources:
         tree = ast.parse(src.read_text())
+        # (a) declared coverage
+        for node in tree.body:
+            if not isinstance(node, ast.Assign):
+                continue
+            names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            if DECLARATION not in names:
+                continue
+            try:
+                for backend, role in ast.literal_eval(node.value):
+                    found.setdefault((backend, role), []).append(label)
+            except (ValueError, TypeError):
+                raise AssertionError(
+                    f"{src.name} declares {DECLARATION} in a shape this fixture "
+                    f"cannot read; it must be a literal list of "
+                    f"(backend, role) pairs")
+        # (b) coverage derived from the arrangement calls
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -107,7 +140,7 @@ def runs_by_fixture() -> dict[tuple[str, str], list[str]]:
                      "right": "dirichlet" if dirichlet == "right" else "neumann"}
             for backend, position in ((left, "left"), (right, "right")):
                 found.setdefault((backend, roles[position]),
-                                 []).append(src.parent.name)
+                                 []).append(label)
     return found
 
 
@@ -133,7 +166,15 @@ def body() -> None:
                 continue
             unstarred += 1
             where = runs.get((backend, role), [])
+            # `backed=` comes BEFORE the fixture list, and that ordering is the
+            # point. An expectation has to be a contiguous substring, so with
+            # the list first the only way to name a cell AND its verdict in one
+            # expectation is to pin the list — which then goes red the day a
+            # second fixture legitimately covers the same cell. Verdict first,
+            # and `unstarred_cell=fourc/dirichlet backed=True` says exactly what
+            # must be true without pinning which run establishes it.
             print(f"unstarred_cell={backend}/{role} "
+                  f"backed={bool(where)} "
                   f"fixtures={','.join(sorted(set(where))) or 'NONE'}")
             L.check(bool(where), f"unbacked_yes_{backend}_{role}",
                     f"the sides table gives {backend} an unstarred 'yes' in the "
@@ -143,6 +184,12 @@ def body() -> None:
                     f"Either add the fixture or star the cell.")
     print(f"unstarred_yes_cells={unstarred}")
     print(f"starred_yes_cells={starred}")
+    # NAMED VERDICTS, because `starred_yes_cells=0` is a substring of
+    # `unstarred_yes_cells=0` and an expectation matching the wrong line would
+    # certify the opposite of what it reads as. Two lines that cannot be
+    # confused with any other line say the same thing unambiguously.
+    print(f"no_starred_cells_remain={starred == 0}")
+    print(f"every_yes_cell_is_backed={not any(f.startswith('unbacked_yes_') for f in L._FAILS)}")
     L.check(unstarred > 0, "no_unstarred_yes_found",
             "the parser found no unstarred 'yes' at all, which means it is not "
             "reading the table it thinks it is")

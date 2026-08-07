@@ -1,0 +1,48 @@
+{
+  "_comment": "COUPLING tier-2, on the DRIVER rather than on a pair. Coupling coverage has been counted in pairs, and pairs are cheap combinatorics once both sides' roles are proven; the scarce thing is the driver's own behaviour — statements an agent is told to design around, that hold or fail for every pair at once, and that no pair fixture can see because every pair fixture is written to succeed. Four of them, all quoted from the served contract, none previously exercised. (1) The driver is JACOBI: on iteration 2 each side must read its partner's ITERATION-1 export, and reversing the participant list must change nothing — checked by making each participant log what it received and export its own iteration number, so a Gauss-Seidel sweep would be caught red-handed rather than inferred from a residual. (2) The FILE is the result and the EXIT CODE is never read: a participant that writes a complete exports.json and then exits non-zero is accepted, which is the silent-wrong route the contract itself warns about. (3) What comes back is the RELAXED blend, not the raw output: a participant whose raw export steps once must come back at target*(1-(1-theta)^k), a value the raw output never takes. (4) `data_files` is silently ignored by the TOOL while the DRIVER does stage it — both halves are checked, because the Participant dataclass has the field and a reader of the source would conclude the opposite of what the tool does. Synthetic participants on purpose: the claims are about the driver, and a real solver would only add ways to fail for reasons that are not the claim.",
+  "_mutation": [
+    {
+      "note": "Set the relaxation to 1.0. The relaxed blend and the raw export become the same number, so returned_export_was_the_raw_value fires — the sentence 'the exports returned are the RELAXED blend, not the last raw output' is then untestable, which is exactly the state this arm exists to leave behind.",
+      "file": "source.py",
+      "from": "THETA = 0.5                 # the relaxation the relaxed-vs-raw check predicts",
+      "to": "THETA = 1.0                 # the relaxation the relaxed-vs-raw check predicts"
+    },
+    {
+      "note": "Make the crashing participant write its export under a different name. The driver finds no exports.json, the run fails, and participant_exited_nonzero_and_was_still_accepted goes False — proving the acceptance really is 'the file exists' and not 'the process succeeded'. Without this, the arm would pass equally well against a driver that checked exit codes and happened to get a zero.",
+      "file": "source.py",
+      "from": "import json, sys\nfrom pathlib import Path\nPath(\"exports.json\").write_text",
+      "to": "import json, sys\nfrom pathlib import Path\nPath(\"not_exports.json\").write_text"
+    },
+    {
+      "note": "Take `data_files` off the Participant handed to run_coupling. The file no longer arrives, driver_itself_does_stage_data_files goes False and the check fires. That arm is the reason the tool-level silence is worth recording at all — the field exists and works one level down — so it has to be a real observation and not an assumption.",
+      "file": "source.py",
+      "from": "                     imports_from=[\"B\"], data_files=[str(pay2)])",
+      "to": "                     imports_from=[\"B\"])"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "driver_invariants",
+  "pitfall_index": 34,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "both_sides_read_the_previous_iteration=True",
+    "reversing_the_participant_order_changes_nothing=True",
+    "participant_exited_nonzero_and_was_still_accepted=True",
+    "relaxed_export_equals_the_unmoving_raw_value=True",
+    "returned_value_is_the_relaxed_blend_not_the_raw_export=True",
+    "data_files_key_staged_the_file=False",
+    "driver_itself_does_stage_data_files=True",
+    "invariants_checked=4",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "both_sides_read_the_previous_iteration=False",
+    "returned_value_is_the_relaxed_blend_not_the_raw_export=False",
+    "data_files_key_staged_the_file=True"
+  ]
+}

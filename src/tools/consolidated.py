@@ -1963,11 +1963,21 @@ def register_consolidated_tools(mcp: FastMCP):
             signal: The error text you actually observed. Paste it raw —
                 quoting, case and whitespace differences are folded, and
                 a paraphrase still matches on distinctive terms. Filters
-                BOTH `pitfalls` and `postmortems`. Every result states
-                the match mode, so a partial word-overlap is labelled
-                weak instead of being presented as an identification.
-                No match means the failure mode is not catalogued for
-                that backend — it does NOT mean the setup is right.
+                `pitfalls`, `postmortems` AND `coupling`. Every result
+                states the match mode, so a partial word-overlap is
+                labelled weak instead of being presented as an
+                identification. No match means the failure mode is not
+                catalogued for that backend — it does NOT mean the setup
+                is right.
+                With topic='coupling' it is free text describing what
+                you SAW, ranked against the coupling failure entries.
+                Describe the observation, not the mechanism — "it
+                converged but the answer is wrong", "the residual
+                stops falling and stays there", "the two sides
+                stopped agreeing" all route to the right entry. This
+                is the fast path when a coupling misbehaves: it
+                returns the two or three entries that explain the
+                symptom instead of the whole payload.
             category: Narrow pitfalls by kind. In use, commonest first:
                 Numerical, API, Input, Syntax, Physics, Integration,
                 Performance, Output, Mesh, Validation. Spelling variants
@@ -2237,7 +2247,7 @@ def register_consolidated_tools(mcp: FastMCP):
             return json.dumps({solver: general}, indent=2)
 
         elif topic == "coupling":
-            return _get_coupling_knowledge(solver)
+            return _get_coupling_knowledge(solver, signal)
 
         elif topic == "tsi":
             return _get_tsi_knowledge()
@@ -3614,7 +3624,8 @@ def register_consolidated_tools(mcp: FastMCP):
     async def couple(participants: str, max_iter: int = 50, tol: float = 1e-6,
                      accelerator: str = "aitken", theta: float = 0.5,
                      monolithic: str = "", probe: bool = True,
-                     critic_approved: bool = False) -> str:
+                     critic_approved: bool = False, noise_replicates: int = 0,
+                     noise_floor: float = 0.0, noise_block: int = 3) -> str:
         """GENERAL partitioned multi-code coupling — works for ANY physics/coupling.
 
         Have an independent critic review the setup before coupling; pass
@@ -3682,6 +3693,22 @@ def register_consolidated_tools(mcp: FastMCP):
               a Dirichlet-Neumann or FSI coupling converge at all when the physical
               stiffness/density ratio makes the un-relaxed iteration diverge; 0.5 is
               a neutral default, not a recommendation for your problem.
+            noise_replicates: for a STOCHASTIC participant (DSMC / Monte-Carlo /
+              any sampled estimator). Use 4 or more — the floor is itself an
+              estimate and three samples is a bad one. It makes the driver run
+              every participant that many times on the SAME imports and MEASURE
+              the residual noise floor — the residual a perfectly converged run
+              would still report. Convergence is then judged against
+              max(tol, floor), over a block mean, so a correct stochastic
+              coupling is no longer reported as a failure just because tol sits
+              under the sampler's own scatter. 0 (the default) switches the whole
+              branch off. Deterministic participants measure a floor of exactly 0
+              and are unaffected.
+            noise_floor: declare a floor instead of measuring one (or raise a
+              measured one), if you established it independently.
+            noise_block: how many consecutive residuals must AVERAGE below the
+              criterion before the run stops. Only in effect when a non-zero
+              floor is; a single residual dipping into the noise means nothing.
             probe: after the iteration settles, spend ONE extra solve per
               participant perturbing its final imports and measuring how far its
               answer moves. This is the only check here that can tell a solver
@@ -3699,6 +3726,11 @@ def register_consolidated_tools(mcp: FastMCP):
             codes, a `validation` block, a `checks_not_run` block, and the verdict.
             A coupling that failed any check is reported as NOT VERIFIED, never as a
             trustworthy result — and one that could not be fully checked says so.
+            With the stochastic branch on it also returns `noise_floor`,
+            `tol_effective` and `stopped_at_noise_floor`. READ `noise_floor`
+            BEFORE GRADING: any tolerance applied to a result that carries one —
+            including a grading or acceptance tolerance — must be at least that
+            floor, or it is measuring the sampler rather than the coupling.
         """
         from core.coupling_driver import Participant, run_coupling
         from core.quality_checks import (
@@ -3743,9 +3775,26 @@ def register_consolidated_tools(mcp: FastMCP):
         if accelerator not in ("aitken", "constant"):
             return json.dumps({"error": f"accelerator must be 'aitken' or "
                                         f"'constant', got {accelerator!r}"})
+        # The stochastic branch is opt-in and its arguments are checked here
+        # rather than in the driver, so a bad one is a message instead of a run
+        # that quietly behaves like the default.
+        if noise_replicates and noise_replicates < 2:
+            return json.dumps({"error":
+                f"noise_replicates must be 0 (off) or >=2 — a floor is "
+                f"measured BETWEEN independent replicate runs, so one run "
+                f"cannot produce one. Got {noise_replicates}."})
+        if noise_floor < 0.0:
+            return json.dumps({"error": f"noise_floor must be >= 0, got "
+                                        f"{noise_floor}"})
+        if noise_block < 1:
+            return json.dumps({"error": f"noise_block must be >= 1, got "
+                                        f"{noise_block}"})
         try:
             r = run_coupling(parts, max_iter=max_iter, tol=tol,
-                             accelerator=accelerator, theta0=theta, probe=probe)
+                             accelerator=accelerator, theta0=theta, probe=probe,
+                             noise_replicates=int(noise_replicates),
+                             noise_floor=(float(noise_floor) or None),
+                             noise_block=int(noise_block))
         except Exception as exc:                      # never raise out of a tool
             return json.dumps({"converged": False,
                                "error": f"coupling driver failed: "
@@ -3757,7 +3806,12 @@ def register_consolidated_tools(mcp: FastMCP):
         # are printed in it, so "not checked" is never read as "checked and fine").
         val = list(r.warnings)
         not_run: list[str] = [_DIGEST_SCOPE_LIMIT]
-        val += check_convergence(r.converged, r.residual, tol)
+        # Judge against the criterion the run was actually held to. Quoting the
+        # requested `tol` in a NOT CONVERGED message on a run that was judged
+        # against a measured noise floor would name a threshold the driver never
+        # applied.
+        val += check_convergence(r.converged, r.residual,
+                                 r.tol_effective if r.tol_effective else tol)
         for nm, ex in r.exports.items():
             val += check_finite(ex.get("values", []), label=f"{nm}.values")
             if ex.get("normal_fluxes") is not None:
@@ -3868,6 +3922,16 @@ def register_consolidated_tools(mcp: FastMCP):
                   "monolithic_check": mono_block,
                   "exports": r.exports, "error": r.error,
                   "validation": val, "checks_not_run": not_run}
+        if r.noise_floor is not None:
+            result["noise_floor"] = r.noise_floor
+            result["tol_effective"] = r.tol_effective
+            result["stopped_at_noise_floor"] = r.stopped_at_noise_floor
+        if r.notes:
+            # How the floor was measured, and the fixed-seed caveat. Kept out of
+            # `validation` so a correct run's validation block stays empty, but
+            # returned, because a floor of exactly 0 on a Monte-Carlo code is a
+            # fixed seed and the agent has to see that.
+            result["noise_notes"] = r.notes
         reason = ("" if checks_ok else
                   "the coupling did not converge, or failed one of OASiS's "
                   "silent-wrong checks (see `validation`)")
@@ -4283,11 +4347,43 @@ def register_consolidated_tools(mcp: FastMCP):
             source_root = info.get("root", "")
             source_env = info.get("source_env_var", "")
 
+            # `keyword` is a GLOB PATTERN handed to rglob, and pathlib treats
+            # ".." in a pattern as an ordinary path component — so
+            # keyword="../../../benchmarks/*/*/run_pair.py" walked straight out
+            # of the backend directory and enumerated the repo. That mattered
+            # for one directory in particular: benchmarks/coupling_pairs/ holds
+            # the INDEPENDENT REFERENCE SOLUTIONS the coupling fixtures grade
+            # against, and the property those references rest on is that no tool
+            # can reach them. A listing is not the file's contents, but "which
+            # reference files exist and how big they are" is still a channel out
+            # of the eval harness, and the fix is one line rather than an
+            # argument about how much leaks.
+            #
+            # Absolute patterns are refused for the same reason: rglob("/etc/*")
+            # ignores `base` entirely.
+            if ".." in Path(keyword or "").parts or (keyword or "").startswith("/"):
+                return ("developer(action='files') searches WITHIN one backend's "
+                        "source directory. A pattern containing '..' or starting "
+                        "at '/' would leave it, so it is refused — pass a "
+                        "relative pattern such as '*.py' or 'generators/*.py'.")
+
+            def _within(base: Path, hits: list[Path]) -> list[Path]:
+                """Belt and braces: drop anything that resolves outside `base`,
+                so a symlink inside the tree cannot do what '..' no longer can."""
+                out = []
+                for f in hits:
+                    try:
+                        if f.resolve().is_relative_to(base.resolve()):
+                            out.append(f)
+                    except (OSError, ValueError):
+                        continue
+                return out
+
             # If keyword starts with "src/" or similar, search the solver source tree
             if keyword and source_root and Path(source_root).is_dir():
                 base = Path(source_root)
                 pattern = keyword
-                files = sorted(base.rglob(pattern))[:30]
+                files = _within(base, sorted(base.rglob(pattern)))[:30]
                 if files:
                     return "\n".join(f"- {f.relative_to(base)} ({f.stat().st_size}b)" for f in files)
 
@@ -4297,7 +4393,7 @@ def register_consolidated_tools(mcp: FastMCP):
                 hint = f"\nTo browse {solver} source code, set {source_env} in .claude/settings.json" if source_env else ""
                 return f"No source directory for {solver}{hint}"
             pattern = keyword or "*.py"
-            files = sorted(base.rglob(pattern))
+            files = _within(base, sorted(base.rglob(pattern)))
             result = "\n".join(f"- {f.relative_to(base)} ({f.stat().st_size}b)" for f in files[:20])
             if source_env and not (source_root and Path(source_root).is_dir()):
                 result += f"\n\nNote: Set {source_env} env var to browse the full {solver} source tree"
@@ -5116,14 +5212,14 @@ def _capture_knowledge_fn(fn_name: str, *args) -> str:
                 f"`{type(exc).__name__}: {exc}`")
 
 
-def _get_coupling_knowledge(solver: str = ""):
+def _get_coupling_knowledge(solver: str = "", signal: str = ""):
     """Return coupling knowledge string (or a visible error block).
 
     `solver` is honoured: the payload for a named backend is its complete
     participant script, which is the whole point of asking for one. It used to
     be dropped on the floor, so every backend got the same bytes.
     """
-    return _capture_knowledge_fn("get_coupling_knowledge", solver)
+    return _capture_knowledge_fn("get_coupling_knowledge", solver, signal)
 
 
 def _get_tsi_knowledge():

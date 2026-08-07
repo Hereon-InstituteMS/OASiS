@@ -103,25 +103,32 @@ def body() -> None:
 
             # The formula's prediction, checked against the run.
             if amp > 1.001:
-                L.check(what == "ran_away",
-                        f"{tag}_predicted_divergence_did_not_happen",
-                        f"amplification {amp:.4f} > 1 predicts the interface "
-                        f"values run away; deviation ended at {shown}")
+                held = L.check(what == "ran_away",
+                               f"{tag}_predicted_divergence_did_not_happen",
+                               f"amplification {amp:.4f} > 1 predicts the "
+                               f"interface values run away; deviation ended at "
+                               f"{shown}")
             elif amp < 0.999:
-                L.check(what == "settled",
-                        f"{tag}_predicted_settling_but_it_did_not",
-                        f"amplification {amp:.4f} < 1 predicts a settling "
-                        f"iteration; deviation ended at {shown}")
+                held = L.check(what == "settled",
+                               f"{tag}_predicted_settling_but_it_did_not",
+                               f"amplification {amp:.4f} < 1 predicts a "
+                               f"settling iteration; deviation ended at {shown}")
             else:
                 # amplification exactly 1: neither settles nor blows up.
-                L.check(what == "neither",
-                        f"{tag}_marginal_case_did_not_hover",
-                        f"amplification is exactly 1, so the interface value "
-                        f"should never settle and never blow up; deviation "
-                        f"ended at {shown}")
-                L.check(not r["converged"], f"{tag}_converged_at_amplification_1",
-                        "an iteration with unit amplification must not reach "
-                        "the tolerance")
+                held = L.check(what == "neither",
+                               f"{tag}_marginal_case_did_not_hover",
+                               f"amplification is exactly 1, so the interface "
+                               f"value should never settle and never blow up; "
+                               f"deviation ended at {shown}")
+                held &= L.check(not r["converged"],
+                                f"{tag}_converged_at_amplification_1",
+                                "an iteration with unit amplification must not "
+                                "reach the tolerance")
+            # The whole fixture is "the formula is a PREDICTION and the run
+            # obeyed it", and until now nothing printed that as a verdict — the
+            # outcome lines say what happened, the amplification line says what
+            # was predicted, and whether the two agreed was left to the reader.
+            print(f"{tag}_matched_the_amplification_prediction={bool(held)}")
 
         settled = [t for t in GRID if outcome[t] == "settled"]
         away = [t for t in GRID if outcome[t] == "ran_away"]
