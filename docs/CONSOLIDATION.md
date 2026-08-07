@@ -983,3 +983,21 @@ quantities the residual criterion says nothing about. The rule is about
 consumers of the RESIDUAL, and the enumeration of those is complete:
 `check_convergence`, `check_residual_blocks`, `check_interface_sensitivity`, and
 the criterion notice itself.
+
+### What finally settled it
+
+`stochastic_noise_floor_makes_dsmc_gradable` — the real SPARTA-to-shell coupling
+that is the whole reason the branch exists — is the instrument that found the
+third and fourth instances and the one that confirms the repair. Run against the
+merged tree it FAILED twice before it passed, each time on a different check and
+each time on the same underlying mistake, and both failures were invisible to
+the synthetic noisy pair that passed at every step. **A synthetic participant
+reproduces the mechanism; only the real one reproduces the statistics.** The
+DSMC surface flux has near-zero entries and a genuinely broad sensitivity
+scatter, and neither is something a two-line `random()` participant has.
+
+It passes now, with the arms it was written with, plus one new assertion that is
+the point of all four fixes: `noise_aware_validation_stayed_empty=True`. A
+correct coupling judged at its measured floor must leave the findings block
+empty, because a non-empty one is a NOT VERIFIED verdict, and that verdict on a
+correct stochastic coupling is precisely what the branch was written to remove.
