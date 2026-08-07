@@ -686,9 +686,9 @@ DECKS: tuple[Deck, ...] = (
                  "grammar dump and 4C's own PD generator script",
         summary="Bond-based peridynamics: a pre-cracked plate pulled in "
                 "tension until the crack runs from the notch tip.",
-        evidence="pd_damage_phi mean 0.0668 (the pre-crack alone) at step 0 "
-                 "rising to 0.1428 at step 200, max 0.41 -> 0.70 — bonds break "
-                 "beyond the notch.",
+        evidence="pd_damage_phi mean 0.1203 at step 0 (the pre-crack alone) "
+                 "rising to 0.2102 at step 200 over 144 particles — bonds "
+                 "break beyond the notch.",
         pitfalls=(
             "PD is not a separate interaction mode. INTERACTION must be SPH "
             "and PD_BODY_INTERACTION true; the PD parameters then live in "
