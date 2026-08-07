@@ -142,3 +142,45 @@ def test_task_texts_never_name_an_exact_solution():
             if b in low:
                 bad.append((task.parent.name, b))
     assert not bad, f"task text names a solution: {bad}"
+
+
+@needs_campaign
+def test_builder_sources_are_not_readable_during_runs():
+    """The builders hold every hidden field as a literal.
+
+    They sit two levels above the agent's working directory
+    (``runs/<cell>/work``), and the agent has bash plus an absolute-path
+    ``read_file``. ``cat ../../build_extra.py`` hands over eight of the eleven
+    solutions, so sealing ``keys/`` while leaving these readable is custody
+    theatre. DESIGN.md noted the exposure without acting on it.
+    """
+    if not keyvault.is_sealed(KEYS):
+        pytest.skip("campaign is unsealed (grading/audit state)")
+    readable = [p.name for p in (
+        CAMPAIGN / "build_problems.py", CAMPAIGN / "build_extra.py",
+        CAMPAIGN / "build_coupled.py") if p.exists() and os.access(p, os.R_OK)]
+    assert not readable, (
+        f"solution-bearing builder sources readable during a run: {readable}")
+
+
+@needs_campaign
+def test_no_agent_readable_file_carries_a_derivation_source():
+    """Structural sweep: string matching alone would miss these.
+
+    A builder writes ``x * (1 - x) * y * (1 - y) * sp.cos(...)`` while the key
+    stores ``x*y*(1-x)*(1-y)*cos(2*pi*x)`` -- different bytes, same function --
+    so a literal search over the tree finds nothing and reports safety.
+    """
+    if not keyvault.is_sealed(KEYS):
+        pytest.skip("campaign is unsealed (grading/audit state)")
+    markers = ("def problem_", "def coupled_", "diffusion_source",
+               "elasticity_source", "_elastic_body_force")
+    exposed = []
+    for p in CAMPAIGN.rglob("*.py"):
+        try:
+            text = p.read_text(errors="ignore")
+        except (PermissionError, OSError):
+            continue                     # unreadable is the desired state
+        if "sympy" in text and any(m in text for m in markers):
+            exposed.append(str(p))
+    assert not exposed, f"agent-readable derivation sources: {exposed}"

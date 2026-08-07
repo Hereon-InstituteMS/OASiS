@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import hashlib
+import os
 import json
 import sys
 from pathlib import Path
@@ -41,6 +42,20 @@ sys.path.insert(0, str(REPO / "src"))
 CAMPAIGN = Path("/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind")
 KEYS = CAMPAIGN / "keys"
 MANIFEST = REPO / "data" / "blind_key_commitment.json"
+
+# The builders hold every hidden field as a literal, and they sit two levels
+# above the agent's working directory (runs/<cell>/work). The agent has bash and
+# an absolute-path read_file, so `cat ../../build_extra.py` hands over eight of
+# the eleven solutions. Sealing keys/ while leaving these readable is custody
+# theatre. DESIGN.md flags this ("the builders holding the solutions in
+# plaintext sit above the agent's working directory") without acting on it.
+BUILDER_SOURCES = [CAMPAIGN / n for n in
+                   ("build_problems.py", "build_extra.py", "build_coupled.py")]
+
+# Markers that identify a file as solution-bearing derivation source.
+DERIVATION_MARKERS = ("def problem_", "def coupled_", "diffusion_source",
+                      "elasticity_source", "_elastic_body_force",
+                      "nonlinear_diffusion_source")
 
 
 def _vault():
@@ -142,6 +157,11 @@ def cmd_seal(args):
     kv = _vault()
     mode = kv.seal(KEYS)
     print(f"sealed {KEYS} -> {mode}")
+    for src in BUILDER_SOURCES:
+        if src.is_file():
+            os.chmod(src, 0o000)
+            print(f"sealed {src.name} -> ---------- "
+                  f"(holds hidden fields as literals)")
     v = kv.verify_unreadable(KEYS)
     print(json.dumps(v, indent=2))
     return 0 if v.get("sealed") else 1
@@ -150,7 +170,76 @@ def cmd_seal(args):
 def cmd_unseal(args):
     kv = _vault()
     print(f"unsealed {KEYS} -> {kv.unseal(KEYS)}")
+    for src in BUILDER_SOURCES:
+        if src.exists():
+            os.chmod(src, 0o600)
+            print(f"unsealed {src.name}")
     return 0
+
+
+def cmd_exposure(args):
+    """Is any CURRENT solution recoverable from anything the agent can read?
+
+    Sealing the key directory proves nothing on its own: the question is
+    whether the answers survive anywhere in the tree the agent can reach.  Two
+    rules, because a literal search alone is not enough — a builder writes
+    ``x * (1 - x) * y * (1 - y) * sp.cos(...)`` while the key stores
+    ``x*y*(1-x)*(1-y)*cos(2*pi*x)``, so string matching misses it entirely.
+
+      STRUCTURAL  a readable Python file that imports sympy and carries
+                  derivation markers is solution-bearing whatever its formatting
+      LITERAL     a readable file containing a key's exact-solution string,
+                  whitespace-normalised
+    """
+    kv = _vault()
+    root = Path(args.root) if args.root else CAMPAIGN
+    exact_strings = []
+    if not kv.is_sealed(KEYS):
+        enc = any(KEYS.rglob("*.enc"))
+        pw = getpass.getpass("key passphrase (to know what to look for): ") if enc else None
+        for kp in sorted(list(KEYS.rglob("key.json.enc")) + list(KEYS.rglob("key.json"))):
+            try:
+                k = kv.load_key(kp, pw)
+            except Exception:
+                continue
+            ex = k.get("exact_solution")
+            for g in (ex.values() if isinstance(ex, dict) else [ex]):
+                for c in (g if isinstance(g, list) else [g]):
+                    if isinstance(c, str):
+                        exact_strings.append(c)
+    else:
+        print("keys sealed — literal rule disabled; structural rule still applies")
+
+    def norm(s):
+        return "".join(s.split())
+
+    findings = []
+    for p in sorted(root.rglob("*")):
+        if not p.is_file() or KEYS in p.parents or p == KEYS:
+            continue
+        try:
+            if p.stat().st_size > 8_000_000:
+                continue
+            text = p.read_text(errors="ignore")
+        except (PermissionError, OSError):
+            continue                      # unreadable is the desired state
+        if p.suffix == ".py" and "sympy" in text and any(
+                m in text for m in DERIVATION_MARKERS):
+            findings.append((p, "STRUCTURAL", "sympy derivation source: "
+                                              "holds hidden fields as literals"))
+            continue
+        flat = norm(text)
+        for e in exact_strings:
+            if len(norm(e)) > 10 and norm(e) in flat:
+                findings.append((p, "LITERAL", f"contains {e[:60]}"))
+                break
+
+    for p, rule, why in findings:
+        print(f"  [{rule}] {p}\n           {why}")
+    print(f"\n{len(findings)} agent-readable file(s) expose a solution "
+          f"under {root}")
+    print("VERDICT:", "FAIL" if findings else "PASS — nothing reachable leaks")
+    return 1 if findings else 0
 
 
 def cmd_status(args):
@@ -234,6 +323,9 @@ def cmd_preflight(args):
              if KEYS.is_dir() else [])
     checks["no_plaintext_keys"] = not plain
     checks["keys_sealed"] = kv.is_sealed(KEYS)
+    checks["builder_sources_sealed"] = all(
+        (not src.exists()) or not os.access(src, os.R_OK)
+        for src in BUILDER_SOURCES)
     if checks["keys_sealed"]:
         checks["seal_verified_by_execution"] = bool(
             kv.verify_unreadable(KEYS).get("sealed"))
@@ -261,6 +353,10 @@ def main():
     sub.add_parser("status").set_defaults(fn=cmd_status)
     sub.add_parser("preflight").set_defaults(fn=cmd_preflight)
     sub.add_parser("audit").set_defaults(fn=cmd_audit)
+    ex = sub.add_parser("exposure")
+    ex.add_argument("--root", default=None,
+                    help="tree to scan (default: the campaign directory)")
+    ex.set_defaults(fn=cmd_exposure)
     v = sub.add_parser("verify")
     v.add_argument("--manifest", default=str(MANIFEST))
     v.add_argument("--keys", default=str(KEYS))
