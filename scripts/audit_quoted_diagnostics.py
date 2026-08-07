@@ -106,6 +106,22 @@ SOURCE_HINTS: dict[str, list[str]] = {
     # examples/; both matter, since a command can be documented and exercised
     # without appearing as a literal in the source.
     "sparta": ["/home/alexander/Schreibtisch/sparta"],
+    # Kratos: prefer the source-built 28-APPLICATION install over the repo
+    # venv's wheel, which ships only core plus three applications.
+    #
+    # Against the 3-app wheel, 66 Kratos keys did not resolve and the audit
+    # correctly refused to call them invented — a key from DEMApplication or
+    # PoromechanicsApplication is invisible when those applications are not
+    # installed, however real it is. Against this build (70 compiled libraries)
+    # BIOT_COEFFICIENT, DEM_SURFACE_LOAD and COMPUTE_FEM_RESULTS_OPTION all
+    # resolve immediately. They were real the whole time.
+    #
+    # The restraint paid twice over: PARTICLE_FRICTION, served as a required DEM
+    # material key AND written into generated decks, is absent from the full
+    # 28-app build too. Now that the corpus can answer, that absence means
+    # something. The real keys are STATIC_FRICTION / DYNAMIC_FRICTION.
+    "kratos": ["/mnt/kratos-tier2/kv/lib/python3.12/site-packages/"
+               "KratosMultiphysics"],
 }
 
 # Python backends, PRIMARY MODULE FIRST. The first entry must be importable or

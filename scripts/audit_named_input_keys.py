@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import pathlib
 import json
 import re
 import subprocess
@@ -184,6 +185,13 @@ def candidate_keys(text: str) -> list[tuple[str, int, int]]:
         if tok in _STOPWORDS or len(tok) < 4:
             continue
         if text[max(0, i - 1):i] == "[":      # the warning's [Category] tag
+            continue
+        # `-DTRILINOS_APPLICATION=ON` is a CMake flag, not an input key, and the
+        # token match starts one character late — at the D. That produced four
+        # confident false candidates in one Kratos run
+        # (DCONTACT_STRUCTURAL_MECHANICS_APPLICATION and friends), each of them
+        # a real build flag reported as an invented key.
+        if tok.startswith("D") and text[max(0, i - 1):i] == "-":
             continue
         quoted = (text[max(0, i - 1):i] in "'\"`"
                   or text[j:j + 1] in "'\"`")
@@ -355,6 +363,16 @@ def corpus_completeness(backend: str) -> str:
     if backend != "kratos":
         return ""
     import glob
+    # The full source build, if present, makes the caveat unnecessary: 28
+    # applications is the whole of Kratos as this project uses it, so a key that
+    # does not resolve there really does not resolve.
+    full = glob.glob("/mnt/kratos-tier2/kv/lib/python*/site-packages/"
+                     "KratosMultiphysics")
+    if full:
+        n = len([d for d in Path(full[0]).iterdir()
+                 if d.is_dir() and d.name.lower().endswith("application")])
+        if n >= 20:
+            return ""
     sp = glob.glob("/home/alexander/Schreibtisch/open-fem-agent/.venv/lib/"
                    "python*/site-packages")
     if not sp:
@@ -402,9 +420,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("backends", nargs="*")
+    ap.add_argument("--repo", default=None, metavar="DIR",
+                    help="audit ANOTHER checkout's knowledge. The campaign "
+                         "branches hold the current corpus; this worktree is "
+                         "stale for several backends (its SPARTA is the old "
+                         "13-pitfall version against 211 on the consolidation "
+                         "branch), so auditing only what is under this script "
+                         "measures the wrong tree.")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--json", default=None)
     args = ap.parse_args()
+
+    if args.repo:
+        import audit_quoted_diagnostics as aqd
+        global REPO
+        REPO = aqd.REPO = pathlib.Path(args.repo).resolve()
 
     if args.selftest:
         return selftest()
