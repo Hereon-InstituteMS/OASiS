@@ -1259,6 +1259,26 @@ re-permits the same fabrication later. 121 further candidates were found and
 deliberately NOT baselined; see `named_key_baseline.json` for what they are and
 why triaging them is separate work.
 
+## Four ledger rows credited to a rule this merge deleted
+
+The three execution ledgers merged here — fenics 197 rows, dealii 118, febio 76
+— were produced by the ledger script as it stood on their own branches, which is
+the script the anti-fabrication commits then fixed. So they are records written
+by the instrument the same merge repaired, and the arithmetic does not
+automatically survive. Measured rather than assumed: under the hardened rule,
+where only a mutated FAIL earns credit and a mutated TIMEOUT earns none, febio
+goes from 73 discriminating to 70 (`biphasic_fsi_required_properties`,
+`damage_cdf_scale_saturates_in_cycle_one`, `elastic_damage_property_names`) and
+the sparta ledger already on the tree goes from 49 to 48
+(`surface_flux_needs_steady_state_not_the_first_`). fenics, dealii, fourc,
+kratos, dune and coupling are unaffected — their mutated TIMEOUTs sit on rows
+that were already not being credited.
+
+The files are NOT edited to match. Each is a dated execution record stamped with
+the commit it ran against, and rewriting its numbers in place would fabricate a
+run that never happened. Four rows should read "no verdict" instead of "kills
+its mutant", and the way to make them say so is to run the ledger again.
+
 `test_quoted_diagnostics_are_real` gained two failures, fenics and kratos, and
 this is the case worth reading carefully, because a new red normally means a new
 defect and here it means the opposite. On the pre-merge tree the audit answered
