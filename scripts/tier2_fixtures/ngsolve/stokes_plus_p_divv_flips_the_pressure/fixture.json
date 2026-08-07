@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve stokes#5 (NGSolve Stokes uses the +p*div(v) convention, opposite sign from FEniCS / skfem). Run 2026-08-06 on NGSolve 6.2.2604: plane Poiseuille in a 4x1 channel, nu=1, parabolic inlet peak 1, traction-free outlet, Taylor-Hood order 2/1, maxh 0.2, the two runs differing ONLY in the sign of the two coupling terms. TWO CORRECTIONS. (a) The Signal is written as a cross-solver comparison and can only be checked by someone who also has FEniCS. It does not need to be: plane Poiseuille has the analytic gradient dp/dx = -8*nu*Umax/H^2 = -8, and one solver settles it. (b) 'Both are valid weak forms' is true of the VELOCITY and misleading about the pressure. Both conventions give umax = 0.99974 and velocity vectors identical to 0.0, but -p*div(v) returns dp/dx = -8.00000, matching the analytic sign, while +p*div(v) returns +8.00000 -- the same magnitude with the wrong sign, and the two pressure vectors sum to exactly 0.0 pointwise. An agent reporting the +convention field as 'the pressure' reports the wrong sign of a physical quantity, silently. The catalog's own NGSolve stokes generator emits 'a += div(u)*q*dx + div(v)*p*dx', read out of the generated source, so the shipped template is the + convention. Mutation: making both runs use the same sign removes the contrast and the fixture fails on plus_convention_has_the_wrong_sign. MUTATION CONTROL (re-runnable): T2_MUTATE=1 flips the sign passed to solve() for the 'plus_p_divv' run from +1 to -1, applying the documented fix so both runs use the -p*div(v) convention and the contrast disappears. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes 'plus_convention_has_the_wrong_sign=True', 'pressures_are_exact_negatives=True' and 'both_valid_is_true_of_velocity_only=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "stokes",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "both_reproduce_the_poiseuille_peak=True",
+    "velocity_is_convention_independent=True",
+    "minus_convention_matches_analytic_sign=True",
+    "plus_convention_has_the_wrong_sign=True",
+    "magnitudes_agree=True",
+    "pressures_are_exact_negatives=True",
+    "both_valid_is_true_of_velocity_only=True",
+    "catalog_generator_ships_the_plus_convention=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for skfem wave#0, verified 2026-08-06 on skfem 12.0.1. Claim: for explicit central differences with ROW-SUM-LUMPED mass on a uniform Q1 tensor grid the exact stability limit is dt_crit = 2/sqrt(c^2 lambda_max(M_L^-1 K)) = h/c because lambda_max = 4/h^2 exactly, and a short run hides the instability. Ran: MeshQuad.init_tensor uniform grids at nx = 5/9/11/21 with ElementQuad1, dense eigenvalues of M_L^-1 K, then the full ratio sweep 0.636/0.707/0.849/0.990 and 1.061/1.131/1.202/1.273/1.414 on an 11x11 grid integrated to T = 20, plus one unstable ratio at T = 0.5. Printed: lambda_max equals 4/h^2 to six decimals at every grid and dt_crit equals h/c to 1e-9; every ratio at or below 0.990 peaks at 1.0167 while every ratio at or above 1.061 reaches 1.16e+44 to 4.43e+100; and the short-run warning is confirmed -- at T = 0.5 an unstable dt still peaks at 1.0166 and looks completely healthy. One correction: the entry's 'max|u| <= 1.0' is slightly optimistic, since the bounded runs peak just above 1 because the nodal projection of the initial mode is not exactly unity; test boundedness, not a unit ceiling. MUTATION CONTROL (re-runnable): T2_MUTATE=1 clamps the step actually used inside march() to the exact CFL bound, dt = min(dt, 0.990*h/c), so no run steps past dt_crit = h/c. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 9 expect_in_output strings; T2_MUTATE=1 removes 'all_ratios_from_1p061_blow_up=True' and 'long_run_reveals_instability=True' (and emits 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "nx5_lambda_max_equals_4_over_h2=True",
+    "nx21_lambda_max_equals_4_over_h2=True",
+    "nx21_dt_crit_equals_h_over_c=True",
+    "lambda_max_is_exactly_4_over_h2_at_every_nx=True",
+    "all_ratios_up_to_0p990_bounded=True",
+    "all_ratios_from_1p061_blow_up=True",
+    "bounded_peaks_stay_under_unity=False",
+    "short_run_looks_stable=True",
+    "long_run_reveals_instability=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

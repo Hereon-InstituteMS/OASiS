@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for skfem convection_diffusion#1, a signal-text correction. Measured on skfem 12.0.1: reading the outward normal as w.n in a form assembled against a plain CellBasis raises AttributeError(\"Attribute 'n' not found in 'w'.\") -- the message names the FormExtraParams dict w, NOT the Basis, so the prior signal \"'Basis' object has no attribute 'normals'\" is a string skfem 12.0.1 never emits. On MeshTri().refined(2): 56 facets, 16 on the boundary; FacetBasis covers those 16 and InteriorFacetBasis the other 40. MUTATION CONTROL (re-runnable): T2_MUTATE=1 swaps the wrong-variant basis (wrong_basis) from Basis(m, ElementTriP1()) to FacetBasis(m, ElementTriP1()), the documented fix, so uses_normal.assemble() no longer raises. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes \"Attribute 'n' not found in 'w'.\", 'cellbasis_normal_raises_attributeerror=True' and 'message_names_w_not_basis=True' (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "convection_diffusion",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "Attribute 'n' not found in 'w'.",
+    "cellbasis_normal_raises_attributeerror=True",
+    "message_names_w_not_basis=True",
+    "prior_signal_string_absent=True",
+    "n_facets=56",
+    "n_boundary_facets=16",
+    "n_interior_facets=40",
+    "facet_plus_interior_equals_total=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

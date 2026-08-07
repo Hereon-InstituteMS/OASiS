@@ -1,0 +1,24 @@
+{
+  "_comment": "ngsolve thermal_structural#0 (eps_th = alpha*T*Id(dim) is isotropic). Verified 2026-08-03 on NGSolve 6.2.2604, unit_square maxh=0.3, VectorH1(order=2), rigid modes removed with a 3-component NumberSpace, E=210 GPa nu=0.3 alpha=1.2e-5 dT=100. With Id(2) the free specimen expands to eps_xx = eps_yy = 1.560000e-03 = (1+nu)*alpha*dT and is stress-free. With the x-only tensor CF((1,0,0,0),dims=(2,2)) it gives eps_xx = 2.730000e-03 and eps_yy = -1.170000e-03: the heated specimen CONTRACTS transversely. Records the negative result that matters for diagnosis: the total stress relaxes to ~3e-12 in BOTH variants because a spatially uniform eigenstrain on a free body is always compatible, so 'zero Stress' does not discriminate and the strain isotropy is the real signal. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets EPS_TH_TENSOR to 'identity', restoring eps_th = alpha*T*Id(2) in the slot where the x-only tensor was. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'wrong_tensor_expansion_anisotropic=True', 'wrong_tensor_contracts_transversely=True' and 'wrong_tensor_misses_uniform_strain=True', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "thermal_structural",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "ngsolve_version=",
+    "structural_space_type=VectorH1 eps_th_dims=[2, 2]",
+    "wrong_tensor_expansion_anisotropic=True",
+    "wrong_tensor_contracts_transversely=True",
+    "wrong_tensor_misses_uniform_strain=True",
+    "zero_stress_alone_does_not_discriminate=True",
+    "identity_expansion_isotropic=True",
+    "identity_matches_expected_uniform_strain=True",
+    "identity_leaves_body_stress_free=True",
+    "identity_expands_in_both_directions=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

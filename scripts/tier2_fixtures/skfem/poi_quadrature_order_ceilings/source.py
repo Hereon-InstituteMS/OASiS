@@ -1,0 +1,106 @@
+"""Tier-2: get_quadrature order ceilings, and three messages that look alike.
+
+Claim: skfem poisson#6 -- skfem.quadrature.get_quadrature has a hard order
+ceiling per reference domain: TRIANGLE <= 19, TETRAHEDRON <= 9. The triangle
+ceiling message contains a typo ('quadratureis', no space); the tetrahedron one
+is correctly spaced but says 'not available' rather than 'not implemented'; and
+passing a string instead of a Refdom class raises a THIRD message that is easy to
+mistake for the ceiling error.
+
+Wrong variant: asking for an order above the ceiling (what a very-high-order tet
+element needs, since it wants 2k > 9), and passing 'triangle' as a string.
+
+Mutation control: T2_MUTATE=1 applies the three documented fixes at the three
+offending call sites -- the over-ceiling requests drop to the ceiling
+(RefTri 20 -> 19, RefTet 10 -> 9) and the string 'triangle' becomes the RefTri
+class. All three calls then succeed, so "quadratureis not implemented",
+"of quadrature is not available" and "is not supported" disappear from the
+output and the fixture goes red. Re-run: T2_MUTATE=1 python source.py
+"""
+from __future__ import annotations
+
+import os
+import sys
+
+from skfem.quadrature import get_quadrature
+from skfem.refdom import RefTet, RefTri
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# THE PATHOLOGY: an order above the per-refdom ceiling, and a string where a
+# Refdom class belongs.  The documented fixes are the ceiling itself and RefTri.
+TRI_ORDER = 20 if not MUTATE else 19
+TET_ORDER = 10 if not MUTATE else 9
+STRING_DOMAIN = "triangle" if not MUTATE else RefTri
+
+
+def main() -> int:
+    ok = True
+
+    # --- RIGHT variant: at the ceiling ----------------------------------
+    X, W = get_quadrature(RefTri, 19)
+    print(f"tri_order_19_ok=True")
+    print(f"tri_npts_19={X.shape[1]}")
+    print(f"tri_weight_sum_is_half={abs(W.sum() - 0.5) < 1e-12}")
+    if abs(W.sum() - 0.5) > 1e-12:
+        print(f"FAIL: triangle weights sum to {W.sum()!r}, expected 1/2",
+              file=sys.stderr)
+        ok = False
+
+    Xt, Wt = get_quadrature(RefTet, 9)
+    print(f"tet_order_9_ok=True")
+    print(f"tet_npts_9={Xt.shape[1]}")
+    print(f"tet_weight_sum_is_sixth={abs(Wt.sum() - 1.0 / 6.0) < 1e-12}")
+    print(f"tet_ceiling_is_9_not_8=True")
+    if abs(Wt.sum() - 1.0 / 6.0) > 1e-12:
+        print(f"FAIL: tetrahedron weights sum to {Wt.sum()!r}, expected 1/6",
+              file=sys.stderr)
+        ok = False
+
+    # --- WRONG variant (a): one order above each ceiling ----------------
+    tri_msg = ""
+    try:
+        get_quadrature(RefTri, TRI_ORDER)
+    except NotImplementedError as exc:
+        tri_msg = str(exc)
+    print(f"tri_order_20_msg={tri_msg!r}")
+    if "quadratureis not implemented" not in tri_msg:
+        print(f"FAIL: triangle ceiling message changed: {tri_msg!r}",
+              file=sys.stderr)
+        ok = False
+
+    tet_msg = ""
+    try:
+        get_quadrature(RefTet, TET_ORDER)
+    except NotImplementedError as exc:
+        tet_msg = str(exc)
+    print(f"tet_order_10_msg={tet_msg!r}")
+    if "of quadrature is not available" not in tet_msg:
+        print(f"FAIL: tetrahedron ceiling message changed: {tet_msg!r}",
+              file=sys.stderr)
+        ok = False
+
+    distinct = tri_msg != tet_msg
+    print(f"two_ceiling_messages_differ={distinct}")
+    if not distinct:
+        print("FAIL: the two ceiling messages are identical, so the claim's "
+              "distinction is gone", file=sys.stderr)
+        ok = False
+
+    # --- WRONG variant (b): a string instead of a Refdom class ----------
+    str_msg = ""
+    try:
+        get_quadrature(STRING_DOMAIN, 2)
+    except NotImplementedError as exc:
+        str_msg = str(exc)
+    print(f"string_domain_msg={str_msg!r}")
+    if "is not supported" not in str_msg:
+        print(f"FAIL: the string-domain message changed: {str_msg!r}",
+              file=sys.stderr)
+        ok = False
+
+    return 0 if ok else 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

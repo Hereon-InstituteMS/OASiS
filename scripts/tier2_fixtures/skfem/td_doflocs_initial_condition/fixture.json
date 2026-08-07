@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem time_dependent#6, verified 2026-08-06 on skfem 12.0.1. Claim: ib.doflocs is the (ndim, N) coordinate array for initial-condition assignment; building the IC from mesh.p only matches DOFs for P1, and for P2 / ElementVector the extra DOFs are silently left at zero. Ran: a 4x4 MeshTri.init_tensor (25 vertices) with ElementTriP1 (N=25), ElementTriP2 (N=81) and ElementVector(ElementTriP1) (N=50); a direct assignment of a vertex-length array; a zero-padded assignment; ib.project; and evaluation on doflocs. Printed: doflocs is (2, N) for all three; for P1 it EQUALS mesh.p; for P2 the first 25 columns equal mesh.p and 56 DOFs are extra. A DIRECT assignment is loud -- ValueError 'could not broadcast input array from shape (25,) into shape (81,)'. The ZERO-PADDED form is the silent one: 65 of 81 DOFs stay at zero, no warning is emitted, and the field is wrong by 101% relative in the mass-matrix norm with a peak deviation of 0.9254. Evaluating the same callable on ib.doflocs gives an N-long vector within 0.28% of ib.project. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the entry's own fix at the pathology site - the zero-padded initial condition u_padded is built by evaluating the callable on ib2.doflocs over all ib2.N slots instead of writing field(mesh.p) into the first n_vertices slots. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 takes padded_ic_zero_dofs from 65 of 81 down to 17 of 81 and relative_error from 1.0077 to 0.0056, removing 'padded_ic_majority_of_dofs_are_zero=True', 'padded_ic_is_wrong_by_order_one=True' and raising the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "time_dependent", "pitfall_index": 6, "mode": "python",
+  "expect_in_output": [
+    "P1_doflocs_is_ndim_by_N=True",
+    "P2_doflocs_is_ndim_by_N=True",
+    "vecP1_doflocs_is_ndim_by_N=True",
+    "P2_N_equals_vertex_count=False",
+    "p1_doflocs_equals_mesh_p=True",
+    "p2_doflocs_prefix_equals_mesh_p=True",
+    "direct_short_assignment_raises=True",
+    "could not broadcast input array from shape (25,) into shape (81,)",
+    "padded_ic_majority_of_dofs_are_zero=True",
+    "padded_ic_warnings=[]",
+    "padded_ic_is_silent=True",
+    "padded_ic_is_wrong_by_order_one=True",
+    "doflocs_ic_is_close_to_project=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

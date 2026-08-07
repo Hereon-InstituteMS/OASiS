@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem adaptive_poisson#1, verified 2026-08-06 on skfem 12.0.1. Claim: MeshTri.refined takes ELEMENT indices, a boolean mask of length n_elements works, and passing facet indices raises IndexError 'index N is out of bounds for axis 0 with size M'. Ran: MeshTri().refined(2) (32 elements, 56 facets, 25 vertices); the same three elements marked by index and by mask; the full facet index array; an out-of-range index; and a scalar argument. Printed: index and mask give identical meshes -- 47 elements each, identical connectivity and points. Facet indices raise IndexError 'index 32 is out of bounds for axis 1 with size 32' -- note AXIS 1, not the axis 0 the entry quotes, and the size in the message is the ELEMENT count (32), not the facet count (56), so a gate matching the literal 'axis 0' or looking for the facet count would miss it. NEW AND SILENT: a SCALAR argument is not 'refine that element' -- refined(3) is the uniform-refinement overload and multiplies 32 elements to 2048 with no warning, while refined(np.array([3])) gives 39. That is the shape a mask/index mix-up most easily takes. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the argument handed to m.refined() is the ELEMENT index array np.arange(32) instead of the facet index array np.arange(56). Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; the call stops raising, which removes 'facet_indices_raise_IndexError=True', 'message_says_out_of_bounds=True', 'message_names_axis_1=True' and 'message_quotes_the_element_count=True' and fires the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "adaptive_poisson", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "elements=32 facets=56",
+    "index_and_mask_agree_on_count=True",
+    "index_and_mask_agree_on_connectivity=True",
+    "facet_indices_raise_IndexError=True",
+    "message_says_out_of_bounds=True",
+    "message_names_axis_0=False",
+    "message_names_axis_1=True",
+    "message_quotes_the_element_count=True",
+    "message_quotes_the_facet_count=False",
+    "out_of_range_index_raises=True",
+    "scalar_argument_is_uniform_refinement=True",
+    "scalar_argument_is_silent=True",
+    "scalar_and_single_index_differ=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

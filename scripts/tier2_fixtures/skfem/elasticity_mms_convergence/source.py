@@ -23,10 +23,31 @@ Expected at refine=5 (h ≈ 1/32):
                    margin for skfem's vertex-only
                    quadrature on the error functional)
   P1 EOC refine=4 → refine=5 ∈ [1.7, 2.3]
+
+Mutation control (INVERTED direction): this is a Layer-C
+correctness gate, so it executes no pathology and there is
+none to remove.  ``T2_MUTATE=1 python source.py`` instead
+ACTIVATES the documented constitutive mistake at the site
+this docstring pins down as
+``σ = 2·μ·sym(grad(u)) + λ·div(u)·I``: the strain measure
+``eps`` in the stiffness BilinearForm becomes the full
+``grad`` instead of ``sym_grad``.  The assembled operator is
+then no longer the Navier operator whose ``-div(σ)`` this
+file's analytic load implements, so the h=1/32 L2 error
+rises 8.96e-03 -> 2.35e-01 and the EOC collapses
+1.924 -> 0.054; both bars trip, ``FAIL:`` is printed and the
+fixture goes red.
+
+(Note, established while building this control: the
+manufactured u vanishes identically on ∂Ω, so the Dirichlet
+block below is numerically inert -- replacing it with plain
+zeros reproduces every number bit-for-bit.  It is therefore
+NOT a usable mutation site.)
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
@@ -35,7 +56,9 @@ import skfem
 from skfem import (
     MeshTri, Basis, BilinearForm, LinearForm, Functional,
     ElementVector, ElementTriP1, condense, solve)
-from skfem.helpers import sym_grad, trace, eye, ddot
+from skfem.helpers import sym_grad, trace, eye, ddot, grad
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_elasticity_mms(refine: int) -> tuple[float, int]:
@@ -49,7 +72,10 @@ def run_elasticity_mms(refine: int) -> tuple[float, int]:
     basis = Basis(m, elem)
 
     def eps(w):
-        return sym_grad(w)
+        # Under T2_MUTATE the documented mistake is made here:
+        # the full gradient replaces the symmetric one, so the
+        # operator stops being sigma = 2*mu*sym(grad u) + lam*div(u)*I.
+        return sym_grad(w) if not MUTATE else grad(w)
 
     @BilinearForm
     def stiffness(u, v, w):

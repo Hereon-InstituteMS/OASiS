@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve convection_diffusion#1 (forgetting .Other() makes the jump term identically zero). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3, L2 order 1 dgjumps=True. (u-u) really is identically zero -- its L2 norm is exactly 0.0 against a field norm of 0.447 -- and the form built from it assembles with no exception and no output at all, checked at the file-descriptor level. nze counts ALLOCATED slots, which dgjumps fixes at space construction and which is identical either way, so entries that actually received a value are counted instead: the broken form writes 0 entries of any kind, the correct one writes 610 of which 444 are cross-element. A full DG solve on the broken form plus a mass term reproduces the elementwise L2 projection to 0.0 exactly, so the scheme really is 'a discontinuous polynomial fit per element with no inter-element coupling'. Mutation: restoring .Other() in the broken branch makes it couple and the fixture fails on broken_matrix_has_no_entries_at_all. MUTATION CONTROL (re-runnable): T2_MUTATE=1 restores .Other() at both pathology sites -- inside _broken() and in the a_solve form -- so the integrand becomes the real jump (u - u.Other())*(v - v.Other()). Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 7 expect_in_output strings; under T2_MUTATE=1 the once-broken form writes 610 entries of which 444 are cross-element (identical to the correct form) and the solve no longer reproduces the elementwise projection (2.4e-02), so it removes 'broken_matrix_has_no_entries_at_all=True', 'broken_form_has_no_inter_element_coupling=True' and 'broken_scheme_is_just_a_per_element_fit=True'. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "convection_diffusion",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "u_minus_u_is_identically_zero=True",
+    "broken_form_raised=None",
+    "broken_form_assembles_silently=True",
+    "broken_matrix_has_no_entries_at_all=True",
+    "broken_form_has_no_inter_element_coupling=True",
+    "correct_form_couples_elements=True",
+    "broken_scheme_is_just_a_per_element_fit=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

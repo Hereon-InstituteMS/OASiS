@@ -220,10 +220,15 @@ KNOWLEDGE: dict = {
             "`ib.get_dofs(name).nodal['u^1']` for x-component and "
             "`'u^2'` for y-component (1-indexed because UFL/skfem "
             "uses 1-based subscript labels for vector components). "
-            "Signal: KeyError 'u^1' from `nodal[]` if "
-            "ElementVector wasn't used (a scalar ElementTriP1 has "
-            "only `nodal[None]`); or IndexError when you assume "
-            "0-based 'u^0' indexing.",
+            "Signal: measured 2026-08-03 on skfem 12.0.1, "
+            "MeshTri().refined(2).with_boundaries({'bottom': ...}) "
+            "— Basis(m, ElementVector(ElementTriP1()))"
+            ".get_dofs('bottom').nodal has keys ['u^1', 'u^2'], "
+            "while the SCALAR Basis(m, ElementTriP1()) has keys "
+            "['u'] (NOT `nodal[None]`, as the prior text said). "
+            "So the failure signal is KeyError('u^1') against a "
+            "dict whose only key is 'u'. (Verified empirically "
+            "2026-08-03 — key-name correction.)",
 
             "[API] `condense(K, f, x=x_full, D=D)` for prescribed "
             "non-zero Dirichlet values requires x_full to be a "

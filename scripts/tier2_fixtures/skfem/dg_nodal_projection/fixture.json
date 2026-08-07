@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#7, verified 2026-08-06 on skfem 12.0.1 with meshio. On MeshTri().refined(2) a DG-P1 vector has 96 = 3*32 entries against 25 vertices, and its DOF coordinates repeat (25 unique locations for 96 DOFs). meshio refuses it as point_data with 'len(points) = 25, but len(point_data[\"u\"]) = 96'; silently truncating to the first 25 entries gives max|err| = 2.25 on a field whose whole range is 3. ib_p1.project(ib_dg.interpolator(u)) recovers the vertex values to 1.3e-15 and is accepted by the writer. MUTATION CONTROL (re-runnable): T2_MUTATE=1 feeds both wrong variants u_post = ib_p1.project(ib_dg.interpolator(u_dg)) instead of the raw DG coefficient vector, the documented fix applied at the post-processing site. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'vtk_point_data_rejected=True', 'len(point_data[\"u\"]) = 96', 'naive_truncation_err_gt_half_of_range=True' and 'projection_beats_truncation_by_gt_1e10=True' (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "n_elements=32",
+    "n_vertices=25",
+    "n_dg_dofs=96",
+    "dg_dofs_equal_3_times_elements=True",
+    "dg_dofs_match_vertex_count=False",
+    "n_unique_dg_dof_locations=25",
+    "dg_dof_locations_are_duplicated=True",
+    "vtk_point_data_rejected=True",
+    "len(point_data[\"u\"]) = 96",
+    "naive_truncation_err_gt_half_of_range=True",
+    "projected_length_matches_vertices=True",
+    "projected_err_lt_1e-12=True",
+    "projected_accepted_by_vtk_writer=True",
+    "projection_beats_truncation_by_gt_1e10=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

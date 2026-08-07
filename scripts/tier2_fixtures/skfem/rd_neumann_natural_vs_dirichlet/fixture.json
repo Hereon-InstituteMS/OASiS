@@ -1,0 +1,21 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 6 on scikit-fem 12.0.1 (2026-08-06). The natural half is pinned on pure diffusion where the answer is known: with no boundary treatment at all the total mass 1^T M u is conserved to a relative -1.2e-15 over 50 steps; with the boundary DOFs condensed to 0, 70.1% of the mass drains. The Schnakenberg half (16x16 ElementQuad1, 289 DOFs, 64 boundary DOFs, dt=2e-3, 20 steps): natural Neumann gives u on the boundary in [0.118, 4.35] and spread 4.23, while condense(J, -R, D=boundary) gives boundary values identically 0, the whole field inside [0, 0.125] and spread 0.125 - a 34x amplitude suppression, so the constraint does not merely flatten the boundary, it suppresses the pattern. API note recorded by the fixture: scikit-fem 12.0.1 has NO DirichletBC symbol; the essential-BC API is condense / enforce / penalize, so the claim's wording is borrowed from another library. MUTATION CONTROL (re-runnable): T2_MUTATE=1 forces the dirichlet flag False inside schnakenberg() and diffusion_mass_balance(), so the boundary DOFs are no longer condensed to zero and the zero-flux condition is left natural in the weak form -- the documented fix. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 11 expect_in_output strings; T2_MUTATE=1 removes 'dirichlet_mass_rel_change_gt_0p5=True', 'dirichlet_boundary_u_exactly_zero=True', 'dirichlet_pattern_spread_lt_0p3=True' and 'amplitude_suppressed_gt_10x=True', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "skfem_version=12.0.1",
+    "skfem_has_DirichletBC=False",
+    "skfem_has_condense=True skfem_has_enforce=True",
+    "n_dofs=289 n_boundary_dofs=64",
+    "neumann_mass_rel_change_lt_1e_12=True",
+    "dirichlet_mass_rel_change_gt_0p5=True",
+    "neumann_boundary_max_u_gt_1=True",
+    "neumann_pattern_spread_gt_1p0=True",
+    "dirichlet_boundary_u_exactly_zero=True",
+    "dirichlet_pattern_spread_lt_0p3=True",
+    "amplitude_suppressed_gt_10x=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

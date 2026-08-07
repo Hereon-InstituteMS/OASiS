@@ -11,14 +11,27 @@ inverse step fails:
 
 Catalog-recommended fix: set shift near the expected
 eigenvalue (k^2_estimate from analytic cavity formula).
+
+Mutation control: T2_MUTATE=1 applies exactly that fix at the
+pathology site -- the `shift` argument of ArnoldiSolver becomes a
+non-zero value near the first cavity eigenvalue (2*pi^2) instead of
+0.0 -- so (A - shift*M) is regular, UMFPACK factorises it and no
+exception is raised. Re-run with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import math
+import os
 import sys
 import traceback
 
 from netgen.geom2d import unit_square
 from ngsolve import HCurl, Mesh, BilinearForm, curl, dx, MultiVector, ArnoldiSolver
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# 0.0 is the pathology; the catalog fix is a shift near the expected
+# eigenvalue (k^2 = 2*pi^2 for the first unit-square cavity mode).
+SHIFT = (2.0 * math.pi ** 2) if MUTATE else 0.0
 
 
 def main() -> int:
@@ -31,11 +44,11 @@ def main() -> int:
     vecs = MultiVector(a.mat.CreateColVector(), 4)
     try:
         ArnoldiSolver(a.mat, m.mat, fes.FreeDofs(),
-                       list(vecs), shift=0.0)
+                       list(vecs), shift=SHIFT)
     except Exception:
         traceback.print_exc()
         return 1
-    print("ERROR: ArnoldiSolver with shift=0 succeeded "
+    print(f"ERROR: ArnoldiSolver with shift={SHIFT} succeeded "
           "(catalog claim wrong)", file=sys.stderr)
     return 2
 

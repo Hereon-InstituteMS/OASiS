@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve mhd#5 (div(B)=0 via HDiv or a grad-div penalty). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.15. The target field (sin(pi y)cos(pi x), -cos(pi y)sin(pi x)) is divergence-free in closed form (measured 1.6e-16), so everything after that is the discretisation's. Plain VectorH1 order 1 carries ||div B|| = 0.308 -- the claim's O(0.1), and nowhere near the 1e-14 the claim says it should be. HDiv order 3 with div(B)=0 imposed through an L2 multiplier gives 5.3e-8, seven orders lower, and is also more accurate. CORRECTION to the 'tau ~ 1' recommendation: at tau = 1 the divergence falls by only 7.3x while the field error grows 10.2x, so it is a poor trade; divergence keeps falling monotonically with tau and the error keeps growing, saturating around 12x. The claim states only one side of that trade. Mutation: forcing the HDiv branch to order 1 with an L2 order 0 multiplier raises the HDiv divergence and the fixture fails on hdiv_divergence_orders_below_vectorh1. MUTATION CONTROL (re-runnable, inverted polarity -- the HDiv branch is the FIX, so the discriminating edit commits the documented mistake instead of removing it): T2_MUTATE=1 sets HDIV_ORDER 3 -> 1 in the hdiv_constrained call, which drags the L2 multiplier to order 0 so the constraint only pins the elementwise mean divergence -- the mutation recorded above. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 9 expect_in_output strings; T2_MUTATE=1 raises the HDiv divergence from 5.3e-8 to 2.6e-3 against the VectorH1 3.1e-1, which removes 'hdiv_divergence_orders_below_vectorh1=True' and makes the forbidden string 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "mhd",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "exact_field_is_divergence_free=True",
+    "vectorh1_divergence_is_order_0p1=True",
+    "vectorh1_divergence_is_not_1e-14=True",
+    "hdiv_divergence_orders_below_vectorh1=True",
+    "graddiv_divergence_falls_monotonically_in_tau=True",
+    "graddiv_field_error_grows_monotonically_in_tau=True",
+    "tau_one_barely_reduces_divergence=True",
+    "tau_one_already_costs_accuracy=True",
+    "graddiv_at_tau_one_is_a_poor_trade=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

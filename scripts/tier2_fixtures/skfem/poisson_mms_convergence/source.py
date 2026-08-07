@@ -22,10 +22,20 @@ Expected behaviour at h=1/32 (refine 5 from MeshTri()):
   P2 L2 error ≲ 5e-5   (O(h³))
   P3 L2 error ≲ 5e-7   (O(h⁴))
 Plus P1 EOC h=1/16 → h=1/32 within [1.7, 2.3].
+
+Mutation control: this is a correctness gate, so the mutation
+breaks the discretisation the gate certifies rather than
+removing a pitfall. T2_MUTATE=1 drops the manufactured load
+constant from 2π² to π², so f no longer equals -Δu and the
+computed field is half the exact one. The L2 errors then sit
+around 2.5e-1 at every order and the EOC collapses to ~0, so
+"FAIL:" (a forbid_in_output string) appears four times and the
+fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
@@ -35,6 +45,12 @@ from skfem import (
     MeshTri, Basis, BilinearForm, LinearForm, solve, condense)
 from skfem.helpers import dot, grad
 from scipy.sparse.linalg import spsolve  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# MMS consistency: -Δ(sin πx sin πy) = 2π² sin πx sin πy, so
+# the load constant must be 2π².  Under mutation it is π².
+LOAD_CONST = 2.0 if not MUTATE else 1.0
 
 
 def run_skfem_poisson(refine: int, order: int) -> float:
@@ -54,7 +70,7 @@ def run_skfem_poisson(refine: int, order: int) -> float:
     @LinearForm
     def load(v, w):
         x, y = w.x[0], w.x[1]
-        return (2.0 * np.pi ** 2
+        return (LOAD_CONST * np.pi ** 2
                 * np.sin(np.pi * x)
                 * np.sin(np.pi * y)) * v
 

@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#3 (Variation() autodiff vs hand-coded P / dP/dF). Observed 2026-08-06 on NGSolve 6.2.2604: the hand-coded PK1 matches Variation()'s residual to ~6e-15; a tangent linearised from a P whose mu term is doubled turns 5 residual evaluations into 39 with |r_k+1|/|r_k| pinned at a constant ~0.55 (linear) while still reaching the same solution; the matched tangent is quadratic. Correction to the claim: using the factor-2 P for BOTH residual and tangent stays quadratic (6 steps) but converges to a wrong displacement, because NGSolve differentiates whatever residual form it is given -- the linear signature needs an inconsistent tangent, not a wrong P. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets P_TANGENT_FAC from 2.0 to 1.0, removing the factor-of-2 error from pk1(P_TANGENT_FAC) so a_wrong becomes identical to a_exact. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 9 expect_in_output strings; T2_MUTATE=1 removes 'mismatched_tangent_iters_ge_4x_exact=True', 'mismatched_tangent_ratio_constant_linear=True' and 'wrongP_solution_is_wrong=True' (and trips the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "hand_P_matches_variation_residual=True",
+    "tangent_matrix_type=SparseMatrixd",
+    "exact_tangent_converged=True",
+    "exact_tangent_quadratic=True",
+    "mismatched_tangent_iters_ge_4x_exact=True",
+    "mismatched_tangent_ratio_constant_linear=True",
+    "mismatched_tangent_reaches_same_solution=True",
+    "wrongP_still_quadratic=True",
+    "wrongP_solution_is_wrong=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

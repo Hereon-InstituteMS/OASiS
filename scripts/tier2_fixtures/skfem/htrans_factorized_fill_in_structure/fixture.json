@@ -1,0 +1,14 @@
+{
+  "_comment": "Tier-2 for skfem heat_transient#1, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim: factor once with factorized() and reuse, because refactoring every step costs O(N^1.5) against O(N); the stated signal is per-step WALL TIME scaling as N^1.5. This fixture asserts nothing about elapsed time -- that goes red on a busy machine and proves nothing -- and measures the structural quantity the cost tracks: LU fill-in. Ran: backward Euler systems on MeshTri.init_tensor grids 16/24/32/48/64 with ElementTriP1, condensed to 225..3969 unknowns, splu on each, plus a 40-step loop with scipy.sparse.linalg._dsolve.linsolve.splu wrapped by a counter. Printed: the system matrix non-zeros grow with exponents 1.032/1.022/1.015/1.011 in N -- linear -- while the LU non-zeros grow with exponents 1.416/1.432/1.352/1.349, superlinear and above the system exponent at every step, with the fill ratio rising from 3.465 to 9.914. That is why repeating the factorisation dominates. A factorized() callable performs EXACTLY ONE LU across all 40 steps, and its answers match 40 spsolve calls to 7.772e-16. MUTATION CONTROL (re-runnable): this fixture has no wrong variant to remove -- it demonstrates the fix -- so the control runs in the opposite direction and un-applies it: T2_MUTATE=1 moves the spl.factorized() call INSIDE the 40-step loop, which is exactly the per-step refactorisation the entry warns about. The answers are unchanged, so 'reuse_is_exact=True' correctly survives and only the counted quantity moves. Re-verified by execution 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: the unmutated run matches all 7 expect_in_output strings; T2_MUTATE=1 removes 'factorisations_performed=1' (it becomes 40) and 'exactly_one_factorisation_for_all_steps=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "heat_transient", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "system_nnz_grows_linearly=True",
+    "lu_fill_grows_superlinearly=True",
+    "lu_exponent_exceeds_system_exponent=True",
+    "fill_ratio_grows=True",
+    "factorisations_performed=1",
+    "exactly_one_factorisation_for_all_steps=True",
+    "reuse_is_exact=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "ngsolve contact#5 (NGSolve does ship ngsolve.comp.ContactBoundary; AddIntegrator takes a bare CoefficientFunction). Run 2026-08-06 on NGSolve 6.2.2604. The dir() probe the claim gives returns exactly ['ContactBoundary']. Both constructor overloads are present in the pybind signature in the order the claim describes -- fes-first is overload 1, master/minion with element_boundary is overload 2 -- and both construct on a real mesh. The deprecation warning 'WARNING: ContactBoundary constructor with FESpace is deprecated, fes will be set correctly in Update!' is emitted by the fes-first form only; it is printed from C++ so it goes out through file descriptors 1 and 2 directly and contextlib.redirect_stderr misses it entirely -- the fixture captures at the descriptor level with os.dup2, which is why it sees the string at all. .gap and .normal are CoefficientFunctions, the public members are AddEnergy/AddIntegrator/Update/gap/normal, the keep-alive warning is in the class docstring, AddIntegrator(cf) is accepted and AddIntegrator(cf*ds) raises TypeError with the literal 'AddIntegrator(): incompatible function arguments'. Mutation: passing a bare CF to the measure branch removes the TypeError and the fixture fails on addintegrator_with_measure_raises. MUTATION CONTROL (re-runnable): T2_MUTATE=1 drops the '* ds' from the second AddIntegrator call, so the argument 'arg' is the bare CoefficientFunction cb_new.gap*v[1] that the API actually wants. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'addintegrator_with_measure_raises=True' and 'addintegrator_message_literal=True' (and prints the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "contact",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "contactboundary_exists=True",
+    "init_doc_is_overloaded=True",
+    "fes_first_overload_documented=True",
+    "master_minion_overload_documented=True",
+    "element_boundary_kwarg_documented=True",
+    "keepalive_warning_in_docstring=True",
+    "master_minion_form_is_quiet=True",
+    "fes_first_form_warns_deprecated=True",
+    "gap_is_coefficientfunction=True",
+    "normal_is_coefficientfunction=True",
+    "has_addintegrator_addenergy_update=True",
+    "addintegrator_accepts_bare_cf=True",
+    "addintegrator_with_measure_raises=True",
+    "addintegrator_message_literal=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

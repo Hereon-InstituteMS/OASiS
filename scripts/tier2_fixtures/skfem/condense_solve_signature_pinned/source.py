@@ -14,24 +14,43 @@ contract:
 
 If skfem 13.x drops or renames a kwarg, the gate fails
 within hours.
+
+Mutation control (INVERSE -- this fixture contains no pathology
+to remove; it is a drift gate, so the control proves the gate
+FIRES): T2_MUTATE=1 introspects a stand-in condense whose D=
+kwarg has been renamed to Dirichlet=, i.e. exactly the skfem-13
+rename the gate exists to catch, and the missing-kwarg report
+stops being empty.  Re-run with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 
 import skfem
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 REQUIRED_CONDENSE_PARAMS = {
     "A", "b", "x", "I", "D", "expand"}
 REQUIRED_SOLVE_PARAMS = {"A", "b", "x", "I", "solver"}
 
 
+def _condense_with_renamed_D(A, b=None, x=None, I=None,
+                             Dirichlet=None, expand=True):
+    """Stand-in for a future skfem that renamed D= to Dirichlet=."""
+    raise NotImplementedError
+
+
 def main() -> int:
     print(f"skfem_version={skfem.__version__}")
 
-    sig_c = inspect.signature(skfem.condense)
+    # The introspected object: the real skfem.condense, or under
+    # T2_MUTATE the drifted signature the gate is meant to catch.
+    condense_under_test = (skfem.condense if not MUTATE
+                           else _condense_with_renamed_D)
+    sig_c = inspect.signature(condense_under_test)
     sig_s = inspect.signature(skfem.solve)
     cparams = set(sig_c.parameters)
     sparams = set(sig_s.parameters)

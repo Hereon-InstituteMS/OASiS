@@ -7,17 +7,32 @@ Verifies three claims at once:
      .grad attribute.
   #3 .grad has shape (spatial_dim, n_elements, n_quad_points).
      For constant u_dof, the gradient field is uniformly zero.
+
+Mutation control: this fixture asserts an ABSENCE, so there is no pathology to
+remove -- the control instead injects the thing the claim says is missing.
+T2_MUTATE=1 binds a `newton_solve` attribute onto the skfem module before the
+namespace is scanned, which is exactly what a release shipping a Newton solver
+would look like to this probe. 'no_newton_in_skfem=True' then disappears from
+the output, proving the line is read off the namespace and not hard-coded.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
 import skfem
 import skfem.helpers
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
+    if MUTATE:
+        # The absence under test, removed: skfem now carries a name matching
+        # 'newton', so the namespace scan below must report it.
+        skfem.newton_solve = lambda *a, **kw: None
     top_match = [n for n in dir(skfem)
                  if "newton" in n.lower() or "nonlin" in n.lower()]
     helper_match = [n for n in dir(skfem.helpers)

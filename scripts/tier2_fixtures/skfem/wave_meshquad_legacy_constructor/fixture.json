@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem wave#1, verified 2026-08-06 on skfem 12.0.1. Claim: skfem >= 12 needs MeshQuad.init_tensor because the older MeshQuad((nx,ny)) constructor was removed, signalled by TypeError 'MeshQuad() takes 1 positional argument but 2 were given' or AttributeError 'type object MeshQuad has no attribute __init__'. Ran: MeshQuad((10,10)), MeshQuad(10,10), a Basis on the resulting object, and MeshQuad.init_tensor on an 11x11 grid. Printed: BOTH QUOTED MESSAGES ARE ABSENT and MeshQuad((10,10)) RAISES NOTHING -- skfem 12's Mesh is a dataclass whose first field is doflocs, so the tuple becomes coordinates and the call returns a MeshQuad1 with a 1-D point array [10.0, 10.0] and a single bogus element. The only thing emitted at construction is a bare stdout line 'Unable to calculate global DOF locations.', not a warning and not an exception. The failure surfaces later at Basis(...) as IndexError 'too many indices for array: array is 1-dimensional, but 2 were indexed', a message that never mentions MeshQuad. MeshQuad(10,10) raises IndexError 'tuple index out of range', also not the quoted TypeError. init_tensor gives the expected 100 elements / 121 vertices. MUTATION CONTROL (re-runnable): T2_MUTATE=1 makes legacy_meshquad(), the single wrapper every legacy MeshQuad((10, 10)) / MeshQuad(10, 10) call in this fixture goes through, build the mesh with MeshQuad.init_tensor instead. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 removes 'legacy_p_is_one_dimensional=True', 'legacy_has_a_single_bogus_element=True', 'Unable to calculate global DOF locations.', 'basis_on_legacy_mesh_raises=True', 'basis_exception_type=IndexError' and 'two_positional_ints_exception=IndexError' (and emits 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "skfem_version=",
+    "legacy_tuple_call_raises=False",
+    "legacy_result_class=MeshQuad1",
+    "legacy_p_is_one_dimensional=True",
+    "legacy_has_a_single_bogus_element=True",
+    "Unable to calculate global DOF locations.",
+    "basis_on_legacy_mesh_raises=True",
+    "basis_exception_type=IndexError",
+    "basis_message_mentions_MeshQuad=False",
+    "two_positional_ints_exception=IndexError",
+    "quoted_typeerror_text_present=False",
+    "quoted_attributeerror_text_present=False",
+    "init_tensor_gives_100_elements=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

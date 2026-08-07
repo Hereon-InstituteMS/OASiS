@@ -16,17 +16,32 @@ Manufactured solution (matches fenics + skfem):
   Plane strain, E = 1.0, ν = 0.3
 
   Navier form: -μ·Δu - (λ + μ)·grad(div(u)) = f
+
+Mutation control: this is a correctness GATE, not a pitfall
+fixture -- its expect_in_output are bare key prefixes and the
+real assertion is the "FAIL:" string in forbid_in_output.  So
+the control breaks the discretisation the gate certifies:
+``T2_MUTATE=1 python source.py`` drops the volumetric
+``lam·Trace(eps)·Id(2)`` term from sigma() while the
+manufactured forcing f is still built from the full plane-strain
+Navier operator.  The discrete operator no longer matches f, the
+L2 errors blow past their tolerances, and the forbidden string
+"FAIL:" APPEARS -- which is the evidence here -- so the fixture
+goes red.
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_elasticity_mms(maxh: float, order: int) -> float:
@@ -89,6 +104,12 @@ def run_elasticity_mms(maxh: float, order: int) -> float:
         return 0.5 * (ngs.Grad(w) + ngs.Grad(w).trans)
 
     def sigma(w):
+        if MUTATE:
+            # T2_MUTATE: drop the volumetric lam·tr(eps)·I term of the
+            # plane-strain law.  f above is still the full Navier
+            # forcing, so the discretisation this gate certifies is
+            # broken and the MMS errors leave their tolerances.
+            return 2.0 * mu * eps(w)
         return (2.0 * mu * eps(w)
                 + lam * ngs.Trace(eps(w))
                   * ngs.Id(2))

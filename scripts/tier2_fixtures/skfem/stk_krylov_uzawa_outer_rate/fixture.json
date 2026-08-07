@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem stokes#1, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim (marked inherited, recommendation only, never verified): Krylov-Uzawa splits the saddle point with an outer iteration on the pressure Schur complement; the per-outer pressure residual drops by a factor 0.1..0.3, and switching to monolithic Krylov on the full block shows residual stalling. Ran: lid-driven cavity, Taylor-Hood ElementVector(TriP2)/TriP1 on MeshTri().refined(2) and (3); the Schur complement B A^-1 B^T applied through a sparse LU of the free velocity block with the constant pressure mode projected out, solved by CG; and CG on the condensed monolithic block for comparison. Printed: the split WORKS -- Uzawa returns info = 0 at both levels, in 25 and 49 outer iterations against 25 and 81 pressure DOFs. But THE QUOTED RATE IS WRONG: the mean per-outer factor is 0.7038 at refine 2 and 0.8511 at refine 3, nowhere near 0.1..0.3, and it WORSENS with refinement as an unpreconditioned Schur solve does -- so a gate keyed on that band would call a healthy run broken. AND THE STALLING CLAIM IS WRONG: monolithic CG converges with info = 0 and final relative residuals 6.088e-11 and 8.313e-11, independently confirming stokes#0. The honest comparison is cost, not converges-vs-not: Uzawa takes 49 outer steps against monolithic CG's 819 Krylov iterations, but each outer step carries a velocity solve, so the two counts are not comparable units and the entry's framing invites reading them as if they were. MUTATION CONTROL (re-runnable): the cause this fixture names for the bad, refinement-dependent outer rate is that the Schur solve is UNPRECONDITIONED, so T2_MUTATE=1 removes exactly that - the outer spl.cg on S is handed the standard pressure-mass preconditioner M = M_p^-1 projected onto the mean-zero subspace. Re-verified by execution 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 takes the mean outer ratios from 0.7038/0.8511 to 0.4477/0.4276 (mesh-independent) and the outer counts from 25/49 to 19/23, removing 'uzawa_rate_worsens_with_refinement=True', 'uzawa_rate_far_above_quoted_band=True' and raising the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "r2_uzawa_converged=True",
+    "r3_uzawa_converged=True",
+    "r2_uzawa_ratio_in_0p1_to_0p3_band=False",
+    "r3_uzawa_ratio_in_0p1_to_0p3_band=False",
+    "uzawa_rate_worsens_with_refinement=True",
+    "uzawa_rate_far_above_quoted_band=True",
+    "r2_monolithic_converged=True",
+    "r3_monolithic_converged=True",
+    "r2_monolithic_stalls=False",
+    "r3_monolithic_stalls=False",
+    "monolithic_converges_at_every_level=True",
+    "monolithic_stalling_claim_holds=False",
+    "uzawa_needs_far_fewer_outer_steps=True",
+    "counts_are_not_comparable_units=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}

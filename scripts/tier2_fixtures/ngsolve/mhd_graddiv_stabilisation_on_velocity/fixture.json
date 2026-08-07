@@ -1,0 +1,21 @@
+{
+  "_comment": "ngsolve mhd#6 (grad-div stabilisation tau*(div u, div v) on velocity; tau = nu). Run 2026-08-06 on NGSolve 6.2.2604: Stokes on the unit square maxh 0.12, Taylor-Hood order 2/1, nu = 1e-3, pressure pinned at one DOF, divergence measured relative to the velocity's own H1 seminorm so the number does not depend on how the problem is scaled. TWO CORRECTIONS. The claim's ABSOLUTE 1e-4 to 1e-3 band is not a property of the discretisation -- an absolute divergence scales with the solution and the claim does not say what its solution was scaled to; here the relative divergence is 9.0e-2. And tau = nu is far too small to 'control the deviation': it leaves 85% of the unstabilised divergence in place, so an agent that adds tau = nu and re-checks sees essentially the same number and may conclude grad-div does not work. Divergence does fall monotonically once tau grows (3.5% of the original at tau=1, 5e-4% at tau=1e4) and the velocity moves further from the unstabilised solution as it does, so the reduction is real and not free. Mutation: setting the tau sweep's first entry to 1e4 makes tau_equals_nu_barely_helps false and the fixture fails there. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets TAU_RECOMMENDED, the first entry of the tau sweep, from the claim's tau = nu to 1e4 -- a tau that genuinely controls the divergence -- which is the mutation recorded above. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 7 expect_in_output strings; T2_MUTATE=1 removes 'tau_equals_nu_barely_helps=True', and with the sweep no longer ordered also 'divergence_falls_monotonically_in_tau=True' and 'velocity_moves_further_from_unstabilised_as_tau_grows=True', and the forbidden string 'FAIL:' appears, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "mhd",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "exact_velocity_is_divergence_free=True",
+    "unstabilised_div_is_not_machine_precision=True",
+    "claimed_absolute_1e-4_to_1e-3_band_reproduced=False",
+    "tau_equals_nu_barely_helps=True",
+    "divergence_falls_monotonically_in_tau=True",
+    "large_tau_does_reduce_divergence=True",
+    "velocity_moves_further_from_unstabilised_as_tau_grows=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

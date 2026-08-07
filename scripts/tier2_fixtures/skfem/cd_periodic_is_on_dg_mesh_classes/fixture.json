@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem convection_diffusion#2, a class-location correction. Measured on skfem 12.0.1: MeshTri / MeshQuad / MeshLine have NO `periodic` attribute; MeshTri1DG / MeshQuad1DG / MeshLine1DG all do, with signature (mesh, ix, ix0); and no top-level skfem name contains 'periodic'. So the incantation is MeshTri1DG.periodic(m, ix, ix0), not MeshTri.periodic(...). MUTATION CONTROL (re-runnable): T2_MUTATE=1 points the probe (probed_class) at MeshTri1DG instead of MeshTri, the documented spelling, so .periodic resolves and no AttributeError is captured. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 7 expect_in_output strings; T2_MUTATE=1 removes \"no attribute 'periodic'\" (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "convection_diffusion",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "meshtri_has_periodic=False",
+    "meshquad_has_periodic=False",
+    "meshtri1dg_has_periodic=True",
+    "periodic_signature=(mesh, ix, ix0)",
+    "toplevel_periodic_names=[]",
+    "no attribute 'periodic'",
+    "periodic_identifies_paired_dofs=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

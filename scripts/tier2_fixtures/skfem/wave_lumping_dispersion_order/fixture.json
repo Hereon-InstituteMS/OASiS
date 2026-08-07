@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem wave#2, verified 2026-08-06 on skfem 12.0.1. Claim: row-sum lumping introduces dispersion, the consistent-mass system converges at O(h^2) while the lumped form 'stalls at O(h^1.5)', and the amplitude drifts >1% even with small dt. Ran: the fundamental frequency straight from the generalised eigenproblem K phi = lambda M phi on MeshQuad.init_tensor grids nx = 6/11/21/41 with ElementQuad1, for the consistent mass and for the row-sum-lumped mass, so no time-stepping error enters at all. Printed: THE STALL IS FALSE -- consistent rates 2.004/2.001/2.000 and lumped rates 1.974/1.994/1.998, both order 2. What lumping changes is the CONSTANT and the SIGN: the lumped error is 2.917/2.979/2.995/2.999 times the consistent one, a mesh-independent factor of about three, and the consistent Q1 mass OVERESTIMATES the frequency (4.5163 at nx=6) while lumping UNDERESTIMATES it (4.2288), so a magnitude-only check cannot tell them apart. The >1% drift is mesh-dependent: 4.82e-02 at nx=6 down to 7.71e-04 at nx=41. BLAS threads are pinned to 1 at the top of the fixture so it does not depend on host load. MUTATION CONTROL (re-runnable): T2_MUTATE=1 drops the row-sum lumping in frequency(), so the lumped branch builds Mf from the consistent mass block M[free][:, free] instead of np.diag(M.sum(axis=1)[free]). Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'lumped_underestimates_frequency=True', 'lumping_flips_the_sign_of_the_error=True' and 'lumping_costs_a_constant_factor_near_3=True' (and emits 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 2, "mode": "python",
+  "expect_in_output": [
+    "consistent_order_is_two=True",
+    "lumped_order_is_two=True",
+    "both_converge_at_order_two=True",
+    "lumped_stalls_at_order_1p5=False",
+    "consistent_overestimates_frequency=True",
+    "lumped_underestimates_frequency=True",
+    "lumping_flips_the_sign_of_the_error=True",
+    "lumping_costs_a_constant_factor_near_3=True",
+    "lumping_penalty_ratio_is_mesh_independent=True",
+    "one_percent_drift_is_mesh_dependent=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

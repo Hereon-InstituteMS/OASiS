@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for NGSolve poisson#0: H1(mesh, dirichlet='Left|Right|Top|Bottom') with wrong capitalisation against a unit_square mesh (lowercase labels) silently leaves ALL dofs free. Failure mode is observable via FreeDofs() count — not an exception. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for NGSolve poisson#0: H1(mesh, dirichlet='Left|Right|Top|Bottom') with wrong capitalisation against a unit_square mesh (lowercase labels) silently leaves ALL dofs free. Failure mode is observable via FreeDofs() count — not an exception. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): T2_MUTATE=1 builds the 'wrong' H1 space with wrong_labels set to the mesh's actual lowercase 'left|right|top|bottom' instead of the capitalised 'Left|Right|Top|Bottom' -- the documented one-token fix at the dirichlet= argument. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 3 expect_in_output strings; under T2_MUTATE=1 the labels resolve and the space is fully constrained (wrong_case_n_free=0, wrong_case_n_dirichlet=8), so it removes 'wrong_case_n_free=8' and 'wrong_case_n_dirichlet=0' and the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "ngsolve",
   "physics": "poisson",
   "pitfall_index": 0,

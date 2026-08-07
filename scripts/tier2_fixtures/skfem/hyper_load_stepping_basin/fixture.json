@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#8, verified 2026-08-06 on skfem 12.0.1. Claim: ramp the load over N steps for large deformations; a single-step application diverges with the residual growing ~10x per iteration, while load_factor = i/N gives quadratic convergence per substep. Ran: MeshTri().refined(3), ElementVector(ElementTriP1), plane strain nu=0.3, E=1, left edge clamped, dead transverse traction 0.5 on the right facets, PK1 residual + exact tangent, ramped in 1, 2, 5 and 10 substeps. Printed: THERE IS NO ~10x RAMP TO WATCH -- the single-step run's very first residual is already NaN, because the first Newton correction turns elements inside out (min det(F) = -0.4269). Crucially the displacement vector is still FINITE at that point, so an isfinite(u) guard PASSES on a physically impossible configuration; det(F) > 0 is the check that fires. Two substeps still invert. Five and ten substeps both keep min det(F) at 0.4710, converge quadratically inside every substep, and agree on the same final peak displacement 2.0665e+00 to 1.2e-16 relative, so the ramp is a genuine continuation and not a different problem. MUTATION CONTROL (re-runnable): T2_MUTATE=1 raises ONE_SHOT_STEPS from 1 to 10, so the load the n1 run applies in a single shot is ramped over ten substeps instead. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'n1_first_residual_is_nan=True', 'n1_element_inverted=True', 'n1_detF_guard_would_fire=True' and 'n1_shows_10x_per_iteration_ramp=False' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "n1_first_residual_is_nan=True",
+    "n1_element_inverted=True",
+    "n1_displacement_is_finite=True",
+    "n1_isfinite_guard_would_pass=True",
+    "n1_detF_guard_would_fire=True",
+    "n1_shows_10x_per_iteration_ramp=False",
+    "n2_reaches_nan=True",
+    "n5_stays_uninverted=True",
+    "n5_every_substep_converged=True",
+    "n5_last_substep_is_quadratic=True",
+    "n10_stays_uninverted=True",
+    "n10_every_substep_converged=True",
+    "n10_last_substep_is_quadratic=True",
+    "ramp_is_path_independent=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

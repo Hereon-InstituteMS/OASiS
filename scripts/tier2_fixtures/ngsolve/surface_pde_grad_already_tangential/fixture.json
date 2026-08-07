@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for NGSolve surface_pde#1: grad(.).Trace() on a surface-restricted H1 space is already the tangential gradient, so the manual (I - n n^T) projection is a no-op that only costs time. Verified on NGSolve 6.2.2604, OCC sphere maxh=0.4 Curve(4), H1 order 3 on Boundaries('.*'), gfu.Set(x*y+z) (2026-08-06): the squared normal component is 1.54e-31 against |grad_S u|^2 = 13.41, the re-projected form differs from the plain one by 1.01e-16 in matrix norm and 4.98e-08 in the solved field, and assembling it takes 2.40 ms against 1.24 ms (min of 9). Refinement recorded by the fixture: .Trace() is mandatory for trial/test proxies (NgException 'does not support BND-forms ... type = grad') but NOT for GridFunctions, where grad(gfu) under ds returns the same value. 2026-08-06: the pass/fail no longer depends on wall-clock. The assemble-time ratio is still measured and printed, but the extra work the redundant projection does is now asserted structurally, as the size of the integrand's expression tree, which is the same on any host. MUTATION CONTROL (re-runnable): T2_MUTATE=1 makes _redundant_form() drop the (I - n n^T) projection and return the plain grad(u).Trace()*grad(v).Trace() integrand -- the documented fix -- at both the assembly site and the expression-tree probe. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 9 expect_in_output strings; T2_MUTATE=1 removes 'proj_integrand_strictly_larger=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "surface_pde",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "normal_component_ratio_lt_1em25=True",
+    "manual_projection_is_a_noop=True",
+    "same_sparsity=True",
+    "proj_integrand_strictly_larger=True",
+    "proj_matrix_identical_to_plain=True",
+    "proj_solution_identical_to_plain=True",
+    "proxy_without_trace_raised=True",
+    "does not support BND-forms, maybe a Trace() operator is missing, type = grad",
+    "gridfunction_grad_without_trace_matches_traced=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

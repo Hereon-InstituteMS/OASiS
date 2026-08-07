@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for NGSolve surface_pde#0: on the shipped generator's geometry (OCC sphere -> 3-D volume mesh, H1 definedon=mesh.Boundaries('.*')) a stiffness form written with *dx raises at the `+=` statement, and so does *ds with .Trace() omitted. Verified on NGSolve 6.2.2604, maxh=0.4, Curve(4), order 3 (2026-08-06): dx -> NgException 'Trialfunction does not support VOL-forms, maybe a Trace() operator is missing, type = gradboundary'; ds without .Trace() -> '...does not support BND-forms...type = grad'; ds with .Trace() assembles (nnz=14384). It does NOT silently give a zero matrix, 'mesh dim mismatch in BilinearForm' never appears, and dx on that mesh still measures the ball volume 4.188798 while ds measures 12.566386 = 4 pi. MUTATION CONTROL (re-runnable): T2_MUTATE=1 swaps the measure on the a_dx form from *dx to *ds, the documented one-token fix, so wrong variant A stops raising at the '+=' statement. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'dx_form_raised=True at_stage=iadd', 'Trialfunction does not support VOL-forms, maybe a Trace() operator is missing, type = gradboundary', 'dx_msg_has_VOL_forms=True' and 'dx_msg_has_gradboundary=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "surface_pde",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "dx_form_raised=True at_stage=iadd",
+    "Trialfunction does not support VOL-forms, maybe a Trace() operator is missing, type = gradboundary",
+    "dx_msg_has_VOL_forms=True",
+    "dx_msg_has_gradboundary=True",
+    "dx_msg_has_fabricated_dim_mismatch=False",
+    "dx_form_silently_gave_zero_matrix=False",
+    "no_trace_ds_form_raised=True",
+    "does not support BND-forms, maybe a Trace() operator is missing, type = grad",
+    "no_trace_msg_has_BND_forms=True",
+    "ds_trace_form_assembles=True",
+    "ds_trace_nnz_gt_0=True",
+    "volume_dx_matches_ball_volume=True",
+    "surface_ds_matches_4pi=True",
+    "volume_dx_is_not_the_surface_area=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

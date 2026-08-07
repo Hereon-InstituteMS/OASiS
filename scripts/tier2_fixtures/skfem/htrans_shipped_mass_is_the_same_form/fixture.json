@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem heat_transient#3, verified 2026-08-06 on skfem 12.0.1. Claim: the mass matrix should come from skfem.models.poisson.mass because 're-implementing u*v as a BilinearForm works but is slow -- a user-implemented mass matrix takes 10-100x longer'. Ran: inspect.getsource on skfem/models/poisson.py, a type comparison, and assembly of both forms on MeshTri().refined(5) with ElementTriP1 (1089 DOFs). Nothing is timed -- a wall-clock assertion would be host-dependent and would not settle the question anyway. Printed: THE CLAIM IS FALSE and the source settles it. The shipped helper is literally '@BilinearForm / def mass(u, v, _): return u * v', so a user who re-implements u*v as a BilinearForm has written the same object -- same class, no compiled fast path to miss. The two assembled matrices are BIT-IDENTICAL: same (1089, 1089) shape, 7361 non-zeros each, identical indices and indptr, and a difference matrix with 0 stored entries after eliminate_zeros(). Total mass 1.000000000000 = the domain area. Incidentally inspect.getsource on the form itself raises TypeError ('was expected, got BilinearForm'), so the definition has to be read out of the module text. MUTATION CONTROL (re-runnable): this fixture REFUTES its claim, so there is no pathology to remove and the control runs the other way -- it makes the claim true. T2_MUTATE=1 sets SCALE to 2.0 so the user form's integrand becomes 2 * u * v instead of u * v, i.e. the user's re-implementation really is a different operator. Class, shape, nnz, sparsity pattern and total_mass (read off the SHIPPED matrix) are untouched and their assertions correctly survive. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'difference_stored_entries=0' (it becomes 7361) and 'matrices_are_bit_identical=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "heat_transient", "pitfall_index": 3, "mode": "python",
+  "expect_in_output": [
+    "shipped_mass_type=BilinearForm",
+    "user_mass_type=BilinearForm",
+    "same_class=True",
+    "shipped_is_a_bilinearform_decorator=True",
+    "shipped_body_is_u_times_v=True",
+    "getsource_on_the_form_raises=True",
+    "dofs_N=1089",
+    "same_nnz=True",
+    "same_sparsity_pattern=True",
+    "difference_stored_entries=0",
+    "matrices_are_bit_identical=True",
+    "total_mass_is_domain_area=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

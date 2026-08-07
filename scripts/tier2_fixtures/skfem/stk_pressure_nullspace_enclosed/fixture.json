@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem stokes#2, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim (marked inherited, not empirically verified): enclosed-flow Stokes has a constant-pressure nullspace; pin one pressure DoF or add a mean-zero multiplier, and the signal is that spsolve RETURNS SUCCESSFULLY with the right velocity while the pressure carries an arbitrary additive constant. Ran: Taylor-Hood ElementVector(P2)/P1 on MeshTri().refined(3), 578 velocity and 81 pressure DOFs, lid-driven-cavity velocity prescribed on the whole boundary (so the flow is enclosed); the dense spectrum of the condensed block; the unpinned solve; and two pinned solves differing in WHICH DOF is pinned and at WHAT value. Printed: the nullspace is exactly one-dimensional and its vector is zero on the velocity block (2.795e-15) and constant on the pressure block (spread 6.543e-13). THE CLAIM IS CONFIRMED IN THE DANGEROUS DIRECTION: the unpinned solve raises nothing, warns NOTHING -- an empty catch_warnings record, no MatrixRankWarning -- and returns a finite vector whose velocity matches the pinned runs to 5.534e-14. That is worth setting beside hydraulic_resistance#2 and navier_stokes#3, which describe scipy emitting 'Matrix is exactly singular' on a singular block system: here the singular system is consistent, SuperLU returns a particular solution, and a guard built only on catching that warning does not fire. Pinning gives velocities agreeing to 5.539e-14 across both choices while the two pressures differ by an exact constant (spread 1.116e-11, offset -2.873724). MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the entry's own remedy at the pathology site - the Dirichlet set unpinned_D used for the spectrum probe and for the 'unpinned' solve gains the single pinned pressure DOF bu.N, so the pressure level is no longer undetermined. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 takes near_zero_eigenvalues from 1 to 0 and removes 'nullspace_is_one_dimensional=True', 'nullvector_is_zero_on_velocity=True', 'nullvector_is_constant_on_pressure=True' (the last two stop being printed at all) and raises the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 2, "mode": "python",
+  "expect_in_output": [
+    "velocity_dofs=578 pressure_dofs=81",
+    "nullspace_is_one_dimensional=True",
+    "nullvector_is_zero_on_velocity=True",
+    "nullvector_is_constant_on_pressure=True",
+    "unpinned_raises=False",
+    "unpinned_warnings=[]",
+    "unpinned_warns_matrix_exactly_singular=False",
+    "unpinned_all_nan=False",
+    "unpinned_returns_successfully=True",
+    "pinned_a_warnings=[]",
+    "pinned_b_warnings=[]",
+    "velocity_is_independent_of_the_pinning=True",
+    "pressure_differs_by_a_constant=True",
+    "offset_is_nonzero=True",
+    "only_the_pressure_level_was_undetermined=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

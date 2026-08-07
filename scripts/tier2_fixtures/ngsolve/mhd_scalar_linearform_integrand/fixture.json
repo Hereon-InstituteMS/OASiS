@@ -1,0 +1,22 @@
+{
+  "_comment": "ngsolve mhd#7 (SymbolicLFI needs a scalar-valued integrand). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3, VectorH1 order 1. The Lorentz-style source e_y * J * v[1] really is vector-valued at that point -- its .dim is 2 -- and LinearForm.__iadd__ raises NgException with the literal 'SymbolicLFI needs scalar-valued CoefficientFunction', at __iadd__ exactly as the claim says. Both working spellings are then checked: indexing the test function (J*v[1]) and InnerProduct(e_y*J, v) assemble to vectors that agree entry for entry to 0.0 and are not the zero vector, so the fix is not unique and either is correct. Mutation: replacing e_y by the scalar 1.0 removes the exception and the fixture fails on vector_integrand_raised. MUTATION CONTROL (re-runnable): T2_MUTATE=1 replaces the vector-valued leading factor of the offending integrand (`lead`, normally e_y) by the scalar 1.0, so it becomes the purely scalar 1.0*J*v[1] the claim recommends -- the mutation recorded above. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes 'integrand_is_vector_valued=True', 'vector_integrand_raised=True', 'message_literal=True' and 'raised_at_iadd=True' -- SymbolicLFI accepts the integrand and the form assembles -- and the forbidden string 'FAIL:' appears, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "mhd",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "integrand_is_vector_valued=True",
+    "vector_integrand_raised=True",
+    "message_literal=True",
+    "raised_at_iadd=True",
+    "scalar_indexed_spelling_assembles=True",
+    "innerproduct_spelling_assembles=True",
+    "two_spellings_agree=True",
+    "assembled_vector_is_nonzero=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

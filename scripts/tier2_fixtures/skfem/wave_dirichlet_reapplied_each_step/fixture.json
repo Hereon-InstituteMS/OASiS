@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem wave#5, verified 2026-08-06 on skfem 12.0.1. Claim: Dirichlet DOFs must be re-zeroed every step of the explicit wave update because the K coupling propagates values into them; signal is |u| at boundary DOFs growing from 0 to >1e-6 within a few hundred steps. Ran: MeshQuad.init_tensor 21x21, ElementQuad1 (441 DOFs, 80 boundary DOFs), c=1, row-sum-lumped mass, dt = 0.5 h/c, 800 steps, with and without the re-application. Printed: CONFIRMED, and the entry's threshold is far too generous -- the boundary crosses 1e-6 at step 1 and 0.1 at step 2, peaking at 1.340643e+00, because the very first update writes -dt^2 c^2 (K u)/M_L into every boundary DOF. It is SILENT: empty warning list, finite solution, still oscillating. The interior is wrong too, by 3.28e-01 relative. With the re-application the boundary DOFs stay EXACTLY 0.000000e+00, which makes the check trivial to write. MUTATION CONTROL (re-runnable): T2_MUTATE=1 calls run(reapply=True) for the second, pathological run, so un[D] is re-zeroed after every explicit update. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'free_boundary_exceeds_1e_minus_6=True', 'free_boundary_reaches_order_one=True', 'free_boundary_order_one_within_100_steps=True' and 'interior_is_wrong_too=True' (and emits 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py CAVEAT found while adding the mutation control (assertion NOT changed): 'free_boundary_leaves_zero_immediately' is int(np.argmax(b_bad > 1e-6)) <= 2, and np.argmax returns 0 on an all-False array, so the line prints True when the boundary NEVER leaves zero. Measured under T2_MUTATE=1: free_boundary_max_over_run=0.000000e+00 and the line still printed True. The sibling probe on the same lines IS guarded (reaches_1 = ... if (b_bad > 0.1).any() else -1, correctly -1). The fixture as a whole still discriminates via 'free_boundary_exceeds_1e_minus_6', but that one line asserts a false statement.",
+  "backend": "skfem", "physics": "wave", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=441",
+    "reapplied_boundary_is_exactly_zero=True",
+    "free_boundary_exceeds_1e_minus_6=True",
+    "free_boundary_reaches_order_one=True",
+    "free_boundary_leaves_zero_immediately=True",
+    "free_boundary_order_one_within_100_steps=True",
+    "free_boundary_warnings=[]",
+    "free_boundary_run_is_silent=True",
+    "free_boundary_solution_finite=True",
+    "interior_is_wrong_too=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

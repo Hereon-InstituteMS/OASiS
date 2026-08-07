@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: NGSolve LinearForm rejects a vector-valued CoefficientFunction when integrating against a scalar test function. Raises NgException('SymbolicLFI needs scalar-valued CoefficientFunction'). Third NGSolve fixture clearing the critic's 3-per-backend floor — covers the integrand-shape mismatch family (LinearForm, the dual to the existing BilinearForm/SymbolicBFI ones).",
+  "_comment": "Tier-2: NGSolve LinearForm rejects a vector-valued CoefficientFunction when integrating against a scalar test function. Raises NgException('SymbolicLFI needs scalar-valued CoefficientFunction'). Third NGSolve fixture clearing the critic's 3-per-backend floor — covers the integrand-shape mismatch family (LinearForm, the dual to the existing BilinearForm/SymbolicBFI ones). MUTATION CONTROL (re-runnable): T2_MUTATE=1 makes the LinearForm source the scalar CoefficientFunction(1.0) instead of the 2-D CoefficientFunction((1.0, 2.0)) -- the documented shape fix at the integrand. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 3 expect_in_output strings; under T2_MUTATE=1 f.Assemble() succeeds and raises nothing, so it removes 'NgException', 'SymbolicLFI' and 'scalar-valued' and the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "ngsolve",
   "physics": "poisson",
   "pitfall_index": 92,

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem heat_transient#4, verified 2026-08-06 on skfem 12.0.1. Claim: for time-varying non-homogeneous BCs, re-condense at each step OR pre-compute the lifting once; reusing a frozen x= leaves max(T - T_D) at the boundary O(1). Ran: heat equation on a 16x16 MeshTri.init_tensor with ElementTriP1 (289 DOFs, 64 boundary DOFs), backward Euler, dt = 2e-3, 25 steps, three variants (re-condense, frozen x, pre-computed lifting rescaled by the time factor) on TWO boundary data -- one separable (a fixed profile ramped in time) and one whose SHAPE moves with time. Printed: the frozen x pins the boundary and ends with max|T - T_D| = 9.600e-01, O(1) as claimed, silently. On separable data the pre-computed lifting is exact (1.110e-16) and matches re-condensing. BUT ON NON-SEPARABLE DATA THE SAME SHORTCUT IS WRONG BY 2.401e+01 while re-condensing stays exact at 0.000e+00, and it too is silent and finite. So the entry's second option is conditional: 'pre-compute the lifting once' is safe only when the boundary datum is a fixed spatial profile times a scalar in time. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix ('re-condense at each step') at both wrong-variant sites -- the x= argument of the frozen and scaled_lifting branches becomes the current datum g instead of the frozen vector and the rescaled lifting. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'sep_frozen_boundary_error_is_order_one=True', 'nonsep_scaled_lifting_is_order_one=True' and 'lifting_shortcut_is_only_safe_for_separable_data=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "heat_transient", "pitfall_index": 4, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=289",
+    "sep_recondense_exact=True",
+    "sep_frozen_boundary_error_is_order_one=True",
+    "sep_scaled_lifting_exact=True",
+    "sep_lifting_matches_recondense=True",
+    "sep_frozen_warnings=[]",
+    "sep_frozen_is_silent=True",
+    "nonsep_recondense_still_exact=True",
+    "nonsep_scaled_lifting_is_order_one=True",
+    "nonsep_lifting_is_silent=True",
+    "nonsep_lifting_finite=True",
+    "lifting_shortcut_is_only_safe_for_separable_data=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

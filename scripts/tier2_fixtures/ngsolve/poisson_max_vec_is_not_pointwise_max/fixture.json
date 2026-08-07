@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve poisson#1 (max(gfu.vec) is the largest DOF coefficient, not the field's largest value). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3, u = sin(pi x) sin(pi y) interpolated at H1 order 1/2/3, pointwise maximum taken by evaluating the GridFunction on a 41x41 interior grid. The two numbers differ at every order, and they err in OPPOSITE directions -- max(vec) is 1.0838 at order 1, above the interpolated field's true peak of 1, and 0.9970 at order 3, below it -- so no fixed correction recovers one from the other. The sampled maximum's distance to 1 falls monotonically (0.0689, 0.0044, 0.00047) as a correctly measured peak should. Mutation: reading the maximum of the pointwise samples into both slots makes them identical and the fixture fails on the_two_numbers_differ_at_every_order. MUTATION CONTROL (re-runnable): T2_MUTATE=1 reads the reported peak off the pointwise samples instead of max(gfu.vec) (vmax = fmax at the measurement site), the fix this fixture documents. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 6 expect_in_output strings; T2_MUTATE=1 removes 'the_two_numbers_differ_at_every_order=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py CAVEAT found while adding the mutation control (assertions NOT changed): at ORDER 1 the headline claim does not hold. Probed: order=1 max_of_vec=1.08379244, value at the mesh vertices=1.08379244, dense 301x301 sample=1.08145992, while the fixture's sampled_max=1.06894325 comes from a 41x41 grid on 0.005..0.995 that misses every vertex. A P1 function attains its maximum AT a vertex, so max(gf.vec) IS the pointwise peak there and 'the_two_numbers_differ_at_every_order' is true at order 1 because of the sampler, not because coefficients are not function samples. The pitfall is real for order >= 2 (order 2: max_of_vec=1.00356573 under-reports the true 1.00448100) but for the reason 'max over vertices is not max over the domain'. Also note gf.Set is an L2 projection that overshoots to 1.0838, so the docstring's 'exact peak of the interpolated field is 1' is not right.",
+  "backend": "ngsolve",
+  "physics": "poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "the_two_numbers_differ_at_every_order=True",
+    "order1_max_of_vec_above_the_true_peak_of_one=True",
+    "order3_max_of_vec_below_the_true_peak_of_one=True",
+    "max_of_vec_errs_in_both_directions=True",
+    "sampled_max_approaches_one_with_order=True",
+    "sampled_max_within_1pct_of_one_at_order3=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

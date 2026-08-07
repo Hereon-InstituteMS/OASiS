@@ -12,20 +12,38 @@ skfem. The catalog claims:
 
 All three element classes must be registered in skfem and
 Basis(mesh, elem).Nbfun must match.
+
+Mutation control (INVERSE -- this fixture contains no pathology to
+remove; it is a pure catalog-claim gate on the right variant only):
+T2_MUTATE=1 swaps each plate element for the C^0 Lagrange element a
+user might reach for instead (Morley -> ElementTriP1, Argyris ->
+ElementTriP2, BFS -> ElementQuad1), which proves the printed numbers
+are read out of skfem rather than restated from the catalog.  Re-run
+with T2_MUTATE=1 python source.py.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import skfem
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
     mesh_tri = skfem.MeshTri()
     mesh_quad = skfem.MeshQuad()
-    morley = skfem.Basis(mesh_tri, skfem.ElementTriMorley())
-    argyris = skfem.Basis(mesh_tri, skfem.ElementTriArgyris())
-    bfs = skfem.Basis(mesh_quad, skfem.ElementQuadBFS())
+    # Under T2_MUTATE the C^0 stand-ins go in at the element argument.
+    tri_plate_1 = (skfem.ElementTriMorley() if not MUTATE
+                   else skfem.ElementTriP1())
+    tri_plate_2 = (skfem.ElementTriArgyris() if not MUTATE
+                   else skfem.ElementTriP2())
+    quad_plate = (skfem.ElementQuadBFS() if not MUTATE
+                  else skfem.ElementQuad1())
+    morley = skfem.Basis(mesh_tri, tri_plate_1)
+    argyris = skfem.Basis(mesh_tri, tri_plate_2)
+    bfs = skfem.Basis(mesh_quad, quad_plate)
     print(f"Morley_Nbfun={morley.Nbfun}")
     print(f"Argyris_Nbfun={argyris.Nbfun}")
     print(f"BFS_Nbfun={bfs.Nbfun}")

@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for NGSolve phase_field#7: the single-H1 fourth-order form built from Operator('hesse') assembles in complete silence and is rank-deficient, while the mixed H1xH1 pair converges. Verified on NGSolve 6.2.2604, unit_square (2026-08-06): at maxh=0.2 order 2 the hesse form assembles with ne=52, ndof=125, nnz=1277 (the catalog's nnz=1323 does not reproduce on this netgen build) and no exception; u.Operator('biharmonic') raises 'Operator \"biharmonic\" does not exist for H1HighOrderFESpace!'; a P1 hat embedded in the order-2 space has hesse energy 1.8e-27 against H1 energy 3.55, exhibiting the discrete kernel; with dirichlet='.*' umfpack raises 'UmfpackInverse: Numeric factorization failed.' while sparsecholesky returns NaN without raising; the Ciarlet-Raviart mixed pair against the simply-supported MMS u=sin(pi x)sin(pi y) gives L2 errors 1.741e-03 / 1.724e-04 / 2.045e-05 at maxh 0.2/0.1/0.05. Neither fabricated string ('H2 conformity required for biharmonic operator', 'coefficient not in BilinearForm space') appears. MUTATION CONTROL (re-runnable): T2_MUTATE=1 builds the system that is actually factorised from the documented fix -- the mixed Ciarlet-Raviart pair mixed_form(mesh) -- instead of the rank-deficient single-H1 hesse form, so the matrix handed to umfpack and sparsecholesky is regular. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 17 expect_in_output strings; T2_MUTATE=1 removes 'hesse_umfpack_raised=True' and the literal 'UmfpackInverse: Numeric factorization failed.' so the fixture goes red. Noted while doing it: 'hesse_sparsecholesky_solution_is_nan=True' SURVIVES the mutation -- sparsecholesky returns NaN on the regular mixed system too, so that one line is evidence about the solver being wrong for an indefinite matrix, not about the hesse form's singularity. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "phase_field",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "hesse_form_assembled_without_exception=True",
+    "hesse_form_nnz_gt_0=True",
+    "biharmonic_operator_raised=True",
+    "does not exist for H1HighOrderFESpace!",
+    "fabricated_h2_conformity_string_emitted=False",
+    "fabricated_coefficient_not_in_space_string_emitted=False",
+    "p1_hat_is_not_the_zero_function=True",
+    "p1_hat_has_positive_h1_energy=True",
+    "p1_hat_has_zero_hesse_energy=True",
+    "hesse_umfpack_raised=True",
+    "UmfpackInverse: Numeric factorization failed.",
+    "hesse_sparsecholesky_raised=False",
+    "hesse_sparsecholesky_solution_is_nan=True",
+    "ch_space_class=ProductSpace",
+    "mixed_l2err_decreases=True",
+    "mixed_eoc_ge_2=True",
+    "mixed_final_l2err_lt_1em4=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

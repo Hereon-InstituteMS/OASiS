@@ -20,9 +20,18 @@ Two catalog-drift falsifications in one fixture:
 This fixture is a single python-mode probe that runs all
 assertions and prints them as machine-readable lines for the
 expect_in_output matcher.
+
+Mutation control: T2_MUTATE=1 registers the 'left' name via
+m.with_boundaries({...}) BEFORE the unregistered-mesh probe --
+the documented fix, applied at the mesh the probe queries.
+get_dofs('left') then resolves instead of raising, so the
+expectation "get_dofs_left_unregistered_raise=True" is never
+printed (and the script takes its own ERROR path), so the
+fixture goes red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -34,6 +43,8 @@ from skfem import (
     MeshQuad,
 )
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     print(f"skfem_version={skfem.__version__}")
@@ -43,7 +54,12 @@ def main() -> int:
                              np.linspace(0, 1, 5))
     print(f"fresh_boundaries={m.boundaries}")
 
-    basis = Basis(m, ElementQuad1())
+    # THE PATHOLOGY: the mesh under the basis has never had
+    # 'left' registered.  The documented fix is to call
+    # m.with_boundaries({'left': filter}) first.
+    probe_mesh = m if not MUTATE else m.with_boundaries(
+        {"left": lambda x: np.abs(x[0]) < 1e-10})
+    basis = Basis(probe_mesh, ElementQuad1())
     raised = False
     try:
         basis.get_dofs("left")

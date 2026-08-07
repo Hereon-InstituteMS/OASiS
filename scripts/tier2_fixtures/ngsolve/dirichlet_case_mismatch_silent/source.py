@@ -7,19 +7,32 @@ H1/HCurl/etc. must match the mesh's boundary labels EXACTLY
 'right', 'top', 'bottom'. Passing 'Left|Right|Top|Bottom'
 (wrong case) silently leaves ALL DoFs free — no exception
 fires. The pitfall is observable only via FreeDofs() count.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site — the `wrong` space is built with the mesh's actual
+lowercase labels instead of the capitalised ones — so its dofs get
+constrained and the pathological counts vanish. Re-run with
+`T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
 from ngsolve import H1, Mesh
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.5))
     correct = H1(mesh, order=1, dirichlet="left|right|top|bottom")
-    wrong = H1(mesh, order=1, dirichlet="Left|Right|Top|Bottom")
+    # The pathology: capitalised labels that no boundary carries.
+    # T2_MUTATE=1 corrects the capitalisation at this call site.
+    wrong_labels = ("left|right|top|bottom" if MUTATE
+                    else "Left|Right|Top|Bottom")
+    wrong = H1(mesh, order=1, dirichlet=wrong_labels)
 
     correct_n_free = sum(bool(f) for f in correct.FreeDofs())
     wrong_n_free = sum(bool(f) for f in wrong.FreeDofs())

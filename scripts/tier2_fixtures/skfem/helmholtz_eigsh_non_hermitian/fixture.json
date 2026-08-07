@@ -1,0 +1,30 @@
+{
+  "_comment": "skfem helmholtz#5: scipy.sparse.linalg.eigsh on the non-Hermitian Helmholtz-with-ABC system is silently wrong. Verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: MeshTri().refined(2) / ElementTriP1 (25 dofs, stiffness nnz 105), K cast to complex with 5j added to entry (0,1); eigsh(A, k=3, M=M, sigma=0) returns a float64 array with NO exception and NO warning, and its lowest entry is the bare real part of an eigenvalue whose true imaginary part is several units -- confirmed twice by sparse eigs and dense scipy.linalg.eig. No ArpackNoConvergence and no 'non-Hermitian' text appears anywhere. eigsh on the untouched Hermitian K is accurate to 1e-8, so the fixture is red if either side changes. No measured floats are pinned. MUTATION CONTROL (re-runnable): T2_MUTATE=1 switches the wrong variant's driver HERMITIAN_DRIVER from scipy.sparse.linalg.eigsh to eigs on the identical non-Hermitian pencil -- the documented fix at the pathology site; the RIGHT variant's eigsh call on the untouched Hermitian matrix is left alone. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 16 expect_in_output strings; T2_MUTATE=1 removes 'eigsh_evals_dtype=float64', 'eigsh_returns_real_dtype=True', 'eigsh_lowest_error_gt_1=True' and 'eigsh_lowest_is_bare_real_part=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshTri1",
+    "n_dofs=25 stiffness_nnz=105",
+    "matrix_is_non_hermitian=True",
+    "eigsh_raised=False",
+    "eigsh_n_warnings=0",
+    "eigsh_evals_dtype=float64",
+    "eigsh_returns_real_dtype=True",
+    "arpack_non_hermitian_diagnostic_absent=True",
+    "eigs_evals_dtype=complex128",
+    "eigs_matches_dense_reference=True",
+    "true_lowest_imag_abs_gt_1=True",
+    "eigsh_lowest_error_gt_1=True",
+    "eigsh_lowest_is_bare_real_part=True",
+    "eigsh_upper_pair_still_agrees=True",
+    "eigsh_accurate_on_hermitian=True",
+    "hermitian_lowest_is_near_zero=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

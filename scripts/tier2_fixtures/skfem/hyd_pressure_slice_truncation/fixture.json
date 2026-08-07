@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for skfem hydraulic_resistance#6, verified 2026-08-06 on skfem 12.0.1. Claim: the pressure block starts at ib_u.N and p[:m.p.shape[1]] silently drops data when the pressure element is not P1; signal is that printed max/min disagree with what ParaView renders. Ran: MeshTri().refined(3) (81 vertices) with ElementTriP1 and ElementTriP2 pressure spaces, a smooth field evaluated on doflocs, the slice taken under catch_warnings, and a second field supported only on the edge DOFs. Printed: for P1 the slice is the whole field (0 dropped); for P2 it discards 72% of the DOFs, silently, and because the first 81 doflocs still coincide with mesh.p the truncated field is a plausible vertex field of exactly the mesh's length. THE ENTRY'S SYMPTOM IS UNRELIABLE: for the smooth field the extremes land on vertices, so the truncated slice has EXACTLY the same min (-1.000000) and max (1.000000) as the full field and the range check sees nothing. Only when the extremes sit on edge midpoints does the range move (full max 1.000000 vs slice max 0.000000). So the range check is field-dependent; the guard that always works is comparing basis.N against mesh.p.shape[1] BEFORE slicing. MUTATION CONTROL (re-runnable): T2_MUTATE=1 makes vertex_slice return the whole field instead of p[:m.p.shape[1]], removing the truncation at both call sites. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'truncation_is_invisible_by_length=True', 'edge_peaked_range_check_detects_truncation=True' and 'range_check_is_field_dependent=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py CAVEAT found while adding the mutation control (assertion NOT changed): 'p2_slice_drops_data' is computed from dropped = bp.N - nverts, a DOF-count difference, and never reads the sliced array; 'p2_dropped_fraction' and 'length_guard_fires_for_p2' ride on the same single comparison. Measured under T2_MUTATE=1: the slice keeps all 289 entries (P2_slice_length=289) and the line still printed True. The direct probe, len(sliced) < bp.N, is available and unused.",
+  "backend": "skfem", "physics": "hydraulic_resistance", "pitfall_index": 6, "mode": "python",
+  "expect_in_output": [
+    "mesh_vertices=81",
+    "P1_dof_count_equals_vertex_count=True",
+    "P2_dof_count_equals_vertex_count=False",
+    "P2_doflocs_prefix_equals_mesh_p=True",
+    "P2_slice_warnings=[]",
+    "P2_slice_is_silent=True",
+    "p1_slice_is_the_whole_field=True",
+    "p2_slice_drops_data=True",
+    "truncation_is_invisible_by_length=True",
+    "smooth_field_range_check_detects_truncation=False",
+    "edge_peaked_range_check_detects_truncation=True",
+    "range_check_is_field_dependent=True",
+    "length_guard_fires_for_p2=True",
+    "length_guard_quiet_for_p1=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

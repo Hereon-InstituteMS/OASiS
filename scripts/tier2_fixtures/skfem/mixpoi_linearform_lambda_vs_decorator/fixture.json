@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem mixed_poisson#3. The claim says asm(LinearForm(lambda v, w: ...), basis) 'may raise opaque shape errors deep inside skfem.assembly.form.linear_form' and that the lambda form 'mis-resolves the kwargs adapter'. Measured on skfem 12.0.1: it does not. The lambda and the decorator forms assemble to the same vector, with and without extra asm() kwargs. The only real requirement is ARITY: a 1-argument lambda raises the plain Python TypeError '<lambda>() takes 1 positional argument but 2 were given' at the call site, nothing deep and nothing shape-related. The fixture pins the arity requirement and the equivalence. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site, giving the wrong-variant lambda the arity skfem actually calls -- LinearForm(lambda v: 1.0 * v) becomes LinearForm(lambda v, w: 1.0 * v). Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 5 expect_in_output strings; T2_MUTATE=1 removes 'takes 1 positional argument but 2 were given', 'one_arg_lambda_raises_typeerror=True' (and raises the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "mixed_poisson",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "takes 1 positional argument but 2 were given",
+    "one_arg_lambda_raises_typeerror=True",
+    "lambda_and_decorator_agree=True",
+    "lambda_and_decorator_agree_with_kwargs=True",
+    "lambda_form_did_not_raise=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

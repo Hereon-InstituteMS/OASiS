@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem heat#4. The existing heat::0 fixture already checks the string-subscript TypeError; this one maps the WHOLE dict-like surface, measured on skfem 12.0.1: dv['left'] -> TypeError \"'DofsView' object is not subscriptable\"; dv.keys() and dv.get() -> AttributeError \"'Dofs' object has no attribute 'keys'\" (note the message names Dofs, not DofsView); 'left' in dv -> TypeError \"argument of type 'DofsView' is not iterable\"; iter(dv) likewise. len(dv) DOES work and returns the DOF count, which is what makes the object look mapping-like in the first place. MUTATION CONTROL (re-runnable): T2_MUTATE=1 rewrites every probe in the probes dict into the documented correct form -- basis.get_dofs('left') positionally for subscript and get, .nodal.keys() for keys, 'left' in m.boundaries for contains, dv.flatten() for iter. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 6 expect_in_output strings; T2_MUTATE=1 removes \"'DofsView' object is not subscriptable\", \"no attribute 'keys'\" and 'not iterable' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "heat",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "dofsview_type_name=DofsView",
+    "'DofsView' object is not subscriptable",
+    "no attribute 'keys'",
+    "not iterable",
+    "len_works_and_matches_flatten=True",
+    "positional_call_returns_dofs=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

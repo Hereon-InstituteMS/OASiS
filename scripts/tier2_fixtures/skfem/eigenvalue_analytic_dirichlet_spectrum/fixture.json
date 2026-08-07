@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem eigenvalue#2: the P1 Dirichlet Laplacian spectrum on the unit square is checked against the analytic pi^2*(m^2+n^2) sequence, including the DEGENERACY of the second and third eigenvalue, and the fact that P1 error grows up the spectrum and is one-sided (discrete eigenvalues lie ABOVE the analytic ones). Thresholds only -- no measured value pinned. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the coarse comparison spectrum is computed as spectrum(4) instead of spectrum(2), i.e. the under-resolved mesh is refined away. Re-verified by execution 2026-08-06 on skfem 12.0.1 / NGSolve 6.2.2604: the unmutated run matches all 5 expect_in_output strings; T2_MUTATE=1 removes 'coarse_mesh_error_larger=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "eigenvalue",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "all_within_5pct=True",
+    "all_discrete_above_analytic=True",
+    "error_grows_up_the_spectrum=True",
+    "second_third_degenerate=True",
+    "coarse_mesh_error_larger=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

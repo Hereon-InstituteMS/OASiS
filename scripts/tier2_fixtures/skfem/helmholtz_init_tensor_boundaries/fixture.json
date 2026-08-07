@@ -1,0 +1,28 @@
+{
+  "_comment": "skfem helmholtz#8: MeshQuad.init_tensor attaches no named boundaries. Verified 2026-08-06 on skfem 12.0.1 -- m.boundaries is None, ib.get_dofs('left') raises ValueError(\"Boundary 'left' not found.\") and the legacy ib.get_dofs()['left'] raises TypeError: 'DofsView' object is not subscriptable; .with_boundaries({...}) + get_dofs('left').flatten() returns the 9 left-edge nodes of a 9x9 grid. NOTE the claim's to_meshtri() sentence is FALSE on 12.0.1: .to_meshtri() PRESERVES the four tags (no reattachment needed), and this fixture pins that so a future regression in either direction is caught. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at both pathology sites of the wrong variant -- the mesh is built with .with_boundaries(TAGS) and the lookup is the positional get_dofs('left') instead of the legacy get_dofs()['left'] subscript. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'init_tensor_boundaries_is_none=True', 'named_lookup_exc=ValueError', \"Boundary 'left' not found.\", 'subscript_exc=TypeError', \"'DofsView' object is not subscriptable\" and 'two_distinct_errors=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshQuad1",
+    "init_tensor_boundaries_is_none=True",
+    "named_lookup_exc=ValueError",
+    "Boundary 'left' not found.",
+    "subscript_exc=TypeError",
+    "'DofsView' object is not subscriptable",
+    "dofsview_class=DofsView",
+    "two_distinct_errors=True",
+    "tagged_boundaries=bottom,left,right,top",
+    "n_left_dofs=9",
+    "fixed_lookup_ok=True",
+    "to_meshtri_class=MeshTri1",
+    "to_meshtri_preserves_boundaries=True",
+    "n_left_dofs_after_to_meshtri=9"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

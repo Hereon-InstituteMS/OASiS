@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for skfem navier_stokes#4, verified 2026-08-06 on skfem 12.0.1. Claim: pure Newton at Re > ~200 diverges from an at-rest guess, exploding within 2-3 iterations, and 5 Picard steps first bring the state into Newton's basin. Ran: lid-driven cavity, Taylor-Hood, one pressure DOF pinned, always from rest -- Re = 100/200/400 on MeshTri().refined(3); Re = 800 on refined(3) AND refined(4); Re = 800 on refined(4) with 5 Picard steps first; and a continuation ramp through Re = 100/200/400/600/800 on refined(3) starting each solve from the previous solution. Printed: THREE THINGS ARE WRONG. (1) 'Re > ~200 diverges' -- pure Newton from rest converges at Re = 200 AND 400 on refined(3), in 3-4 iterations. (2) Where it does fail (Re = 800, refined(3)) the cause is the MESH, not the Reynolds number: the same Re from the same at-rest guess converges in 5 iterations on refined(4), so the entry reads an under-resolved discretisation as a nonlinear-solver problem. (3) It does not 'explode within 2-3 iterations' -- the residual stagnates within a factor 1.469 for four iterations (3.960e-02 / 4.441e-02 / 5.815e-02 / 5.157e-02) before blowing up, so a watchdog armed for an early explosion sees a plausible plateau. AND THE PRESCRIBED REMEDY MAKES IT WORSE: at Re = 800 on refined(4), where pure Newton converges, 5 Picard steps then Newton DIVERGES. A remedy that does work is continuation in Re, which converges at every step of the ramp including the Re = 800 that fails from rest on the same coarse mesh. MUTATION CONTROL (re-runnable): T2_MUTATE=1 gives the failing Re=800 run refine=4 instead of the under-resolved refine=3 -- this entry's own documented cause and fix -- with nothing about the Newton iteration changed. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 removes 're800_refine3_converged=False', 'same_Re_converges_on_a_finer_mesh=True', 're800_stagnates_before_blowing_up=True', 're800_explodes_within_three_iterations=False' and 'continuation_reaches_re800_where_from_rest_failed=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "navier_stokes", "pitfall_index": 4, "mode": "python",
+  "expect_in_output": [
+    "re100_refine3_from_rest_converged=True",
+    "re200_refine3_from_rest_converged=True",
+    "re400_refine3_from_rest_converged=True",
+    "newton_converges_above_re_200=True",
+    "quoted_threshold_of_200_holds=False",
+    "re800_refine3_converged=False",
+    "re800_refine4_converged=True",
+    "same_Re_converges_on_a_finer_mesh=True",
+    "re800_stagnates_before_blowing_up=True",
+    "re800_explodes_within_three_iterations=False",
+    "picard_first_breaks_a_converging_run=True",
+    "continuation_converges_at_every_step=True",
+    "continuation_reaches_re800_where_from_rest_failed=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 400
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for NGSolve phase_field#6: the phase-field peak load is set by l0 and is completely insensitive to h, so refining the mesh at fixed l0 buys nothing. Verified on NGSolve 6.2.2604, unit_square, VectorH1/H1 order 1, confined uniaxial tension (dirichletx='left|right', dirichlety='bottom|top'), E=1 nu=0.3 (E*=lam+2mu=1.34615385), Gc=1e-3, 80 load steps to eps=0.16 (2026-08-06): maxh=0.2 with l0=0.1 (ne=52, ndof_u=74) peaks at sigma=0.037679 against the AT2 closed form sqrt(27 E* Gc/(256 l0))=0.037680, maxh=0.1 with the same l0 (ne=230, ndof_u=272) gives the identical 0.037679, and halving l0 to 0.05 moves the peak to 0.053286 - a factor sqrt(2), exactly the l0^(-1/2) scaling. MUTATION CONTROL (re-runnable): T2_MUTATE=1 halves l0 in the refined run as well -- peak_stress(0.1, L0_BIG) becomes peak_stress(0.1, L0_SMALL), the documented fix of reducing l0 together with h instead of refining at fixed l0. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 11 expect_in_output strings; T2_MUTATE=1 removes 'refining_h_at_fixed_l0_changes_peak_lt_1pct=True', 'halving_l0_changes_peak_gt_20pct=True', 'peak_ratio_matches_inverse_sqrt_l0_within_2pct=True', 'l0_effect_dominates_h_effect=True' and 'peak_matches_analytic_l0_0p10_maxh0p1=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "phase_field",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "vector_space_class=VectorH1",
+    "coarse_mesh_ne=52 ndof_u=74",
+    "fine_mesh_ne=230 ndof_u=272",
+    "mesh_was_actually_refined=True",
+    "peak_matches_analytic_l0_0p10_maxh0p2=True",
+    "peak_matches_analytic_l0_0p10_maxh0p1=True",
+    "peak_matches_analytic_l0_0p05_maxh0p1=True",
+    "refining_h_at_fixed_l0_changes_peak_lt_1pct=True",
+    "halving_l0_changes_peak_gt_20pct=True",
+    "peak_ratio_matches_inverse_sqrt_l0_within_2pct=True",
+    "l0_effect_dominates_h_effect=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

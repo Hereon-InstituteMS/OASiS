@@ -1,0 +1,19 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#6 (dampfactor < 1 far from equilibrium). Observed 2026-08-06 on NGSolve 6.2.2604, unit_square maxh 0.3 order 2, full 0.8 top displacement in one step: dampfactor=1.0 aborts with 'UmfpackInverse: Numeric factorization failed' and raising maxit 60 -> 300 does not help, while dampfactor 0.5 and 0.25 both return status 0 and hit the prescribed 0.8 exactly. Two warm-started 0.4 increments undamped also converge. Caveat: on this configuration damping did NOT cost extra iterations (counts printed, not pinned). MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets DAMP_WRONG from 1.0 to 0.5, applying the documented dampfactor fix to the one-shot 0.8 step in one_shot(BIG_DISP, DAMP_WRONG). Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes 'UmfpackInverse: Numeric factorization failed', 'undamped_one_shot_breaks=True' and 'undamped_still_breaks_with_maxit_300=True' (and trips the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "UmfpackInverse: Numeric factorization failed",
+    "undamped_one_shot_breaks=True",
+    "undamped_still_breaks_with_maxit_300=True",
+    "damp0.5_status_zero=True",
+    "damp0.5_reaches_prescribed_disp=True",
+    "damp0.25_status_zero=True",
+    "damp0.25_reaches_prescribed_disp=True",
+    "two_undamped_increments_converge=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

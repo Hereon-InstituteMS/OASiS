@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#10, verified 2026-08-06 on skfem 12.0.1. Claim: an aggressive default load (E=1.0 / traction=0.1) drives det(F) <= 0 after the first iteration, log(J) goes NaN, displacements go NaN and the exit code is STILL 0 so an rc-only gate misses it; defence is a stiffer material (E=1000) plus explicit nan sentinels. Ran: MeshTri().refined(3), ElementVector(ElementTriP1), plane strain nu=0.3, left edge clamped, dead traction on the right facets, three configurations, plus a real child process launched with subprocess to test the exit code. Printed: THE QUOTED PARAMETER PAIR DOES NOT REPRODUCE -- E=1.0 with axial traction 0.1 converges with min det(F) = 1.0496, no NaN and an empty warning list. The mechanism does reproduce at E=1.0 with a TRANSVERSE traction of 0.5: first-iteration min det(F) = -0.4269, displacements NaN. It is not fully silent -- scipy emits MatrixRankWarning('Matrix is exactly singular') -- but nothing raises and the child process printing 'Max displacement: nan' exits with returncode 0, so an rc-only gate does pass on a NaN answer. The prescribed defence works: E=1000 keeps min det(F) at 0.9980 with a finite 3.2e-03 peak displacement. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the entry's own prescribed defence at the pathology site, raising the module constant AGGRESSIVE_E (the Young's modulus of the diverging run and of the child process launched from it) from 1.0 to the stiffer 1000.0. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 11 expect_in_output strings; T2_MUTATE=1 removes 'aggressive_min_detF_went_negative=True', 'aggressive_solution_has_nan=True', 'aggressive_run_is_completely_silent=False', 'Matrix is exactly singular', 'child_printed_nan=True', 'rc_only_gate_would_pass_on_nan=True' (and raises the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "quoted_E1_traction0p1_axial_has_nan=False",
+    "quoted_parameter_pair_reproduces_the_failure=False",
+    "aggressive_min_detF_went_negative=True",
+    "aggressive_solution_has_nan=True",
+    "aggressive_run_is_completely_silent=False",
+    "Matrix is exactly singular",
+    "child_returncode=0",
+    "child_printed_nan=True",
+    "rc_only_gate_would_pass_on_nan=True",
+    "stiff_E1000_has_nan=False",
+    "stiffer_material_defence_works=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}

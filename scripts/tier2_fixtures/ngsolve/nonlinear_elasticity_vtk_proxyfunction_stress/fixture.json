@@ -1,0 +1,17 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#7 (VTK stress must be rebuilt from the resolved GridFunction). Observed 2026-08-06 on NGSolve 6.2.2604: VTKOutput's constructor happily accepts a Cauchy stress assembled from fes.TrialFunction(); .Do() then raises NgException 'cannot evaluate ProxyFunction without userdata'. The identical algebra rebuilt from gfu writes the file. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets STRESS_ARG to gfu instead of fes.TrialFunction(), so the Cauchy stress handed to the same VTKOutput(...).Do() call is rebuilt from the resolved GridFunction -- the documented fix, with the surrounding algebra and the VTK call untouched. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 6 expect_in_output strings; T2_MUTATE=1 removes 'cannot evaluate ProxyFunction without userdata' and 'proxy_stress_raises_userdata_error=True' (and trips the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "trialfunction_type=ProxyFunction",
+    "vtk_ctor_accepted_proxy_stress=True",
+    "cannot evaluate ProxyFunction without userdata",
+    "proxy_stress_raises_userdata_error=True",
+    "gridfunction_stress_writes_ok=True",
+    "newton_numit_positive=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

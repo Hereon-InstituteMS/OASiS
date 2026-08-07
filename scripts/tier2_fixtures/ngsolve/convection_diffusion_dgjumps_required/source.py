@@ -28,9 +28,16 @@ This fixture asserts both ends:
   * dgjumps=True L2 + same integral → assembly succeeds, matrix
     has nze > 0.
   * Both spaces have the same ndof.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site — the `fes_default` space is constructed with
+dgjumps=True — so the coupling slots exist, the skeleton integral
+assembles and the 'illegal dnums' exception never fires. Re-run
+with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -41,11 +48,15 @@ from ngsolve import (
     dx,
 )
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.5))
 
-    fes_default = L2(mesh, order=2)
+    # The pathology: dgjumps left at its default False.
+    # T2_MUTATE=1 sets it True at this construction site.
+    fes_default = L2(mesh, order=2, dgjumps=MUTATE)
     fes_dg = L2(mesh, order=2, dgjumps=True)
     print(f"ndof_default={fes_default.ndof}")
     print(f"ndof_dgjumps={fes_dg.ndof}")

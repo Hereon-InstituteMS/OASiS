@@ -37,9 +37,23 @@ This fixture asserts:
   * condense(K, f, x=full_vector, D=D) succeeds and the
     resulting solution attains the prescribed boundary values
     at the constrained DOFs.
+
+Mutation control: with T2_MUTATE=1 both documented fixes are
+applied at their pathology sites — the DofsView probe becomes
+the positional ib.get_dofs('left') instead of dv['left'], and
+the condense probe is handed a FULL-size x (length ib.N)
+instead of the short constrained-values array.  Neither call
+raises any more, so
+'dofsview_subscript_raises_typeerror=True',
+'dofsview_msg_has_not_subscriptable=True',
+'condense_short_x_raises_indexerror=True' and
+'condense_short_msg_has_out_of_bounds=True' are all printed
+=False and the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -51,6 +65,8 @@ from skfem import (
     solve,
 )
 from skfem.models.poisson import laplace
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -68,7 +84,8 @@ def main() -> int:
     raised_subscript = False
     msg = ""
     try:
-        _ = dv["left"]
+        # documented fix under mutation: pass the name positionally
+        _ = dv["left"] if not MUTATE else ib.get_dofs("left")
     except TypeError as exc:
         msg = str(exc)
         raised_subscript = "not subscriptable" in msg
@@ -91,11 +108,18 @@ def main() -> int:
         np.full_like(left, 100.0, dtype=float),
         np.full_like(right, 0.0, dtype=float),
     ])
-    print(f"x_short_len={len(x_short)}")
+    # documented fix under mutation: x must be a FULL-size vector
+    if MUTATE:
+        x_probe = ib.zeros()
+        x_probe[left] = 100.0
+        x_probe[right] = 0.0
+    else:
+        x_probe = x_short
+    print(f"x_short_len={len(x_probe)}")
     raised_short = False
     short_msg = ""
     try:
-        solve(*condense(K, f, x=x_short, D=D))
+        solve(*condense(K, f, x=x_probe, D=D))
     except IndexError as exc:
         short_msg = str(exc)
         raised_short = "out of bounds" in short_msg

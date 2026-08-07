@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#6, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Rebuilds the shipped dg_methods_2d operator verbatim on its default nx=32 mesh: spsolve emits 'Matrix is exactly singular', u is NaN in all 6144 DOFs, and the script would still exit 0. Rank deficiency is exactly 3 and the shipped single-basis InteriorFacetBasis term contributes ZERO inter-element coupling. Adding the inflow FacetBasis term (or a mass shift) removes the singularity; only a correctly assembled side=0/side=1 upwind flux plus the inflow term is also physically sensible. MUTATION CONTROL (re-runnable): T2_MUTATE=1 promotes every fix=\"none\" build() to fix=\"inflow\", i.e. adds the catalog's inflow FacetBasis term to the shipped operator. Re-verified by execution 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 removes 'Matrix is exactly singular', 'shipped_all_nan=True', 'shipped_any_finite=False' and 'rank_deficiency=3' (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "Matrix is exactly singular",
+    "n_dofs=6144",
+    "n_elements=2048",
+    "shipped_all_nan=True",
+    "shipped_any_finite=False",
+    "rc_only_gate_would_pass=True",
+    "rank_deficiency=3",
+    "shipped_interior_term_interelement_entries=0",
+    "fix_inflow_facetbasis_finite=True",
+    "fix_inflow_facetbasis_singular_warning=False",
+    "fix_mass_shift_finite=True",
+    "correct_dg_finite=True",
+    "correct_dg_streamwise_decreases=0",
+    "correct_dg_physically_sensible=True",
+    "inflow_only_fix_min_is_negative=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}
