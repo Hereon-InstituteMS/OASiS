@@ -137,6 +137,28 @@ def check_one(fixture_dir: Path) -> dict:
                                        "target": target})
                 continue
             text = p.read_text()
+            # An EMPTY `from` must never reach replace(). Python's
+            # `"" in text` is True and `text.replace("", to)` inserts `to`
+            # between every character, so a mutation step with a missing or
+            # blank anchor MANGLES the whole file. The fixture then fails —
+            # for that reason and not because the pathology was removed — and
+            # this harness records KILLED. A false proof, and the most
+            # dangerous shape of one, because it is indistinguishable from a
+            # real detection in the output.
+            #
+            # Found by a machine reviewer on PR #51. Measured across the
+            # corpus at the time: 1 of 677 mutation steps has a blank anchor,
+            # and it is the deliberate note-only declaration on
+            # fenics/gmshio_install_gap_diagnostic, so nothing recorded so far
+            # is affected. This guard exists for the next typo, not the last.
+            if not str(frm).strip():
+                row["results"].append({
+                    "i": i, "status": "EMPTY_FROM",
+                    "note": mut.get("note", ""),
+                    "why": ("mutation step declares no anchor text; a blank "
+                            "`from` would rewrite the whole file and the "
+                            "resulting failure would be recorded as a kill")})
+                continue
             if frm not in text:
                 row["results"].append({"i": i, "status": "FROM_NOT_FOUND",
                                        "from": frm[:80]})
@@ -153,8 +175,13 @@ def check_one(fixture_dir: Path) -> dict:
                 "note": mut.get("note", ""),
                 "missing": [nt for nt in r.notes if "missing in output" in nt][:1],
             })
-    row["verdict"] = ("KILLED" if row["killed"] == len(muts) and muts
-                      else "SURVIVED")
+    empty = [r for r in row["results"] if r.get("status") == "EMPTY_FROM"]
+    if empty and row["killed"] == 0:
+        row["verdict"] = "NOT_MUTABLE_DECLARED" if len(empty) == len(muts) \
+            else "SURVIVED"
+    else:
+        row["verdict"] = ("KILLED" if row["killed"] == len(muts) and muts
+                          else "SURVIVED")
     return row
 
 
