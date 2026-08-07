@@ -487,12 +487,32 @@ SIGNAL_COVERAGE_MIN = {
                        #                 FEM backend at 100% Signal: coverage.
                        #                 Trajectory: 0.0% -> 100.0% in
                        #                 a SINGLE pass.)
-    "sparta":   0.0,   # SPARTA (DSMC particle code, the 9th backend) carries one
-                       #   curated rarefied-gas pitfall per physics (10 total) that
-                       #   predate the Signal: convention. Baseline locked at 0.0
-                       #   so it can't REGRESS; enriching them with Signal:
-                       #   observable-symptom markers is follow-up work (it is a
-                       #   fundamentally different, non-FEM code).
+    "sparta":  82.0,   # SPARTA (DSMC particle code, the 9th backend). Was 0.0/13
+                       #   pitfalls: ten curated rarefied-gas entries predating the
+                       #   Signal: convention, two of which named commands that do
+                       #   not exist in SPARTA at all. Raised 2026-08-07 to 84.0%
+                       #   measured (21/25) after a pass that ran every claim
+                       #   against SPARTA (24 Sep 2025):
+                       #     rarefied_flow (4: fnum/nrho default to 1.0 and the gas
+                       #       silently stops colliding; cell size via compute
+                       #       lambda/grid knall; the 1e20 empty-cell sentinel;
+                       #       timestep via compute dt/grid + Cell-touches),
+                       #     collision_relaxation (4: vss is the ONLY gas collide
+                       #       style, no 'collide vhs'; .vss column count vs relax;
+                       #       species coverage; the np<=1 collision skip),
+                       #     surface_interaction (2), chemistry (2: undeclared
+                       #       products drop ALL reactions silently),
+                       #     axisymmetric (2: it is a BOUNDARY style, not a global
+                       #       keyword — the old entry was fabricated),
+                       #     particle_emission (2: mixture frac deficit lands on the
+                       #       last species; inflow with no outflow),
+                       #     adaptive_grid (3: maxlevel defaults to unlimited),
+                       #     conjugate_heat_transfer (2 of 4 rewritten).
+                       #   Floor set 2 points below measured, per the convention
+                       #   above. The 4 remaining Signal-less entries are
+                       #   hypersonic_flow, ambipolar_plasma and two
+                       #   conjugate_heat_transfer entries, none of which this pass
+                       #   was able to verify by execution.
 }
 
 
