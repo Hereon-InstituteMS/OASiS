@@ -172,7 +172,29 @@ def review_digest(solver: str, setup_text: str) -> str:
     changed, which is how a green suite can accompany a broken gate.
 
     Anything that needs to know what a review covers calls this.
+
+    TWO BRANCHES BUILT A FILE BINDING AND THEY MUST NOT BE LAYERED.
+    feature/anti-fabrication binds a single-solver setup by SCANNING the text
+    for paths and hashing what it finds (`_referenced_file_digest`).
+    feature/coupling-robustness binds a coupling by fingerprinting the
+    participant spec's files EXPLICITLY and embedding the result in the setup
+    text itself, under `__participant_files__` (see `_coupling_setup_text` and
+    `_DIGEST_SCOPE_LIMIT`).
+
+    Running both over a coupling made the gate unusable rather than stricter:
+    the path scan also picks up each participant's `work_dir`, which the run
+    itself writes into, so the digest computed when the review was issued no
+    longer matched the digest computed after the coupling ran and every
+    correctly-reviewed coupling came back NOT VERIFIED. That is a false
+    negative in a gate whose whole job is to be believed.
+
+    So when the text already carries an explicit file binding, that binding IS
+    the answer and the scan is skipped. Nothing is unbound: a rewritten
+    participant script still changes `__participant_files__`, which is exactly
+    what test_coupling_robustness's fingerprint tests check.
     """
+    if "__coupling_setup__" in setup_text:
+        return setup_digest(solver, setup_text)
     return setup_digest(solver, setup_text, _referenced_file_digest(setup_text))
 
 
@@ -589,6 +611,14 @@ def _coupling_setup_text(**kwargs) -> str:
     coupling tools actually execute and what the spec only names.
     """
     payload = dict(kwargs)
+    # Marks the text as a COUPLING setup whose file binding is explicit (the
+    # `__participant_files__` fingerprints below). `review_digest` keys off this
+    # to skip its path-scanning binding, which double-binds and, because it also
+    # picks up each participant's work_dir, changes after the run and fails a
+    # correctly-reviewed coupling. The marker rather than the fingerprints
+    # themselves, so the rule still holds when a caller has no files to
+    # fingerprint or a test strips them out.
+    payload["__coupling_setup__"] = True
     if payload.get("participants") or payload.get("monolithic"):
         fp = _participant_fingerprints(str(payload.get("participants") or ""),
                                        str(payload.get("monolithic") or ""))
@@ -3787,10 +3817,20 @@ def register_consolidated_tools(mcp: FastMCP):
         # finding: it is a legitimate configuration whose consequence (unchecked
         # conservation) belongs in the coverage list, and whose failure mode is
         # caught by the flux balance.
-        checks_ok = r.converged and not val
         # A coupling in which nothing is exchanged converges instantly with a
         # zero residual and passes every other check — the most convincing
-        # silent-wrong result this tool can produce. Name it.
+        # silent-wrong result this tool can produce. Name it. This runs BEFORE
+        # the verdict is taken, and it splits its two outcomes deliberately:
+        # NOT COUPLED is a finding and flips the verdict; ONE-WAY is a
+        # legitimate master->slave configuration, so it goes to `not_run`,
+        # where it is always printed and never flips anything.
+        #
+        # It used to append both to `val` and then RECOMPUTE checks_ok with a
+        # keyword filter so that ONE-WAY would not flip it. That recomputation
+        # silently discarded every finding from the validators above — the
+        # same-surface, flux-profile, mesh, returncode, directionality,
+        # responsiveness and monolithic checks all landed in `validation` and
+        # none of them could make a coupling untrustworthy.
         deaf = [p.name for p in parts if not p.imports_from]
         if len(deaf) == len(parts):
             val.append(
@@ -3798,22 +3838,26 @@ def register_consolidated_tools(mcp: FastMCP):
                 "them ever receives partner data. Nothing was exchanged and the "
                 "run is not a coupling at all.")
         elif deaf:
-            # A one-way (master -> slave) coupling is legitimate and looks
-            # exactly like this, so it is a note rather than a failure.
-            val.append(
+            not_run.append(
                 f"ONE-WAY: participant(s) {', '.join(deaf)} list no "
-                f"`imports_from` and so never see their partners' data. If the "
-                f"coupling is meant to be two-way, that is the bug.")
-        elif r.converged and r.iterations <= 2 and r.residual == 0.0:
-            val.append(
-                "NOT COUPLED: no participant's export changed between "
-                "iterations, giving an exactly zero residual at iteration "
-                f"{r.iterations}. The usual cause is that the participants "
-                "never read imports.json, or read it under the wrong partner "
-                "name, so each one keeps returning its initial guess.")
-        checks_ok = r.converged and not any(
-            ("NOT CONVERGED" in w or "non-finite" in w or "NOT balanced" in w
-             or "NOT COUPLED" in w) for w in val)
+                f"`imports_from` and so never see their partners' data. That is "
+                f"a legitimate master->slave coupling, so it is reported rather "
+                f"than failed — but if the coupling is meant to be two-way, that "
+                f"is the bug.")
+        # The third branch that used to sit here — "converged in <= 2 iterations
+        # with an exactly zero residual, therefore NOT COUPLED" — is deleted, not
+        # moved. It is a real signal (a participant that ignores imports.json
+        # settles instantly) but it cannot tell that case apart from a coupling
+        # that is simply easy: a linear Dirichlet-Neumann pair with no source
+        # lands on the interface value immediately, which the coupling knowledge
+        # states in as many words. It failed exactly those correct couplings.
+        # feature/coupling-robustness replaced the heuristic with two checks that
+        # can actually discriminate — probe_interface_sensitivity perturbs an
+        # import and watches whether the export moves, and
+        # check_participant_responsiveness catches a byte-identical export — and
+        # its own tests pin the distinction: with BOTH stubbed out, a do-nothing
+        # participant is expected to verify, because those two are what detect it.
+        checks_ok = r.converged and not val
         result = {"converged": r.converged, "iterations": r.iterations,
                   "residual": r.residual, "history": r.history,
                   "block_residuals": r.block_residuals,

@@ -283,124 +283,95 @@ def check_convergence(converged: bool, residual: float, tol: float) -> list[str]
     return w
 
 
-def _interface_net_flux(export):
-    """Net flux through an interface from an InterfaceData-like record.
-
-    Returns (net_vector, magnitude_scale, mode) or None when the record carries
-    no `normal_fluxes` at all.
-
-    `normal_fluxes` is a flux DENSITY at that side's OWN interface points, and
-    the two sides of a partitioned coupling rarely sample the same points —
-    that is the whole reason the coupling is partitioned. Summing the raw arrays
-    then compares N_a densities against N_b densities and calls a correct,
-    conservative coupling unbalanced by roughly (N_a-N_b)/N_a. So the density is
-    reduced to a discretisation-independent net:
-
-      * a CURVE of points (a 2D interface): trapezoid over arclength, after
-        sorting the points along the curve. Sorting matters — the trapezoid runs
-        over array order, so an unsorted point list integrates a zig-zag and
-        manufactures a false imbalance out of a correct coupling.
-      * a SURFACE of points (a 3D interface): arclength is meaningless there, so
-        the MEAN density is used. It is discretisation-independent for a
-        reasonably uniform sampling, which is what the raw sum is not.
-      * one point, or no usable coordinates: the raw sum, which is still right
-        whenever both sides sample alike.
-
-    A VECTOR flux (a traction) is handled component-by-component rather than
-    flattened, so an FSI interface is compared as a vector rather than being
-    silently kicked into the raw-sum path by a length mismatch.
-    """
-    g = (lambda k: export.get(k)) if isinstance(export, dict) else \
-        (lambda k: getattr(export, k, None))
-    raw = g("normal_fluxes")
-    if raw is None:
-        return None
-    f = _np.asarray(raw, float)
-    if f.ndim == 0:
-        f = f.reshape(1)
-    n = f.shape[0]
-    if f.ndim == 1:
-        f = f.reshape(n, 1)
-    elif f.ndim > 2:
-        f = f.reshape(n, -1)
-
-    c = g("coordinates")
-    coords = None
-    if c is not None:
-        c = _np.asarray(c, float)
-        if c.ndim == 2 and len(c) == n:
-            coords = c
-
-    scale = float(_np.sum(_np.abs(f)))
-    if coords is None or n < 2:
-        return _np.sum(f, axis=0), max(scale, 1e-30), "sum"
-
-    # how many directions do the points actually span?
-    spread = coords.max(axis=0) - coords.min(axis=0)
-    varying = int(_np.count_nonzero(spread > 1e-12 * max(float(spread.max()), 1.0)))
-    if varying >= 2:
-        return _np.mean(f, axis=0), max(scale / n, 1e-30), "mean"
-
-    ax = int(_np.argmax(spread))
-    order = _np.argsort(coords[:, ax])
-    cs, fs = coords[order], f[order]
-    ds = _np.linalg.norm(_np.diff(cs, axis=0), axis=1)
-    length = float(_np.sum(ds))
-    if length <= 0:
-        return _np.sum(f, axis=0), max(scale, 1e-30), "sum"
-    net = _np.sum(0.5 * (fs[:-1] + fs[1:]) * ds[:, None], axis=0)
-    return net, max(float(_np.sum(_np.abs(f).sum(axis=1) / n)) * length, 1e-30), "integral"
-
-
+# NOTE (consolidation): this is feature/coupling-robustness's implementation.
+# knowledge/coupling-revision had an arclength-INTEGRAL variant plus a private
+# _interface_net_flux helper. That version was taken first, on the reasoning that
+# the coupling fixtures depend on the arclength quantity — they do not:
+# scripts/tier2_fixtures/coupling/_lib/couplinglib.py recomputes it itself and
+# says so ("recomputed here so the fixture does not depend on that function being
+# right"). Taking the arclength version instead failed 20 of the 69
+# test_coupling_robustness tests, which need the per-component balance, the
+# roundoff floor and the unit-ratio hint. The coverage reporting the other
+# version carried inline ("conservation was NOT CHECKED") is not lost: it lives
+# in couple()'s not_run list, which is also taken from that branch.
 def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                             rtol: float = 0.05, floor: float = 0.0) -> list[str]:
     """Conservation across a coupling interface: the net flux leaving A should equal
     the net flux entering B (global balance). Pure arithmetic on the exchanged
     normal_fluxes — no physics. `export_*` are InterfaceData-like dicts/objects.
 
-    Returns a NOTE (not a failure) when either side omits `normal_fluxes`: the
-    check silently returning nothing meant a run with no conservation evidence
-    at all was stamped exactly like one that passed the check.
+    Returns findings only. Whether the check COULD run at all is a separate
+    question, answered by `interface_balance_coverage` — a coupling that
+    exchanges no fluxes gets an empty finding list here, and an empty finding
+    list must never be read as "conservation was checked and is fine".
+
+    `floor` is an absolute magnitude below which an imbalance is float noise
+    rather than a finding. It exists because the per-component branch below
+    compares each component on its OWN scale: a component that is zero on both
+    sides — a tangential traction on a frictionless interface is exactly this,
+    and it is the common case, not a corner one — then has a denominator of
+    roundoff, and two ~1e-17 entries that should cancel report an imbalance of
+    tens of percent on a coupling that is exactly right. Demonstrated: a normal
+    traction of 1e5 cancelling exactly, with a 1e-17 tangential component on
+    both sides, was reported as 91.6% non-conservative. The vector branch
+    therefore derives one floor from the WHOLE interface and hands it down, so a
+    component is only ever judged against the size of the flux actually being
+    exchanged. Callers comparing a single scalar keep the old behaviour (0.0).
     """
     w = []
-    ra, rb = _interface_net_flux(export_a), _interface_net_flux(export_b)
-    if ra is None or rb is None:
-        missing = [lbl for lbl, r in ((label_a, ra), (label_b, rb)) if r is None]
-        return [f"Interface conservation was NOT CHECKED: {', '.join(missing)} "
-                f"exported no `normal_fluxes`, so nothing verifies that what "
-                f"leaves one subdomain enters the other. Export the normal flux "
-                f"density on both sides to get this guard."]
-    fa, sa, _ = ra
-    fb, sb, _ = rb
-    if fa.shape != fb.shape:
-        return [f"Interface conservation was NOT CHECKED: {label_a} exports "
-                f"{fa.size} flux component(s) per point and {label_b} exports "
-                f"{fb.size}; they are not comparable."]
+
+    def _flux(e):
+        f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
+        if f is None:
+            return None
+        a = _np.asarray(f, float)
+        # A VECTOR interface flux (traction, momentum) must balance component by
+        # component. Summing every component into one number lets a +x imbalance
+        # cancel a -y one and report perfect conservation across an interface
+        # that conserves nothing.
+        return (a.reshape(-1, a.shape[-1]).sum(axis=0)
+                if a.ndim >= 2 and a.shape[-1] > 1 else _np.array([a.sum()]))
+
+    va, vb = _flux(export_a), _flux(export_b)
+    if va is None or vb is None:
+        return w
+    if va.shape != vb.shape:
+        return [f"Interface flux balance could NOT be evaluated: {label_a} exports "
+                f"{va.size} flux component(s) and {label_b} exports {vb.size}. "
+                "Conservation is unchecked."]
+    if va.size > 1:
+        # ONE floor for the whole interface, from the largest component either
+        # side actually exchanges. Without it each component is judged against
+        # its own magnitude alone and a both-sides-zero component fails on
+        # roundoff — see the `floor` note in the docstring.
+        comp_floor = 1e-6 * max(float(_np.max(_np.abs(va[_np.isfinite(va)])))
+                                if _np.any(_np.isfinite(va)) else 0.0,
+                                float(_np.max(_np.abs(vb[_np.isfinite(vb)])))
+                                if _np.any(_np.isfinite(vb)) else 0.0,
+                                floor)
+        out = []
+        for c in range(va.size):
+            out += check_interface_balance(
+                {"normal_fluxes": [float(va[c])]}, {"normal_fluxes": [float(vb[c])]},
+                f"{label_a}[{c}]", f"{label_b}[{c}]", rtol, comp_floor)
+        return out
+    fa, fb = float(va[0]), float(vb[0])
     # A non-finite net flux makes every comparison below False (nan > rtol is
-    # False), so without this the check would report NOTHING at all on the most
-    # broken data it can be handed. Ported from feature/coupling-robustness,
-    # which found it; the rest of that branch's rewrite is not taken here because
-    # it replaced the arclength-weighted integral with a plain sum, and the
-    # coupling fixtures recompute the arclength quantity by name.
-    if not (_np.all(_np.isfinite(fa)) and _np.all(_np.isfinite(fb))):
-        return [f"Interface conservation was NOT CHECKED: net({label_a}) or "
-                f"net({label_b}) is non-finite, so the exchanged data is invalid "
-                f"and conservation cannot be evaluated."]
-    na, nb = float(_np.linalg.norm(fa)), float(_np.linalg.norm(fb))
-    # Absolute floor from the flux MAGNITUDES, not just the nets. A symmetric
-    # profile integrates to ~0 on both sides; without a floor, float noise on
-    # two ~1e-16 nets is a 100% "imbalance" on a physically perfect interface.
-    floor = 1e-6 * max(sa, sb)
-    denom = max(na, nb, floor, 1e-30)
-    rel = float(_np.linalg.norm(fa + fb)) / denom   # normals anti-parallel → cancel
+    # False), so without this the check would report nothing at all on the most
+    # broken data it can be handed.
+    if not (_np.isfinite(fa) and _np.isfinite(fb)):
+        return [f"Interface flux balance could NOT be evaluated: net({label_a})={fa}, "
+                f"net({label_b})={fb} — a non-finite exchanged flux. Conservation "
+                "is unchecked and the exchanged data is invalid."]
+    denom = max(abs(fa), abs(fb), floor, 1e-30)
+    rel = abs(fa + fb) / denom            # A exports +flux, B imports -flux → sum≈0
     if rel > rtol:
         # Name the convention. The most common cause of this warning is not a
         # non-conservative coupling but both sides exporting their flux with
         # the SAME sign — which a correct coupling does if nobody said which
         # normal to use. Saying only "not balanced" sends the agent looking for
         # a physics bug that is not there.
-        same_sign = (float(_np.dot(fa.ravel(), fb.ravel())) > 0
-                     and abs(na - nb) / denom <= rtol)
+        same_sign = fa * fb > 0 and abs(abs(fa) - abs(fb)) / denom <= rtol
         hint = (" The two magnitudes match but the signs agree, which is the "
                 "signature of a SIGN-CONVENTION error rather than a "
                 "conservation error: each participant must export the flux "
@@ -408,15 +379,11 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                 "and those normals are anti-parallel, so the two sums should "
                 "cancel. Note this is the opposite of the BC value you APPLY, "
                 "which is the same number on both sides."
-                if same_sign else
-                " Check next: are both sides' `coordinates` ordered along the "
-                "interface, do both use the same units, and is the exported "
-                "quantity a flux DENSITY on both sides?")
-        fmt = (lambda v: f"{float(v[0]):.4g}" if v.size == 1
-               else "[" + ", ".join(f"{x:.4g}" for x in v.ravel()) + "]")
+                if same_sign else "")
+        if not hint:
+            hint = _unit_ratio_hint(fa, fb)
         w.append(
-            f"Interface flux NOT balanced: net({label_a})={fmt(fa)}, "
-            f"net({label_b})={fmt(fb)}, "
+            f"Interface flux NOT balanced: net({label_a})={fa:.4g}, net({label_b})={fb:.4g}, "
             f"imbalance {rel:.1%} > {rtol:.0%} — coupling may be non-conservative (silent error)."
             + hint
         )
