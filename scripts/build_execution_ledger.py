@@ -128,11 +128,91 @@ def claim_text_hash(backend: str, spec: dict) -> str:
     return ""
 
 
+def _load_shared_matcher():
+    """Import the runner's matcher so there is exactly ONE definition of 'present'.
+
+    There used to be two, and they disagreed. The runner lowercases both sides;
+    this file compared raw strings. So a fixture whose probe printed
+    `space_has_Nedelec=False` against an expectation of `space_has_nedelec=False`
+    passed the runner and failed the ledger — same fixture, same output, two
+    verdicts. Whichever number got quoted was the one that happened to be run.
+
+    The runner is the authority: it is what the merge gate calls, and its rule
+    (case-insensitive, with a value boundary on `key=value` expectations) is the
+    stricter of the two on the axis that actually spoofs — value prefixes —
+    while being the more forgiving one on capitalisation, which spoofs nothing.
+
+    Degrades loudly rather than crashing when the runner is older than this
+    file: agents copy this ledger between worktrees, and a worktree whose branch
+    predates the matcher fix has no `_needle_present`. An ImportError there would
+    kill a multi-hour sweep at minute zero, so the fallback is the old plain
+    substring rule with a banner saying which rule produced the numbers.
+    """
+    import importlib.util
+    p = REPO / "scripts" / "run_tier2_fixtures.py"
+    try:
+        spec = importlib.util.spec_from_file_location("run_tier2_fixtures", p)
+        mod = importlib.util.module_from_spec(spec)
+        # Registered under its REAL name for two reasons: dataclasses resolve
+        # annotations through sys.modules, and mutate_tier2_fixtures.py does
+        # `from run_tier2_fixtures import _eval_fixture` — seeding the name here
+        # means it gets THIS hardened runner instead of loading a second copy.
+        sys.modules["run_tier2_fixtures"] = mod
+        spec.loader.exec_module(mod)
+        return mod._needle_present, mod
+    except (AttributeError, OSError, ImportError) as exc:
+        print(f"!! {p} has no hardened matcher ({type(exc).__name__}); falling "
+              f"back to PLAIN SUBSTRING matching. Value-prefix spoofs "
+              f"(key=1 matching key=10) are NOT caught in this run.",
+              file=sys.stderr)
+        return (lambda needle, low: needle.lower() in low), None
+
+
+_needle_present, _RUNNER = _load_shared_matcher()
+
+
+def _load_mutation_checker():
+    """The recipe-driven mutation checker, or None.
+
+    Two different things are both called "the mutation control", and conflating
+    them is why 354 of 395 4C fixtures looked like they proved nothing:
+
+      * an **env branch** — the fixture's own source reads `T2_MUTATE` and
+        removes the pathology itself. Running it again with the variable set is
+        the whole control.
+      * a **declared recipe** — a `_mutation` block naming a file and a from/to
+        substitution. `T2_MUTATE=1` does nothing for these: the recipe has to be
+        APPLIED, in a staged copy, by mutate_tier2_fixtures.py.
+
+    This ledger previously ran only the first kind and treated the second as if
+    it were the first, so 354 fixtures ran byte-identically twice and were
+    recorded PASS/PASS. They were never vacuous — they were never mutated.
+    """
+    import importlib.util
+    for cand in (REPO / "scripts" / "mutate_tier2_fixtures.py",
+                 FIXTURES.parent / "mutate_tier2_fixtures.py"):
+        if not cand.is_file():
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location("_t2mut", cand)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules["_t2mut"] = mod
+            spec.loader.exec_module(mod)
+            return mod.check_one
+        except Exception as exc:
+            print(f"!! could not load {cand}: {exc}", file=sys.stderr)
+    return None
+
+
 def evaluate(out: str, spec: dict) -> tuple[bool, list[str]]:
     """The runner's own rule: every expect present, no forbid present."""
+    low = out.lower()
     missing = [e for e in (spec.get("expect_in_output") or [])
-               if str(e) not in out]
-    hit = [f for f in (spec.get("forbid_in_output") or []) if str(f) in out]
+               if not _needle_present(str(e), low)]
+    # Forbidden strings stay plain substring, matching the runner: a tripwire
+    # should fire on the widest reading.
+    hit = [f for f in (spec.get("forbid_in_output") or [])
+           if str(f).lower() in low]
     return (not missing and not hit), missing + [f"FORBIDDEN:{f}" for f in hit]
 
 
@@ -172,32 +252,101 @@ def run_one(d: Path, backend: str, mutate: bool, timeout: int) -> dict:
         return {"status": "ERROR", "reason": str(exc)[:120]}
 
 
-def has_control(d: Path, spec: dict) -> bool:
-    if spec.get("_mutation") or spec.get("mutations"):
-        return True
+def control_kind(d: Path, spec: dict) -> str | None:
+    """Which KIND of mutation control this fixture carries: "env", "recipe", None.
+
+    The env branch is checked first. A fixture may carry both, and when it does
+    the in-source branch is the one its author wired to run.
+    """
     for f in d.iterdir():
         if f.is_file() and f.suffix in (".py", ".sh", ".cpp", ".cc"):
             try:
                 if "T2_MUTATE" in f.read_text(errors="ignore"):
-                    return True
+                    return "env"
             except OSError:
                 pass
-    return False
+    if spec.get("_mutation") or spec.get("mutations"):
+        return "recipe"
+    return None
+
+
+def run_recipe_mutation(d: Path, check_one) -> dict:
+    """Apply the declared from/to recipe and report whether it killed the fixture.
+
+    Translated into the same vocabulary as the env-branch arm so both kinds land
+    in one column. The distinctions that must NOT collapse into "pass":
+
+      * FROM_NOT_FOUND — the recipe's anchor text is no longer in the file. The
+        substitution silently does nothing, so the fixture "survives" a mutation
+        that never happened. This is rot, and it reads exactly like a fixture
+        that fails to discriminate unless it is named separately.
+      * VACUOUS_BASELINE — the fixture does not even pass unmutated in the
+        staged copy, so no verdict about the mutation means anything.
+    """
+    if check_one is None:
+        return {"status": "NO_MUTATION_TOOL",
+                "reason": "mutate_tier2_fixtures.py not found; declared "
+                          "recipes could not be applied — NOT a pass"}
+    try:
+        row = check_one(d)
+    except Exception as exc:
+        return {"status": "ERROR", "reason": f"{type(exc).__name__}: {exc}"[:160]}
+
+    verdict = row.get("verdict")
+    if verdict == "KILLED":
+        # Killed by its own antidote == the mutated run failed, which is what
+        # "discriminates" means for the env arm too.
+        return {"status": "FAIL", "detail": "recipe killed the fixture"}
+    if verdict == "VACUOUS_BASELINE":
+        return {"status": "VACUOUS_BASELINE",
+                "reason": row.get("baseline_status", ""),
+                "notes": row.get("baseline_notes", [])}
+    stale = [r for r in row.get("results", [])
+             if r.get("status") in ("FROM_NOT_FOUND", "TARGET_MISSING")]
+    if stale:
+        return {"status": "MUTATION_STALE",
+                "reason": f"{len(stale)} recipe step(s) no longer match the "
+                          f"fixture: {stale[0].get('status')}",
+                "detail": stale[0]}
+    return {"status": "PASS", "detail": "survived its own antidote"}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("backends", nargs="*", help="default: all present")
+    ap.add_argument("--fixtures", default=None, metavar="DIR",
+                    help="fixture root to run instead of this worktree's. The "
+                         "campaign fixtures live on the branch that built them, "
+                         "so the ledger has to reach across worktrees; copying "
+                         "the scripts in instead leaves untracked files behind "
+                         "for the consolidation merge to trip over.")
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--no-mutation", action="store_true",
                     help="skip the mutation half (faster, halves the evidence)")
     ap.add_argument("--out", default=str(REPO / "data" / "execution_ledger.json"))
     args = ap.parse_args()
 
-    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(REPO),
+    global FIXTURES
+    if args.fixtures:
+        FIXTURES = Path(args.fixtures).resolve()
+        if not FIXTURES.is_dir():
+            print(f"no such fixture root: {FIXTURES}")
+            return 2
+
+    # Stamp the commit of the tree the FIXTURES came from, not the tree this
+    # script lives in. With --fixtures those differ, and recording the script's
+    # sha would attribute every result to the wrong branch.
+    prov = FIXTURES.parent.parent
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(prov),
                          capture_output=True, text=True).stdout.strip()[:12]
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=str(REPO),
+    dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=str(prov),
                                 capture_output=True, text=True).stdout.strip())
+
+    CHECK_ONE = _load_mutation_checker()
+    if CHECK_ONE is None:
+        print("!! mutate_tier2_fixtures.py not found — fixtures whose control "
+              "is a DECLARED RECIPE cannot be exercised. They are recorded "
+              "NO_MUTATION_TOOL, never PASS.", file=sys.stderr)
 
     names = args.backends or sorted(p.name for p in FIXTURES.iterdir()
                                     if p.is_dir())
@@ -216,14 +365,39 @@ def main() -> int:
                    "commit": sha, "tree_dirty": dirty,
                    "recorded": datetime.now(timezone.utc).isoformat(timespec="seconds")}
             row["unmutated"] = run_one(d, backend, False, args.timeout)
-            if not args.no_mutation and has_control(d, spec):
-                row["mutated"] = run_one(d, backend, True, args.timeout)
-                # The verdict that matters: green unmutated AND red mutated.
-                row["discriminates"] = (row["unmutated"]["status"] == "PASS"
-                                        and row["mutated"]["status"] != "PASS")
-            else:
+            kind = control_kind(d, spec)
+            row["control"] = kind or "none"
+            if args.no_mutation or kind is None:
                 row["mutated"] = {"status": "NO_CONTROL"}
                 row["discriminates"] = None
+            elif kind == "env":
+                row["mutated"] = run_one(d, backend, True, args.timeout)
+                mst = row["mutated"]["status"]
+                # The verdict that matters: green unmutated AND red mutated.
+                #
+                # "Red" means FAIL — the fixture ran and its assertions did not
+                # hold. It does NOT mean TIMEOUT or ERROR. Crediting those was
+                # an overcount: a sweep found five rows whose entire claim to
+                # discriminating rested on the mutated run being killed by the
+                # clock, which says nothing about whether the mutation was
+                # detected. A fixture slow enough to time out under mutation
+                # would earn the same credit if its assertion were absent.
+                row["discriminates"] = (
+                    True if (row["unmutated"]["status"] == "PASS"
+                             and mst == "FAIL")
+                    else False if mst == "PASS"
+                    else None)
+            else:
+                row["mutated"] = run_recipe_mutation(d, CHECK_ONE)
+                st = row["mutated"]["status"]
+                # Only FAIL earns credit. A stale recipe, a vacuous baseline or
+                # a missing tool are all "we do not know", recorded as None so
+                # they can never be counted as either evidence or a defect.
+                row["discriminates"] = (
+                    True if (row["unmutated"]["status"] == "PASS"
+                             and st == "FAIL")
+                    else False if st == "PASS"
+                    else None)
             rows.append(row)
             print(f"  {backend}/{d.name[:44]:<46} "
                   f"{row['unmutated']['status']:<8} "
@@ -237,6 +411,9 @@ def main() -> int:
     passed = sum(1 for r in rows if r["unmutated"]["status"] == "PASS")
     disc = sum(1 for r in rows if r["discriminates"] is True)
     both = [r for r in rows if r["discriminates"] is False]
+    import collections as _c
+    unknown = _c.Counter(r["mutated"]["status"] for r in rows
+                         if r["discriminates"] is None)
     print(f"\n=== LEDGER  commit {sha}{' (DIRTY TREE)' if dirty else ''} ===")
     print(f"  {passed} of {len(rows)} fixtures pass")
     print(f"  {disc} of {len(rows)} discriminate (green unmutated, red mutated)")
@@ -244,6 +421,11 @@ def main() -> int:
         print(f"\n  {len(both)} PASS BOTH WAYS — these prove nothing:")
         for r in both[:12]:
             print(f"     {r['backend']}/{r['fixture']}")
+    if unknown:
+        print(f"\n  {sum(unknown.values())} give NO VERDICT (not evidence, "
+              f"not a defect — they did not run a real mutation):")
+        for st, n in unknown.most_common():
+            print(f"     {n:>5}  {st}")
     print(f"\n  written to {out}")
     return 0
 

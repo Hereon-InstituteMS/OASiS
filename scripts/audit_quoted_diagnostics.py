@@ -73,7 +73,55 @@ REPO = Path(__file__).resolve().parents[1]
 SOURCE_HINTS: dict[str, list[str]] = {
     # 4C: the source tree is READ ONLY — we only ever grep it.
     "fourc": ["/home/alexander/4C/src", "/home/alexander/4C/tests"],
-    "febio": ["/opt/febio", "/usr/local/febio"],
+    # FEBio is installed as a BINARY with no source tree — `/opt/febio` and
+    # `/usr/local/febio` are both absent on this host, so the audit reported
+    # UNKNOWN for every FEBio claim. The real install is below, and a binary is
+    # a perfectly good corpus for checking whether a tag or a message exists:
+    # FEBio's XML element names are compiled into it as literal strings. This
+    # only works with `grep -a`; without it grep skips the file as binary and
+    # answers "not found" for everything in it.
+    # NOT `/home/alexander/FEBio` — that directory holds only `bin/febio4`,
+    # which is a SYMLINK into the tree below, and `grep -r` does not follow
+    # symlinks. Pointed there, the corpus was effectively empty: a positive
+    # control for the literal string "febio" returned zero files, and the audit
+    # duly reported 23 of 23 FEBio keys as unresolved. Against the real tree,
+    # 13 of those 23 resolve immediately. A corpus that answers "no" to
+    # everything is not evidence of fabrication, it is a broken instrument —
+    # which is why every backend here needs a positive control before its
+    # numbers are quoted.
+    "febio": ["/home/alexander/Schreibtisch/febio-src",
+              "/opt/febio", "/usr/local/febio"],
+    # deal.II ships as C++ headers and sources, not a Python package, so the
+    # module probe could never find it. 7125 headers and sources here.
+    #
+    # There are TWO deal.II installs on this host and they disagree: the system
+    # /usr/include/deal.II is 9.1.1 with MPI/P4EST/PETSC/TRILINOS/SLEPC ON,
+    # while the build the C++ fixtures actually compile against has all five
+    # undefined. That difference matters for capability claims and a fixture was
+    # found reading the wrong one. It does NOT matter here — this audit asks
+    # only whether a symbol or message exists anywhere in deal.II — but the
+    # source tree is listed first so answers come from the real thing.
+    "dealii": ["/home/alexander/dealii", "/usr/include/deal.II"],
+    # SPARTA is a C++ code with its own input-command corpus in doc/ and
+    # examples/; both matter, since a command can be documented and exercised
+    # without appearing as a literal in the source.
+    "sparta": ["/home/alexander/Schreibtisch/sparta"],
+    # Kratos: prefer the source-built 28-APPLICATION install over the repo
+    # venv's wheel, which ships only core plus three applications.
+    #
+    # Against the 3-app wheel, 66 Kratos keys did not resolve and the audit
+    # correctly refused to call them invented — a key from DEMApplication or
+    # PoromechanicsApplication is invisible when those applications are not
+    # installed, however real it is. Against this build (70 compiled libraries)
+    # BIOT_COEFFICIENT, DEM_SURFACE_LOAD and COMPUTE_FEM_RESULTS_OPTION all
+    # resolve immediately. They were real the whole time.
+    #
+    # The restraint paid twice over: PARTICLE_FRICTION, served as a required DEM
+    # material key AND written into generated decks, is absent from the full
+    # 28-app build too. Now that the corpus can answer, that absence means
+    # something. The real keys are STATIC_FRICTION / DYNAMIC_FRICTION.
+    "kratos": ["/mnt/kratos-tier2/kv/lib/python3.12/site-packages/"
+               "KratosMultiphysics"],
 }
 
 # Python backends, PRIMARY MODULE FIRST. The first entry must be importable or
@@ -274,22 +322,68 @@ def static_parts(fragment: str) -> list[str]:
     return [p.strip() for p in parts if len(p.strip()) >= MIN_STATIC_FRAGMENT]
 
 
+# Backends do not share an interpreter. dolfinx lives only in the `fenics`
+# conda env, deal.II only in `ofa-dealii`, and the suite runs from a venv that
+# has neither. Probing with `sys.executable` alone therefore returned nothing
+# for four of nine backends, and the audit reported UNKNOWN for all of them —
+# an honest non-answer, but a non-answer covering half the corpus.
+#
+# So each candidate interpreter is tried in turn. The first that can locate the
+# package wins; the search is read-only and nothing from these environments is
+# imported into this process.
+_CANDIDATE_PYTHONS = [
+    sys.executable,
+    "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python",
+    str(Path.home() / "miniconda3" / "envs" / "fenics" / "bin" / "python"),
+    str(Path.home() / "miniconda3" / "envs" / "fenicsc" / "bin" / "python"),
+    str(Path.home() / "miniconda3" / "envs" / "ofa-dealii" / "bin" / "python"),
+    str(Path.home() / "miniconda3" / "envs" / "dune-fem-env" / "bin" / "python"),
+    "/usr/bin/python3",
+]
+
+
 def _py_package_paths(module_names: list[str]) -> list[Path]:
     paths = []
     for name in module_names:
+        for _py in _CANDIDATE_PYTHONS:
+            if _py != sys.executable and not Path(_py).is_file():
+                continue
+            if _locate_with(_py, name, paths):
+                break
+    return paths
+
+
+def _locate_with(py: str, name: str, paths: list[Path]) -> bool:
+    """Try one interpreter; append the package dir and return True on success."""
+    for probe in (
+        # First choice: import it and ask where it lives.
+        f"import {name},os;print(os.path.dirname({name}.__file__))",
+        # Fallback: a failed import is not an absent package. Kratos is
+        # INSTALLED on this host and unimportable — `import KratosMultiphysics`
+        # dies on "libc.so.6: version GLIBC_2.32 not found", which is itself one
+        # of the warnings in this corpus. Requiring a working import hid the
+        # entire Kratos source tree from every audit, and the fallback roots
+        # (scipy, numpy) then made real Kratos variables look invented.
+        #
+        # For grepping a corpus we need the FILES, not a live module, and
+        # find_spec locates them without executing any of the package.
+        "import importlib.util as u;"
+        f"s=u.find_spec({name!r});"
+        "print(next(iter(getattr(s,'submodule_search_locations',[]) or []), '')"
+        " if s else '')",
+    ):
         try:
-            proc = subprocess.run(
-                [sys.executable, "-c",
-                 f"import {name},os;print(os.path.dirname({name}.__file__))"],
-                capture_output=True, text=True, timeout=60,
-                stdin=subprocess.DEVNULL)
-            if proc.returncode == 0 and proc.stdout.strip():
-                p = Path(proc.stdout.strip())
-                if p.is_dir():
-                    paths.append(p)
+            proc = subprocess.run([py, "-c", probe], capture_output=True,
+                                  text=True, timeout=60,
+                                  stdin=subprocess.DEVNULL)
         except (subprocess.TimeoutExpired, OSError):
             continue
-    return paths
+        if proc.returncode == 0 and proc.stdout.strip():
+            p = Path(proc.stdout.strip())
+            if p.is_dir():
+                paths.append(p)
+                return True
+    return False
 
 
 def search_roots(backend: str) -> tuple[list[Path], list[Path], list[str]]:
@@ -435,11 +529,43 @@ def vendored_lib_dirs(package_dirs: list[Path]) -> list[Path]:
     return out
 
 
+def _json_entries(be_dir: Path) -> list[tuple[Path, str]]:
+    """Warnings held in JSON rather than in Python string literals.
+
+    Not every backend keeps its knowledge in code. SPARTA's lives entirely in
+    `sparta_knowledge.json`, so the AST walk below found ZERO entries for it and
+    the audit cheerfully reported "0 keys checked, 0 unresolved" — a clean bill
+    of health for a backend it had not looked at. A gate that reports OK on an
+    empty reading is worse than one that reports UNKNOWN, because nobody
+    investigates a pass.
+    """
+    out: list[tuple[Path, str]] = []
+
+    def walk(node, path: Path) -> None:
+        if isinstance(node, str):
+            if "Signal:" in node:
+                out.append((path, node))
+        elif isinstance(node, dict):
+            for v in node.values():
+                walk(v, path)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v, path)
+
+    for jf in sorted(be_dir.rglob("*.json")):
+        try:
+            walk(json.loads(jf.read_text(errors="ignore")), jf)
+        except (json.JSONDecodeError, OSError):
+            continue
+    return out
+
+
 def collect_entries(backend: str) -> list[tuple[Path, str]]:
     be_dir = REPO / "src" / "backends" / backend
     out = []
     if not be_dir.is_dir():
         return out
+    out.extend(_json_entries(be_dir))
     for py in sorted(be_dir.rglob("*.py")):
         try:
             tree = ast.parse(py.read_text(errors="ignore"))

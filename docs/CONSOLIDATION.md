@@ -1055,3 +1055,127 @@ exists. Two cells have been re-measured on the merged one and neither
 reproduces. The sentence should not be trusted until the sweep is re-run, and
 re-running it is the outstanding work — not editing the sentence to match two
 cells, which would be the same mistake in the other direction.
+
+---
+
+# Defects in the verification machinery itself
+
+Merged from `feature/anti-fabrication`. The sections above record defects in the
+KNOWLEDGE the campaigns produced; the sections below record defects in the TOOLS
+that were judging it. Neither set supersedes the other and both are kept in
+full: a corpus can be wrong while the instrument is right, and the reverse, and
+the two are told apart only by keeping both records.
+
+## Defects found in the verification machinery itself (2026-08-07)
+
+Every entry below is a defect in a tool that was being used as evidence, not in
+the knowledge it was judging. They are collected because they share one shape: a
+check that returns a confident answer while looking at the wrong thing, and
+whose output is indistinguishable from a real result.
+
+**Two matchers that disagreed.** `run_tier2_fixtures` lowercased both sides;
+`build_execution_ledger` compared raw strings. The same fixture with the same
+output got different verdicts depending on which tool ran — a probe printing
+`space_has_Nedelec=False` satisfied one and failed the other. There is now one
+matcher, imported by both.
+
+**That matcher matched prefixes.** `same_name_files=1` stayed green when the
+fixture's own mutation turned the value into `10`. Measured across the merged
+corpus, **5235 of 5951 expectations** were spoofable this way. Fixed in the
+matcher, not in 5235 strings: a needle shaped like `key=value` now requires a
+value boundary after the match. Forbidden strings keep plain substring matching
+on purpose — a tripwire should fire on the widest reading.
+
+**The ledger ran only one of the two kinds of mutation control.** A fixture
+either branches on `T2_MUTATE` in its own source, or declares a `_mutation`
+recipe that `mutate_tier2_fixtures.py` applies in a staged copy. The ledger set
+`T2_MUTATE=1` for both, which does nothing to the second kind. **354 of 395 4C
+fixtures ran byte-identically twice** and were recorded as passing both ways —
+reported as "these prove nothing". They were never vacuous; they were never
+mutated. `MUTATION_STALE` is new and deliberate: a recipe whose `from` text no
+longer appears substitutes nothing, and today that reads exactly like a fixture
+that fails to discriminate.
+
+**A mutated TIMEOUT counted as detection.** `discriminates` was true whenever
+the mutated run was anything other than a pass, so a mutation that merely made
+a fixture slow scored like one the fixture caught. Five rows rested entirely on
+that. Red now means FAIL; TIMEOUT and ERROR are neither evidence nor a defect.
+
+**Invented input keys had no gate at all.** The quoted-diagnostics auditor
+screens error strings; an invented KEY is not a quoted diagnostic and walked
+past it. `SOUNDSPEED` and `SMOOTHING_LENGTH` were served as required 4C SPH
+material parameters, one with the numeric rule "c >= 10 * v_max"; neither
+appears in any file of 4C's source or in any of its 2171 decks. So was `AREA0`,
+in a deck TEMPLATE, while the same generator already carried a warning saying
+4C has no such key. `audit_named_input_keys.py` closes this.
+
+**The key audit read the wrong surface, then the wrong tree, then the wrong
+software.** It scanned only strings containing "Signal:", so deck templates —
+the text actually written into input files — were invisible; `AREA0` was caught
+only because it also appeared in prose. It derived its location from its own
+`__file__`, so it audited whichever checkout it sat in, reporting "SPARTA: 0
+entries" for a project whose SPARTA corpus is 211 pitfalls on another branch.
+And it located backends by IMPORTING them, so Kratos — installed here but
+unimportable (GLIBC) — fell back to scipy and numpy, against which 121 of 139
+real Kratos keys looked invented.
+
+**A corpus that answers "no" to everything is a broken instrument.** FEBio was
+pointed at a directory holding one symlink into the real source tree, and
+`grep -r` does not follow symlinks. A positive control for the literal string
+"febio" returned zero files, and 23 of 23 keys were reported unresolved. Against
+the real tree 13 of those 23 resolve. **Run a positive control before quoting
+any absence.**
+
+**An empty reading reported as a pass.** SPARTA's knowledge lives in JSON, not
+Python string literals, so the collector found nothing and the audit said
+"OK — 0 keys checked, 0 unresolved": a clean bill of health for a backend it had
+not read. Empty readings now return NO_ENTRIES, because a pass ends an
+investigation and an unknown does not.
+
+**A gate whose green covered the half that cannot fail.**
+`catalog_template_executes` records `kratos::dem::2d_rc=0`. The DEM template is
+a file writer: running it emits `input.py` and exits 0, and `input.py` is what
+calls Kratos. Run it and it dies at `entry string : strategy`. The DEM generator
+has never produced a working deck. Screened statically across **255 templates in
+all nine backends, exactly one** is two-stage, so this is one broken generator
+rather than a rot through the catalog — worth measuring, because those two
+findings call for very different responses.
+
+**Two fixtures that passed for reasons unrelated to their claims.**
+`sparta/generators_execute_on_installed_build` was green with no SPARTA binary
+present: its expectations covered only the payload-hygiene half, and the
+no-binary path prints `SKIP:` and exits 0 while `SKIP:` was not forbidden. A
+fixture whose NAME is the claim certified that nothing executed.
+`sparta/per_cell_diagnostics_sentinel_and_resolution` asserted a spread under
+0.2 computed from a SINGLE timestep of a Monte-Carlo run; seed 99991 gives
+0.232. It passed because 12345 was lucky. Fixed by averaging over the run —
+re-pinning a luckier seed would have restored the tick and kept the defect.
+
+## Environment facts that silently corrupt measurements
+
+- **`/media/alexander/PortableSSD` is exFAT.** No symlinks, no permission bits.
+  27 of the 4C `cmd.sh` fixtures call `ln -s` inside `mktemp -d`, so with
+  `TMPDIR` there they abort with rc 134 — a sweep recorded **9 false FAILs**
+  this way. Git worktrees also refuse to merge there. Bulk output belongs on
+  that volume; `TMPDIR` never does.
+- **`stdbuf -oL` is mandatory when capturing a 4C diagnostic.** Without it
+  `MPI_Abort` kills the process before stdout flushes and only the MPI banner
+  survives. An audit run without it is reading silence.
+- **`4C -p` dumps the complete input grammar** — 478 sections, 7383 paths, 2728
+  keys — from the exact binary. Validate it against the upstream decks first
+  (the only gaps are `FUNCT<n>`, `TITLE` and user-chosen function symbols), then
+  it is far better ground truth than grep. Note that a case slip and an outright
+  fabrication produce the SAME 4C message, `Failed to match specification in
+  section 'MATERIALS'`, so the message alone cannot tell them apart.
+- **Kratos needs the 28-application build** at `/mnt/kratos-tier2/kv`. The repo
+  venv's wheel has 3 of ~40 applications and does not import at all;
+  `/usr/bin/python3` can load Kratos but cannot import this repo. Only that
+  build satisfies both.
+- **Load matters.** A campaign run at load 100-156 on 32 cores produced
+  wall-clock false failures in BOTH directions. Measure sequentially.
+
+## The rule these all point at
+
+Before quoting a number, ask what the instrument would report if it were broken.
+Where that answer is the same as the finding — 23 of 23 unresolved, 0 entries
+checked, every claim absent — the finding is not yet evidence. Run the control.

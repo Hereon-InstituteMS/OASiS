@@ -1,0 +1,99 @@
+{
+  "_what": "Keys OASiS names that do not resolve in the backend's own corpus.",
+  "_why": "A baseline, not an allowlist. Every entry is a CANDIDATE awaiting triage, and each is either a real fabrication to fix or a correct negative the absence-cue matcher failed to recognise. The gate fails on anything NOT listed here, so a newly invented key is caught the moment it is written. Entries are removed as they are resolved; the list is meant to shrink to nothing.",
+  "_known_real_fabrications": [
+    "fourc AREA0 - 4C has no such key; the reference geometry is DIAM (30 decks)",
+    "fourc FLUID_DYNAMIC / TURBULENCE_MODEL - 4C sections use SPACES: 'FLUID DYNAMIC' (561 decks), 'TURBULENCE MODEL' (57 decks)"
+  ],
+  "_known_correct_negatives": [
+    "fourc INTPOINTS_MORTAR - documented as NOT existing; 4C's key is NUMGP_PER_DIM"
+  ],
+  "baseline": {
+    "fourc": [
+      "ACCURACY",
+      "ADVECTION",
+      "AREA0",
+      "COMPATIBLE",
+      "CONDITIONING",
+      "DOMINATED",
+      "ELASTANCE_FUNCTION",
+      "ENTIRE",
+      "ESSENTIAL",
+      "FIVE",
+      "FLUCTUATION",
+      "FLUID_DYNAMIC",
+      "HOMOGENISED",
+      "INCOMPATIBLE",
+      "INTPOINTS_MORTAR",
+      "LOWERCASE",
+      "MAGNITUDE",
+      "MANDATORY",
+      "MAT_NEGATIVE",
+      "MAT_POSITIVE",
+      "MICRO_SOLVER_ID",
+      "MICRO_TANGENT",
+      "MUTUALLY",
+      "NITSCHE_PENALTY_PARAMETER",
+      "OUTPUT_SCATRA",
+      "PLANE_ASSUMPTION",
+      "REFLECTED",
+      "RHO_GROWTH",
+      "SLIP_COEFF",
+      "SMALL",
+      "STANDALONE",
+      "STAYS",
+      "TURBULENCE_MODEL",
+      "UNDERLYING"
+    ],
+    "fenics": [
+      "CANNOT",
+      "COLLAPSED",
+      "DIVERGED_BREAKDOWN",
+      "DIVERGED_FNORM_NAN",
+      "DIVERGED_INDEFINITE_PC",
+      "DIVERGED_INF",
+      "DIVERGED_LINE_SEARCH",
+      "ENTIRE",
+      "KSP_DIVERGED_BREAKDOWN",
+      "REMOVED",
+      "SUPG",
+      "V_DG0"
+    ],
+    "dealii": [
+      "EPS_TARGET_REAL"
+    ],
+    "ngsolve": [
+      "ALSO",
+      "DIVERGED_BREAKDOWN",
+      "DIVERGED_INDEFINITE_PC"
+    ],
+    "skfem": [
+      "BDF2"
+    ],
+    "dune": [
+      "COUPLED",
+      "DEFLATION",
+      "DIRK22",
+      "SDIRK22",
+      "SSPRK3",
+      "SSPRK4",
+      "SUPG"
+    ],
+    "febio": [
+      "DCMAKE_EXE_LINKER_FLAGS",
+      "DCMAKE_SHARED_LINKER_FLAGS",
+      "DIVERGED_FNORM_NAN",
+      "DIVERGED_LINE_SEARCH",
+      "FEBIO_BINARY",
+      "ISOTROPIC",
+      "MANDATORY",
+      "NEGATIVELY",
+      "UPPERCASE",
+      "VERIFIED"
+    ],
+    "sparta": []
+  },
+  "_no_verdict": {
+    "kratos": "PARTIAL_CORPUS"
+  }
+}
