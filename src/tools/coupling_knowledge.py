@@ -1186,6 +1186,12 @@ marked block, run it once by hand, then call `couple`.
 
 {rows}
 
+FLUID-STRUCTURE INTERACTION is its own pattern rather than a backend — a
+vector traction one way, a displacement the other, and the fluid consuming it
+by moving its mesh:
+
+  knowledge(topic='coupling', solver='fsi')
+
 preCICE instead of this driver:  knowledge(topic='precice', solver='<name>')
 4C-native thermo-structural:     knowledge(topic='tsi')
 '''
