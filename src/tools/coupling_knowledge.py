@@ -72,10 +72,13 @@ REQUIRED of every participant script:
     and keep `normal_fluxes` consistently present or consistently absent. The
     driver relaxes export vectors element by element; a changed length is
     caught and reported, but it ends the run;
-  * write `exports.json` LAST, only after the solve succeeded. The driver
-    checks that the file EXISTS; it does NOT check your exit code. A complete
-    file written before a later crash is accepted as a result (a TRUNCATED one
-    is caught, as bad JSON).
+  * write `exports.json` LAST, only after the solve succeeded, AND EXIT 0. The
+    driver requires both: a missing file ends the run, and so does a non-zero
+    exit code even when a complete `exports.json` is sitting there — a solver
+    that diverges commonly writes its last iterate and then aborts, and
+    coupling on that output produced a converged-looking result built on a
+    crashed participant. A TRUNCATED file is caught separately, as bad JSON.
+    So do not use a non-zero exit to signal anything but failure.
 
 NOT done for you (these are the four things agents get wrong):
   * the driver does NOT copy your script into `work_dir` — write the script
@@ -225,10 +228,16 @@ mechanism is there.)
 
 `accelerator`: **the default, "aitken", is also the safer one — reach for
 "constant" to DIAGNOSE, not as your first choice.**
-  * "aitken" — theta adapts per participant, starting from the theta you pass,
-    clamped into [0.05, 1.0]. (Two fallback paths inside the update — the first
-    iteration, where there is no previous residual, and a degenerate denominator
-    — floor it at 0.1 instead. It matters only if you are reading the numbers.)
+  * "aitken" — ONE theta for the whole interface state, recomputed every
+    iteration, starting from the theta you pass and clamped into [0.05, 1.0].
+    There is no per-participant and no per-field theta: Aitken's derivation is
+    for a single sequence extrapolated from the composite fixed-point map, and
+    giving each participant its own theta relaxes the two halves of one coupled
+    system by different amounts — on a Dirichlet-Neumann split that drove the
+    two thetas apart to opposite clamps and made the iteration diverge where a
+    constant theta converged. The two fallback paths inside the update — the
+    first iteration, where there is no previous residual, and a degenerate
+    denominator — hold the previous theta, clamped into the same [0.05, 1.0].
     THIS IS THE DEFAULT AND YOU SHOULD NORMALLY KEEP IT. Measured across conductance ratios rho from 1/4 to 9 and theta from 0.1
     to 1.0 on this driver, Aitken matched or beat a constant theta almost
     everywhere, and in a quarter of those settings it converged to the right
@@ -246,16 +255,21 @@ mechanism is there.)
     exception, not the rule; if "aitken" stalls, raise max_iter first, then try
     the same theta constant, and only then touch the physics.
 
-WHAT "AITKEN" MEANS HERE, so you do not port a textbook formula's expectations
-onto it. The update is dynamic relaxation in the Aitken family — theta is
-recomputed each iteration from the change in the interface residual — but it is
-not the textbook recurrence: the driver feeds the previous RAW EXPORT into the
-slot the classical formula fills with the previous RESIDUAL. Everything stated
-about it above is what this implementation was measured to do, and it does hold;
-what does not follow is any property you might expect from the classical
-derivation, including its convergence rate. Do not tune against a textbook
-formula, and if you need a specific acceleration scheme, drive the coupling with
-`couple_precice` and a `serial-implicit` scheme instead.
+WHAT "AITKEN" MEANS HERE. The update is the classical Aitken dynamic-relaxation
+recurrence on the global interface residual r_k = G(x_k) - x_k:
+
+    theta_k = -theta_{k-1} * (r_{k-1} . (r_k - r_{k-1})) / ||r_k - r_{k-1}||^2
+
+with the result clamped into [0.05, 1.0]. It IS given the previous RESIDUAL,
+which is the operand the derivation calls for — an earlier version of this
+driver handed it the previous RAW EXPORT instead, which makes theta an
+arbitrary number inside the clamp with no relation to the iteration, and the
+only symptom was slower convergence on correct setups. Two things still do not
+follow from the textbook derivation: the clamp is not part of it, and the
+convergence RATE is not guaranteed, because this is a vector fixed point
+extrapolated by one scalar. Everything stated above is what this implementation
+was measured to do. If you need a specific acceleration scheme rather than this
+one, drive the coupling with `couple_precice` and a `serial-implicit` scheme.
 
 ### Choosing theta — this maps to the real `theta` parameter
 
@@ -1167,10 +1181,11 @@ Your script runs in `work_dir` with no arguments. It reads `imports.json`
 (`{partner_name: InterfaceData}` — ABSENT or empty on iteration 1, so it must
 have a fallback) and writes `exports.json` (ONE InterfaceData:
 `{"field_name","n_points","coordinates","values","normal_fluxes"}`). Export the
-same number of points in the same order every iteration, and write
-`exports.json` last — the driver takes its existence as proof of success and
-never looks at your exit code. The driver does NOT copy your script into
-`work_dir` and does NOT interpolate between the two meshes.
+same number of points in the same order every iteration, write `exports.json`
+last, and EXIT 0 — the driver requires the file AND a zero exit code, so a
+solver that writes its last iterate and then aborts ends the run instead of
+being coupled on. The driver does NOT copy your script into `work_dir` and does
+NOT interpolate between the two meshes.
 
 Dirichlet side = imports a VALUE, exports the resulting FLUX.
 Neumann side  = imports a FLUX, exports the resulting VALUE.
