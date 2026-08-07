@@ -98,6 +98,22 @@ CANONICAL_CATEGORIES = {
     # give a confidently wrong answer, so they deserve their own filters.
     "units": "Units",
     "bc": "BC",
+    # Sub-kinds that arrived with `_setup.py`, which uses the same compound
+    # convention as `_cross.py`: [Integration][Install], [Integration][Discovery],
+    # [Integration][FirstRun], [Integration][BuildConfig],
+    # [Integration][Portability]. The axis is read from the LAST tag, so without
+    # these keys the five sub-kinds fell outside the vocabulary and category
+    # filtering skipped every install and build-configuration entry.
+    #
+    # They all fold onto Integration rather than earning separate axes: each is
+    # a way the ENVIRONMENT rather than the model is wrong — the same axis
+    # "environment" already maps to. Keeping them distinct in the tag preserves
+    # the sub-kind for a reader while keeping the filter complete.
+    "install": "Integration",
+    "discovery": "Integration",
+    "firstrun": "Integration",
+    "buildconfig": "Integration",
+    "portability": "Integration",
 }
 
 # `_cross.py` carries the cross-backend collation pitfalls — the ones that only

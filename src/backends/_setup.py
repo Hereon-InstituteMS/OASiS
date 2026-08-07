@@ -30,7 +30,7 @@ HOW ENTRIES ARE WRITTEN
         [Integration][BuildConfig]  claims conditional on build options
         [Integration][Portability]  version ranges; clean-environment evidence
 
-    A `Signal:` clause must quote a string the software actually emits. Where a
+    A `Signal` clause must quote a string the software actually emits. Where a
     signal was produced by deliberately breaking something, the entry says how
     it was broken so a reader can reproduce it.
 
