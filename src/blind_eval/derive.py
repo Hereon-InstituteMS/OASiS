@@ -254,7 +254,7 @@ def design_checks(u_exact, source: dict, dim: int, family: str) -> dict:
     else:
         comps = {"f": u_exact}
 
-    failures, warnings = [], []
+    failures, warnings, notes = [], [], []
     for key, u_comp in comps.items():
         f = source[key]
         prop, c = is_proportional(f, u_comp)
@@ -273,11 +273,16 @@ def design_checks(u_exact, source: dict, dim: int, family: str) -> dict:
                 f"source term, so subtracting the remainder recovers it. Choose "
                 f"a manufactured field whose terms do not survive into the source.")
         elif coeff is not None and frac > 0:
-            warnings.append(
-                f"EMBEDDED_PARTIAL: {frac:.0%} of u_exact's terms appear in {key} "
-                f"scaled by ({coeff}). Recovery is not mechanical but the source "
-                f"term carries a visible fingerprint of the solution.")
-    return {"failures": failures, "warnings": warnings}
+            # Partial cancellation is NOT evidence of disclosure. A source term
+            # built from u shares monomials with u, so a couple of them cancel
+            # for an uninteresting reason. Only a *complete* surviving copy lets
+            # anything be recovered. Reported as a statistic, never as a verdict:
+            # treating it as one would fail clean problems and train the operator
+            # to wave the gate through.
+            notes.append(
+                f"{frac:.0%} of u_exact's monomials coincide with terms of {key} "
+                f"scaled by ({coeff}) — shared-monomial artefact, not a leak.")
+    return {"failures": failures, "warnings": warnings, "notes": notes}
 
 
 def boundary_trace_is_zero(u_exact, dim: int, box: tuple) -> bool:

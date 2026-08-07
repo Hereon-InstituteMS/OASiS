@@ -112,10 +112,25 @@ def seal(keys_dir: Path) -> str:
 
 
 def unseal(keys_dir: Path, mode: int = 0o700) -> str:
+    """Restore access, top-down.
+
+    A sealed directory cannot be descended into, so anything that globs first
+    and chmods second (``rglob``, ``os.walk`` over a 000 tree) silently restores
+    nothing below the top level and leaves the keys unreadable to the grader.
+    Each directory must be opened up *before* its children are visited.
+    """
     keys_dir = Path(keys_dir)
     os.chmod(keys_dir, mode)
-    for p in sorted(keys_dir.rglob("*")):
-        os.chmod(p, 0o700 if p.is_dir() else 0o600)
+    stack = [keys_dir]
+    while stack:
+        d = stack.pop()
+        for entry in os.scandir(d):
+            p = Path(entry.path)
+            if entry.is_dir(follow_symlinks=False):
+                os.chmod(p, 0o700)
+                stack.append(p)
+            else:
+                os.chmod(p, 0o600)
     return stat.filemode(keys_dir.stat().st_mode)
 
 
