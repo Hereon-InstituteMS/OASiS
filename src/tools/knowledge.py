@@ -511,6 +511,25 @@ sqrt((1-theta)^2 + delta*theta^2), minimised at `theta = 1/(1+delta)`. At
 delta > 1 the UN-RELAXED iteration diverges (amplification sqrt(delta) > 1), so
 relaxation is not optional there.
 
+USE `accelerator="constant"` FOR A STRONGLY COUPLED TSI. This contradicts the
+default and the measurement is the reason. On the same pair at delta ~ 1.25:
+
+    theta=1.0 (un-relaxed)   did NOT converge in 300 iterations; the residual
+                             oscillates rather than falling, which is what the
+                             amplification formula predicts at 1.117
+    theta=0.5                converged,  60 iterations
+    theta=1/(1+delta)        converged,  70 iterations
+    accelerator="aitken"     did NOT converge in 300 iterations, from either
+                             starting theta
+
+At delta ~ 0.012 Aitken converges in 14-15 iterations, so this is not a claim
+that Aitken is broken — it is that a two-way TSI's composite map has eigenvalues
++-i*sqrt(delta), PURELY IMAGINARY, so the residual turns by about a right angle
+each iteration instead of shrinking along a fixed direction. Aitken extrapolates
+along that direction and there is not one. When delta is small the iteration
+converges anyway because every admissible theta does; when delta exceeds one it
+does not, and the constant relaxation the theta rule gives is what works.
+
 ### Convergence tolerance: watch the per-block check
 
 `couple` checks each exchanged block separately against tol*10, because a
