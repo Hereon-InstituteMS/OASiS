@@ -83,6 +83,24 @@ def _needle_present(needle: str, low_out: str) -> bool:
         if i == -1:
             return False
         j = i + len(low)
+        # The KEY must start where the needle starts. Guarding only the right
+        # edge left the mirror-image hole open: a needle that is a SUFFIX of a
+        # longer key matched that longer key's line, so an expectation could be
+        # satisfied by a sibling expectation it never mentions.
+        #
+        #     masked_max=1.000000            matched  unmasked_max=1.000000
+        #     displacement_criterion_satisfied=true   matched
+        #         tight_gamma_displacement_criterion_satisfied=true
+        #
+        # 11 expectations in the corpus were guaranteed true this way, including
+        # both control expectations of dune/unmasked_ds_flux_covers_whole_boundary
+        # — whose own docstring says the mutation drives unmasked_max to
+        # 1.000000, which then satisfies the masked_max control. Same defect as
+        # the value-prefix one this function was written to fix, one character to
+        # the left.
+        if i > 0 and (low_out[i - 1].isalnum() or low_out[i - 1] == "_"):
+            start = i + 1
+            continue
         # A value continues only through word characters, a dot, or a sign;
         # anything else (newline, space, comma, quote, EOF) ends it.
         if j >= len(low_out) or not (low_out[j].isalnum()
