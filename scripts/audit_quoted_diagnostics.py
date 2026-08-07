@@ -133,7 +133,10 @@ SOURCE_HINTS: dict[str, list[str]] = {
 # reported absent — having been searched for in ufl. The primary module is the
 # one that emits the messages; without it there is nothing to check against.
 PY_MODULES: dict[str, list[str]] = {
-    "fenics": ["dolfinx", "ufl", "basix", "petsc4py"],
+    # slepc4py and ffcx are listed because FEniCSx entries quote their text:
+    # the eigenvalue pitfalls quote SLEPc's EPS behaviour, and the form
+    # compiler is where several "this form cannot be compiled" messages live.
+    "fenics": ["dolfinx", "ufl", "basix", "petsc4py", "slepc4py", "ffcx"],
     "ngsolve": ["ngsolve", "netgen"],
     "skfem": ["skfem"],
     "kratos": ["KratosMultiphysics"],
@@ -342,15 +345,39 @@ _CANDIDATE_PYTHONS = [
 ]
 
 
-def _py_package_paths(module_names: list[str]) -> list[Path]:
-    paths = []
+def _py_package_paths(module_names: list[str],
+                      prefer: str | None = None) -> list[Path]:
+    """Locate each module, trying `prefer` first if one is given.
+
+    `prefer` exists because a backend's corpus must be ONE installation.
+    Without it the search order is global, so `sys.executable` — the repo venv
+    — answers for every module it happens to contain, and the audit reads a
+    different release of the library from the one the backend runs against.
+    Measured, not hypothetical: dolfinx 0.10 resolved in the conda env while
+    `ufl` resolved in the venv, which holds UFL 2024.2.0 against the 2025.2.1
+    that dolfinx actually imports. A message reworded between those two
+    releases would be reported ABSENT while the running software prints it.
+    """
+    paths: list[Path] = []
+    order = ([prefer] if prefer else []) + [
+        p for p in _CANDIDATE_PYTHONS if p != prefer]
     for name in module_names:
-        for _py in _CANDIDATE_PYTHONS:
+        for _py in order:
             if _py != sys.executable and not Path(_py).is_file():
                 continue
             if _locate_with(_py, name, paths):
                 break
     return paths
+
+
+def _interpreter_for(module: str) -> str | None:
+    """The first candidate interpreter that can locate this module."""
+    for py in _CANDIDATE_PYTHONS:
+        if py != sys.executable and not Path(py).is_file():
+            continue
+        if _locate_with(py, module, []):
+            return py
+    return None
 
 
 def _locate_with(py: str, name: str, paths: list[Path]) -> bool:
@@ -416,7 +443,8 @@ def search_roots(backend: str) -> tuple[list[Path], list[Path], list[str]]:
     shared: list[Path] = []
     if mods:
         primary = mods[0]
-        found_primary = _py_package_paths([primary])
+        home = _interpreter_for(primary)
+        found_primary = _py_package_paths([primary], prefer=home)
         if not found_primary:
             # Secondary modules cannot stand in for the one that emits the
             # messages. Report nothing rather than search the wrong package.
@@ -424,12 +452,17 @@ def search_roots(backend: str) -> tuple[list[Path], list[Path], list[str]]:
             shared = _py_package_paths(SHARED_DEPS)
             return own, shared, missing
         own.extend(found_primary)
-        own.extend(_py_package_paths(mods[1:]))
+        # Secondaries come from the SAME installation as the primary.
+        own.extend(_py_package_paths(mods[1:], prefer=home))
         # The vendored *.libs siblings hold the actual compiled library; the
         # package directory holds only a wrapper.
         own.extend(vendored_lib_dirs(own))
+        # A conda package does NOT vendor: its library sits in the env's
+        # lib/ directory, which is nobody's sibling. See linked_libraries().
+        own.extend(linked_libraries(own))
         shared = _py_package_paths(SHARED_DEPS)
         shared.extend(vendored_lib_dirs(shared))
+        shared.extend(linked_libraries(shared))
     return own, shared, missing
 
 
@@ -527,6 +560,102 @@ def vendored_lib_dirs(package_dirs: list[Path]) -> list[Path]:
         except PermissionError:
             continue
     return out
+
+
+def linked_libraries(package_dirs: list[Path]) -> list[Path]:
+    """The compiled libraries a package LINKS AGAINST, wherever they live.
+
+    THE CONDA-SHAPED HALF OF THE `vendored_lib_dirs` BUG, and it invalidated
+    the entire first FEniCSx verdict. `vendored_lib_dirs` handles the wheel
+    layout, where the real library sits in a `*.libs` SIBLING of the package
+    directory. Conda does not vendor at all: the package directory holds only
+    the pybind11/nanobind wrapper
+
+        envs/fenics/lib/python3.12/site-packages/dolfinx/cpp.abi3.so
+
+    while the code that emits the messages is two levels up and off to the
+    side, in the ENVIRONMENT's library directory:
+
+        envs/fenics/lib/libdolfinx.so.0.10.0     2.2 MB
+        envs/fenics/lib/libpetsc.so.3.24.5        29 MB
+
+    Neither is a sibling of anything the old search could reach, so the audit
+    searched the wrapper and answered for the library. The positive control is
+    unambiguous — "Newton solver did not converge" is a stock dolfinx message:
+
+        package dir      miss
+        libdolfinx.so    HIT
+
+    That single gap produced 10 false accusations in one FEniCSx run. All ten
+    are stock PETSc or dolfinx text: `Zero pivot in LU factorization`,
+    `SNES Function norm`, `MUMPS error in numerical factorization: INFOG(`,
+    `SNESSolve has not converged`, `Degree of output Function must be same as
+    mesh degree`. Every one of them was in the software the whole time, in a
+    file the audit could not see. This is the FEBio symlink lesson in a
+    different costume, and it is why a positive control has to run before any
+    absence is quoted.
+
+    Resolution is by DT_NEEDED rather than by globbing the env's lib/, which
+    is 3.6 GB and 2557 shared objects here — grepping that per fragment is not
+    a search, it is a stall. The needed-list is what the backend is actually
+    built on, so the corpus stays both correct and small (~80 MB for FEniCSx),
+    and the transitive closure picks up the second rank — MUMPS reached
+    through PETSc — which is where several genuine messages live.
+
+    Reads ELF headers with `readelf -d`; nothing here is loaded or executed.
+    """
+    prefixes: list[Path] = []
+    queue: list[Path] = []
+    for d in package_dirs:
+        # .../<prefix>/lib/pythonX.Y/site-packages/<pkg> -> <prefix>/lib
+        for parent in d.parents:
+            if parent.name == "site-packages" and parent.parent.parent.is_dir():
+                libdir = parent.parent.parent
+                if libdir.name == "lib" and libdir not in prefixes:
+                    prefixes.append(libdir)
+                break
+        if d.is_dir():
+            queue.extend(sorted(d.rglob("*.so*"))[:40])
+        elif d.is_file():
+            queue.append(d)
+    if not prefixes:
+        return []
+
+    out: list[Path] = []
+    seen: set[str] = set()
+    scanned: set[Path] = set()
+    while queue:
+        obj = queue.pop()
+        if obj in scanned or not obj.is_file():
+            continue
+        scanned.add(obj)
+        for name in _dt_needed(obj):
+            if name in seen:
+                continue
+            seen.add(name)
+            for libdir in prefixes:
+                cand = libdir / name
+                if cand.is_file():
+                    real = cand.resolve()
+                    if real not in out:
+                        out.append(real)
+                        queue.append(real)
+                    break
+    return out
+
+
+def _dt_needed(obj: Path) -> list[str]:
+    """DT_NEEDED entries of an ELF object, or [] if it is not one."""
+    try:
+        proc = subprocess.run(["readelf", "-d", str(obj)],
+                              capture_output=True, text=True, timeout=60,
+                              stdin=subprocess.DEVNULL,
+                              env={"LC_ALL": "C", "PATH": "/usr/bin:/bin"})
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+    if proc.returncode != 0:
+        return []
+    return re.findall(r"\(NEEDED\)[^\[]*\[([^\]]+)\]", proc.stdout)
 
 
 def _json_entries(be_dir: Path) -> list[tuple[Path, str]]:
