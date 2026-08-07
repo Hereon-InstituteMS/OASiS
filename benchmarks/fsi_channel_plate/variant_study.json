@@ -1,0 +1,34 @@
+[
+ {
+  "case": "fsi_channel_plate",
+  "mesh_fluid_structure": "48x10 / 48x4",
+  "EAS": "none",
+  "KINEM": "nonlinear",
+  "split": "fluidsplit",
+  "dt": 0.005,
+  "steps": 400,
+  "max_abs_dy": 0.009624896782003562,
+  "x_at_max_abs_dy": 0.4791666666666667,
+  "dp_inlet_minus_outlet": 268.6226657473484,
+  "p_inflow_mean": 272.513471696959,
+  "fsi_interface_net_Fy": 137.1942969497456,
+  "last_step_rel_change": 1.2042472608389438e-07,
+  "json": "/tmp/claude-1001/-home-alexander-4C/b1c8e459-ec06-467a-bad7-474c74f9d0f3/scratchpad/fourc_fsi/fourc_reference.json"
+ },
+ {
+  "case": "v_dtchk",
+  "mesh_fluid_structure": "48x10 / 48x4",
+  "EAS": "none",
+  "KINEM": "nonlinear",
+  "split": "fluidsplit",
+  "dt": 0.01,
+  "steps": 200,
+  "max_abs_dy": 0.009624900303213033,
+  "x_at_max_abs_dy": 0.4791666666666667,
+  "dp_inlet_minus_outlet": 268.6162436500604,
+  "p_inflow_mean": 272.50696938807505,
+  "fsi_interface_net_Fy": 137.19008055904445,
+  "last_step_rel_change": 8.919697129148776e-07,
+  "json": "/tmp/claude-1001/-home-alexander-4C/b1c8e459-ec06-467a-bad7-474c74f9d0f3/scratchpad/fourc_fsi/ref_v_dtchk.json"
+ }
+]
