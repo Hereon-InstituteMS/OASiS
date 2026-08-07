@@ -1,217 +1,371 @@
 """Kratos DEM (Discrete Element Method) generators and knowledge.
 
 Uses the REAL Kratos DEMApplication — NOT standalone numpy/scipy.
-Generates ProjectParametersDEM.json + .mdpa + MaterialsDEM.json + input.py.
+The generator is a FILE WRITER: it emits the four files DEMApplication reads
+(<problem_name>DEM.mdpa, <problem_name>DEM_FEM_boundary.mdpa, MaterialsDEM.json,
+ProjectParametersDEM.json) plus input.py, the entry point that calls
+DEMAnalysisStage. Both halves are executed by
+scripts/audit_two_stage_templates.py; the generator exiting 0 is NOT evidence
+that the deck it wrote runs, and for a long time it did not.
 """
-
-import json
 
 
 def _dem_2d_kratos(params: dict) -> str:
-    """Generator that produces real Kratos DEM input files.
+    n_particles = int(params.get("n_particles", 64))
+    radius = float(params.get("radius", 0.01))
+    density = float(params.get("density", 2650.0))
+    young_modulus = float(params.get("E", 1.0e7))
+    poisson = float(params.get("nu", 0.25))
+    restitution = float(params.get("restitution", 0.5))
+    friction = float(params.get("friction", 0.4))
+    gravity_y = float(params.get("gravity", -9.81))
+    domain_x = float(params.get("domain_x", 0.30))
+    domain_y = float(params.get("domain_y", 0.40))
+    drop_height = float(params.get("drop_height", 0.05))
+    T_end = float(params.get("T_end", 0.25))
+    dt = params.get("dt", None)
+    dt_safety = float(params.get("dt_safety_factor", 0.02))
+    problem_name = str(params.get("problem_name", "granular"))
+    threads = int(params.get("omp_threads", 2))
 
-    Creates: ProjectParametersDEM.json, particles.mdpa, MaterialsDEM.json, input.py
-    The run_with_generator pipeline will find input.py and execute it via Kratos.
-    """
-    n_particles = params.get("n_particles", 200)
-    radius = params.get("radius", 0.01)
-    density = params.get("density", 2650.0)
-    gravity_y = params.get("gravity", -9.81)
-    dt = params.get("dt", 1e-5)
-    T_end = params.get("T_end", 0.5)
-    young_modulus = params.get("E", 1e7)
-    restitution = params.get("restitution", 0.5)
-    friction = params.get("friction", 0.4)
-    domain_x = params.get("domain_x", 0.5)
-    domain_y = params.get("domain_y", 1.0)
+    header = f'''\
+"""Kratos DEM — 2D granular settling — writes a complete DEMApplication deck.
 
-    return f'''\
-"""Generator: creates real Kratos DEM input files and runs the analysis."""
-import os
+This script is a FILE WRITER. It emits
+
+    {problem_name}DEM.mdpa               spheres (CylinderParticle2D)
+    {problem_name}DEM_FEM_boundary.mdpa  rigid walls (RigidFace3D3N)
+    MaterialsDEM.json                    materials + material_relations + table
+    ProjectParametersDEM.json            FLAT DEM schema
+    input.py                             the entry point that calls Kratos
+
+and then exits. Run `python input.py` to perform the analysis.
+
+Schema notes (each verified by execution against DEMApplication 10.4.3):
+  * ProjectParametersDEM.json is FLAT. There is no "problem_data" block and no
+    "solver_settings.solver_type"/"time_stepping". DEM reads
+    solver_settings.strategy, a python module name inside DEMApplication.
+  * The mdpa filenames are problem_name + a FIXED tag ("DEM",
+    "DEM_FEM_boundary", ...) with no separator. A missing file is not an
+    error -- the run completes on an empty model -- so the names must be right.
+  * MaterialsDEM.json needs materials / material_relations /
+    material_assignation_table. Friction is STATIC_FRICTION + DYNAMIC_FRICTION
+    per contact PAIR in material_relations; PARTICLE_FRICTION does not exist.
+  * MaxTimeStep is the only key that sets dt and it is used verbatim. There is
+    no stability check, so dt is sized here from the Rayleigh estimate.
+"""
 import json
 import math
-import numpy as np
 
-# === Parameters ===
-n_particles = {n_particles}
-radius = {radius}
-density = {density}
-gravity_y = {gravity_y}
-dt = {dt}
-T_end = {T_end}
-E_contact = {young_modulus}
-restitution = {restitution}
-friction = {friction}
-domain_x = {domain_x}
-domain_y = {domain_y}
+# ---- problem definition -------------------------------------------------
+problem_name = "{problem_name}"
+n_particles  = {n_particles}
+radius       = {radius}
+density      = {density}          # kg/m^3  -> PARTICLE_DENSITY
+young_modulus = {young_modulus}   # Pa      -> YOUNG_MODULUS
+poisson      = {poisson}
+restitution  = {restitution}      # -> COEFFICIENT_OF_RESTITUTION (contact pair)
+friction     = {friction}         # -> STATIC_FRICTION / DYNAMIC_FRICTION (pair)
+gravity_y    = {gravity_y}
+domain_x     = {domain_x}
+domain_y     = {domain_y}
+drop_height  = {drop_height}
+T_end        = {T_end}
+dt_override  = {dt!r}
+dt_safety    = {dt_safety}
+omp_threads  = {threads}
+'''
 
-np.random.seed(42)
+    body = r'''
+# ---- time step ----------------------------------------------------------
+# Kratos DEM never checks stability: MaxTimeStep is used verbatim, and a step
+# above the limit blows the contacts up silently (particles leave the bounding
+# box and are deleted without a message). Size it from the Rayleigh surface-wave
+# criterion, which is the standard DEM estimate:
+#
+#     dt_R = pi * R * sqrt(rho / G) / (0.1631 * nu + 0.8766),   G = E / (2(1+nu))
+#
+# and take a small fraction of it. Measured for the default parameters below:
+# dt_R = 8.8e-4 s, while the deck is already unstable at 1e-4 (12 of 16
+# particles lost) and stable at 5e-5 -- i.e. the true limit is near 0.07*dt_R,
+# so the Rayleigh value is optimistic by more than an order of magnitude for the
+# viscous-Hertz law. dt_safety = 0.02 sits a factor ~3 below the measured limit.
+shear_modulus = young_modulus / (2.0 * (1.0 + poisson))
+dt_rayleigh = (math.pi * radius * math.sqrt(density / shear_modulus)
+               / (0.1631 * poisson + 0.8766))
+dt = float(dt_override) if dt_override is not None else dt_safety * dt_rayleigh
+n_steps = max(1, int(round(T_end / dt)))
 
-# === Generate particle positions ===
-cols = int(np.ceil(np.sqrt(n_particles)))
-spacing = 2.5 * radius
+# ---- particle layout: a block dropped onto the floor --------------------
+spacing = 2.2 * radius
+cols = max(1, int(math.floor((domain_x - 2.0 * spacing) / spacing)))
+cols = min(cols, max(1, int(math.ceil(math.sqrt(n_particles)))))
+rows = int(math.ceil(n_particles / cols))
+block_w = (cols - 1) * spacing
+x0 = 0.5 * (domain_x - block_w)
+
 positions = []
 for i in range(n_particles):
-    row, col = divmod(i, cols)
-    x = (col + 1) * spacing + np.random.uniform(-radius*0.1, radius*0.1)
-    y = domain_y * 0.5 + (row + 1) * spacing
-    x = min(max(x, radius), domain_x - radius)
-    positions.append((x, y, 0.0))
+    r, c = divmod(i, cols)
+    positions.append((x0 + c * spacing,
+                      drop_height + radius + r * spacing,
+                      0.0))
 
-# === Write MDPA ===
-mdpa = "Begin ModelPartData\\nEnd ModelPartData\\n\\n"
-mdpa += "Begin Properties 1\\n"
-mdpa += f"  PARTICLE_DENSITY {{density}}\\n"
-mdpa += f"  YOUNG_MODULUS {{E_contact}}\\n"
-mdpa += f"  POISSON_RATIO 0.25\\n"
-mdpa += f"  PARTICLE_FRICTION {{friction}}\\n"
-mdpa += f"  COEFFICIENT_OF_RESTITUTION {{restitution}}\\n"
-mdpa += f"  PARTICLE_MATERIAL 1\\n"
-mdpa += f"  ROLLING_FRICTION 0.01\\n"
-mdpa += "End Properties\\n\\n"
+top_y = max(p[1] for p in positions)
+if top_y + radius >= domain_y:
+    raise SystemExit(
+        "particle block (top y=%.4f) does not fit under domain_y=%.4f; "
+        "reduce n_particles/radius or raise domain_y" % (top_y + radius, domain_y))
 
-mdpa += "Begin Nodes\\n"
+# ---- spheres mdpa: <problem_name>DEM.mdpa -------------------------------
+# The element name is CylinderParticle2D: Kratos DEM is not 3D-only, and a
+# genuine 2D disc is the right element for a planar problem. There is no
+# SphericParticle2D. RADIUS is a CORE nodal variable and is the one mandatory
+# per-node input; a particle whose RADIUS was never written keeps a silent 0.
+lines = ["Begin ModelPartData", "End ModelPartData", "",
+         "Begin Properties 1", "End Properties", "", "Begin Nodes"]
 for i, (x, y, z) in enumerate(positions, 1):
-    mdpa += f"  {{i}} {{x:.8f}} {{y:.8f}} {{z:.8f}}\\n"
-mdpa += "End Nodes\\n\\n"
-
-mdpa += "Begin Elements SphericParticle3D\\n"
+    lines.append("  %d %.10f %.10f %.10f" % (i, x, y, z))
+lines += ["End Nodes", "", "Begin Elements CylinderParticle2D"]
 for i in range(1, n_particles + 1):
-    mdpa += f"  {{i}} 1 {{i}}\\n"
-mdpa += "End Elements\\n\\n"
-
-# All particles in one sub model part
-mdpa += "Begin SubModelPart DEMParts_particles\\n"
-mdpa += "  Begin SubModelPartData\\n"
-mdpa += "  End SubModelPartData\\n"
-mdpa += "  Begin SubModelPartNodes\\n"
+    lines.append("  %d 1 %d" % (i, i))
+lines += ["End Elements", "", "Begin NodalData RADIUS"]
 for i in range(1, n_particles + 1):
-    mdpa += f"    {{i}}\\n"
-mdpa += "  End SubModelPartNodes\\n"
-mdpa += "End SubModelPart\\n"
+    lines.append("  %d 0 %.10f" % (i, radius))
+lines += ["End NodalData", "", "Begin SubModelPart DEMParts_Body",
+          "  Begin SubModelPartNodes"]
+lines += ["    %d" % i for i in range(1, n_particles + 1)]
+lines += ["  End SubModelPartNodes", "  Begin SubModelPartElements"]
+lines += ["    %d" % i for i in range(1, n_particles + 1)]
+lines += ["  End SubModelPartElements", "End SubModelPart", ""]
+with open(problem_name + "DEM.mdpa", "w") as f:
+    f.write("\n".join(lines))
 
-with open("particles.mdpa", "w") as f:
-    f.write(mdpa)
+# ---- walls mdpa: <problem_name>DEM_FEM_boundary.mdpa --------------------
+# Walls are CONDITIONS, and only the 3D face spellings are registered
+# (RigidFace2D2N does not exist), so a 2D wall is a 3D face given a thickness
+# in z. Each wall is a quad split into two RigidFace3D3N triangles.
+zlo, zhi = -5.0 * radius, 5.0 * radius
+walls = {
+    "floor": [(0.0, 0.0, zlo), (domain_x, 0.0, zlo),
+              (domain_x, 0.0, zhi), (0.0, 0.0, zhi)],
+    "left":  [(0.0, 0.0, zlo), (0.0, domain_y, zlo),
+              (0.0, domain_y, zhi), (0.0, 0.0, zhi)],
+    "right": [(domain_x, 0.0, zlo), (domain_x, domain_y, zlo),
+              (domain_x, domain_y, zhi), (domain_x, 0.0, zhi)],
+}
+wlines = ["Begin ModelPartData", "End ModelPartData", "",
+          "Begin Properties 2", "End Properties", "", "Begin Nodes"]
+node_id, cond_id = 0, 0
+wall_nodes, wall_conds = {}, {}
+node_lines, cond_lines = [], []
+for name, quad in walls.items():
+    ids = []
+    for (x, y, z) in quad:
+        node_id += 1
+        ids.append(node_id)
+        node_lines.append("  %d %.10f %.10f %.10f" % (node_id, x, y, z))
+    wall_nodes[name] = ids
+    cids = []
+    for tri in ((0, 1, 2), (0, 2, 3)):
+        cond_id += 1
+        cids.append(cond_id)
+        cond_lines.append("  %d 2 %d %d %d"
+                          % (cond_id, ids[tri[0]], ids[tri[1]], ids[tri[2]]))
+    wall_conds[name] = cids
+wlines += node_lines + ["End Nodes", "", "Begin Conditions RigidFace3D3N"]
+wlines += cond_lines + ["End Conditions", ""]
+for name in walls:
+    wlines += ["Begin SubModelPart DEM-FEM-Wall_%s" % name,
+               "  Begin SubModelPartData", "  End SubModelPartData",
+               "  Begin SubModelPartNodes"]
+    wlines += ["    %d" % i for i in wall_nodes[name]]
+    wlines += ["  End SubModelPartNodes", "  Begin SubModelPartConditions"]
+    wlines += ["    %d" % i for i in wall_conds[name]]
+    wlines += ["  End SubModelPartConditions", "End SubModelPart", ""]
+with open(problem_name + "DEM_FEM_boundary.mdpa", "w") as f:
+    f.write("\n".join(wlines))
 
-# === Write MaterialsDEM.json ===
-materials = {{
-    "properties": [{{
-        "model_part_name": "SpheresPart",
-        "properties_id": 1,
-        "hydrodynamic_law_parameters": {{}},
-        "Material": {{
-            "Variables": {{
-                "PARTICLE_DENSITY": density,
-                "YOUNG_MODULUS": E_contact,
-                "POISSON_RATIO": 0.25,
-                "PARTICLE_FRICTION": friction,
-                "COEFFICIENT_OF_RESTITUTION": restitution,
-                "PARTICLE_MATERIAL": 1,
-                "ROLLING_FRICTION": 0.01,
-                "ROLLING_FRICTION_WITH_WALLS": 0.01,
-            }},
-            "constitutive_law": {{
-                "name": "DEM_D_Hertz_viscous_Coulomb"
-            }}
-        }}
-    }}]
-}}
+# ---- MaterialsDEM.json --------------------------------------------------
+# Three mandatory top-level keys. Per-particle data goes in "materials";
+# everything about a CONTACT (restitution, friction, the constitutive law name)
+# goes in "material_relations", keyed by the pair of material ids. Every
+# sub model part that carries entities needs a row in the assignation table --
+# omitting the wall row fails deep inside the solver with a PROPERTIES_ID error.
+contact_pair_variables = {
+    "COEFFICIENT_OF_RESTITUTION": restitution,
+    "STATIC_FRICTION": friction,
+    "DYNAMIC_FRICTION": friction,
+    "FRICTION_DECAY": 500.0,
+    "ROLLING_FRICTION": 0.01,
+    "ROLLING_FRICTION_WITH_WALLS": 0.01,
+    "DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME": "DEM_D_Hertz_viscous_Coulomb2D",
+}
+materials = {
+    "materials": [
+        {"material_name": "granular", "material_id": 1,
+         "Variables": {"PARTICLE_DENSITY": density,
+                       "YOUNG_MODULUS": young_modulus,
+                       "POISSON_RATIO": poisson}},
+        {"material_name": "wall", "material_id": 2,
+         "Variables": {"PARTICLE_DENSITY": 7850.0,
+                       "YOUNG_MODULUS": 100.0 * young_modulus,
+                       "POISSON_RATIO": 0.30}},
+    ],
+    "material_relations": [
+        {"material_names_list": ["granular", "granular"],
+         "material_ids_list": [1, 1],
+         "Variables": dict(contact_pair_variables)},
+        {"material_names_list": ["granular", "wall"],
+         "material_ids_list": [1, 2],
+         "Variables": dict(contact_pair_variables)},
+    ],
+    "material_assignation_table": [
+        ["SpheresPart.DEMParts_Body", "granular"],
+    ] + [["RigidFacePart.DEM-FEM-Wall_%s" % n, "wall"] for n in walls],
+}
 with open("MaterialsDEM.json", "w") as f:
     json.dump(materials, f, indent=2)
 
-# === Write ProjectParametersDEM.json ===
-n_steps = int(T_end / dt)
-output_interval = max(1, n_steps // 20)
-
-project_params = {{
-    "problem_data": {{
-        "problem_name": "particles",
-        "parallel_type": "OpenMP",
-        "echo_level": 0,
-        "start_time": 0.0,
-        "end_time": T_end
-    }},
-    "solver_settings": {{
-        "solver_type": "dem_solver",
-        "model_part_name": "SpheresPart",
-        "domain_size": 3,
-        "model_import_settings": {{
-            "input_type": "mdpa",
-            "input_filename": "particles"
-        }},
-        "material_import_settings": {{
-            "materials_filename": "MaterialsDEM.json"
-        }},
-        "time_stepping": {{
-            "time_step": dt
-        }},
-        "body_force_per_unit_mass": [0.0, gravity_y, 0.0],
-        "DEM_timestep_safety_factor": 0.5,
-        "MaxAmplificationRatioOfSearchRadius": 0.0,
-        "BoundingBoxMaxX": domain_x,
-        "BoundingBoxMaxY": domain_y * 2,
-        "BoundingBoxMaxZ": 0.1,
-        "BoundingBoxMinX": 0.0,
-        "BoundingBoxMinY": 0.0,
-        "BoundingBoxMinZ": -0.1,
-        "BoundingBoxEnlargementFactor": 1.1,
-        "AutomaticBoundingBoxOption": False,
-        "ContactMeshOption": "use_particles"
-    }},
-    "output_processes": {{
-        "vtk_output": [{{
-            "python_module": "vtk_output_process",
-            "kratos_module": "KratosMultiphysics",
-            "process_name": "VtkOutputProcess",
-            "Parameters": {{
-                "model_part_name": "SpheresPart",
-                "output_control_type": "step",
-                "output_interval": output_interval,
-                "file_format": "ascii",
-                "output_path": "vtk_output",
-                "nodal_solution_step_data_variables": ["VELOCITY", "TOTAL_FORCES"]
-            }}
-        }}]
-    }},
-    "processes": {{
-        "walls_process_list": [{{
-            "python_module": "assign_vector_variable_process",
-            "kratos_module": "KratosMultiphysics",
-            "process_name": "AssignVectorVariableProcess",
-            "Parameters": {{
-                "model_part_name": "SpheresPart.DEMParts_particles",
-                "variable_name": "RADIUS",
-                "value": [radius, 0.0, 0.0],
-                "constrained": [False, False, False],
-                "interval": [0, "End"]
-            }}
-        }}]
-    }}
-}}
-
+# ---- ProjectParametersDEM.json (FLAT) -----------------------------------
+# Unknown top-level keys and unknown keys inside solver_settings are rejected by
+# ValidateAndAssignDefaults, so this list is exactly the DEM vocabulary.
+# FinalTime -- not problem_data.end_time -- decides when the run stops.
+project_parameters = {
+    "problem_name": problem_name,
+    "Dimension": 2,
+    "FinalTime": T_end,
+    "MaxTimeStep": dt,
+    "OutputTimeStep": max(dt, T_end / 20.0),
+    "GravityX": 0.0,
+    "GravityY": gravity_y,
+    "GravityZ": 0.0,
+    "ElementType": "CylinderPartDEMElement2D",
+    "TranslationalIntegrationScheme": "Symplectic_Euler",
+    "RotationalIntegrationScheme": "Direct_Integration",
+    "RotationOption": True,
+    "RollingFrictionOption": False,
+    "dem_inlet_option": False,
+    "BoundingBoxOption": True,
+    "AutomaticBoundingBoxOption": False,
+    "BoundingBoxEnlargementFactor": 1.0,
+    "BoundingBoxMinX": -domain_x,
+    "BoundingBoxMinY": -domain_y,
+    "BoundingBoxMinZ": -1.0,
+    "BoundingBoxMaxX": 2.0 * domain_x,
+    "BoundingBoxMaxY": 2.0 * domain_y,
+    "BoundingBoxMaxZ": 1.0,
+    "NeighbourSearchFrequency": 10,
+    "SearchTolerance": 0.5 * radius,
+    # Output goes through DEM's own GiD writer, into <problem_name>_Post_Files.
+    # The two alternatives do not work on a stock build:
+    #   post_vtk_option    -> DEMApplication.dem_vtk_output imports pyevtk, which
+    #                         Kratos does not depend on and does not install.
+    #   the core vtk_output_process, attached to SpheresPart -> its Check() runs
+    #                         before DEM populates that part's ProcessInfo, so
+    #                         output_control_type "step" raises 'STEP not found
+    #                         in process info of SpheresPart' and "time" raises
+    #                         the same for TIME.
+    "do_print_results_option": True,
+    "post_gid_option": True,
+    "post_vtk_option": False,
+    "PostVelocity": True,
+    "PostRadius": True,
+    "PostTotalForces": True,
+    "solver_settings": {
+        "strategy": "sphere_strategy",
+        "material_import_settings": {"materials_filename": "MaterialsDEM.json"},
+    },
+}
 with open("ProjectParametersDEM.json", "w") as f:
-    json.dump(project_params, f, indent=2)
+    json.dump(project_parameters, f, indent=2)
 
-# === Write input.py (the entry point) ===
-input_py = """import KratosMultiphysics
+# ---- input.py: the entry point ------------------------------------------
+INPUT_PY = """# Kratos DEM entry point. Reads ProjectParametersDEM.json from this directory.
+#
+# Cap OpenMP threads BEFORE importing Kratos: a few-hundred-particle DEM step is
+# dominated by parallel-region spin overhead. Measured on this deck: 98 s at the
+# machine default (32 threads) versus 1.5 s at 2, identical results. setdefault
+# means an explicit OMP_NUM_THREADS in the environment still wins.
+import json
+import os
+
+os.environ.setdefault("OMP_NUM_THREADS", "__THREADS__")
+
+import KratosMultiphysics
 from KratosMultiphysics.DEMApplication.DEM_analysis_stage import DEMAnalysisStage
 
-if __name__ == "__main__":
-    with open("ProjectParametersDEM.json", "r") as f:
-        project_parameters = KratosMultiphysics.Parameters(f.read())
-    model = KratosMultiphysics.Model()
-    DEMAnalysisStage(model, project_parameters).Run()
+
+class GranularSettling(DEMAnalysisStage):
+    # DEMAnalysisStage.Finalize() deletes its model parts, and holding a python
+    # reference to one across that call segfaults. Read what is needed here,
+    # before delegating.
+    def Finalize(self):
+        spheres = self.spheres_model_part
+        walls = self.rigid_face_model_part
+        ys = [n.Y for n in spheres.Nodes]
+        vy = [n.GetSolutionStepValue(KratosMultiphysics.VELOCITY_Y)
+              for n in spheres.Nodes]
+        self.summary = {
+            "particles_at_end": spheres.NumberOfElements(),
+            "wall_conditions": walls.NumberOfConditions(),
+            "y_min": min(ys) if ys else None,
+            "y_max": max(ys) if ys else None,
+            "max_abs_velocity_y": max((abs(v) for v in vy), default=None),
+        }
+        super().Finalize()
+
+
+with open("ProjectParametersDEM.json") as _f:
+    parameters = KratosMultiphysics.Parameters(_f.read())
+
+analysis = GranularSettling(KratosMultiphysics.Model(), parameters)
+n_expected = __N_PARTICLES__
+analysis.Run()
+
+summary = dict(analysis.summary)
+summary["particles_at_start"] = n_expected
+# Read these back from the deck, not from a value baked in here, so that editing
+# ProjectParametersDEM.json by hand keeps the summary honest.
+summary["dt"] = parameters["MaxTimeStep"].GetDouble()
+summary["final_time"] = parameters["FinalTime"].GetDouble()
+with open("results_summary.json", "w") as _f:
+    json.dump(summary, _f, indent=2)
+for _k, _v in sorted(summary.items()):
+    print("%s=%s" % (_k, _v))
+
+# Kratos DEM deletes particles that leave the bounding box and says nothing --
+# an unstable time step therefore looks like a clean, successful run. Refuse to
+# exit 0 on a deck that quietly lost its model.
+if summary["particles_at_end"] != n_expected:
+    raise SystemExit(
+        "DEM lost particles: %d of %d remain. The usual cause is MaxTimeStep "
+        "above the stability limit; lower dt_safety_factor."
+        % (summary["particles_at_end"], n_expected))
+if summary["wall_conditions"] == 0:
+    raise SystemExit(
+        "no wall conditions were read -- check that "
+        "<problem_name>DEM_FEM_boundary.mdpa exists next to this script; "
+        "a missing DEM mdpa is only an INFO line, never an error.")
+print("DEM analysis completed.")
 """
 
+INPUT_PY = (INPUT_PY.replace("__THREADS__", str(omp_threads))
+            .replace("__N_PARTICLES__", repr(n_particles)))
 with open("input.py", "w") as f:
-    f.write(input_py)
+    f.write(INPUT_PY)
 
-print(f"Generated Kratos DEM input files:")
-print(f"  particles.mdpa: {{n_particles}} particles")
-print(f"  ProjectParametersDEM.json: dt={{dt}}, T={{T_end}}")
-print(f"  MaterialsDEM.json: Hertz-viscous-Coulomb")
-print(f"  input.py: DEMAnalysisStage entry point")
+print("Kratos DEM deck written:")
+print("  %sDEM.mdpa               %d CylinderParticle2D particles"
+      % (problem_name, n_particles))
+print("  %sDEM_FEM_boundary.mdpa  %d RigidFace3D3N conditions (%s)"
+      % (problem_name, cond_id, ", ".join(walls)))
+print("  MaterialsDEM.json          materials + material_relations + table")
+print("  ProjectParametersDEM.json  dt=%.3e (%.3g x Rayleigh %.3e), T=%g, %d steps"
+      % (dt, dt / dt_rayleigh, dt_rayleigh, T_end, n_steps))
+print("  input.py                   run it with: python input.py")
 '''
+    return header + body
 
 
 KNOWLEDGE = {
