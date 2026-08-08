@@ -88,8 +88,12 @@ def main() -> int:
         ok = False
     else:
         print(f"neighbour_array_shape={neigh.shape}")
-        print(f"neighbour_array_has_the_expected_shape="
-              f"{neigh.shape == (3, nf)}")
+        # `neighbour_array_has_the_expected_shape` used to be asserted here.
+        # Inside this branch it cannot be False: m.t[:, f2t[1][fsel]] with
+        # fsel = np.arange(nf) has shape (3, nf) by construction, so the line
+        # only restated `indexing_by_minus_one_raises=False`, which is already
+        # an expectation of its own. The shape is still printed; it is no
+        # longer asserted as if it were a finding.
         bnd = np.nonzero(f2t[1][fsel] < 0)[0]
         wrapped = m.t[:, [ne - 1]]
         print(f"boundary_columns_equal_the_last_element="
