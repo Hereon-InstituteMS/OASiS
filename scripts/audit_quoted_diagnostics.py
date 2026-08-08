@@ -676,8 +676,26 @@ def longest_found_prefix(fragment: str, roots: list[Path],
             # the words rejects it (4 of 8) while keeping the real messages:
             #   "Error: Getting a value ... entry string : strategy"  10/12
             #   "Error: STEP not found in process info of Main"        6/9
-            if i > 0 and i + length < n and length < 0.6 * n:
-                continue
+            if i > 0:
+                # A PURE SUFFIX IS NOT THIS FUNCTION'S JOB — see
+                # longest_found_suffix, which answers the same question under a
+                # stricter, separately measured rule (skip at most ONE token,
+                # because a message's tail is often generic English and an
+                # unconstrained suffix search waved through 3 of 10 deliberate
+                # fabrications). Two mechanisms for one question is the trap:
+                # this one runs FIRST, so without this line the looser rule
+                # decides every case and the stricter one never executes.
+                # Measured on the merged tree before this line existed:
+                # "cannot assemble: form has not been compiled" was excused by
+                # "has not been compiled" and "solver exploded during the
+                # quadrature loop" by "the quadrature loop" — both inventions,
+                # both reported as ASSEMBLED rather than ABSENT.
+                if i + length == n:
+                    continue
+                # A window that trims BOTH ends has lost its anchors, so it must
+                # still be MOST of the message.
+                if length < 0.6 * n:
+                    continue
             if grep_literal(cand, roots):
                 return cand
     return ""
