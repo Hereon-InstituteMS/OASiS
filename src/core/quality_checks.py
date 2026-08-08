@@ -294,6 +294,128 @@ def check_convergence(converged: bool, residual: float, tol: float) -> list[str]
 # roundoff floor and the unit-ratio hint. The coverage reporting the other
 # version carried inline ("conservation was NOT CHECKED") is not lost: it lives
 # in couple()'s not_run list, which is also taken from that branch.
+def interface_nodal_weights(coords) -> tuple:
+    """Quadrature weights for integrating a P1 nodal field over an interface.
+
+    Returns (weights, dim, detail). `weights` is (N,) with sum = the measure of
+    the interface, so `sum_i w_i * f_i` is the integral of the piecewise-linear
+    interpolant of f. On failure it returns (None, None, reason).
+
+    WHY THIS EXISTS. Conservation across a coupling interface is a statement
+    about INTEGRALS, and the two participants sample the same surface at
+    different points, so the two sums are not comparable — only the two
+    integrals are. The previous implementation formed the integral by sorting
+    the points lexicographically, taking the segment lengths between
+    consecutive points and applying a trapezoid rule. On a LINE that is right.
+    On a SURFACE it is not an approximation of anything: the lexicographic
+    order snakes row by row through the point cloud, and the "arclength" it
+    accumulates is the length of that snake, which for a 20x20 patch of a
+    1 m x 1 m surface comes out near 20 m instead of the 1 m^2 the integral
+    needs. Multiplying a traction by that number produces a "net flux" whose
+    magnitude is set by the mesh resolution, and the balance of two such
+    numbers is meaningful only when both sides happen to snake the same way.
+
+    So the DIMENSION of the interface is measured rather than assumed:
+
+      dim 1  the points lie on a curve. Ordered along the curve's own principal
+             direction (not by a coordinate axis, which fails for any interface
+             that is not axis-aligned) and integrated with the trapezoid rule
+             over the true segment lengths, so a curved interface is handled.
+      dim 2  the points lie on a surface. Triangulated in the surface's own
+             best-fit plane and integrated exactly for a P1 field: node i gets
+             one third of the area of every triangle it belongs to.
+      dim 0  every point is at the same location — there is no interface to
+             integrate over.
+      dim 3  the points fill a volume; they are not a surface and no surface
+             integral exists for them.
+
+    The plane for dim 2 comes from an SVD of the centred coordinates, so it
+    works for any orientation. A surface too curved to project without folding
+    is REPORTED (a negative or wildly uneven weight is the symptom), never
+    silently integrated.
+    """
+    try:
+        c = _np.asarray(coords, float)
+    except (TypeError, ValueError) as e:
+        return None, None, f"coordinates are not numeric ({e})"
+    if c.ndim == 1:
+        c = c.reshape(-1, 1)
+    if c.ndim != 2 or len(c) == 0:
+        return None, None, "coordinates are not an (N, dim) array"
+    if not _np.all(_np.isfinite(c)):
+        return None, None, "coordinates contain non-finite entries"
+    n = len(c)
+    if n == 1:
+        return None, 0, "a single interface point has no measure to integrate over"
+    centred = c - c.mean(axis=0)
+    try:
+        sv = _np.linalg.svd(centred, compute_uv=False)
+    except _np.linalg.LinAlgError as e:
+        return None, None, f"the interface point cloud has no usable shape ({e})"
+    if sv.size == 0 or sv[0] <= 0:
+        return None, 0, "every exported interface point is at the same location"
+    # A direction counts as real when it carries more than 1e-8 of the largest
+    # extent: a straight interface's transverse singular value is roundoff.
+    dim = int(_np.sum(sv > 1e-8 * sv[0]))
+    if dim == 0:
+        return None, 0, "every exported interface point is at the same location"
+    if dim >= 3:
+        return (None, 3,
+                "the exported interface points fill a VOLUME (three independent "
+                "directions), so they are not a surface and no surface integral "
+                "over them exists")
+    if dim == 1:
+        _, _, vt = _np.linalg.svd(centred, full_matrices=False)
+        s = centred @ vt[0]
+        order = _np.argsort(s)
+        cs = c[order]
+        seg = _np.linalg.norm(_np.diff(cs, axis=0), axis=1)
+        if float(_np.sum(seg)) <= 0:
+            return None, 1, "the interface curve has zero length"
+        w_sorted = _np.zeros(n)
+        w_sorted[:-1] += 0.5 * seg
+        w_sorted[1:] += 0.5 * seg
+        w = _np.empty(n)
+        w[order] = w_sorted
+        return w, 1, f"arclength trapezoid over {n} points, length {seg.sum():.6g}"
+    # dim == 2: triangulate in the surface's own best-fit plane.
+    try:
+        from scipy.spatial import Delaunay, QhullError
+    except ImportError as e:
+        return None, 2, (f"the interface is a SURFACE and integrating over it "
+                         f"needs a triangulation; scipy is not importable ({e})")
+    _, _, vt = _np.linalg.svd(centred, full_matrices=False)
+    uv = centred @ vt[:2].T
+    try:
+        tri = Delaunay(uv)
+    except (QhullError, ValueError) as e:
+        return None, 2, (f"the interface surface could not be triangulated "
+                         f"({type(e).__name__}: {str(e)[:80]})")
+    simp = tri.simplices
+    p0, p1, p2 = c[simp[:, 0]], c[simp[:, 1]], c[simp[:, 2]]
+    # TRUE 3-D area, not the projected one: the projection is only used to
+    # decide WHICH triangles, never how big they are, so a tilted or gently
+    # curved interface keeps its real measure.
+    cr = _np.cross(p1 - p0, p2 - p0)
+    area = 0.5 * _np.linalg.norm(_np.atleast_2d(cr), axis=-1)
+    w = _np.zeros(n)
+    for k in range(3):
+        _np.add.at(w, simp[:, k], area / 3.0)
+    if float(_np.sum(area)) <= 0 or not _np.all(_np.isfinite(w)):
+        return None, 2, "the interface triangulation has no area"
+    # A point that no triangle touches contributes nothing to the integral,
+    # which silently drops its flux. That is a folded or degenerate projection,
+    # not a working quadrature.
+    if _np.any(w <= 0):
+        return (None, 2,
+                f"{int(_np.sum(w <= 0))} of {n} interface points carry zero "
+                "quadrature weight — the surface does not project onto its own "
+                "best-fit plane without folding, so no reliable surface "
+                "integral can be formed here")
+    return w, 2, (f"surface quadrature over {len(simp)} triangles, "
+                  f"area {area.sum():.6g}")
+
+
 def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
                             rtol: float = 0.05, floor: float = 0.0) -> list[str]:
     """Conservation across a coupling interface: the net flux leaving A should equal
@@ -320,28 +442,42 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
     """
     w = []
 
-    def _npts(e):
-        co = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
-        try:
-            return len(co) if co is not None else None
-        except TypeError:
+    def _co(e):
+        c = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
+        if c is None:
             return None
+        try:
+            a = _np.asarray(c, float)
+        except (TypeError, ValueError):
+            return None
+        return _np.atleast_2d(a) if a.ndim >= 1 else None
 
-    # WHEN TO INTEGRATE. Two sides that sample the interface at the SAME number
-    # of points are directly comparable and their sums are the right quantity —
-    # a redistribution along the interface then cancels in the sum exactly, which
-    # is what makes it the flux-PROFILE check's job to catch rather than this
-    # one's. Two sides with DIFFERENT point counts are not comparable at all:
-    # 41 samples against 31 of the same physical flux differ by the sampling, not
-    # by the physics, and only an arclength integral removes that. So integrate
-    # exactly when the discretisations differ.
-    _integrate = (_npts(export_a) is not None and _npts(export_b) is not None
-                  and _npts(export_a) != _npts(export_b))
+    # WHEN TO INTEGRATE. Two sides that sample the interface at exactly the SAME
+    # points are directly comparable and their sums are the right quantity — one
+    # quadrature rule applied to both, so a redistribution along the interface
+    # cancels in the sum exactly, which is what makes it the flux-PROFILE
+    # check's job to catch rather than this one's. Two sides that sample it
+    # DIFFERENTLY are not comparable at all: 41 samples against 31 of the same
+    # physical flux differ by the sampling, not by the physics, and only an
+    # integral over the interface removes that. Measured on the shipped
+    # participant pairs: nets of 313.8 against -240 for two fields that agree to
+    # 1e-5 pointwise. So integrate exactly when the two discretisations differ —
+    # which is a point-by-point comparison of the coordinates, not of their
+    # count: two sides with the same number of points spread differently along
+    # the interface are just as incomparable as two with different counts.
+    # With no coordinates on either side there is nothing to integrate against
+    # and nothing that says the two samplings differ, so the plain sum stands —
+    # that is what the scalar unit tests and this function's own per-component
+    # recursion hand in.
+    ca, cb = _co(export_a), _co(export_b)
+    _same_sampling = (ca is not None and cb is not None and ca.shape == cb.shape
+                      and _np.allclose(ca, cb, rtol=1e-9, atol=1e-12))
+    _integrate = ca is not None and cb is not None and not _same_sampling
 
-    def _flux(e):
+    def _flux(e, co):
         f = e.get("normal_fluxes") if isinstance(e, dict) else getattr(e, "normal_fluxes", None)
         if f is None:
-            return None
+            return None, None
         a = _np.asarray(f, float)
         # A VECTOR interface flux (traction, momentum) must balance component by
         # component. Summing every component into one number lets a +x imbalance
@@ -349,34 +485,33 @@ def check_interface_balance(export_a, export_b, label_a="A", label_b="B",
         # that conserves nothing.
         v = (a.reshape(-1, a.shape[-1]) if a.ndim >= 2 and a.shape[-1] > 1
              else a.reshape(-1, 1))
-        co = e.get("coordinates") if isinstance(e, dict) else getattr(e, "coordinates", None)
-        # INTEGRATE OVER ARCLENGTH, do not just add the samples up. The two
-        # participants discretise the SAME interface with DIFFERENT point
-        # counts — that is the normal case for non-matching meshes — so a plain
-        # sum compares 41 samples against 31 and reports a large imbalance for a
-        # coupling that conserves exactly. Measured on the shipped participant
-        # pairs: nets of 313.8 against -240 for two fields that agree to 1e-5
-        # pointwise. The trapezoid below is the quantity
-        # knowledge/coupling-revision introduced for this, kept here inside
-        # feature/coupling-robustness's per-component structure so both hold.
-        # Falls back to the plain sum when there are no coordinates to integrate
-        # against, which is what the scalar unit tests hand in.
-        try:
-            c = _np.asarray(co, float) if co is not None else None
-        except (TypeError, ValueError):
-            c = None
-        if (_integrate and c is not None and c.ndim == 2
-                and len(c) == len(v) and len(v) > 1):
-            order = _np.lexsort(tuple(c[:, k] for k in range(c.shape[1] - 1, -1, -1)))
-            cs, vs = c[order], v[order]
-            ds = _np.linalg.norm(_np.diff(cs, axis=0), axis=1)
-            if float(_np.sum(ds)) > 0:
-                return _np.sum(0.5 * (vs[:-1] + vs[1:]) * ds[:, None], axis=0)
-        return v.sum(axis=0)
+        if not _integrate:
+            return v.sum(axis=0), None
+        if co is None or len(co) != len(v):
+            return (v.sum(axis=0),
+                    "the two sides sample the interface differently and there "
+                    "are no usable coordinates to integrate against")
+        wts, dim, detail = interface_nodal_weights(co)
+        if wts is None:
+            return v.sum(axis=0), detail
+        return (wts[:, None] * v).sum(axis=0), None
 
-    va, vb = _flux(export_a), _flux(export_b)
+    va, na = _flux(export_a, ca)
+    vb, nb = _flux(export_b, cb)
     if va is None or vb is None:
         return w
+    # A FALLBACK TO THE PLAIN SUM ON DIFFERENT DISCRETISATIONS IS NOT A CHECK.
+    # It compares 41 samples against 31 and its verdict is set by the meshes.
+    # Reported as a finding, the way this function already reports a component
+    # count mismatch and a non-finite net, rather than silently returning [].
+    if na or nb:
+        why = "; ".join(f"{lbl}: {m}" for lbl, m in ((label_a, na), (label_b, nb)) if m)
+        return [f"Interface flux balance could NOT be evaluated: the two "
+                f"participants sample the interface differently, so only an "
+                f"integral over it would be comparable, and no quadrature could "
+                f"be formed ({why}). Conservation is UNCHECKED — the plain sums "
+                f"would have been set by the two meshes rather than by the "
+                f"physics."]
     if va.shape != vb.shape:
         return [f"Interface flux balance could NOT be evaluated: {label_a} exports "
                 f"{va.size} flux component(s) and {label_b} exports {vb.size}. "
@@ -473,17 +608,36 @@ def check_interface_flux_profile(export_a, export_b, label_a="A", label_b="B",
             "same interface points, so the flux could only be compared in total. "
             "A wrong distribution that sums correctly would not be visible."]
     s = fa + fb                       # anti-parallel normals -> should cancel
-    scale = float(_np.max(_np.abs(fa))) or float(_np.max(_np.abs(fb))) or 1e-30
-    worst = float(_np.max(_np.abs(s))) / scale
-    if worst > rtol and _np.all(_np.isfinite(s)):
-        i = int(_np.argmax(_np.abs(s)))
+    if not _np.all(_np.isfinite(s)):
+        return findings, []
+    # PER COMPONENT, for a vector interface flux. One scale taken over the whole
+    # array is set by the largest component, so a tangential traction that is
+    # two orders of magnitude below the normal one can be 100% wrong and read as
+    # 1% of "the interface scale". Each component is judged against its own
+    # magnitude instead — with a floor at 1e-9 of the largest component anywhere
+    # on the interface, so a component that is legitimately zero on both sides
+    # is not condemned on roundoff (the same trap the net balance's `floor`
+    # exists for).
+    A = fa.reshape(len(fa), -1) if fa.ndim >= 2 else fa.reshape(-1, 1)
+    B = fb.reshape(len(fb), -1) if fb.ndim >= 2 else fb.reshape(-1, 1)
+    S = A + B
+    everywhere = max(float(_np.max(_np.abs(A))), float(_np.max(_np.abs(B))))
+    for c in range(S.shape[1]):
+        scale = max(float(_np.max(_np.abs(A[:, c]))),
+                    float(_np.max(_np.abs(B[:, c]))),
+                    1e-9 * everywhere, 1e-30)
+        worst = float(_np.max(_np.abs(S[:, c]))) / scale
+        if worst <= rtol:
+            continue
+        i = int(_np.argmax(_np.abs(S[:, c])))
+        comp = f" component [{c}]" if S.shape[1] > 1 else ""
         findings.append(
-            f"Interface flux does NOT match POINT BY POINT: worst node is #{i} "
-            f"with {label_a}={fa.ravel()[i]:.4g} and {label_b}={fb.ravel()[i]:.4g} "
-            f"(they should cancel), off by {worst:.1%} of the interface scale "
-            f"> {rtol:.0%}. The TOTALS may still balance — a redistribution "
-            "along the interface cancels in the sum — so this is a "
-            "non-conservative or mis-mapped exchange that the net balance "
+            f"Interface flux{comp} does NOT match POINT BY POINT: worst node is "
+            f"#{i} with {label_a}={A[i, c]:.4g} and {label_b}={B[i, c]:.4g} "
+            f"(they should cancel), off by {worst:.1%} of that component's own "
+            f"interface scale > {rtol:.0%}. The TOTALS may still balance — a "
+            "redistribution along the interface cancels in the sum — so this is "
+            "a non-conservative or mis-mapped exchange that the net balance "
             "cannot see.")
     return findings, []
 

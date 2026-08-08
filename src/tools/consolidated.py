@@ -700,8 +700,15 @@ def _run_monolithic_check(monolithic: str, exports: dict,
                  "there is nothing to compare the coupled answer against."])
     try:
         ref = json.loads(out.read_text())
-        ref_vals = _np.asarray(ref["values"], float).ravel()
+        # KEEP THE COMPONENT AXIS. `.ravel()` here made every VECTOR reference
+        # unusable: with N points and 2 components the flattened size is 2N
+        # while the coordinate count is N, so the shape guard below concluded
+        # "not enough coordinates to map one onto the other" and the strongest
+        # check in this tool reported NOT CHECKED on every vector coupling.
         ref_co = _np.atleast_2d(_np.asarray(ref.get("coordinates", []), float))
+        _rv = _np.asarray(ref["values"], float)
+        ref_vals = (_rv.reshape(len(ref_co), -1) if len(ref_co)
+                    else _rv.reshape(-1, 1))
     except Exception as e:
         return ({"status": "reference unreadable", "detail": str(e)[:200]}, [],
                 [f"monolithic consistency: NOT CHECKED — monolithic.json could "
@@ -712,7 +719,8 @@ def _run_monolithic_check(monolithic: str, exports: dict,
                  "values are empty or non-finite."])
 
     ref_field = str(ref.get("field_name", "") or "")
-    report: dict = {"status": "checked", "reference_points": int(ref_vals.size),
+    report: dict = {"status": "checked", "reference_points": int(len(ref_vals)),
+                    "reference_components": int(ref_vals.shape[1]),
                     "reference_field": ref_field}
     findings: list[str] = []
     # Nothing here can tell an independent un-split solve from a script that
@@ -726,7 +734,9 @@ def _run_monolithic_check(monolithic: str, exports: dict,
         "one that re-reads or reproduces the coupled answer. Agreement below is "
         "evidence only if the reference solves the problem on its own."]
     for name, ex in exports.items():
-        vals = _np.asarray(ex.get("values", []), float).ravel()
+        co = _np.atleast_2d(_np.asarray(ex.get("coordinates", []), float))
+        _v = _np.asarray(ex.get("values", []), float)
+        vals = _v.reshape(len(co), -1) if len(co) and _v.size else _v.reshape(-1, 1)
         if vals.size == 0:
             not_run.append(f"monolithic consistency for {name}: it exported no values")
             continue
@@ -744,39 +754,63 @@ def _run_monolithic_check(monolithic: str, exports: dict,
                 "participant exports if you want it covered.")
             continue
         target = vals
-        if ref_vals.size == vals.size:
+        # A SCALAR REFERENCE CANNOT CORROBORATE A VECTOR COUPLING and vice
+        # versa: with different component counts there is no correspondence to
+        # compare, and flattening both would line u_x up against u_y.
+        if ref_vals.shape[1] != target.shape[1]:
+            not_run.append(
+                f"monolithic consistency for {name}: it exports "
+                f"{target.shape[1]} component(s) per point while the reference "
+                f"provides {ref_vals.shape[1]}, so there is nothing to compare. "
+                "Have the reference write the same number of components.")
+            continue
+        if len(ref_vals) == len(target):
             ref_at = ref_vals
         else:
-            co = _np.atleast_2d(_np.asarray(ex.get("coordinates", []), float))
-            if ref_co.size == 0 or co.size == 0 or len(ref_co) != ref_vals.size:
+            if ref_co.size == 0 or co.size == 0 or len(ref_co) != len(ref_vals):
                 not_run.append(
                     f"monolithic consistency for {name}: the reference has "
-                    f"{ref_vals.size} point(s) and this participant exports "
-                    f"{vals.size}, and there are not enough coordinates to map "
+                    f"{len(ref_vals)} point(s) and this participant exports "
+                    f"{len(target)}, and there are not enough coordinates to map "
                     "one onto the other")
                 continue
             from core.field_transfer import InterfaceData, interpolate_to_points
             ref_at = _np.asarray(interpolate_to_points(
                 InterfaceData(coordinates=ref_co, values=ref_vals,
                               field_name=str(ref.get("field_name", "ref"))),
-                co), float).ravel()
-        if ref_at.size != target.size:
+                co), float).reshape(len(co), -1)
+        if ref_at.shape != target.shape:
             not_run.append(f"monolithic consistency for {name}: shapes did not align")
             continue
         denom = float(_np.linalg.norm(ref_at)) or 1e-30
         rel_l2 = float(_np.linalg.norm(target - ref_at)) / denom
-        report[name] = {"coupled_mean": float(_np.mean(target)),
-                        "monolithic_mean": float(_np.mean(ref_at)),
-                        "relative_l2": rel_l2}
-        findings += check_monolithic_consistency(
-            float(_np.mean(target)), float(_np.mean(ref_at)), rtol,
-            qoi=f"{name} interface mean")
-        if rel_l2 > rtol:
-            findings.append(
-                f"{name}: coupled interface field differs from the un-split "
-                f"monolithic re-solve by {rel_l2:.1%} in relative L2 > {rtol:.0%} "
-                "— the coupled result is likely WRONG even though the iteration "
-                "converged.")
+        entry = {"coupled_mean": [float(m) for m in target.mean(axis=0)],
+                 "monolithic_mean": [float(m) for m in ref_at.mean(axis=0)],
+                 "relative_l2": rel_l2}
+        # PER COMPONENT AS WELL AS IN TOTAL. A displacement whose x component is
+        # a thousand times its y component has a total relative L2 set entirely
+        # by x, so a y component that is 100% wrong reads as 0.1% overall. That
+        # is the vector form of the scale masking the per-block residuals exist
+        # for, and the mean-based check below has the same hole.
+        per: list[float] = []
+        for c in range(target.shape[1]):
+            d = float(_np.linalg.norm(ref_at[:, c])) or 1e-30
+            rc = float(_np.linalg.norm(target[:, c] - ref_at[:, c])) / d
+            per.append(rc)
+            tag = f"{name} interface mean" + (f" [{c}]" if target.shape[1] > 1 else "")
+            findings += check_monolithic_consistency(
+                float(target[:, c].mean()), float(ref_at[:, c].mean()), rtol,
+                qoi=tag)
+            if rc > rtol:
+                comp = f" component [{c}]" if target.shape[1] > 1 else ""
+                findings.append(
+                    f"{name}: coupled interface field{comp} differs from the "
+                    f"un-split monolithic re-solve by {rc:.1%} in relative L2 > "
+                    f"{rtol:.0%} — the coupled result is likely WRONG even "
+                    "though the iteration converged.")
+        if target.shape[1] > 1:
+            entry["relative_l2_per_component"] = per
+        report[name] = entry
     return report, findings, not_run
 
 

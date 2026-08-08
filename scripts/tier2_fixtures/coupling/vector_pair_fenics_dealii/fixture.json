@@ -1,0 +1,51 @@
+{
+  "_comment": "COUPLING tier-2, VECTOR, across a compiled backend. Builds the shipped deal.II vector participant (elast_iface_dealii.cc, plane-strain elasticity on an FESystem of two FE_Q components) and couples it to FEniCSx in both positions, exchanging a two-component displacement and a two-component traction on non-matching interface meshes. Same componentwise assertions as vector_pair_fenics_skfem: both components alive and varying along the interface, continuity of u_x and u_y, equilibrium of t_x and t_y on the interface interior, per-component conservation, an empty `validation` block, and agreement with both the closed form and an un-split monolithic solve. deal.II is where the two C++-only hazards live — the std::map merge that keeps the two interface corners governed by the outer boundary on both sides, and the -(sigma . n_own) export convention — so this is the fixture that makes the deal.II vector claim rest on a run rather than on a source file.",
+  "_mutation": {
+    "note": "The same one-wrong-material mutation as vector_pair_fenics_skfem: the LEFT participant gets a Poisson ratio 15% away from the one its boundary data and both references are built from. The coupling still converges, the two sides still agree about the interface displacement and their tractions still cancel — all properties of the fixed point, not of the material — while the answer itself moves, because the stiffness ratio changes in both components (M_l/M_r 0.400 -> 0.467, mu_l/mu_r 0.400 -> 0.387) and the left block's prescribed y-face displacement stops being consistent with its own material. Only the closed-form and monolithic comparisons see it.",
+    "file": "../_lib/couplinglib.py",
+    "from": "        x0, x1, e, nu = problem.xl, problem.xi, problem.el, problem.nul",
+    "to": "        x0, x1, e, nu = problem.xl, problem.xi, problem.el, 1.15 * problem.nul"
+  },
+  "backend": "coupling",
+  "physics": "vector_pair_fenics_dealii",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "dealii_vector_solver_built=",
+    "dealii_D_fenics_N_converged=True",
+    "dealii_D_fenics_N_vector_exchange=True",
+    "dealii_D_fenics_N_meshes_nonmatching=True",
+    "dealii_D_fenics_N_both_components_live=True",
+    "dealii_D_fenics_N_displacement_continuous=True",
+    "dealii_D_fenics_N_traction_in_equilibrium=True",
+    "dealii_D_fenics_N_interface_matches_closed_form=True",
+    "dealii_D_fenics_N_traction_balanced=True",
+    "dealii_D_fenics_N_validation_empty=True",
+    "dealii_D_fenics_N_matches_monolithic=True",
+    "fenics_D_dealii_N_converged=True",
+    "fenics_D_dealii_N_vector_exchange=True",
+    "fenics_D_dealii_N_displacement_continuous=True",
+    "fenics_D_dealii_N_traction_in_equilibrium=True",
+    "fenics_D_dealii_N_interface_matches_closed_form=True",
+    "fenics_D_dealii_N_matches_monolithic=True",
+    "vector_arrangements_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "_vector_exchange=False",
+    "_meshes_nonmatching=False",
+    "_both_components_live=False",
+    "_displacement_continuous=False",
+    "_traction_in_equilibrium=False",
+    "_interface_matches_closed_form=False",
+    "_traction_balanced=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "failures_count=1"
+  ]
+}

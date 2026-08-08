@@ -1,0 +1,38 @@
+{
+  "_comment": "COUPLING tier-2, VECTOR conservation on a SURFACE. Arithmetic only, no solver, seconds to run. The interface balance check has to compare two participants' net flux, and because they sample the same interface at different points only the two INTEGRALS are comparable. The integral used to be formed by sorting the exported points lexicographically and trapezoiding the distances between consecutive points — exact on a line, meaningless on a surface, where that order snakes row by row through the point cloud and accumulates the length of the snake instead of the area. Measured here on a 9x7 tilted plane patch of area 6.8739: the snake is 52.43, 7.6x too large, and it grows with resolution. Nothing caught it because every coupling fixture in this tree runs on a straight interface in 2-D, where the point cloud IS a line. This fixture checks that the quadrature reproduces the true measure of a line in 2-D, a tilted line in 3-D and a tilted plane patch in 3-D; that two participants sampling the same 3-D surface at 63 and 143 points and exchanging a conservative, spatially varying vector traction are reported as balanced, while their plain sums differ by 2.27x; that a componentwise imbalance which cancels across components is still caught; and that an interface with no surface integral at all (points filling a volume) is reported as UNCHECKED rather than silently summed.",
+  "_mutation": {
+    "note": "Turn on the fixture's own T2_MUTATE branch, which replaces the surface quadrature with the path-length rule the old implementation used and changes nothing else — same exports, same check, same tolerance. Measured: net(A)=93.06 against net(B)=-136.9, a 32.0% imbalance reported on an exchange that conserves exactly, and the run exits 1 with surface_exchange_not_balanced. That is the defect in its original form: a conservation verdict whose value is set by how the two meshes happen to snake. The branch is also reachable by hand with T2_MUTATE=1 in the environment.",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  },
+  "backend": "coupling",
+  "physics": "vector_conservation_needs_a_surface_integral",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "line2d_dim=1",
+    "line3d_dim=1",
+    "surface_dim=2",
+    "quadrature_reproduces_the_measure=True",
+    "surface_snake_overstates_by=",
+    "surface_balance_findings=0",
+    "surface_vector_exchange_balances=True",
+    "component_swap_is_caught=True",
+    "volume_dim=3",
+    "volume_reported_unchecked=True",
+    "mutated=False",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "surface_vector_exchange_balances=False",
+    "component_swap_is_caught=False",
+    "volume_reported_unchecked=False",
+    "quadrature_reproduces_the_measure=False",
+    "mutated=True",
+    "failures_count=1"
+  ]
+}
