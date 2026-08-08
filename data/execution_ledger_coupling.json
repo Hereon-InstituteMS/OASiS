@@ -1,5 +1,5 @@
 {
-  "commit": "61a72566e723",
+  "commit": "f1d4fbf50ca4",
   "tree_dirty": true,
   "rows": [
     {
@@ -7,17 +7,28 @@
       "fixture": "aitken_beats_constant_on_an_unbalanced_ratio",
       "claim": "relaxation:41",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:04:55+00:00",
+      "recorded": "2026-08-07T23:27:32+00:00",
       "unmutated": {
-        "status": "PASS",
-        "rc": 0,
-        "seconds": 623.8,
-        "missing": []
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 384.3,
+        "missing": [
+          "aitken_reached_closed_form=True",
+          "aitken_beat_constant=True",
+          "failures_count=0",
+          "FORBIDDEN:FAIL:"
+        ]
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "VACUOUS_BASELINE",
+        "reason": "failed",
+        "notes": [
+          "missing in output: ['aitken_beat_constant=True', 'aitken_reached_closed_form=True', 'failures_count=0']",
+          "forbidden tokens appeared: ['FAIL:']"
+        ]
       },
       "discriminates": null
     },
@@ -26,36 +37,48 @@
       "fixture": "aitken_clamp_bounds_theta",
       "claim": "relaxation:42",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:15:19+00:00",
+      "recorded": "2026-08-07T23:40:07+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 376.3,
+        "seconds": 119.0,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "aitken_survives_where_constant_theta_diverges",
       "claim": "relaxation:40",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:21:35+00:00",
+      "recorded": "2026-08-07T23:49:39+00:00",
       "unmutated": {
-        "status": "PASS",
-        "rc": 0,
-        "seconds": 440.3,
-        "missing": []
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 248.5,
+        "missing": [
+          "aitken_reached_closed_form=True",
+          "failures_count=0",
+          "FORBIDDEN:FAIL:"
+        ]
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "VACUOUS_BASELINE",
+        "reason": "failed",
+        "notes": [
+          "missing in output: ['aitken_reached_closed_form=True', 'failures_count=0']",
+          "forbidden tokens appeared: ['FAIL:']"
+        ]
       },
       "discriminates": null
     },
@@ -64,437 +87,555 @@
       "fixture": "balance_check_both_directions",
       "claim": "silent_wrong:14",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:56+00:00",
+      "recorded": "2026-08-07T23:57:57+00:00",
+      "unmutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "missing_flux_warnings=1",
+          "failures_count=0",
+          "FORBIDDEN:FAIL:",
+          "FORBIDDEN:failures_count=1"
+        ]
+      },
+      "control": "recipe",
+      "mutated": {
+        "status": "VACUOUS_BASELINE",
+        "reason": "failed",
+        "notes": [
+          "missing in output: ['failures_count=0', 'missing_flux_warnings=1']",
+          "forbidden tokens appeared: ['FAIL:', 'failures_count=1']"
+        ]
+      },
+      "discriminates": null
+    },
+    {
+      "backend": "coupling",
+      "fixture": "driver_invariants_the_contract_asserts",
+      "claim": "driver_invariants:34",
+      "claim_text_sha": "",
+      "commit": "f1d4fbf50ca4",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T23:57:58+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.4,
+        "seconds": 2.7,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "failure_table_reachable_from_a_symptom",
       "claim": "failure_routing:31",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:56+00:00",
+      "recorded": "2026-08-07T23:58:12+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 2.1,
+        "seconds": 1.6,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_dune_dealii",
       "claim": "pair_dune_dealii:6",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:28:58+00:00",
+      "recorded": "2026-08-07T23:58:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 229.2,
+        "seconds": 178.0,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_febio_febio",
       "claim": "pair_febio_febio:7",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:32:47+00:00",
+      "recorded": "2026-08-08T00:06:18+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 256.7,
+        "seconds": 72.9,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_fenics_dealii",
       "claim": "pair_fenics_dealii:5",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:37:04+00:00",
+      "recorded": "2026-08-08T00:10:03+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 66.8,
+        "seconds": 48.9,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_fenics_dune",
       "claim": "pair_fenics_dune:4",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:38:11+00:00",
+      "recorded": "2026-08-08T00:12:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 224.1,
+        "seconds": 180.1,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_fenics_fourc",
       "claim": "pair_fenics_fourc:3",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:41:55+00:00",
+      "recorded": "2026-08-08T00:21:27+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 313.4,
+        "seconds": 252.8,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_fenics_ngsolve",
       "claim": "pair_fenics_ngsolve:2",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:47:08+00:00",
+      "recorded": "2026-08-08T00:34:03+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 244.5,
+        "seconds": 194.6,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_fenics_skfem",
       "claim": "pair_fenics_skfem:0",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:51:13+00:00",
+      "recorded": "2026-08-08T00:43:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 163.3,
+        "seconds": 147.8,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_kratos_skfem",
       "claim": "pair_kratos_skfem:33",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:53:56+00:00",
+      "recorded": "2026-08-08T00:51:01+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 26.4,
+        "seconds": 21.8,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "pair_ngsolve_skfem",
       "claim": "pair_ngsolve_skfem:1",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:54:22+00:00",
+      "recorded": "2026-08-08T00:52:46+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 278.1,
+        "seconds": 236.2,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "precice_absent_in_fourc_and_febio",
       "claim": "precice_availability:9",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:59:00+00:00",
+      "recorded": "2026-08-08T01:04:26+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 0.7,
+        "seconds": 1.4,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
+    },
+    {
+      "backend": "coupling",
+      "fixture": "precice_can_verdicts_for_the_other_four",
+      "claim": "precice_coupled_run:18",
+      "claim_text_sha": "",
+      "commit": "f1d4fbf50ca4",
+      "tree_dirty": true,
+      "recorded": "2026-08-08T01:05:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 34.0,
+        "missing": []
+      },
+      "control": "recipe",
+      "mutated": {
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
+      },
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "precice_can_verdicts_proven_by_a_real_run",
       "claim": "precice_coupled_run:18",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:59:01+00:00",
+      "recorded": "2026-08-08T01:06:04+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 11.2,
+        "seconds": 9.2,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "reference_solutions_unreachable_through_the_tools",
       "claim": "reference_isolation:32",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:59:12+00:00",
+      "recorded": "2026-08-08T01:06:32+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 1.0,
+        "seconds": 0.8,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "role_swap_beats_theta_tuning",
       "claim": "relaxation:13",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T00:59:13+00:00",
+      "recorded": "2026-08-08T01:06:36+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 313.7,
+        "seconds": 243.2,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "served_participant_scripts_run",
       "claim": "participant_scripts:16",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:04:27+00:00",
+      "recorded": "2026-08-08T01:19:28+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 9.5,
+        "seconds": 9.3,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "sides_table_backed_by_runs",
       "claim": "sides_table_coverage:10",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:04:37+00:00",
-      "unmutated": {
-        "status": "PASS",
-        "rc": 0,
-        "seconds": 0.2,
-        "missing": []
-      },
-      "mutated": {
-        "status": "NO_CONTROL"
-      },
-      "discriminates": null
-    },
-    {
-      "backend": "coupling",
-      "fixture": "sparta_no_native_flux_bc",
-      "claim": "sides_capabilities:8",
-      "claim_text_sha": "",
-      "commit": "61a72566e723",
-      "tree_dirty": true,
-      "recorded": "2026-08-07T01:04:37+00:00",
+      "recorded": "2026-08-08T01:19:49+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
         "seconds": 0.1,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
+    },
+    {
+      "backend": "coupling",
+      "fixture": "sparta_no_native_flux_bc",
+      "claim": "sides_capabilities:8",
+      "claim_text_sha": "",
+      "commit": "f1d4fbf50ca4",
+      "tree_dirty": true,
+      "recorded": "2026-08-08T01:19:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "recipe",
+      "mutated": {
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "coupling",
+      "fixture": "sparta_precice_load_order_and_coupled_run",
+      "claim": "precice_coupled_run:18",
+      "claim_text_sha": "",
+      "commit": "f1d4fbf50ca4",
+      "tree_dirty": true,
+      "recorded": "2026-08-08T01:19:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 77.0,
+        "missing": []
+      },
+      "control": "recipe",
+      "mutated": {
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
+      },
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "stochastic_noise_floor_makes_dsmc_gradable",
       "claim": "stochastic_convergence:30",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:04:37+00:00",
+      "recorded": "2026-08-08T01:22:35+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 72.0,
+        "seconds": 70.9,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "theta_converging_set_matches_the_limit",
       "claim": "relaxation:17",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:05:49+00:00",
+      "recorded": "2026-08-08T01:27:37+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 397.6,
+        "seconds": 305.3,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "theta_one_over_one_plus_rho_is_fastest",
       "claim": "relaxation:12",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:12:27+00:00",
+      "recorded": "2026-08-08T01:43:11+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 847.3,
+        "seconds": 686.0,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "theta_stability_limit",
       "claim": "relaxation:11",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:26:34+00:00",
+      "recorded": "2026-08-08T02:18:31+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 494.9,
+        "seconds": 434.0,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     },
     {
       "backend": "coupling",
       "fixture": "unit_mismatch_survives_every_internal_check",
       "claim": "silent_wrong:15",
       "claim_text_sha": "",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "tree_dirty": true,
-      "recorded": "2026-08-07T01:34:49+00:00",
+      "recorded": "2026-08-08T02:40:24+00:00",
       "unmutated": {
         "status": "PASS",
         "rc": 0,
-        "seconds": 50.2,
+        "seconds": 42.1,
         "missing": []
       },
+      "control": "recipe",
       "mutated": {
-        "status": "NO_CONTROL"
+        "status": "FAIL",
+        "detail": "recipe killed the fixture"
       },
-      "discriminates": null
+      "discriminates": true
     }
   ]
 }

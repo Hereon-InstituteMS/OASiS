@@ -1,12 +1,12 @@
 {
   "_what": "Execution record, imported from data/execution_ledger_*.json.",
   "_honesty": "status=passed means the fixture ran and its expectations matched. It does NOT mean the fixture detects the pathology it names \u2014 that is mutation_evidence, recorded separately. Rows marked 'pre-fix ledger' come from runs where the mutation arm was never applied and carry no discrimination claim. Rows marked 'not_run' were never executed here and are counted as such.",
-  "_generated": "2026-08-07T22:41:01+00:00",
+  "_generated": "2026-08-08T02:42:48+00:00",
   "_ledgers": {
     "execution_ledger_coupling.json": {
-      "commit": "61a72566e723",
-      "rows": 26,
-      "pre_fix": true
+      "commit": "f1d4fbf50ca4",
+      "rows": 29,
+      "pre_fix": false
     },
     "execution_ledger_dealii.json": {
       "commit": "bbefc6597cbe",
@@ -56,212 +56,220 @@
   },
   "results": {
     "coupling::relaxation::41": {
-      "status": "passed",
+      "status": "fail",
       "fixture_id": "aitken_beats_constant_on_an_unbalanced_ratio",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "no verdict \u2014 VACUOUS_BASELINE"
     },
     "coupling::relaxation::42": {
       "status": "passed",
       "fixture_id": "aitken_clamp_bounds_theta",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::relaxation::40": {
-      "status": "passed",
+      "status": "fail",
       "fixture_id": "aitken_survives_where_constant_theta_diverges",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "no verdict \u2014 VACUOUS_BASELINE"
     },
     "coupling::silent_wrong::14": {
-      "status": "passed",
+      "status": "fail",
       "fixture_id": "balance_check_both_directions",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "no verdict \u2014 VACUOUS_BASELINE"
+    },
+    "coupling::driver_invariants::34": {
+      "status": "passed",
+      "fixture_id": "driver_invariants_the_contract_asserts",
+      "backend": "coupling",
+      "commit": "f1d4fbf50ca4",
+      "source_ledger": "execution_ledger_coupling.json",
+      "mutation_evidence": "discriminates"
     },
     "coupling::failure_routing::31": {
       "status": "passed",
       "fixture_id": "failure_table_reachable_from_a_symptom",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_dune_dealii::6": {
       "status": "passed",
       "fixture_id": "pair_dune_dealii",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_febio_febio::7": {
       "status": "passed",
       "fixture_id": "pair_febio_febio",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_fenics_dealii::5": {
       "status": "passed",
       "fixture_id": "pair_fenics_dealii",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_fenics_dune::4": {
       "status": "passed",
       "fixture_id": "pair_fenics_dune",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_fenics_fourc::3": {
       "status": "passed",
       "fixture_id": "pair_fenics_fourc",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_fenics_ngsolve::2": {
       "status": "passed",
       "fixture_id": "pair_fenics_ngsolve",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_fenics_skfem::0": {
       "status": "passed",
       "fixture_id": "pair_fenics_skfem",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_kratos_skfem::33": {
       "status": "passed",
       "fixture_id": "pair_kratos_skfem",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::pair_ngsolve_skfem::1": {
       "status": "passed",
       "fixture_id": "pair_ngsolve_skfem",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::precice_availability::9": {
       "status": "passed",
       "fixture_id": "precice_absent_in_fourc_and_febio",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::precice_coupled_run::18": {
       "status": "passed",
-      "fixture_id": "precice_can_verdicts_proven_by_a_real_run",
+      "fixture_id": "sparta_precice_load_order_and_coupled_run",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::reference_isolation::32": {
       "status": "passed",
       "fixture_id": "reference_solutions_unreachable_through_the_tools",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::relaxation::13": {
       "status": "passed",
       "fixture_id": "role_swap_beats_theta_tuning",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::participant_scripts::16": {
       "status": "passed",
       "fixture_id": "served_participant_scripts_run",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::sides_table_coverage::10": {
       "status": "passed",
       "fixture_id": "sides_table_backed_by_runs",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::sides_capabilities::8": {
       "status": "passed",
       "fixture_id": "sparta_no_native_flux_bc",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::stochastic_convergence::30": {
       "status": "passed",
       "fixture_id": "stochastic_noise_floor_makes_dsmc_gradable",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::relaxation::17": {
       "status": "passed",
       "fixture_id": "theta_converging_set_matches_the_limit",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::relaxation::12": {
       "status": "passed",
       "fixture_id": "theta_one_over_one_plus_rho_is_fastest",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::relaxation::11": {
       "status": "passed",
       "fixture_id": "theta_stability_limit",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "coupling::silent_wrong::15": {
       "status": "passed",
       "fixture_id": "unit_mismatch_survives_every_internal_check",
       "backend": "coupling",
-      "commit": "61a72566e723",
+      "commit": "f1d4fbf50ca4",
       "source_ledger": "execution_ledger_coupling.json",
-      "mutation_evidence": "none \u2014 pre-fix ledger, mutation arm never applied"
+      "mutation_evidence": "discriminates"
     },
     "dealii::nonlinear::3": {
       "status": "passed",
@@ -10462,14 +10470,6 @@
       "commit": "30ec83105f8c",
       "source_ledger": "execution_ledger_sparta.json",
       "mutation_evidence": "discriminates"
-    },
-    "coupling::driver_invariants::34": {
-      "status": "not_run",
-      "fixture_id": "driver_invariants_the_contract_asserts",
-      "backend": "coupling",
-      "commit": "",
-      "source_ledger": "",
-      "mutation_evidence": "not run on this host"
     },
     "cross_backend::auxiliary_overview::102": {
       "status": "not_run",
