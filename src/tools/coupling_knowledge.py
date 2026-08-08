@@ -1255,9 +1255,12 @@ rather than inventing a symptom you would not:
     knowledge(topic='pitfalls', solver='coupling', signal='<what you saw>')
     knowledge(topic='pitfalls', solver='coupling', physics='silent_wrong')
 
-The groups are silent_wrong, participant_contract, verification_limits and
-capability_limits. They are also the entries the project's own coverage
+The groups are silent_wrong, participant_contract, verification_limits,
+capability_limits and fsi. They are also the entries the project's own coverage
 criterion counts for coupling, so they are the ones with fixtures behind them.
+The `fsi` group is the fluid-structure-specific set — the traction sign, the
+added-mass instability, the ALE mesh, and the two modes in which a one-way or
+sign-flipped FSI passes every conservation check there is.
 
 FIRST THING TO DO WHEN A COUPLING FAILS: delete `imports.json` from each
 work_dir and run each participant script by hand there. That exercises the
@@ -1281,6 +1284,12 @@ traps specific to it. Copy it into the participant's `work_dir`, edit the
 marked block, run it once by hand, then call `couple`.
 
 {rows}
+
+FLUID-STRUCTURE INTERACTION is its own pattern rather than a backend — a
+vector traction one way, a displacement the other, and the fluid consuming it
+by moving its mesh:
+
+  knowledge(topic='coupling', solver='fsi')
 
 preCICE instead of this driver:  knowledge(topic='precice', solver='<name>')
 4C-native thermo-structural:     knowledge(topic='tsi')
@@ -1667,6 +1676,134 @@ def _skfem() -> str:
 
 
 
+def _fsi() -> str:
+    """knowledge(topic='coupling', solver='fsi') — the FSI pattern.
+
+    Not a backend. It is served through the same dispatch because an agent with
+    an FSI problem asks for FSI, not for "the FEniCSx participant plus the
+    scikit-fem participant plus the three things nobody wrote down".
+    """
+    return (
+        "# Partitioned fluid-structure interaction with `couple`\n\n"
+        "## What FSI needs that a scalar coupling does not\n\n"
+        "Everything in `knowledge(topic='coupling')` still applies — the "
+        "participant contract, the JSON shapes, the relaxation. FSI adds four "
+        "things, and the two scripts below are one worked pair that has all "
+        "four.\n\n"
+        "1. **The exchange is VECTOR-valued.** `values` is an (N, 2) or (N, 3) "
+        "list: a traction one way, a displacement the other. The driver handles "
+        "that already — it relaxes the flattened vector and reports a residual "
+        "PER COMPONENT in `block_residuals`, which matters here because "
+        "traction and displacement differ by many orders of magnitude and a "
+        "single global norm would let the small one move freely.\n"
+        "2. **The two participants exchange DIFFERENT quantities.** A "
+        "Dirichlet-Neumann heat coupling passes temperature one way and flux "
+        "the other; FSI passes traction one way and displacement the other, and "
+        "the fluid consumes the displacement by MOVING ITS MESH (ALE), not by "
+        "setting a boundary value. That mesh motion is the entire "
+        "structure-to-fluid direction. If it is missing you have a rigid-wall "
+        "flow solve dressed as FSI, and every force-side check will pass.\n"
+        "3. **The traction sign has to be decided once, in writing.** See the "
+        "section below; getting it wrong in both places is silent.\n"
+        "4. **The iteration can be unstable for physical reasons.** Added mass: "
+        "with an incompressible fluid and a light structure the unrelaxed "
+        "iteration diverges, and a smaller time step makes it worse. "
+        "`knowledge(topic='pitfalls', solver='coupling', physics='fsi')` has "
+        "the criterion and what to do.\n\n"
+        "## THE SIGN, ONCE\n\n"
+        "```\n"
+        "  fluid exports  values = t = sigma_f . n_s = -sigma_f . n_f\n"
+        "                        = THE LOAD ON THE STRUCTURE\n"
+        "  structure applies it DIRECTLY as a Neumann traction, no sign change\n"
+        "```\n"
+        "`n_f` is the fluid's outward normal on the interface and `n_s = -n_f` "
+        "the structure's. Cauchy's `t(n) = sigma.n` is the traction exerted BY "
+        "the material `n` points INTO, so `sigma_f . n_f` is what the structure "
+        "does to the fluid and the load on the structure is its negative. Check "
+        "against hydrostatics before you trust an implementation: `sigma_f = "
+        "-p I` with `p > 0` gives `t = +p n_f`, the fluid pushing the wall away "
+        "from itself.\n\n"
+        "Both participants ALSO export `normal_fluxes`, each with respect to "
+        "ITS OWN outward normal, so the driver's conservation check can run and "
+        "the two must sum to zero. Be clear about what that check then buys: it "
+        "measures the FORCE TRANSFER across two non-matching interface "
+        "discretisations. It cannot see a convention flipped on both sides.\n\n"
+        "## Interface parametrisation\n\n"
+        "Both sides send `coordinates` in the UNDEFORMED positions of their own "
+        "interface nodes, and the displacement carries the motion. The "
+        "interface is a material surface, so that parametrisation is fixed; "
+        "sending deformed coordinates makes each side interpolate against "
+        "something that moves with the answer.\n\n"
+        "## THE FLUID PARTICIPANT — copy verbatim, edit the marked block only\n\n"
+        f"```python\n{_script('fsi_fluid_fenics')}```\n\n"
+        "## THE STRUCTURE PARTICIPANT — copy verbatim, edit the marked block only\n\n"
+        f"```python\n{_script('fsi_solid_skfem')}```\n\n"
+        "TWO MORE STRUCTURE PARTICIPANTS ship with the same contract, and both "
+        "have been run as real coupled FSI on this install: "
+        "`participant_fsi_solid_fenics.py` (FEniCSx, same interpreter as the "
+        "fluid) and `participant_fsi_solid_fourc.py` (4C — a plain-Python "
+        "WRAPPER that writes an inline-mesh 4C deck, runs the binary and reads "
+        "the VTU back, so it runs under an ordinary python with numpy and "
+        "meshio, not under 4C). Running the pair once with each is how you find "
+        "out whether an answer depends on one structure code. Two things worth "
+        "knowing before you use the 4C one: its WALL QUAD4 is bilinear and "
+        "shear-locks in bending, so a plate a few elements thick comes out too "
+        "stiff and the mesh has to be refined until that bias is below whatever "
+        "you are asserting; and a spatially varying surface traction goes in as "
+        "VAL x FUNCT with FUNCT a symbolic expression, where a POLYNOMIAL FIT "
+        "is a silently wrong boundary condition rather than an error — the "
+        "shipped participant emits the piecewise-linear interpolant exactly, "
+        "using `heaviside`, and reports the deviation every iteration.\n\n"
+        "## Wiring them\n\n"
+        "```python\ncouple(participants=json.dumps([\n"
+        '  {"name":"fluid","command":["<fenicsx python>","participant_fluid.py"],\n'
+        '   "work_dir":"/abs/fluid","imports_from":["solid"]},\n'
+        '  {"name":"solid","command":["<python>","participant_solid.py"],\n'
+        '   "work_dir":"/abs/solid","imports_from":["fluid"]}]),\n'
+        "  max_iter=60, tol=1e-9, accelerator='aitken', theta=0.5,\n"
+        "  monolithic=json.dumps({...}), probe=True)\n```\n\n"
+        "`probe=True` is not optional for FSI. The interface-sensitivity probe "
+        "is the ONLY check that separates a real two-way coupling from a fluid "
+        "that never moves its mesh.\n\n"
+        "## Checking it, in the order the checks are worth anything\n\n"
+        "1. **Run each participant by hand first**, with no `imports.json`, and "
+        "check the fluid's net interface force against a configuration you can "
+        "compute. For a straight channel with the wall held rigid that is plane "
+        "Poiseuille: pressure drop `12*mu*U_mean*L/H^2`, so the net normal "
+        "force on the wall is `dp*L/2` and the net tangential force is "
+        "`6*mu*U_mean/H*L`. This is the check that catches a wrong sign or a "
+        "wrong unit, and it is the only one here that does not share code with "
+        "the coupling.\n"
+        "2. **Both directions, by suppression.** Re-run with the fluid's mesh "
+        "motion switched off. If the converged deflection does not change, the "
+        "coupling is one-way, whatever it is called. Report the size of the "
+        "change; it is the only quantitative evidence that the reverse "
+        "direction carries physics.\n"
+        "3. **Interface equilibrium and kinematic continuity, COMPONENTWISE.** "
+        "Net force out of the fluid against net force into the structure, and "
+        "the displacement the fluid imposed against the structure's own. A "
+        "coupling that drops the tangential component passes every check that "
+        "only looks at totals.\n"
+        "4. **A reference solve.** `fsi_reference_newtonkrylov.py` in the same "
+        "directory re-solves the coupled interface equation by Newton-Krylov "
+        "and writes `monolithic.json`, so it plugs straight into "
+        "`couple(monolithic=...)`. It establishes that the ITERATION found the "
+        "root — read its docstring for what it cannot establish, which is "
+        "anything wrong INSIDE a participant, because it drives the same "
+        "scripts.\n"
+        "5. **An independent code.** For FSI that means a native monolithic FSI "
+        "solver on the same geometry. 4C has one "
+        "(`PROBLEMTYPE: Fluid_Structure_Interaction` with a monolithic "
+        "`COUPALGO`). Nothing above substitutes for it.\n\n"
+        "## Traps\n\n"
+        "`knowledge(topic='pitfalls', solver='coupling', physics='fsi')` — the "
+        "traction sign, added mass, the one-way FSI that passes everything, the "
+        "whole-convention flip that even a reference re-solve agrees with, the "
+        "inverted ALE mesh that hangs instead of failing, and why the traction "
+        "recovered from the structure's own stress field is not an equilibrium "
+        "check.\n")
+
+
 # ══════════════════════════════════════════════════════════════════════════
 # DISPATCH
 # ══════════════════════════════════════════════════════════════════════════
@@ -1674,11 +1811,14 @@ def _skfem() -> str:
 _BACKENDS = {
     "fenics": _fenics, "fenicsx": _fenics, "dolfinx": _fenics,
     "fourc": _fourc, "4c": _fourc,
+    "fsi": _fsi, "fluid-structure": _fsi, "fluid_structure": _fsi,
     "ngsolve": _ngsolve,
     "skfem": _skfem, "scikit-fem": _skfem, "scikitfem": _skfem,
 }
 
 _ALIAS_CANON = {"fenics": "fenics", "fenicsx": "fenics", "dolfinx": "fenics",
+                "fsi": "fsi", "fluid-structure": "fsi",
+                "fluid_structure": "fsi",
                 "fourc": "fourc", "4c": "fourc", "ngsolve": "ngsolve",
                 "skfem": "skfem", "scikit-fem": "skfem", "scikitfem": "skfem",
                 "dune": "dune", "dune-fem": "dune", "dunefem": "dune",

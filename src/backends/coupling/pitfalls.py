@@ -815,11 +815,158 @@ _CAPABILITY_LIMITS = [
 ]
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# FLUID-STRUCTURE INTERACTION
+#
+# FSI is the coupling that most of the entries above were written for without
+# naming it, plus three modes that belong to it alone: the traction sign, the
+# added-mass instability, and the ALE mesh. Kept as their own group because an
+# agent arriving with a diverging FSI should be able to ask for exactly this.
+# ══════════════════════════════════════════════════════════════════════════
+
+_FSI = [
+    "[Coupling][BC] FSI TRACTION SIGN: which normal the exchanged traction is "
+    "taken with respect to decides whether the wall bulges or collapses, and "
+    "the derivation is short enough to do once and write down rather than "
+    "re-derive on each side. Cauchy's t(n) = sigma.n is the traction exerted "
+    "BY the material n points INTO, ON the material n points OUT OF. So with "
+    "n_f the FLUID's outward normal on the interface, sigma_f . n_f is what the "
+    "STRUCTURE does to the FLUID, and the load ON THE STRUCTURE is its "
+    "negative: t = sigma_f . n_s with n_s = -n_f. Check it against the "
+    "hydrostatic case before trusting any implementation: a fluid at pressure "
+    "p > 0 has sigma_f = -p I, so t = -sigma_f . n_f = +p n_f, and the fluid "
+    "pushes the wall AWAY from itself. Decide ONE convention for what the fluid "
+    "participant puts in `values` — the recommendation is 'the load on the "
+    "structure', so the structure applies it with NO further sign change — and "
+    "say so in both scripts. "
+    "Signal: a flip in ONE of the two places is loud: `Interface flux NOT "
+    "balanced` with the two magnitudes equal and the SIGNS AGREEING. A flip in "
+    "BOTH — the whole convention reversed — is SILENT, and has its own entry.",
+
+    "[Coupling][Numerical] ADDED MASS: a partitioned FSI with an INCOMPRESSIBLE "
+    "fluid can diverge for reasons that have nothing to do with your tolerance, "
+    "and refining the time step makes it WORSE rather than better. The "
+    "mechanism: incompressibility makes the interface pressure respond "
+    "instantaneously to interface acceleration, so eliminating the fluid leaves "
+    "an ADDED-MASS operator on the structure's interface equation. Its size "
+    "grows with the fluid-to-structure density ratio and with the slenderness "
+    "of the fluid domain (rho_f * L against rho_s * h), and it does not shrink "
+    "with dt — the structure's own inertia enters as rho_s/dt^2 while the added "
+    "mass enters at the same order, so a smaller dt does not buy stability. "
+    "When the added mass exceeds the structural mass the UNRELAXED "
+    "Dirichlet-Neumann iteration has an amplification factor above one and "
+    "diverges no matter how many iterations you allow. Light structures in "
+    "water, thin membranes, and haemodynamics are the standard cases. What to "
+    "do, in order: under-relax hard (theta well below 1), then Aitken, then a "
+    "quasi-Newton scheme (IQN-ILS through preCICE), then give up on the "
+    "partitioned split and use a monolithic solver. Raising max_iter is the one "
+    "thing that never helps. "
+    "Signal: `did not converge to tol=<value> in <n> iters` with the residual "
+    "history GROWING rather than stalling — check `history` in the returned "
+    "JSON, a growing sequence is the added-mass signature and a flat one is a "
+    "noise floor or a wrong tol. If the divergence is fast enough the fluid "
+    "participant dies first, on an inverted ALE mesh; see the ALE entry.",
+
+    "[Coupling][Verification] A ONE-WAY FSI PASSES EVERY CONSERVATION CHECK. If "
+    "the fluid never applies the imported displacement — the mesh motion is "
+    "switched off, the ALE lift is written but never added to the geometry, or "
+    "the displacement is applied to a boundary that does not bound the flow — "
+    "then the fluid solves the RIGID-WALL problem every iteration. That "
+    "coupling converges in two or three iterations, the interface force "
+    "balances to machine precision, the profiles match point by point, and the "
+    "answer is the rigid-wall answer presented as FSI. Every force-side check "
+    "is satisfied because the force side is genuinely correct; it is the "
+    "kinematic side that is missing, and force checks do not look there. "
+    "Signal: the ONE check that fires is the interface-sensitivity probe — "
+    "`Participant <name> is NOT A FUNCTION of its imports`, with `signal` equal "
+    "to `noise` in `interface_sensitivity`, because re-running the fluid on "
+    "perturbed displacement returns a bit-identical answer. Do not run FSI with "
+    "probe=False. The second, independent test is to compare the converged "
+    "deflection against the same case with the mesh motion deliberately off: if "
+    "the two agree, the coupling IS one-way whatever it is called.",
+
+    "[Coupling][Verification] THE FORCE BALANCE CANNOT SEE A WHOLE-CONVENTION "
+    "FLIP, AND NEITHER CAN A SHARED-SCRIPT REFERENCE. If the fluid's exported "
+    "traction is reversed in BOTH the load the structure applies and the flux "
+    "the conservation check sees — which is what a participant written with the "
+    "opposite normal produces — the coupling converges, the interface force "
+    "balances exactly, the profile matches point by point, and the structure "
+    "deflects the wrong way. A reference re-solve does not help IF IT DRIVES "
+    "THE SAME PARTICIPANT SCRIPTS: a Newton-Krylov or fixed-point re-solve of "
+    "the coupled interface equation shares the flip and agrees with it to "
+    "solver tolerance. What separates it is an answer computed OUTSIDE those "
+    "scripts: a closed form on a configuration you can reason about (for a "
+    "channel with the wall held rigid, plane Poiseuille gives both the normal "
+    "and the tangential interface force), or the same case in an independent "
+    "code's own FSI solver. "
+    "Signal: NOTHING in the returned JSON. `validation` is empty, the verdict "
+    "is VERIFIED, and the sign of the deflection is the only thing that is "
+    "wrong. Check that the structure moves the way the physics says it should "
+    "before reading any other number.",
+
+    "[Coupling][Mesh] AN INVERTED ALE MESH HANGS RATHER THAN FAILS. When a "
+    "partitioned FSI diverges, the interface displacement exceeds the fluid "
+    "domain within a few iterations and the harmonic (or elastic) extension "
+    "folds cells over. The flow solve that follows is on a mesh with negative "
+    "cell volumes, where a Newton iteration typically neither converges nor "
+    "raises: the participant sits inside its timeout and the coupling reads as "
+    "a slow run rather than a divergence. Put an explicit check in the fluid "
+    "participant right after moving the mesh — compare each cell's signed "
+    "volume against ITS OWN undeformed value and exit non-zero if any changed "
+    "sign or collapsed. Compare per cell, not against a global sign: a mesh "
+    "generator need not orient every cell the same way, and a guard written "
+    "against the median sign reports half the cells as inverted on a perfectly "
+    "good mesh. "
+    "Signal: without the guard, `participant <name> timed out after <n>s`, or "
+    "no message at all until the whole coupling's deadline. With it, "
+    "`participant <name> exited with code 1` and your own message naming the "
+    "displacement that did it — which is the difference between a diagnosis and "
+    "a mystery.",
+
+    "[Coupling][Numerical] THE TRACTION RECOVERED FROM A STRUCTURE'S OWN STRESS "
+    "FIELD IS NOT AN INTERFACE EQUILIBRIUM CHECK, on a bending body. It is "
+    "tempting to have the structure export sigma_s . n_s computed from its "
+    "displacement solution, as an INDEPENDENT statement that its internal "
+    "stress balances the load. On a thin strip in bending it does not converge: "
+    "the normal traction on the loaded face is a small difference of large "
+    "bending stresses, so the recovery error swamps it, and where a Dirichlet "
+    "boundary (a clamp) meets the loaded face the exact solution has a stress "
+    "singularity — the pointwise traction there diverges under refinement by "
+    "construction, and a nodal quadrature of it converges to the wrong number. "
+    "Export the traction the structure RECEIVED instead and be clear about what "
+    "that check then measures: the FORCE TRANSFER between two non-matching "
+    "interface discretisations, which is the conservation question a "
+    "partitioned FSI actually has to answer. "
+    "Signal: the recovered traction's pointwise maximum GROWS as you refine "
+    "while the applied one does not move, and its integral over the interface "
+    "converges to a value that is not the applied net force. If you see that, "
+    "the recovery is behaving correctly and the check is the thing that is "
+    "wrong.",
+
+    "[Coupling][Contract] EXCHANGE THE FSI INTERFACE ON THE REFERENCE "
+    "CONFIGURATION. The interface is a material surface, so both participants "
+    "should send and receive `coordinates` in the UNDEFORMED positions of their "
+    "interface nodes and let the exchanged displacement carry the motion. If "
+    "one side sends deformed coordinates while the other sends reference ones, "
+    "each side's interpolation is chasing a parametrisation that moves with the "
+    "answer. The same rule decides the fluid's interface velocity: steady, the "
+    "wall is stationary in its DEFORMED position and the fluid sees u = 0 there "
+    "with the mesh carrying the whole coupling; transient, the wall is moving "
+    "and u = d/dt, and that kinematic term is where the structure's inertia "
+    "reaches the fluid at all. "
+    "Signal: NOTHING here detects a mixed parametrisation. "
+    "`check_interfaces_are_the_same_surface` compares bounding boxes with a 5% "
+    "tolerance and a small deformation stays well inside it. This is a setup "
+    "rule to follow, not a symptom to look up.",
+]
+
+
 COUPLING_PITFALLS: dict[str, list[str]] = {
     "silent_wrong": _SILENT_WRONG,
     "participant_contract": _CONTRACT,
     "verification_limits": _CHECK_LIMITS,
     "capability_limits": _CAPABILITY_LIMITS,
+    "fsi": _FSI,
 }
 
 
