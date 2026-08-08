@@ -1,56 +1,50 @@
 {
- "_what": "Keys OASiS names that do not resolve in the backend's own corpus.",
- "_why": "A baseline, not an allowlist. Every entry is a CANDIDATE awaiting triage, and each is either a real fabrication to fix or a correct negative the absence-cue matcher failed to recognise. The gate fails on anything NOT listed here, so a newly invented key is caught the moment it is written. Entries are removed as they are resolved; the list is meant to shrink to nothing.",
- "_pruned_2026_08_07": "Re-taken on the CONSOLIDATED corpus after feature/anti-fabrication was merged into consolidation/all-campaigns. 34 of the 68 entries now resolve and were removed, as test_baseline_only_shrinks requires \u2014 an entry that stays after its key is fixed silently re-permits the same fabrication if somebody reintroduces it. The prune is one-directional and every removal is a key the merged corpus fixed or stopped naming; 20 of the 34 are 4C keys corrected on this branch by 14f65097, 75af08d0, 1b6796b4 and 7608d060.",
- "_not_baselined": "The same re-take found 121 candidates that are NOT in this file, and they are deliberately left out: the gate is red for all nine backends until they are triaged. Adding them would make the gate green by making it blind, which is the failure mode the sibling test test_baseline_only_shrinks exists to prevent. Spot-checked, the 121 are four different things and only triage can separate them: (a) correct negatives whose phrasing _absence_asserted does not recognise \u2014 fourc REDAIRWAY is named precisely BECAUSE 'the spelling REDAIRWAY is rejected by the ParObject factory'; (b) real external symbols named in diagnostics but not input keys \u2014 XERBLA, DGEMM, SIGABRT, MPI_ABORT for 4C, the PETSc/SLEPc convergence-reason enums for fenics, the KRATOS_ERROR macros for kratos; (c) English-in-caps the stopword list does not cover \u2014 ABOVE, BEFORE, WHICH, NOTHING, EVERY, which dominate the febio and sparta lists; (d) genuine fabrications. At least one of (d) is present: kratos PARTICLE_FRICTION, served as a required DEM material key AND written into generated decks, is absent from the 28-application build \u2014 see the note in audit_quoted_diagnostics.py SOURCE_HINTS. The real keys are STATIC_FRICTION / DYNAMIC_FRICTION.",
- "_known_real_fabrications": [
-  "fourc AREA0 - 4C has no such key; the reference geometry is DIAM (30 decks). STILL FLAGGED on the consolidated corpus, which is the check that this gate has not gone blind.",
-  "fourc FLUID_DYNAMIC / TURBULENCE_MODEL - 4C sections use SPACES: 'FLUID DYNAMIC' (561 decks), 'TURBULENCE MODEL' (57 decks). FIXED on consolidation/all-campaigns; both now resolve and have left the baseline. Kept here as the record of what the entry was for.",
-  "kratos PARTICLE_FRICTION - not in the 28-application build; the real keys are STATIC_FRICTION / DYNAMIC_FRICTION. NOT baselined: newly visible because kratos gets a verdict on this host now (see _no_verdict below), and it should be fixed rather than recorded."
- ],
- "_known_correct_negatives": [
-  "fourc INTPOINTS_MORTAR - documented as NOT existing; 4C's key is NUMGP_PER_DIM. Now resolves and has left the baseline; kept here as the record."
- ],
- "baseline": {
-  "fourc": [],
-  "fenics": [
-   "CANNOT",
-   "COLLAPSED",
-   "DIVERGED_BREAKDOWN",
-   "DIVERGED_FNORM_NAN",
-   "DIVERGED_INDEFINITE_PC",
-   "DIVERGED_LINE_SEARCH",
-   "KSP_DIVERGED_BREAKDOWN",
-   "REMOVED",
-   "SUPG"
+  "_what": "Keys OASiS names that do not resolve in the backend's own corpus.",
+  "_why": "A baseline, not an allowlist. Every entry is a CANDIDATE awaiting triage, and each is either a real fabrication to fix or a correct negative the absence-cue matcher failed to recognise. The gate fails on anything NOT listed here, so a newly invented key is caught the moment it is written. Entries are removed as they are resolved; the list is meant to shrink to nothing.",
+  "_pruned_2026_08_07": "Re-taken on the CONSOLIDATED corpus after feature/anti-fabrication was merged into consolidation/all-campaigns. 34 of the 68 entries now resolve and were removed, as test_baseline_only_shrinks requires \u2014 an entry that stays after its key is fixed silently re-permits the same fabrication if somebody reintroduces it. The prune is one-directional and every removal is a key the merged corpus fixed or stopped naming; 20 of the 34 are 4C keys corrected on this branch by 14f65097, 75af08d0, 1b6796b4 and 7608d060.",
+  "_not_baselined": "The same re-take found 121 candidates that are NOT in this file, and they are deliberately left out: the gate is red for all nine backends until they are triaged. Adding them would make the gate green by making it blind, which is the failure mode the sibling test test_baseline_only_shrinks exists to prevent. Spot-checked, the 121 are four different things and only triage can separate them: (a) correct negatives whose phrasing _absence_asserted does not recognise \u2014 fourc REDAIRWAY is named precisely BECAUSE 'the spelling REDAIRWAY is rejected by the ParObject factory'; (b) real external symbols named in diagnostics but not input keys \u2014 XERBLA, DGEMM, SIGABRT, MPI_ABORT for 4C, the PETSc/SLEPc convergence-reason enums for fenics, the KRATOS_ERROR macros for kratos; (c) English-in-caps the stopword list does not cover \u2014 ABOVE, BEFORE, WHICH, NOTHING, EVERY, which dominate the febio and sparta lists; (d) genuine fabrications. At least one of (d) is present: kratos PARTICLE_FRICTION, served as a required DEM material key AND written into generated decks, is absent from the 28-application build \u2014 see the note in audit_quoted_diagnostics.py SOURCE_HINTS. The real keys are STATIC_FRICTION / DYNAMIC_FRICTION.",
+  "_known_real_fabrications": [
+    "fourc AREA0 - 4C has no such key; the reference geometry is DIAM (30 decks). STILL FLAGGED on the consolidated corpus, which is the check that this gate has not gone blind.",
+    "fourc FLUID_DYNAMIC / TURBULENCE_MODEL - 4C sections use SPACES: 'FLUID DYNAMIC' (561 decks), 'TURBULENCE MODEL' (57 decks). FIXED on consolidation/all-campaigns; both now resolve and have left the baseline. Kept here as the record of what the entry was for.",
+    "kratos PARTICLE_FRICTION - not in the 28-application build; the real keys are STATIC_FRICTION / DYNAMIC_FRICTION. NOT baselined: newly visible because kratos gets a verdict on this host now (see _no_verdict below), and it should be fixed rather than recorded."
   ],
-  "dealii": [
-   "EPS_TARGET_REAL"
+  "_known_correct_negatives": [
+    "fourc INTPOINTS_MORTAR - documented as NOT existing; 4C's key is NUMGP_PER_DIM. Now resolves and has left the baseline; kept here as the record."
   ],
-  "ngsolve": [
-   "ALSO",
-   "DIVERGED_BREAKDOWN"
-  ],
-  "skfem": [
-   "BDF2"
-  ],
-  "dune": [
-   "COUPLED",
-   "DIRK22",
-   "SDIRK22"
-  ],
-  "febio": [
-   "FEBIO_BINARY",
-   "NEGATIVELY",
-   "UPPERCASE",
-   "VERIFIED"
-  ],
-  "sparta": []
- },
- "_no_verdict": {
-  "kratos": "Was PARTIAL_CORPUS when this baseline was first taken against the repo venv's 3-application wheel. On the consolidated tree the audit reaches the 28-application source build at /mnt/kratos-tier2/kv and returns CANDIDATES \u2014 172 distinct keys checked across 188 entries, 18 unresolved. That is a verdict, so kratos is no longer exempt, and its 18 are among the 121 left untriaged above."
- },
- "notes": {
-  "fourc": "Emptied 2026-08-07. All 14 entries resolved: 26 fourc knowledge strings had ALL-CAPS prose emphasis lowercased (the gate cannot tell FLUCTUATION from an identifier), 4 external symbols (MPI_ABORT, SIGABRT, DGEMM, XERBLA) joined the stopword list, and 9 were correct negatives whose rejection phrasing the absence matcher did not recognise. audit reports 0 unresolved for fourc, with the deck FILES now inside the gate's reach."
- }
+  "baseline": {
+    "fourc": [],
+    "fenics": [
+      "CANNOT",
+      "COLLAPSED",
+      "SUPG"
+    ],
+    "dealii": [
+      "EPS_TARGET_REAL"
+    ],
+    "ngsolve": [
+      "ALSO"
+    ],
+    "skfem": [
+      "BDF2"
+    ],
+    "dune": [
+      "COUPLED",
+      "DIRK22",
+      "SDIRK22"
+    ],
+    "febio": [
+      "FEBIO_BINARY",
+      "NEGATIVELY",
+      "UPPERCASE",
+      "VERIFIED"
+    ],
+    "sparta": []
+  },
+  "_no_verdict": {
+    "kratos": "Was PARTIAL_CORPUS when this baseline was first taken against the repo venv's 3-application wheel. On the consolidated tree the audit reaches the 28-application source build at /mnt/kratos-tier2/kv and returns CANDIDATES \u2014 172 distinct keys checked across 188 entries, 18 unresolved. That is a verdict, so kratos is no longer exempt, and its 18 are among the 121 left untriaged above."
+  },
+  "notes": {
+    "fourc": "Emptied 2026-08-07. All 14 entries resolved: 26 fourc knowledge strings had ALL-CAPS prose emphasis lowercased (the gate cannot tell FLUCTUATION from an identifier), 4 external symbols (MPI_ABORT, SIGABRT, DGEMM, XERBLA) joined the stopword list, and 9 were correct negatives whose rejection phrasing the absence matcher did not recognise. audit reports 0 unresolved for fourc, with the deck FILES now inside the gate's reach."
+  },
+  "_pruned_2026_08_08": "Re-taken after feature/fenics-diagnostics was merged. That branch taught search_roots to reach a CONDA package's real library through DT_NEEDED (linked_libraries) and to include libpython (cpython_runtime); audit_named_input_keys imports the same search_roots, so PETSc's DIVERGED_* enum names \u2014 which live in libpetsc.so and not in the dolfinx wrapper the audit could previously see \u2014 now resolve. fenics: DIVERGED_BREAKDOWN, DIVERGED_FNORM_NAN, DIVERGED_INDEFINITE_PC, DIVERGED_LINE_SEARCH, KSP_DIVERGED_BREAKDOWN, REMOVED; ngsolve: DIVERGED_BREAKDOWN. Removed as test_baseline_only_shrinks requires: an entry that stays after its key resolves silently re-permits the same fabrication."
 }
