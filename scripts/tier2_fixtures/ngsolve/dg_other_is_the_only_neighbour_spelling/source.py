@@ -32,8 +32,25 @@ from __future__ import annotations
 import os
 import sys
 
+import numpy as np
 from netgen.geom2d import unit_square
 from ngsolve import BilinearForm, L2, Mesh, dx
+
+
+def _cross_element_entries(a, dof_elem):
+    """(nze, entries connecting two different elements, largest such value).
+
+    The allocated sparsity pattern is not evidence of coupling: on a space
+    built with dgjumps=True every form gets the wide pattern whether or not it
+    uses Other().  Only a stored value that links DOFs owned by two different
+    elements is.
+    """
+    a.Assemble()
+    rows, cols, vals = a.mat.COO()
+    r, c, v = np.asarray(rows), np.asarray(cols), np.asarray(vals)
+    m = (dof_elem[r] != dof_elem[c]) & (np.abs(v) > 1e-12)
+    peak = float(np.abs(v[m]).max()) if m.any() else 0.0
+    return int(a.mat.nze), int(m.sum()), peak
 
 
 NEVER_EMITTED = "trial function has no attribute neighbour"
@@ -72,20 +89,41 @@ def main() -> int:
     print(f"Other_exists={hasattr(u, 'Other')}")
 
     # ...and Other() genuinely couples across facets.
+    dof_elem = np.full(fes.ndof, -1, dtype=int)
+    for el in fes.Elements():
+        for d in el.dofs:
+            dof_elem[d] = el.nr
+    print(f"dofs_with_an_owning_element={int((dof_elem >= 0).sum())} "
+          f"of {fes.ndof}")
     a_mean = BilinearForm(fes)
     a_mean += 0.5 * (u + u.Other()) * 0.5 * (v + v.Other()) * dx(skeleton=True)
-    a_mean.Assemble()
-    nze_mean = a_mean.mat.nze
+    nze_mean, cross_mean, peak_mean = _cross_element_entries(a_mean, dof_elem)
 
-    fes_plain = L2(mesh, order=1)
-    up, vp = fes_plain.TnT()
-    a_local = BilinearForm(fes_plain)
-    a_local += up * vp * dx
-    a_local.Assemble()
-    nze_local = a_local.mat.nze
+    # THE CONTROL THAT MAKES THIS ABOUT Other().
+    #
+    # This used to be `nze(mean form on L2(dgjumps=True)) > nze(mass form on
+    # L2(dgjumps=False))`, and dgjumps=True is precisely the flag that asks
+    # NGSolve for the wider sparsity PATTERN.  The inequality therefore measured
+    # the allocation the flag requests, and came out True for any form at all --
+    # including one with no Other() in it.
+    #
+    # The control is the SAME space, the same skeleton integral, and the only
+    # difference is whether Other() appears.  What is counted is not the
+    # allocated pattern but the entries that are actually non-zero and connect
+    # DOFs owned by two different elements, which is what "reaches across a
+    # facet" means.
+    a_noother = BilinearForm(fes)
+    a_noother += u * v * dx(skeleton=True)
+    nze_noother, cross_noother, _ = _cross_element_entries(a_noother, dof_elem)
+
     print(f"mean_form_nze={nze_mean}")
-    print(f"element_local_nze={nze_local}")
-    print(f"Other_reaches_across_facets={nze_mean > nze_local}")
+    print(f"no_Other_form_nze={nze_noother}")
+    print(f"both_forms_share_the_same_allocation={nze_mean == nze_noother}")
+    print(f"mean_form_cross_element_entries={cross_mean}")
+    print(f"no_Other_form_cross_element_entries={cross_noother}")
+    print(f"mean_form_peak_cross_element_value={peak_mean:.6e}")
+    print(f"Other_reaches_across_facets="
+          f"{cross_mean > 0 and cross_noother == 0}")
 
     ok = (
         cls == "ngsolve.comp.ProxyFunction"
@@ -94,7 +132,7 @@ def main() -> int:
         and NEVER_EMITTED not in msg
         and present == []
         and hasattr(u, "Other")
-        and nze_mean > nze_local
+        and cross_mean > 0 and cross_noother == 0
     )
     if ok:
         return 0
