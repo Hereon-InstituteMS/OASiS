@@ -177,7 +177,25 @@ def interpolate_to_points(
         return _shape(np.tile(src_values[0], (len(target_coords), 1)))
 
     src_p = centred @ vt[:rank].T
-    tgt_p = (target_coords[:, :src_coords.shape[1]] - origin) @ vt[:rank].T
+    # THE TWO SIDES NEED NOT CARRY THE SAME NUMBER OF COLUMNS. A source read
+    # from a VTU always has three (VTK stores z even for a plane problem) while
+    # a target assembled in Python commonly has two, and slicing the target to
+    # the source's width does not widen it: `target[:, :3]` on an (M, 2) array
+    # is still (M, 2), so subtracting the 3-vector `origin` raised
+    # "operands could not be broadcast together with shapes (9,2) (3,)" and the
+    # skfem<->skfem poisson_dd coupling died in its update step. The previous
+    # implementation never met this because it indexed the target by the
+    # source's VARYING axes only, which for a plane interface are columns the
+    # target does have.
+    #
+    # A column the target omits is taken to sit at the interface's own position
+    # along that axis — it contributes zero once centred, which is exactly
+    # right for the constant axis this case is about, and is the same answer
+    # the axis-dropping version gave.
+    tgt = np.tile(origin, (len(target_coords), 1))
+    shared = min(src_coords.shape[1], target_coords.shape[1])
+    tgt[:, :shared] = target_coords[:, :shared]
+    tgt_p = (tgt - origin) @ vt[:rank].T
 
     if rank == 1:
         # 1D interface — use numpy interp (robust, no scipy needed)
