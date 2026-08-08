@@ -108,8 +108,16 @@ for name, msg in QUOTED.items():
         print(f"UNEXPECTED: {name} printed {CASES[name]['errors'][:1]} "
               f"not {msg!r}")
 
-two_distinct = (QUOTED["weight_radius_on_a_non_axisymmetric_model"]
-                != QUOTED["weight_radius_before_create_grid"])
+# The two messages SPARTA ACTUALLY PRINTED, not the two the fixture typed.
+# This was `QUOTED[a] != QUOTED[b]` -- both operands are the string constants
+# defined thirty lines above, so the line asserted that the author typed two
+# different strings and could not come out False whatever SPARTA did, on any
+# version, with or without the pathology.
+_got_a = CASES["weight_radius_on_a_non_axisymmetric_model"]["errors"][:1]
+_got_b = CASES["weight_radius_before_create_grid"]["errors"][:1]
+print(f"observed_non_axisymmetric_message={_got_a!r}")
+print(f"observed_before_create_grid_message={_got_b!r}")
+two_distinct = bool(_got_a and _got_b and _got_a[0] != _got_b[0])
 correct_runs = CASES["weight_radius_in_the_correct_order"]["rc"] == 0
 completed = ("axisymmetric_without_radial_weighting", "plain_non_axisymmetric_run",
              "weight_radius_in_the_correct_order")

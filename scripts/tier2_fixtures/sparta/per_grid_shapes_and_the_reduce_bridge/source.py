@@ -94,8 +94,18 @@ two_bare_fails = any(VECTOR_MSG in e for e in e_a)
 print(f"two_attributes_unbracketed_fails={two_bare_fails}")
 two_bracketed_works = rc_ab == 0 and not e_ab
 print(f"two_attributes_bracketed_works={two_bracketed_works}")
+# The final conjunct compares the messages SPARTA EMITTED, not the two module
+# constants above.  `ARRAY_MSG != VECTOR_MSG` asserted that the author typed two
+# different strings -- true before anything ran, on any SPARTA, and it would stay
+# true if the two shapes started producing one shared diagnostic, which is
+# exactly the thing the name claims is not the case.
+_obs_array = next((e for e in e_vb if ARRAY_MSG in e), "")
+_obs_vector = next((e for e in e_a if VECTOR_MSG in e), "")
+print(f"observed_array_message={_obs_array!r}")
+print(f"observed_vector_message={_obs_vector!r}")
+_differ = bool(_obs_array and _obs_vector and _obs_array != _obs_vector)
 print("the_two_shape_mistakes_have_opposite_messages="
-      f"{bracket_fails and two_bare_fails and ARRAY_MSG != VECTOR_MSG}")
+      f"{bracket_fails and two_bare_fails and _differ}")
 
 # compute grid is ALWAYS an array — the same bare reference that is legal for a
 # one-attribute property/grid is rejected for a one-value compute grid.
