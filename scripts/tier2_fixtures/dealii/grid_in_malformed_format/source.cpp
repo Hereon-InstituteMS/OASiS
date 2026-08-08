@@ -35,12 +35,21 @@ int main()
   Triangulation<2> tria;
   GridIn<2> grid_in;
   grid_in.attach_triangulation(tria);
+  // The single expectation used to be the bare word "GridIn", which this
+  // fixture writes on BOTH paths below -- "GridIn raised:" and "ERROR: GridIn
+  // accepted truncated mesh" -- so it matched whether the parser rejected the
+  // truncated header or swallowed it.  What is asserted now is the outcome and
+  // deal.II's own words for it.
   try {
     grid_in.read_msh(iss);
   } catch (const std::exception &e) {
+    std::cout << "gridin_read_raised=1\n";
+    std::cout << "gridin_cells_read=" << tria.n_active_cells() << "\n";
     std::cerr << "GridIn raised: " << e.what() << '\n';
     return 1;
   }
+  std::cout << "gridin_read_raised=0\n";
+  std::cout << "gridin_cells_read=" << tria.n_active_cells() << "\n";
   std::cerr << "ERROR: GridIn accepted truncated mesh\n";
   return 2;
 }
