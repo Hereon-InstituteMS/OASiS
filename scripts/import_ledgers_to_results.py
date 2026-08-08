@@ -53,6 +53,22 @@ RESULTS = REPO / "scripts" / "scan_results" / "tier2_results.json"
 FIXTURES = REPO / "scripts" / "tier2_fixtures"
 
 
+def _fingerprint() -> str | None:
+    """The live fixture-inventory fingerprint, or None if it cannot be taken.
+
+    Deliberately not fabricated on failure: a wrong or invented fingerprint
+    would make a stale file look current, which is the one thing the gate that
+    reads it exists to prevent. None leaves the gate red.
+    """
+    import sys
+    sys.path.insert(0, str(REPO / "scripts"))
+    try:
+        from run_tier2_fixtures import fixture_inventory_fingerprint
+        return fixture_inventory_fingerprint()
+    except Exception:
+        return None
+
+
 def _key(backend: str, spec: dict) -> str:
     """The results file keys `backend::physics::index`."""
     physics, idx = spec.get("physics"), spec.get("pitfall_index")
@@ -88,7 +104,16 @@ def collect() -> tuple[dict, dict]:
             pre_fix = "control" not in r
             rows[k] = {
                 "status": "passed" if un == "PASS" else un.lower(),
-                "fixture_id": fixture,
+                # BACKEND-QUALIFIED, the same form run_tier2_fixtures.py writes.
+                # The bare directory name is not unique across the tree —
+                # elasticity_mms_convergence, poisson_mms_convergence and
+                # stokes_mms_convergence each exist under several backends — and
+                # the results record is read row-wise by fixture_id, so a bare
+                # name makes each backend's row overwrite the previous one's.
+                # The backend qualifier lives in the dict KEY here, which is
+                # enough for this script but not for a row-wise reader, and
+                # test_results_keys_distinguish_different_fixtures reads rows.
+                "fixture_id": f"{backend}/{fixture}",
                 "backend": backend,
                 "commit": commit,
                 "source_ledger": lf.name,
@@ -144,7 +169,7 @@ def main() -> int:
         return 0
 
     for k, be, fx in missing:
-        rows[k] = {"status": "not_run", "fixture_id": fx, "backend": be,
+        rows[k] = {"status": "not_run", "fixture_id": f"{be}/{fx}", "backend": be,
                    "commit": "", "source_ledger": "",
                    "mutation_evidence": "not run on this host"}
     doc = {
@@ -158,6 +183,21 @@ def main() -> int:
             "were never executed here and are counted as such."),
         "_generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "_ledgers": meta,
+        # CURRENCY AND COUNT, because this script is now the writer of the file
+        # the floor gate reads. `run_tier2_fixtures.py --write-results` used to
+        # be the only writer and stamped both; replacing the file without them
+        # left test_tier2_runner_passed_count_meets_floor unable to tell whether
+        # the counts describe the fixtures in the tree, which it correctly
+        # refuses to read as green. The fingerprint comes from the SAME function
+        # the gate compares against, so it goes stale the moment a fixture is
+        # added, deleted or edited — which is the point.
+        "fixture_fingerprint": _fingerprint(),
+        "summary": {
+            "passed": sum(1 for v in rows.values() if v["status"] == "passed"),
+            "_meaning": (
+                "rows whose recorded run matched the fixture's expectations. "
+                "Not a discrimination claim — see mutation_evidence per row."),
+        },
         "results": rows,
     }
     RESULTS.write_text(json.dumps(doc, indent=2) + "\n")
