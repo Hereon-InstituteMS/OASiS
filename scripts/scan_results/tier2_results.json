@@ -1,7 +1,7 @@
 {
   "_what": "Execution record, imported from data/execution_ledger_*.json.",
   "_honesty": "status=passed means the fixture ran and its expectations matched. It does NOT mean the fixture detects the pathology it names \u2014 that is mutation_evidence, recorded separately. Rows marked 'pre-fix ledger' come from runs where the mutation arm was never applied and carry no discrimination claim. Rows marked 'not_run' were never executed here and are counted as such.",
-  "_generated": "2026-08-08T02:54:46+00:00",
+  "_generated": "2026-08-08T03:07:34+00:00",
   "_ledgers": {
     "execution_ledger_coupling.json": {
       "commit": "f1d4fbf50ca4",
@@ -54,7 +54,7 @@
       "pre_fix": false
     }
   },
-  "fixture_fingerprint": "6e3c5fc130a7a08cbc47a3540764210191b3ede47fd175f6a66ef6009d61ce82",
+  "fixture_fingerprint": "c12d568f3cbcb865f398348adcbb3d38c888104adbf8e147d6cae94b89c53401",
   "summary": {
     "passed": 1235,
     "_meaning": "rows whose recorded run matched the fixture's expectations. Not a discrimination claim \u2014 see mutation_evidence per row."
