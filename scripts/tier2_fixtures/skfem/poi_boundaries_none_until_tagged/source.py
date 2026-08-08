@@ -45,6 +45,11 @@ def main() -> int:
     except ValueError as exc:
         raised = str(exc)
     print(f"untagged_get_dofs_msg={raised!r}")
+    # The expectation used to be the bare phrase "not found", which this
+    # fixture writes itself on the FAIL line two lines below -- so it matched
+    # precisely when skfem had NOT said it.  The flag is computed from the
+    # message skfem raised.
+    print(f"untagged_msg_says_not_found={'not found' in raised}")
     if "not found" not in raised:
         print(f"FAIL: expected a 'not found' ValueError, got {raised!r}",
               file=sys.stderr)

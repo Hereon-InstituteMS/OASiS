@@ -1,11 +1,10 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (dg_transport::97, an index no pitfall occupies): VectorTools::interpolate_boundary_values on an FE_DGQ space returns an EMPTY map without complaint. RE-KEYED 2026-08-06 off dg_transport::6, which it shared with dg_affineconstraints_noop — a claim can have only one owner or the coverage count double-counts it, and the other fixture matches that claim's stated signal more directly. This observation is real and worth keeping; no pitfall in the current inventory states it. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook swaps FE_DGQ(1) for FE_Q(1) on the identical mesh. VectorTools::interpolate_boundary_values then fills the map and the expectation `boundary_values_size=0` goes missing. Proved KILLED 2026-08-07.",
+  "_comment": "Tier-2 SYNTHETIC (dg_transport::97, an index no pitfall occupies): VectorTools::interpolate_boundary_values on an FE_DGQ space returns an EMPTY map without complaint. RE-KEYED 2026-08-06 off dg_transport::6, which it shared with dg_affineconstraints_noop — a claim can have only one owner or the coverage count double-counts it, and the other fixture matches that claim's stated signal more directly. This observation is real and worth keeping; no pitfall in the current inventory states it. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook swaps FE_DGQ(1) for FE_Q(1) on the identical mesh. VectorTools::interpolate_boundary_values then fills the map and the expectation `boundary_values_size=0` goes missing. Proved KILLED 2026-08-07. FIXED 2026-08-08: dropped 'interpolate_boundary_values_on_DG', an unconditional label. boundary_values_size=0 is the measurement. Executed: unmutated PASSED, T2_MUTATE=1 FAILED on boundary_values_size=0.",
   "backend": "dealii",
   "physics": "dg_transport",
   "pitfall_index": 97,
   "mode": "compile_and_run",
   "expect_in_output": [
-    "interpolate_boundary_values_on_DG",
     "boundary_values_size=0"
   ],
   "forbid_in_output": [],
