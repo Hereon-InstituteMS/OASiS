@@ -1,13 +1,16 @@
 {
-  "_comment": "Tier-2 SYNTHETIC (stokes::90, the sentinel range the coverage metric excludes): reports whether dolfinx.io.gmshio and the gmsh module are importable in this environment. RE-KEYED 2026-08-06 off stokes::7, an index no pitfall occupies, and one with nothing to do with Stokes — not one fenics pitfall mentions gmsh at all. An install diagnostic is worth keeping; it is not evidence for a numerical claim. MUTATION CONTROL 2026-08-07: NONE, and deliberately so — this fixture does not discriminate. All three asserted strings are labels the script prints unconditionally, so gmshio_present=True and gmshio_present=False pass alike; three staged copies differing only in which module the two probes import were run through scripts/run_tier2_fixtures.py and ALL THREE PASSED. The full measurement is in the _mutation note below. That same run also showed this fixture's stated diagnosis is wrong on this host: gmsh 4.15.1 IS importable in the conda env `fenics`, and dolfinx.io.gmshio is missing only because dolfinx 0.10.0 renamed the submodule to dolfinx.io.gmsh (which imports fine). Reported, not tuned.",
+  "_comment": "Tier-2 SYNTHETIC (stokes::90, the sentinel range the coverage metric excludes): reports whether dolfinx.io.gmshio and the gmsh module are importable in this environment. RE-KEYED 2026-08-06 off stokes::7, an index no pitfall occupies, and one with nothing to do with Stokes — not one fenics pitfall mentions gmsh at all. An install diagnostic is worth keeping; it is not evidence for a numerical claim. MUTATION CONTROL 2026-08-07: NONE, and deliberately so — this fixture does not discriminate. All three asserted strings are labels the script prints unconditionally, so gmshio_present=True and gmshio_present=False pass alike; three staged copies differing only in which module the two probes import were run through scripts/run_tier2_fixtures.py and ALL THREE PASSED. The full measurement is in the _mutation note below. That same run also showed this fixture's stated diagnosis is wrong on this host: gmsh 4.15.1 IS importable in the conda env `fenics`, and dolfinx.io.gmshio is missing only because dolfinx 0.10.0 renamed the submodule to dolfinx.io.gmsh (which imports fine). Reported, not tuned. FIXED 2026-08-08 -- THE CLAIM WAS WRONG, NOT THE FIXTURE, and it is retracted in the source docstring as well as here. The claim was 'the conda env does NOT include gmsh, so catalog use of gmshio raises ImportError'. Measured on the fenics env: gmsh 4.15.1 imports, dolfinx is 0.10.0, dolfinx.io.gmshio is gone because 0.10 RENAMED it to dolfinx.io.gmsh, which exists and carries model_to_mesh and read_from_msh. There is no install gap; there was a rename, and the catalog already imports the new name (poisson.py, navier_stokes.py and elasticity.py all use `from dolfinx.io.gmsh import read_from_msh`). The three expectations were bare `key=` prefixes, which is how the fixture could be the stated evidence for the opposite of what it measured. It now separates the two diagnoses -- gmshio_absent_because_renamed vs gmshio_absent_because_gmsh_missing -- and asserts both, so an env where gmsh really is missing goes red on this fixture instead of confirming it. MUTATION CONTROL added 2026-08-08 (there was none): T2_MUTATE=1 applies the documented fix at the failing import site -- the probe reaches for dolfinx.io.gmsh, the name 0.10 ships, instead of the removed dolfinx.io.gmshio -- so the ImportError does not happen. Executed through the runner: unmutated PASSED; T2_MUTATE=1 FAILED, missing gmshio_present=False and gmshio_absent_because_renamed=True.",
   "backend": "fenics",
   "physics": "stokes",
   "pitfall_index": 90,
   "mode": "python",
   "expect_in_output": [
-    "gmshio_present=",
-    "gmsh_present=",
-    "catalog_uses_gmshio="
+    "gmshio_present=False",
+    "dolfinx_io_gmsh_present=True",
+    "dolfinx_io_gmsh_has_model_to_mesh=True",
+    "gmsh_present=True",
+    "gmshio_absent_because_renamed=True",
+    "gmshio_absent_because_gmsh_missing=False"
   ],
   "forbid_in_output": [
     "Traceback",
