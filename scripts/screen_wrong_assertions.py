@@ -10,46 +10,59 @@ independent passes put that failure rate near 5% of the corpus, and reading 1300
 fixtures by hand is not feasible, so the mechanical part is taken first.
 
 `tests/test_expectations_assert_values.py` already takes the easiest slice: a
-fixture whose EVERY expectation is a bare `key=` prefix.  This screen takes the
-next five, each of which is a shape that can be seen statically:
+fixture whose EVERY expectation is a bare `key=` prefix.  This screen takes eight
+more shapes, each visible statically.  Against the corpus at f1d4fbf5 it flags
+113 expectations in 62 of 1308 fixtures (4.7%).
 
-  BAKED     the expectation is, in full, a constant string the fixture itself
-            writes.  Nothing was measured -- the fixture printed the answer.
-            Sub-classified by whether the print is unconditional, appears in
-            every arm of its enclosing `if`, or sits in one branch.
-            `dealii/grid_in_malformed_format` expects "GridIn", a word the
-            fixture writes itself in both arms.
+  BAKED_QUOTE  an expectation with NO `=` -- the corpus's form for a quoted
+               diagnostic, i.e. words the TOOL emitted -- that is in fact a
+               constant the fixture writes itself.  34 hits / 26 fixtures.
+               `dealii/grid_in_malformed_format` expects "GridIn" and writes the
+               word in both arms.  Hand-read: 24 of 55 pre-tuning hits confirmed;
+               the 31 misses were two rules, both since fixed -- a `grep`
+               PATTERN is not a write, and a literal inside an f-string
+               replacement field is code, not output.  Post-fix precision on the
+               same corpus: 24 confirmed of 34.
 
-  SELFSAME  a printed boolean compares two expressions that resolve to the same
-            root value with no solver call between them -- the `G == G` shape.
-            `skfem/mixpoi_neumann_flux_must_be_constrained` asserts
-            `constrained_flux_matches_prescribed` from `condense(..., x=x,
-            D=outflow)`, which hands the prescribed values back verbatim.
+  BAKED_ALL    every expectation of the fixture is such a constant, so the whole
+               verdict is the fixture agreeing with itself.  22 fixtures, 6
+               confirmed.  The 13 misses all route their discrimination through
+               `forbid_in_output` instead -- a gated success token plus a
+               forbidden `FAIL:` does carry information, and the screen cannot
+               see that from the expect list alone.
 
-  EMPTYEXC  a boolean computed from a caught exception's text, co-asserted with
-            the flag that is exactly what makes that text empty.
-            `ngsolve/dg_advection_breaks_symmetry_cg_silent` asserts
-            `cg_emitted_positive_definite_message=False` from a string that is
-            "" precisely when the co-asserted `cg_raised=False` holds.
+  SELFSAME     a printed boolean comparing a prescribed constant against a value
+               built FROM that constant -- `G == G`.  1 hit, confirmed.
 
-  SUCCESS   a forbid tripwire whose needle is a substring of one of the
-            fixture's own expectations, so it fires on the success line or on
-            nothing.  Four Kratos fixtures forbid "MISMATCH" while expecting
-            `..._mismatches=0`.
+  EMPTYEXC     a boolean read out of a caught exception's text, co-asserted with
+               the flag that makes that text empty.  2 hits, both confirmed.
 
-  ARGMAX    `argmax` over a boolean array without an `.any()` guard.  numpy
-            returns 0 on an all-False array, so "the first index where the
-            condition holds" reads as index 0 when it never holds.
-            `skfem/wave_dirichlet_reapplied_each_step` asserts
-            `free_boundary_leaves_zero_immediately=True` on that idiom while
-            its own next line prints `max_over_run=0.0`.
+  SUCCESS      a forbid tripwire whose needle is a substring of one of the
+               fixture's own expectations, so it fires on the line that says
+               nothing went wrong.  4 hits, all confirmed, all Kratos.
+
+  ARGMAX       `argmax` over a boolean array with no `.any()` guard.  numpy
+               answers 0 on all-False, so "the first index where the condition
+               holds" reads as index 0 when it never holds.  1 hit, confirmed.
+
+  SYNTHETIC    an asserted boolean computed from arange/eye with no solve in its
+               dependency chain.  24 hits / 9 fixtures, 4 confirmed.
+
+  CONSTCMP     an asserted EQUALITY between two named quantities that both
+               resolve to literals the fixture typed.  6 hits.  Found after a
+               random-sample read turned up `sparta/axisymmetric_...` comparing
+               two module-level strings under a name that claims a fact about
+               SPARTA's diagnostics.
 
 WHAT IT IS NOT
 --------------
-A screen, not a verdict.  Every hit is a candidate for a person to read.  The
-false-positive rate is reported alongside the counts, and a random sample of the
-fixtures it does NOT flag is read too, so the residual can be stated rather than
-assumed.
+A screen, not a verdict.  Every hit is a candidate for a person to read, and the
+false-positive rate above was measured by reading them, not assumed.  A random
+sample of 60 fixtures the screen does NOT flag was read the same way: 2 wrong and
+3 suspect, i.e. a residual of 3.3% wrong / 8.3% wrong-or-suspect among the
+unflagged.  Two blind spots are known and named there: discrimination that lives
+entirely in `forbid_in_output`, and assertions that are substring greps over
+generated source text rather than over a tool's output.
 
 Usage:
     python scripts/screen_wrong_assertions.py            # summary
@@ -61,12 +74,16 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-FIXTURES = REPO / "scripts" / "tier2_fixtures"
+# Overridable so the screen can be pointed at an older checkout of the corpus
+# and the before/after counts compared without moving the working tree.
+FIXTURES = Path(os.environ.get("T2_FIXTURES_DIR")
+                or REPO / "scripts" / "tier2_fixtures")
 
 # A call that turns inputs into outputs.  If one of these sits between a
 # quantity and the value it is compared against, the comparison is not `G == G`.
@@ -99,22 +116,38 @@ def fixtures() -> list[tuple[str, Path, dict]]:
 
 
 def _const_chunks(node: ast.AST) -> list[str]:
-    """Every statically-known string chunk inside an expression.
+    """Every statically-known string chunk that is actually WRITTEN.
 
     An f-string contributes its literal pieces only; the interpolated parts are
     unknown at read time, which is the whole point -- a value that is
     interpolated was measured, a value inside the literal was not.
+
+    A literal inside a REPLACEMENT FIELD is code, not output:
+
+        print(f"newton_printed_banner={'Newton iteration' in chatter}")
+
+    writes `newton_printed_banner=True`, never the phrase.  Counting those made
+    the screen report two ngsolve fixtures as baked when the phrase reaches the
+    output only through the tool's own captured text.  So a FormattedValue's
+    subtree is skipped entirely.
     """
     chunks: list[str] = []
-    for sub in ast.walk(node):
-        if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
-            chunks.append(sub.value)
-        elif isinstance(sub, ast.JoinedStr):
-            # Adjacent literal Constants inside one JoinedStr are separate
-            # chunks: a value sits between them.
-            for part in sub.values:
+
+    def walk(n: ast.AST) -> None:
+        if isinstance(n, ast.JoinedStr):
+            for part in n.values:
                 if isinstance(part, ast.Constant) and isinstance(part.value, str):
                     chunks.append(part.value)
+                # FormattedValue: the literals inside it are operands, not text
+            return
+        if isinstance(n, ast.Constant):
+            if isinstance(n.value, str):
+                chunks.append(n.value)
+            return
+        for child in ast.iter_child_nodes(n):
+            walk(child)
+
+    walk(node)
     return chunks
 
 
@@ -196,18 +229,28 @@ def _sh_chunks(text: str) -> list[tuple[str, str]]:
 
     Depth is tracked over the shell's own block keywords.  Anything with a `$`
     in it is a chunk boundary -- the expansion is the measured part.
+
+    TWO THINGS THAT ARE NOT WRITES, and cost the screen 19 false positives on
+    the 4C set before they were excluded:
+
+      * a `#` comment;
+      * a PATTERN handed to grep/sed/awk.  `grep -m1 -F "Expected parameter
+        'DENS'" 4c.log` puts that phrase in the script and prints it only if 4C
+        put it in the log.  That is the opposite of baked -- it is the strongest
+        shape in the corpus.  So a line that pipes through, or invokes, a
+        matcher is not treated as a write of its own arguments.
     """
     chunks: list[tuple[str, str]] = []
     depth = 0
     open_kw = re.compile(r"^\s*(if|case|while|until|for)\b")
     close_kw = re.compile(r"^\s*(fi|esac|done)\b")
-    mid_kw = re.compile(r"^\s*(else|elif|then)\b")
+    matcher = re.compile(r"\b(grep|egrep|fgrep|rg|sed|awk|perl)\b")
     for line in text.splitlines():
         s = line.strip()
         if close_kw.match(s):
             depth = max(0, depth - 1)
         m = re.search(r"\b(echo|printf)\b(.*)$", s)
-        if m and not s.startswith("#"):
+        if m and not s.startswith("#") and not matcher.search(s):
             payload = m.group(2)
             guard = "branch" if depth else "always"
             for piece in re.split(r"\$\{[^}]*\}|\$\(|\$[A-Za-z_][\w]*|`", payload):
@@ -216,8 +259,6 @@ def _sh_chunks(text: str) -> list[tuple[str, str]]:
                     chunks.append((piece, guard))
         if open_kw.match(s):
             depth += 1
-        elif mid_kw.match(s):
-            pass
     return chunks
 
 
@@ -376,14 +417,28 @@ def _collect_defs(fn: ast.AST) -> dict[str, ast.AST]:
                 for t in target.elts:
                     bind(t, value)
 
+    counts: dict[str, int] = {}
+
+    def note(target: ast.AST) -> None:
+        for s in ast.walk(target):
+            if isinstance(s, ast.Name):
+                counts[s.id] = counts.get(s.id, 0) + 1
+
     for node in ast.walk(fn):
         if isinstance(node, ast.Assign):
             for t in node.targets:
                 bind(t, node.value)
+                note(t)
         elif isinstance(node, ast.AnnAssign) and node.value is not None:
             bind(node.target, node.value)
+            note(node.target)
+        elif isinstance(node, ast.AugAssign):
+            note(node.target)
+            note(node.target)          # an accumulator is never a constant
         elif isinstance(node, ast.For):
             bind(node.target, node.iter)
+            note(node.target)
+    _REBOUND[id(defs)] = {n for n, c in counts.items() if c > 1}
     return defs
 
 
@@ -457,6 +512,83 @@ def detect_selfsame(spec: dict, py: str | None) -> list[dict]:
             # (b) structural identity: the two sides are the same expression.
             if ast.dump(left) == ast.dump(right):
                 hits.append({"expectation": key, "how": "identical-operands"})
+    return hits
+
+
+def _all_literal(expr: ast.AST, defs: dict[str, ast.AST], seen: set[str],
+                 depth: int = 0) -> bool:
+    """True if `expr` is decided before the fixture runs anything.
+
+    Every Name in it has to resolve, transitively, to a literal the fixture
+    typed.  `sparta/axisymmetric_weight_radius_and_bad_moves` prints
+    `the_two_ordering_constraints_have_different_messages` from
+    `QUOTED["a"] != QUOTED["b"]`, where QUOTED is a module-level dict of string
+    constants -- the name asserts a fact about SPARTA's diagnostics, the code
+    asserts that the author typed two different strings.
+    """
+    if depth > 6:
+        return False
+    for sub in ast.walk(expr):
+        if isinstance(sub, ast.Call):
+            f = sub.func
+            nm = f.attr if isinstance(f, ast.Attribute) else (
+                f.id if isinstance(f, ast.Name) else "")
+            if nm not in {"len", "str", "int", "float", "bool", "sorted", "set",
+                          "tuple", "list", "lower", "upper", "strip"}:
+                return False
+        if isinstance(sub, ast.Name):
+            if sub.id in seen:
+                continue
+            # A name that is written more than once, or accumulated into, is
+            # not a constant even if its FIRST binding is a literal.  `ok =
+            # True` followed by `ok = False` in a branch, and `n = 0` followed
+            # by `n += 1`, are the two common shapes; counting them as literal
+            # flagged 162 fixtures instead of the handful that are real.
+            if sub.id in _REBOUND.get(id(defs), set()):
+                return False
+            d = defs.get(sub.id)
+            if d is None:
+                return False
+            if not _all_literal(d, defs, seen | {sub.id}, depth + 1):
+                return False
+    return True
+
+
+# Populated by _collect_defs, keyed by the identity of the defs dict it built.
+_REBOUND: dict[int, set[str]] = {}
+
+
+def detect_constcmp(spec: dict, py: str | None) -> list[dict]:
+    """An asserted boolean whose answer is fixed by the fixture's own literals."""
+    if py is None:
+        return []
+    try:
+        tree = ast.parse(py)
+    except SyntaxError:
+        return []
+    expect = {str(e).strip() for e in (spec.get("expect_in_output") or [])}
+    keys_asserted = {e.split("=", 1)[0] for e in expect if _KEYVAL.match(e)}
+    defs = _collect_defs(tree)
+    hits = []
+    for key, expr in _printed_bools(tree):
+        if key not in keys_asserted:
+            continue
+        target = defs[expr.id] if isinstance(expr, ast.Name) and expr.id in defs \
+            else expr
+        # Only an EQUALITY between two named, fixture-supplied quantities.  A
+        # threshold comparison against a literal (`PE > 1.0`) is also decided in
+        # advance but is honest bookkeeping about the fixture's own setup, and
+        # flagging those buried the handful that claim to be about the tool.
+        cmps = [s for s in ast.walk(target)
+                if isinstance(s, ast.Compare) and len(s.comparators) == 1
+                and isinstance(s.ops[0], (ast.Eq, ast.NotEq, ast.Is, ast.IsNot))]
+        for c in cmps:
+            sides = (c.left, c.comparators[0])
+            if any(isinstance(s, ast.Constant) for s in sides):
+                continue
+            if _all_literal(c, defs, set()):
+                hits.append({"expectation": key, "how": "decided-by-literals"})
+                break
     return hits
 
 
@@ -688,6 +820,7 @@ def screen() -> dict[str, list[dict]]:
             ("SUCCESS", detect_success(spec)),
             ("ARGMAX", detect_argmax(spec, py)),
             ("SYNTHETIC", detect_synthetic(spec, py)),
+            ("CONSTCMP", detect_constcmp(spec, py)),
         ):
             for h in hits:
                 found[cat].append({"fixture": fid, **h})
@@ -695,7 +828,7 @@ def screen() -> dict[str, list[dict]]:
 
 
 CATEGORIES = ("BAKED_QUOTE", "BAKED_ALL", "SELFSAME", "EMPTYEXC", "SUCCESS",
-              "ARGMAX", "SYNTHETIC")
+              "ARGMAX", "SYNTHETIC", "CONSTCMP")
 
 
 def main() -> int:
