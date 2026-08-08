@@ -83,6 +83,13 @@ def main() -> int:
         msg_expr, typ_expr = str(exc), type(exc).__name__
     print(f"divdiv_expression_raises={bool(msg_expr)} "
           f"exc_type={typ_expr} msg={msg_expr!r}")
+    # The expectation used to be the bare phrase "cannot form div", which this
+    # fixture writes itself on the FAIL line below -- so it was satisfied
+    # precisely when NGSolve had NOT said it, and the fixture only stayed
+    # honest because that same line carries the forbidden "FAIL:".  Computed
+    # from NGSolve's message instead.
+    print(f"divdiv_msg_says_cannot_form_div="
+          f"{'cannot form div' in msg_expr}")
     if "cannot form div" not in msg_expr:
         print(f"FAIL: div(div(tau)) did not raise the documented "
               f"'cannot form div'; got {msg_expr!r}", file=sys.stderr)

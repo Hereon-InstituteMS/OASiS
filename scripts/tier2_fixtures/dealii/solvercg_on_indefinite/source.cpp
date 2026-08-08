@@ -55,9 +55,22 @@ int main()
 
   SolverControl ctrl(50, 1e-10);
   SolverCG<Vector<double>> cg(ctrl);
+  // Printed BEFORE the solve, deliberately.  On a DEBUG deal.II the failure
+  // arrives as Assert(std::abs(alpha) != 0., ExcDivideByZero()) inside
+  // solver_cg.h, and Assert aborts -- the catch below is never reached and
+  // nothing this fixture writes after the solve exists.  Measured on both
+  // builds available here; see fixture.json.
+  std::cout << "solvercg_probe_started=1\n";
+  std::cout.flush();
   try
   {
     cg.solve(A, x, b, PreconditionIdentity());
+    // The single expectation used to be the bare word "SolverCG", which this
+    // fixture writes on BOTH paths -- here and in the catch below -- so it
+    // matched the indefinite matrix and the SPD mutation identically.  The
+    // outcome and deal.II's own exception type are what is asserted now.
+    std::cout << "solvercg_converged_on_indefinite=1\n";
+    std::cout << "solvercg_last_step=" << ctrl.last_step() << "\n";
     std::cout << "SolverCG converged on indefinite matrix in "
               << ctrl.last_step() << " iterations — pitfall "
               << "claim does not hold for this build\n";
@@ -69,6 +82,12 @@ int main()
     // diag(1, -1) raises SolverControl::NoConvergence after
     // exhausting iterations OR ExcMessage("breakdown") if the
     // inner product goes negative.
+    std::cout << "solvercg_raised=1\n";
+    std::cout << "solvercg_last_step=" << ctrl.last_step() << "\n";
+    std::cout << "solvercg_exception_is_no_convergence="
+              << (dynamic_cast<const SolverControl::NoConvergence *>(&e)
+                      ? 1 : 0)
+              << "\n";
     std::cerr << "SolverCG raised: " << e.what() << '\n';
     return 1;
   }

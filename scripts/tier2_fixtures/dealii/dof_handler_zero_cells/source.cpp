@@ -49,6 +49,12 @@ int main()
   // Print the small n_dofs that the pitfall warns about.
   std::cout << "DoFHandler::n_dofs() = "
             << dof_handler.n_dofs() << '\n';
+  // The two expectations used to be the bare words "n_dofs" and "DoFHandler",
+  // both of which the line above writes whatever the count is -- 4 unrefined
+  // and 81 under the mutation, matched identically.  This is the number.
+  std::cout << "dof_handler_n_dofs=" << dof_handler.n_dofs() << '\n';
+  std::cout << "triangulation_n_active_cells="
+            << tria.n_active_cells() << '\n';
   std::cout << "(expected 4 for un-refined FE_Q(1) on a single "
             << "hyper_cube cell)\n";
 

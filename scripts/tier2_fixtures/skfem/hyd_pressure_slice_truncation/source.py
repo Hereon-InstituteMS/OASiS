@@ -73,7 +73,13 @@ def main() -> int:
             warnings.simplefilter("always")
             sliced = vertex_slice(p, nverts)
             msgs = sorted({str(c.message) for c in caught})
-        dropped = bp.N - nverts
+        # FROM THE SLICE, not from the DOF counts.  This was
+        # `dropped = bp.N - nverts`, which is a property of the element
+        # and the mesh and knows nothing about what vertex_slice() did:
+        # under T2_MUTATE=1 the slice keeps all 289 entries and the line
+        # p2_slice_drops_data=True still printed.  Three expectations
+        # rode on that one quantity.
+        dropped = bp.N - len(sliced)
         prefix_ok = bool(np.allclose(bp.doflocs[:, :nverts], m.p))
         results[tag] = (bp, p, sliced, dropped)
         print(f"{tag}_dofs={bp.N} vertices={nverts} dropped={dropped}")

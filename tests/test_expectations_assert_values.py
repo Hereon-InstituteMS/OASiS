@@ -58,9 +58,6 @@ FIXTURES = REPO / "scripts" / "tier2_fixtures"
 # Each entry is a fixture whose expectations cannot distinguish any value from
 # any other, so its verdict rests entirely on forbid_in_output.
 BASELINE = {
-    # The stated evidence for a capability claim it cannot tell from its
-    # opposite. Fix by asserting the specific flags, not their presence.
-    "dealii/install_feature_flags_visible",
     # MMS convergence: `max_error=` / `observed_order=` are left unpinned on
     # purpose, so that measured values do not leak into the corpus and become
     # answers an evaluated agent could quote. The fix is to assert a BOUND
@@ -74,11 +71,19 @@ BASELINE = {
     "skfem/elasticity_mms_convergence",
     "skfem/poisson_mms_convergence",
     "skfem/stokes_mms_convergence",
-    # fenics/gmshio_install_gap_diagnostic LEFT THIS LIST on 2026-08-07, which
-    # is what the list is for. It was here because all three of its asserted
-    # strings were labels the script printed unconditionally, so no environment
-    # answer could turn it red. It now asserts a VERDICT that discriminates a
-    # rename from an install gap, with a mutation control proved to kill.
+    # TWO ENTRIES LEFT THIS LIST, which is what the list is for.
+    #
+    # fenics/gmshio_install_gap_diagnostic was here because all three of its
+    # asserted strings were labels the script printed unconditionally, so no
+    # environment answer could turn it red. It now asserts a verdict that
+    # discriminates a rename from an install gap, with a mutation control
+    # proved to kill.
+    #
+    # dealii/install_feature_flags_visible was the stated evidence for a
+    # capability claim it could not tell from its opposite; it now asserts the
+    # specific flags. Removed by fix/wrong-assertions, which also found the
+    # CLAIM was wrong — all five features are present in the header tree those
+    # fixtures compile against.
 }
 
 

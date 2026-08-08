@@ -133,9 +133,17 @@ def main() -> int:
                    "1/lam_val")
             or has("nearly_incompressible_elasticity",
                    "(1.0 / lam_val)"),
+        # The needle used to be just 'shape=(gdim,)', which carries no degree
+        # at all: ANY vector-valued Lagrange declaration produces it, so a
+        # regression from P2/P1 to P1/P1 would have kept this check True under
+        # a name that says "taylor_hood_p2_p1".  Both degrees are pinned now.
         "nearly_incomp_has_taylor_hood_p2_p1":
             has("nearly_incompressible_elasticity",
-                'shape=(gdim,)'),
+                'element("Lagrange", domain.basix_cell(), 2,')
+            and has("nearly_incompressible_elasticity",
+                    'shape=(gdim,)')
+            and has("nearly_incompressible_elasticity",
+                    'element("Lagrange", domain.basix_cell(), 1)'),
         "fracture_has_two_fields_u_and_d":
             has("fracture", "V_u") and has("fracture", "V_d"),
         "fracture_has_damage_irreversibility":

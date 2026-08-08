@@ -167,8 +167,15 @@ def main() -> int:
     mismatches = 0
     for root, must in ((GOOD_ROOT, True), (BAD_ROOT, False)):
         got, msg = initialises(root)
-        print()
-        print(f"initialises[{root}]={got}_expected={must}")
+        # Leading newline, deliberately. Kratos writes its banners from C++
+        # with a block-buffered stdout, and a 4096-byte boundary landed in the
+        # middle of a DEPRECATION-Warning line, gluing it to this one:
+        # "...ModifyAfterSolverInitiainitialises[Background_Grid]=True...".
+        # The runner rejects a `key=value` needle whose preceding character is
+        # alphanumeric -- correctly, since that guard is what stops one
+        # expectation matching a longer key -- so the fixture went red on a
+        # buffer boundary rather than on anything Kratos did.
+        print(f"\ninitialises[{root}]={got}_expected={must}")
         if msg:
             print(f"message[{root}]={msg}")
         if got != must:

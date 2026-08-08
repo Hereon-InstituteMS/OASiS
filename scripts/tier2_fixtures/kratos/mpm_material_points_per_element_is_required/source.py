@@ -173,8 +173,10 @@ def main() -> int:
     mismatches = 0
     for label, value, must in CASES:
         got, msg = initialises(value)
-        print()
-        print(f"accepted[{label}]={got}_expected={must}")
+        # Leading newline: see mpm_boundary_conditions_live_on_the_grid. A
+        # Kratos C++ banner flushed at a 4096-byte boundary glued itself to
+        # this line, and the runner's left-edge guard then rejected the needle.
+        print(f"\naccepted[{label}]={got}_expected={must}")
         if msg:
             print(f"message[{label}]={msg}")
         if got != must:

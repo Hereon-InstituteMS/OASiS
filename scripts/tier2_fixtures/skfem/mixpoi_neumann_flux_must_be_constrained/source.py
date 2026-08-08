@@ -95,14 +95,39 @@ def main() -> int:
     x = np.zeros(K.shape[0])
     x[outflow] = G_PRESCRIBED
     u = solve(*condense(K, rhs, x=x, D=outflow))
-    recovered = bool(np.allclose(u[outflow], G_PRESCRIBED, atol=1e-10))
     flux_held = facet_flux(fb, u[:bs.N])
+
+    # WHAT "matches prescribed" HAS TO MEAN HERE.
+    #
+    # It used to be np.allclose(u[outflow], G_PRESCRIBED): read the constrained
+    # DOF slots back and check they hold what was written into them.  That is
+    # G == G.  skfem's solve_linear rebuilds the solution as y = x.copy();
+    # y[I] = <solved interior>, so u[D] IS x[D] byte for byte whatever the
+    # physics, the element or the mesh did -- the line could not go False.
+    #
+    # The claim is about the POST-PROCESSED FLUX at that boundary, so that is
+    # what is measured: interpolate the recovered sigma on the outflow facets,
+    # integrate sigma . n, and compare against the flux density the constraint
+    # prescribes.  An RT0 facet DOF is the flux THROUGH the facet, i.e. the
+    # integral of sigma . n over it, so a facet of length h carries mean normal
+    # component G/h.  Getting that scaling -- or the facet orientation sign --
+    # wrong is the way this can fail, and it is a property of the solve and the
+    # element, not of the assignment above.
+    h_right = float(fb.dx.sum()) / len(outflow)
+    expected_mean = G_PRESCRIBED / h_right
+    err = abs(flux_held - expected_mean) / abs(expected_mean)
+    recovered = bool(err < 1e-10)
     print(f"constrained_dof_values={np.round(u[outflow][:4], 6).tolist()}")
-    print(f"constrained_flux_matches_prescribed={recovered}")
+    print(f"outflow_facet_length={h_right:.6f}")
     print(f"constrained_mean_flux={flux_held:.6f}")
+    print(f"prescribed_mean_flux={expected_mean:.6f}")
+    print(f"constrained_flux_relative_error={err:.3e}")
+    print(f"constrained_flux_matches_prescribed={recovered}")
     if not recovered:
-        print(f"FAIL: constrained DOFs came back {u[outflow][:4]!r}, expected "
-              f"{G_PRESCRIBED!r}", file=sys.stderr)
+        print(f"FAIL: the recovered mean normal flux is {flux_held!r}, but the "
+              f"constraint prescribes {expected_mean!r} "
+              f"({G_PRESCRIBED!r} through a facet of length {h_right!r})",
+              file=sys.stderr)
         ok = False
 
     # --- WRONG variant: never constrain the outflow flux ----------------
