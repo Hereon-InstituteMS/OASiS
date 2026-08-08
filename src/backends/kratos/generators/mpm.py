@@ -1,4 +1,45 @@
-"""Kratos MPM (Material Point Method) generators and knowledge."""
+"""Kratos MPM (Material Point Method) generators and knowledge.
+
+THE GENERATOR IN THIS FILE DOES NOT USE MPMApplication.
+
+`_mpm_2d_kratos` emits a standalone explicit MPM written in numpy: it builds its
+own background grid, its own shape functions and its own USL update loop. The
+string "KratosMultiphysics" does not occur anywhere in what it writes. It runs
+and it computes something — 256 material points, 5000 steps, ~3 minutes, a
+result.vtu and a results_summary.json reporting max|v| = 3.04 m/s for a body
+falling under gravity — but nothing in that path is Kratos.
+
+The KNOWLEDGE below IS about MPMApplication, and every claim in it was verified
+by execution against MPMApplication 10.4.3. So an agent reading knowledge('mpm')
+and an agent running the template are being told about two different codes.
+
+MEASURED 2026-08-07, on why nothing caught this:
+
+  * KratosBackend.validate_input carries an "honesty guard" whose closing check
+    is 'neither uses KratosMultiphysics nor runs a solve'. This template passes
+    it on the strength of ONE line: `from scipy.sparse.linalg import spsolve`.
+    spsolve is never called, and neither is lil_matrix. Delete that dead import
+    and the guard rejects the template outright. The guard is being held green
+    by an unused import.
+
+  * Seven of the twenty-one Kratos templates are standalone in this same sense
+    (cosimulation, heat, heat_transient, linear_elasticity, mpm,
+    shape_optimization, structural_dynamics). For six of them the guard's own
+    comment says this is deliberate — the "scipy/numpy assemble-and-solve
+    pattern" — and those six do call a real solve (spsolve or factorized).
+    mpm is the only one of the seven that calls neither.
+
+  * That comment also justifies the pattern by saying such generators "use
+    KratosMultiphysics for I/O". None of the seven contains the string
+    KratosMultiphysics, so the justification no longer describes them.
+
+This file has NOT been rewritten to drive MPMApplication. Doing so is a real
+piece of work — two mdpa files, a background grid that must enclose the whole
+trajectory, MATERIAL_POINTS_PER_ELEMENT from the geometry's allowed set, an
+opt-in gravity process, Dirichlet conditions on the grid rather than the body —
+and every one of those requirements is already documented, with its failure
+signature, in KNOWLEDGE["mpm"]["pitfalls"] below.
+"""
 
 
 def _mpm_2d_kratos(params: dict) -> str:

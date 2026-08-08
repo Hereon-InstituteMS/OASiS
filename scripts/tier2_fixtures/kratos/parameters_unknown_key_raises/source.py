@@ -41,6 +41,7 @@ try:
     validate_msg = "SILENTLY ACCEPTED"
 except Exception as exc:  # noqa: BLE001
     validate_msg = str(exc).splitlines()[0]
+print()
 print(f"validate_unknown_key_raises={'SILENTLY' not in validate_msg}")
 print(f"validate_message_mentions_not_in_default_values="
       f"{'NOT in the default values' in validate_msg}")

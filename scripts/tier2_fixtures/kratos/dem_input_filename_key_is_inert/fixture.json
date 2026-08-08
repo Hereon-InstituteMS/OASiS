@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for kratos.dem::3: solver_settings.model_import_settings.input_filename is inert for DEM -- mesh paths come from problem_name. Executed 2026-08-07 on Kratos 10.4.3, which UPGRADES this claim: it was previously labelled '(Verified from Kratos source ... the inert-key half was not separately executed.)'. Measured: a deck with problem_name 'case', the mesh present as otherDEM.mdpa and input_filename set to 'otherDEM' still prints 'DEM: Input file DEM.mdpa not found. Continuing.', reads 0 elements and exits 0. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no DEMApplication, so pointing this anywhere else SKIPS rather than passes. Every deck is written into a fresh TemporaryDirectory and driven through DEMAnalysisStage in a CHILD process: Kratos logs from C++ and buffers it, so an in-process capture would miss every DEM line, and a Finalize()d DEM stage cannot be probed from python without segfaulting. MUTATION CONTROL (T2_MUTATE=1, re-runnable): see the module docstring -- the mutation changes the INPUT only, never an assertion, so every deck is still really executed against Kratos. Verified 2026-08-07: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1), the named probe lines flip and the trailing =ok line disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_input_filename_key_is_inert && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 3,
+  "covers": [
+    "dem::3"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[input_filename_did_not_load_the_mesh]=0_expected=0",
+    "probe[still_reports_the_problem_name_path]=True_expected=True",
+    "probe[raises_nothing]=None_expected=None",
+    "probe[completes]=True_expected=True",
+    "dem_input_filename_inert_check=ok",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}

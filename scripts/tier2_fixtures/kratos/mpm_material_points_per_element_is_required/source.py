@@ -173,6 +173,7 @@ def main() -> int:
     mismatches = 0
     for label, value, must in CASES:
         got, msg = initialises(value)
+        print()
         print(f"accepted[{label}]={got}_expected={must}")
         if msg:
             print(f"message[{label}]={msg}")

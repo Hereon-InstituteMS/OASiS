@@ -164,7 +164,15 @@ def test_every_fixture_key_names_an_existing_claim(backend):
     broken = []
     for name, source, ks in keys:
         for k in ks:
-            m = re.match(r"^(.+?):(\d+)$", k)
+            # Both separators. The project runs two conventions:
+            # report_tier2_claim_coverage.py builds its fallback key as
+            # "physics::index" and so requires `covers` to use two colons,
+            # while the DUNE gate and the older fixtures use one. With `:` only,
+            # "dem::13" parsed as physics "dem:" — a physics name that is in no
+            # inventory — and the loop below skipped it as "a limit of the
+            # reader". Every double-colon key in the corpus was therefore
+            # unchecked, which is the opposite of what this test is for.
+            m = re.match(r"^(.+?)::?(\d+)$", k)
             if not m:
                 # Non-numeric keys (e.g. "_general:assemble.Signal") address
                 # named fields rather than list indices; not checkable here.

@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for kratos.mpm::8: scheme_type is partitioned by solver -- implicit takes only newmark or bossak, explicit only central_difference or forward_euler, and static has no scheme_type key at all. Executed 2026-08-07 on Kratos 10.4.3 with MPMApplication. Measured: implicit + central_difference raises Exception 'The requested scheme type \\\"central_difference\\\" is not available! Available options are: \\\"newmark\\\", \\\"bossak\\\"'; explicit + newmark raises the mirror message listing forward_euler and central_difference; static + scheme_type raises RuntimeError 'The item with name \\\"scheme_type\\\" is present in this Parameters but NOT in the default values', which is a DIFFERENT mechanism (flat parameter validation, at CreateSolver) from the other two (the scheme factory, later) -- the fixture records which phase objected, so the two cannot be confused. ALSO MEASURED: CreateSolver accepts every crossed combination without complaint, so nothing catches this at solver construction. Positive controls in the same run: implicit + bossak and explicit + forward_euler both build. The scheme factory reads grid_model_part, which ImportModelPart would normally set; the fixture hands it an empty Background_Grid so no mdpa is needed. INTERPRETER: needs a Kratos build carrying MPMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no MPMApplication, so pointing this anywhere else SKIPS rather than passes; the fixture imports MPMApplication at module scope, so an absent Kratos exits non-zero and is recorded as a failure, never a pass. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the two crossed combinations are UNCROSSED and the static deck drops its scheme_type, so all three cases that must be rejected become legal. Only the inputs change; every probe still calls wrapper.CreateSolver and the real scheme factory. Verified: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1) and mpm_scheme_partition_check=ok disappears. Re-verify: cd scripts/tier2_fixtures/kratos/mpm_scheme_type_is_partitioned_by_solver && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "mpm",
+  "pitfall_index": 8,
+  "covers": [
+    "mpm::8"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[implicit_rejects_the_explicit_scheme]=scheme_expected=scheme",
+    "probe[implicit_lists_newmark_and_bossak]=True_expected=True",
+    "probe[explicit_rejects_the_implicit_scheme]=scheme_expected=scheme",
+    "probe[explicit_lists_forward_euler_and_central_difference]=True_expected=True",
+    "probe[static_has_no_scheme_type_key_at_all]=create_expected=create",
+    "probe[static_rejection_is_flat_validation]=True_expected=True",
+    "probe[implicit_bossak_is_accepted]=ok_expected=ok",
+    "probe[explicit_forward_euler_is_accepted]=ok_expected=ok",
+    "probe_mismatches=0",
+    "mpm_scheme_partition_check=ok"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}

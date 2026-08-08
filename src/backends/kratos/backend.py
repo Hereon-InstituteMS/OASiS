@@ -152,11 +152,23 @@ class KratosBackend(SolverBackend):
                 element_types=["SphericParticle3D", "CylinderParticle2D"],
                 template_variants=["2d"],
             ),
+            # element_types corrected 2026-08-07. The row advertised
+            # "UpdatedLagrangianPQ2D" and "UpdatedLagrangianAxisym"; neither is
+            # a registered element. CreateNewElement on either raises 'The
+            # Element "..." is not registered!' against MPMApplication 10.4.3,
+            # while the MPM-prefixed spellings below construct. This is the
+            # claim kratos.mpm::0 already made — the knowledge was corrected in
+            # the DEM/MPM pass and the catalog row was left behind.
+            #
+            # The template this row points at is NOT MPMApplication: it is a
+            # standalone numpy/scipy MPM that never imports KratosMultiphysics.
+            # See the module docstring of generators/mpm.py.
             PhysicsCapability(
                 name="mpm",
                 description="Material Point Method for large-deformation solid mechanics (MPMApplication)",
                 spatial_dims=[2, 3],
-                element_types=["UpdatedLagrangianPQ2D", "UpdatedLagrangianAxisym"],
+                element_types=["MPMUpdatedLagrangian2D3N",
+                               "MPMUpdatedLagrangianAxisymmetry2D3N"],
                 template_variants=["2d"],
             ),
             PhysicsCapability(
