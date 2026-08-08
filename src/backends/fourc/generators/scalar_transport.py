@@ -170,7 +170,7 @@ class ScalarTransportGenerator(BaseGenerator):
                     "no warning for the omitted key. (An earlier version of "
                     "this entry claimed the omission raised 'requested "
                     "velocity field not found' or 'Vector velnp "
-                    "uninitialized'; NEITHER STRING EXISTS IN THE 4C BINARY, "
+                    "uninitialized'; neither string exists in the 4C binary, "
                     "and a deck identical except for the deleted "
                     "VELOCITYFIELD line completed with exit 0. Corrected "
                     "against the real binary.)"
@@ -267,8 +267,8 @@ class ScalarTransportGenerator(BaseGenerator):
                     "block echoed. (Corrected by execution 2026-08-06; an "
                     "earlier version claimed the arrays must have exactly "
                     "one entry and quoted 'array size mismatch' or "
-                    "'expected NUMDOF entries'. NEITHER STRING EXISTS IN "
-                    "THE 4C BINARY and the over-declared deck runs fine.)"
+                    "'expected NUMDOF entries'. neither string exists in "
+                    "the 4C binary and the over-declared deck runs fine.)"
                 ),
                 (
                     "[Numerical] When using BDF2 time "

@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#3. Periodic boundary conditions on this build are a RANK-COUNT constraint, not only a modelling choice. One deck, one sha, three runs: on 1 rank it aborts inside Core::Conditions::PeriodicBoundaryConditions::balance_load (SIGABRT, shell status 134) with a bare \"terminate called after throwing an instance of 'int'\"; on 2 and on 4 ranks the identical file completes and every rank prints 'finished normally'. The single-rank failure names nothing useful — no PROC 0 ERROR banner, no source line, and the string 'DESIGN SURF PERIODIC' appears nowhere in the log — so the reader is sent to inspect their periodic block, which is correct, instead of their mpirun -np. The contrast arms are the load-bearing half: a deck failing on one rank proves nothing on its own, and only the same bytes succeeding on two ranks makes this a statement about the rank count. This is why the LES channel template in src/backends/fourc/decks records np=2. Verified by execution 2026-08-07 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C; reproduced four times.",
+  "backend": "fourc",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_NP1=134",
+    "EXIT_NP2=0",
+    "EXIT_NP4=0",
+    "NP1_HAS_BALANCE_LOAD=1",
+    "NP1_HAS_TERMINATE_INT=1",
+    "NP1_NAMES_PERIODIC_SECTION=0",
+    "NP1_HAS_PROC0_ERROR=0",
+    "NP2_FINISHED=2",
+    "NP4_FINISHED=4",
+    "SAME_DECK_SHA="
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NP1=0",
+    "EXIT_NP2=1",
+    "EXIT_NP4=1",
+    "NP2_FINISHED=0",
+    "NP1_HAS_BALANCE_LOAD=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: drop the periodic conditions and give the streamwise faces ordinary Dirichlet data instead. The single-rank abort disappears, EXIT_NP1 stops being 134, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DESIGN SURF PERIODIC BOUNDARY CONDITIONS:",
+      "to": "DESIGN SURF PERIODIC BOUNDARY CONDITIONS DISABLED:"
+    },
+    {
+      "note": "destroy the contrast: run the two-rank arm on one rank as well. Both arms then abort, the fixture can no longer distinguish 'needs more than one rank' from 'deck is broken', and NP2_FINISHED drops to 0, so it must go red.",
+      "file": "cmd.sh",
+      "from": "NP2=2",
+      "to": "NP2=1"
+    }
+  ]
+}

@@ -238,7 +238,7 @@ class FS3IGenerator(BaseGenerator):
             },
             "pitfalls": [
                 (
-                    "[Input] FS3I is a FIVE-field problem: "
+                    "[Input] FS3I is a five-field problem: "
                     "fluid + structure + ALE + fluid-side "
                     "scalar + structure-side scalar. All "
                     "five must be configured. Signal: 4C does "
@@ -360,7 +360,7 @@ class FS3IGenerator(BaseGenerator):
                     "DYNAMIC TIMESTEP is the OUTER coupling "
                     "step and 4C's own passing FS3I "
                     "regression decks deliberately set it "
-                    "SMALLER than the FSI DYNAMIC and SCALAR "
+                    "smaller than the FSI DYNAMIC and SCALAR "
                     "TRANSPORT DYNAMIC step. Signal: making "
                     "the coupling step equal to the field "
                     "step does not merely drift — it can fail "

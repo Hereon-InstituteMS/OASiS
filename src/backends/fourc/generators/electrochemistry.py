@@ -188,7 +188,7 @@ class ElectrochemistryGenerator(BaseGenerator):
                     "that id must be the MAT_matlist (or "
                     "MAT_elchmat) wrapping all ionic species in "
                     "MATIDS — never an individual MAT_ion. MATID in "
-                    "SCALAR TRANSPORT DYNAMIC is a DIFFERENT key "
+                    "SCALAR TRANSPORT DYNAMIC is a different key "
                     "(4C documents it as the material for automatic "
                     "mesh generation) and is inert for a deck whose "
                     "mesh is given explicitly: pointing it at a "
@@ -201,7 +201,7 @@ class ElectrochemistryGenerator(BaseGenerator):
                     "execution 2026-08-06; an earlier version put "
                     "the rule on MATID and quoted 'expected "
                     "matlist, got ion' from a '4C_scatra_factory.cpp'. "
-                    "NEITHER THE STRING NOR THAT FILE EXISTS.)"
+                    "neither the string nor that file exists.)"
                 ),
                 (
                     "[Input] Number of transported scalars = "
@@ -260,8 +260,8 @@ class ElectrochemistryGenerator(BaseGenerator):
                     "since recovering the flux means re-running. "
                     "(Corrected by execution 2026-08-06; an earlier "
                     "version said the flux fields 'show not "
-                    "computed'. THAT STRING APPEARS NEITHER IN THE "
-                    "LOG NOR IN THE .vtu.)"
+                    "computed'. that string appears in neither the "
+                    "log nor the .vtu.)"
                 ),
                 (
                     "[Input] For S2I (scatra-scatra "

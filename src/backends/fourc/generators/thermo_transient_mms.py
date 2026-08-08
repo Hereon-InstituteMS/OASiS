@@ -81,7 +81,7 @@ class ThermoTransientMMSGenerator(BaseGenerator):
                 "u*(x,0) exactly (initial field by function)."
             ),
             "pitfalls": [
-                "[Syntax] A volumetric heat source in STANDALONE "
+                "[Syntax] A volumetric heat source in standalone "
                 "Thermo must use the PLAIN Neumann sections "
                 "('DESIGN SURF NEUMANN CONDITIONS' in 2D, "
                 "'DESIGN VOL NEUMANN CONDITIONS' in 3D). The "
@@ -118,7 +118,7 @@ class ThermoTransientMMSGenerator(BaseGenerator):
                 "after the discretisation is already built, not at "
                 "input read. The 'FUNCT must have exactly one "
                 "entry' rule next to it is a FOUR_C_ASSERT and is "
-                "therefore COMPILED OUT of a Release build: a "
+                "therefore compiled out of a Release build: a "
                 "longer FUNCT array is silently ignored there and "
                 "gives bit-identical results, so do not rely on it "
                 "being caught. Signal: overlapping conditions abort "

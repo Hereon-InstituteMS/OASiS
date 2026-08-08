@@ -57,31 +57,22 @@ sys.path.insert(0, str(_REPO / "src"))
 # FourcBackend._reference_stub_template because they genuinely
 # need a case-specific mesh (often two meshes), a second input
 # file, patient-derived 1-D topology, an explicit particle cloud,
-# a wall-resolved periodic mesh, or a build feature this 4C lacks
-# (xfem cut needs Qhull). See tests/test_fourc_reference_stubs.py.
+# a wall-resolved periodic mesh. See tests/test_fourc_reference_stubs.py,
+# which now pins the opposite: those rows are executed decks.
 STUB_TEMPLATES = {
-    ("fourc", "brownian_dynamics", "brownian_3d"),
-    ("fourc", "fluid_turbulence", "les_channel_3d"),
-    ("fourc", "fsi_xfem", "xfem_fsi_3d"),
-    ("fourc", "xfem_fluid", "xfem_3d"),
-    ("fourc", "fs3i", "fs3i_3d"),
-    ("fourc", "fpsi", "monolithic_3d"),
-    ("fourc", "ehl", "ehl_3d"),
-    ("fourc", "fbi", "penalty_3d"),
-    ("fourc", "pasi", "dem_impact_3d"),
-    ("fourc", "ssi", "monolithic_elch_3d"),
-    ("fourc", "ssti", "monolithic_3d"),
-    ("fourc", "sti", "monolithic_3d"),
-    ("fourc", "cardiac_monodomain", "monodomain_3d"),
-    ("fourc", "arterial_network", "single_artery_1d"),
-    # reduced_airways/airways_1d was upgraded from a stub to a real inline-mesh
-    # template, so it is no longer tagged ⚠ STUB in prepare_simulation.
-    ("fourc", "reduced_lung", "lung_1d"),
-    ("fourc", "multiscale", "fe2_3d"),
-    ("fourc", "beam_interaction", "beam_contact_3d"),
-    ("fourc", "beam_interaction", "beam_solid_meshtying_3d"),
-    ("fourc", "particle_pd", "plate_2d"),
-    ("fourc", "particle_sph", "poiseuille_2d"),
+    # 2026-08-07: every fourc row that used to sit here has been replaced by a
+    # deck that was executed on the installed binary (see
+    # src/backends/fourc/decks.py and tests/test_fourc_reference_stubs.py), so
+    # nothing here is a fourc row any more. The set is empty: no backend in
+    # this tree currently ships a stub template. Kept rather than deleted, so
+    # the next one that does has an obvious place to be declared and gets
+    # tagged instead of shipping silently.
+    #
+    # One claim removed with them: the note above used to say XFEM was blocked
+    # because "xfem cut needs Qhull" and this build lacks it. It does not lack
+    # it — the build has FOUR_C_WITH_QHULL:BOOL=ON, lib4C.so links
+    # libqhull.so.6, and the XFEM decks run in both Tessellation and
+    # DirectDivergence cut modes.
 }
 
 
@@ -136,38 +127,70 @@ class TestYamlTemplatesParse(unittest.TestCase):
             self.fail(
                 f"{len(failures)} YAML template issue(s):\n{lines}")
 
-    def test_stub_templates_are_tagged_in_prepare_simulation(self) -> None:
-        """Every entry in STUB_TEMPLATES must produce a
-        '⚠ STUB' tag in the prepare_simulation surface so the
-        LLM is not misled into thinking it's a working template.
+    def test_stub_templates_are_tagged(self) -> None:
+        """Every entry in STUB_TEMPLATES must be recognised by the ⚠ STUB
+        heuristic, so the LLM is not told a placeholder is a working template.
+
+        Fixed 2026-08-07: this used to call prepare_simulation(solver, physics)
+        with no variant and look for the tag anywhere in the reply. For a
+        physics with several variants prepare_simulation picks ONE — for
+        fourc/porous_media it picks the runnable single_phase_3d — so the test
+        was inspecting a template other than the one it named, and passed or
+        failed for reasons unrelated to the stub. It now feeds the heuristic
+        the exact (physics, variant) content it is making a claim about.
         """
+        from core.registry import get_backend
+        from tools.consolidated import _stub_template_tag
+
+        missing = []
+        for (backend_name, physics, variant) in sorted(STUB_TEMPLATES):
+            b = get_backend(backend_name)
+            if b is None:
+                continue
+            content = b.generate_input(physics, variant, {})
+            if "⚠ STUB" not in _stub_template_tag(content,
+                                                  b.input_format().value):
+                missing.append((backend_name, physics, variant,
+                                content[:160]))
+        if missing:
+            lines = "\n".join(
+                f"  {be}/{ph}/{vr}: {snip!r}" for be, ph, vr, snip in missing)
+            self.fail(
+                f"{len(missing)} stub template(s) not recognised by "
+                f"_stub_template_tag:\n{lines}")
+
+    def test_stub_variants_are_tagged_when_prepare_simulation_picks_them(
+            self) -> None:
+        """And when a stub variant IS the one prepare_simulation selects, the
+        tag must reach the LLM-visible surface."""
         try:
             from mcp.server.fastmcp import FastMCP
             from tools.consolidated import register_consolidated_tools
         except ImportError as exc:
             self.skipTest(f"FastMCP not installed: {exc}")
+        from core.registry import get_backend
 
         mcp = FastMCP("t")
         register_consolidated_tools(mcp)
-        tools = mcp._tool_manager._tools  # type: ignore[attr-defined]
-        fn = tools["prepare_simulation"].fn
+        fn = mcp._tool_manager._tools["prepare_simulation"].fn  # type: ignore
 
         missing = []
-        for (backend_name, physics, _variant) in STUB_TEMPLATES:
-            result = fn(solver=backend_name, physics=physics)
-            if "⚠ STUB" not in result:
-                # Extract the template section for diagnostics.
-                idx = result.find("## Template")
-                snippet = result[idx:idx + 200] if idx >= 0 else result[:200]
-                missing.append((backend_name, physics, snippet))
+        for (backend_name, physics, variant) in sorted(STUB_TEMPLATES):
+            b = get_backend(backend_name)
+            if b is None:
+                continue
+            # Only physics whose FIRST/selected variant is the stub can be
+            # checked through this surface; the rest are covered above.
+            row = next((p for p in b.supported_physics()
+                        if p.name == physics), None)
+            if row is None or not row.template_variants:
+                continue
+            if row.template_variants[0] != variant:
+                continue
+            if "⚠ STUB" not in fn(solver=backend_name, physics=physics):
+                missing.append((backend_name, physics, variant))
         if missing:
-            lines = "\n".join(
-                f"  {be}/{ph}: {snip!r}" for be, ph, snip in missing)
-            self.fail(
-                f"{len(missing)} stub template(s) not tagged in "
-                f"prepare_simulation output:\n{lines}\n\n"
-                "The ⚠ STUB heuristic in _stub_template_tag "
-                "must match these.")
+            self.fail(f"stub not tagged in prepare_simulation: {missing}")
 
 
 if __name__ == "__main__":

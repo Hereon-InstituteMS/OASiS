@@ -234,7 +234,7 @@ class StructuralDynamicsGenerator(BaseGenerator):
                 (
                     "[Numerical] RHO_INF is the high-frequency dissipation "
                     "parameter for generalised-alpha, and it lives in the "
-                    "NESTED section 'STRUCTURAL DYNAMIC/GENALPHA', not in "
+                    "nested section 'STRUCTURAL DYNAMIC/GENALPHA', not in "
                     "STRUCTURAL DYNAMIC. Its default is 1.0, energy-conserving "
                     "but admitting spurious high-frequency ringing; reduce it "
                     "if the solution rings. Signal: writing RHO_INF one level "
@@ -253,7 +253,7 @@ class StructuralDynamicsGenerator(BaseGenerator):
                     "STRUCTURAL DYNAMIC, not two: DAMPING: 'Rayleigh' plus "
                     "M_DAMP and K_DAMP. DAMPING defaults to 'None', and a deck "
                     "that sets the two coefficients and forgets the switch is "
-                    "run UNDAMPED — same answer to the last bit as with no "
+                    "run undamped — same answer to the last bit as with no "
                     "damping keys at all, exit 0, and 4C says nothing about "
                     "damping anywhere in the log. Signal: if damping appears "
                     "to do nothing, check DAMPING before checking the "

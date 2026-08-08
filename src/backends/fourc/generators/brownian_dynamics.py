@@ -60,8 +60,8 @@ class BrownianDynamicsGenerator(BaseGenerator):
                 (
                     "[Input] The temperature parameter is "
                     "KT in the BROWNIAN DYNAMICS section "
-                    "and it controls the FLUCTUATION "
-                    "MAGNITUDE in the Langevin noise term. "
+                    "and it controls the fluctuation "
+                    "magnitude in the Langevin noise term. "
                     "Its default is 0.0, and BROWNDYNPROB: "
                     "true does NOT imply a temperature — "
                     "several upstream Polymer_Network decks "

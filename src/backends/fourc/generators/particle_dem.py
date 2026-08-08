@@ -285,7 +285,7 @@ class ParticleDEMGenerator(BaseGenerator):
                     "2026-08-07.)"
                 ),
                 (
-                    "[Input] A friction coefficient of zero is REJECTED, "
+                    "[Input] A friction coefficient of zero is rejected, "
                     "not honoured, so 'frictionless' cannot be expressed "
                     "by setting the coefficient. Both FRICT_COEFF_TANG "
                     "and FRICT_COEFF_ROLL are validated as strictly "
@@ -337,7 +337,7 @@ class ParticleDEMGenerator(BaseGenerator):
                     "ADHESION_HAMAKER, and ADHESION_MAX_CONTACT_PRESSURE "
                     "is a pressure limit expressed as a negative number. "
                     "Signal: omitting a key produces a message describing "
-                    "the SENTINEL rather than the omission — 'negative "
+                    "the sentinel value rather than the omission — 'negative "
                     "adhesion distance!' and 'negative hamaker constant!' "
                     "from 4C_particle_interaction_dem_adhesion.cpp and "
                     "..._adhesion_law.cpp both mean 'you did not set "

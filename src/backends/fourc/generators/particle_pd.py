@@ -303,7 +303,7 @@ class ParticlePDGenerator(BaseGenerator):
             "pitfalls": [
                 (
                     "[Input] CRITICAL: The PARTICLE DYNAMIC/SPH section "
-                    "is MANDATORY for PD simulations even though the "
+                    "is mandatory for PD simulations even though the "
                     "physics is peridynamic, not SPH.  It carries "
                     "INITIALPARTICLESPACING, which sets every "
                     "particle's mass, as well as KERNEL, "

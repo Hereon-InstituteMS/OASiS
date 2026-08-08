@@ -242,7 +242,7 @@ class FBIGenerator(BaseGenerator):
                 (
                     "[Mesh] Beam elements (BEAM3R, BEAM3EB) "
                     "are 1D line elements. The fluid mesh "
-                    "must cover the ENTIRE region occupied by "
+                    "must cover the entire region occupied by "
                     "beams. Signal: none — a beam lying "
                     "outside the fluid mesh raises no error. "
                     "Both fields are built, no search "
