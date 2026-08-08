@@ -62,11 +62,23 @@ def extract_interface_from_vtu(
 ) -> InterfaceData:
     """Extract field values at an interface plane from a VTU file.
 
+    VOLUME MODE (`interface_axis = -1`). A surface coupling exchanges a field on
+    a plane, and slicing one out is what this function was written for. A FIELD
+    coupling does not: in thermo-structural interaction both participants own
+    the WHOLE body and exchange volume fields — temperature one way, volumetric
+    strain the other — so there is no plane to slice and the plane-slicing
+    signature cannot express the exchange at all. With `interface_axis = -1`
+    every point in the file is taken and `interface_coord` is ignored. The
+    returned object is the same InterfaceData the `couple` driver moves; nothing
+    downstream needs to know which mode produced it.
+
     Args:
         vtu_path: Path to VTU result file.
         field_name: Name of the field to extract (e.g. "temperature").
         interface_coord: Coordinate value defining the interface plane.
-        interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z).
+            Ignored when interface_axis is -1.
+        interface_axis: Axis perpendicular to interface (0=x, 1=y, 2=z), or -1
+            for the WHOLE VOLUME (field coupling; see above).
         tol: Tolerance for node matching.
 
     Returns:
@@ -77,8 +89,11 @@ def extract_interface_from_vtu(
     mesh = read_mesh(vtu_path)
     points = np.asarray(mesh.points)
 
-    # Find nodes at the interface
-    mask = np.abs(points[:, interface_axis] - interface_coord) < tol
+    if interface_axis == -1:
+        mask = np.ones(len(points), dtype=bool)
+    else:
+        # Find nodes at the interface
+        mask = np.abs(points[:, interface_axis] - interface_coord) < tol
     if not np.any(mask):
         raise ValueError(
             f"No nodes found at {['x','y','z'][interface_axis]}={interface_coord} "
@@ -97,15 +112,22 @@ def extract_interface_from_vtu(
         available = list(mesh.point_data.keys()) + list(mesh.cell_data.keys())
         raise ValueError(f"Field '{field_name}' not found. Available: {available}")
 
-    # Sort by the tangential coordinate for consistent ordering
-    tangential_axes = [i for i in range(points.shape[1]) if i != interface_axis]
-    sort_key = interface_points[:, tangential_axes[0]]
-    order = np.argsort(sort_key)
-
-    logger.info(
-        f"Extracted {len(indices)} interface nodes at "
-        f"{['x','y','z'][interface_axis]}={interface_coord}"
-    )
+    # Sort for a consistent, reproducible ordering. The driver relaxes export
+    # vectors ENTRY BY ENTRY, so the order a participant exports in must be the
+    # same on every iteration or relaxation is meaningless.
+    if interface_axis == -1:
+        # lexicographic over all coordinates — there is no tangential direction
+        order = np.lexsort(tuple(interface_points[:, i]
+                                 for i in reversed(range(points.shape[1]))))
+        logger.info(f"Extracted {len(indices)} volume nodes (field coupling)")
+    else:
+        tangential_axes = [i for i in range(points.shape[1]) if i != interface_axis]
+        sort_key = interface_points[:, tangential_axes[0]]
+        order = np.argsort(sort_key)
+        logger.info(
+            f"Extracted {len(indices)} interface nodes at "
+            f"{['x','y','z'][interface_axis]}={interface_coord}"
+        )
 
     return InterfaceData(
         coordinates=interface_points[order],
