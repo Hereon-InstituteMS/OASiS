@@ -1,0 +1,222 @@
+{
+  "schema": "oasis-blind-campaign-commitment/1",
+  "campaign": "campaign3_blind",
+  "generated_utc": "2026-08-07T17:11:02Z",
+  "note": "Committed BEFORE any evaluation run. Proves that the grader which graded is the grader that was designed, and that the task texts were not edited after results were seen.",
+  "entries": [
+    {
+      "path": "DESIGN.md",
+      "bytes": 50818,
+      "sha256": "3f94ce09a8c8c6cd5ac174ffd1699f889a733dee4eb4471e664d860bade1e730",
+      "in_git": true
+    },
+    {
+      "path": "build_coupled.py",
+      "bytes": 24257,
+      "sha256": "4287a705dab9557eabe7d505a561a2e87c34391134bb7d0a5511fc8fcabedc5f",
+      "in_git": false,
+      "why_not_in_git": "holds hidden fields as Python literals; hashed so an edit is detectable without publishing it"
+    },
+    {
+      "path": "build_coupled_v2.py",
+      "bytes": 55211,
+      "sha256": "1163ab6ef0e806507e2aec9cb601262160351a058e9a3f78f594cfb6e30ac1ab",
+      "in_git": true
+    },
+    {
+      "path": "build_extra.py",
+      "bytes": 12191,
+      "sha256": "d25fcf823390b8f62fb60382621fbb6d69a4346657d0be2703d09face1cf0517",
+      "in_git": false,
+      "why_not_in_git": "holds hidden fields as Python literals; hashed so an edit is detectable without publishing it"
+    },
+    {
+      "path": "build_problems.py",
+      "bytes": 14598,
+      "sha256": "acb60a9038675ffaaf939e8d35d07a97e45dff79e32c43bf749d1af03d2b421a",
+      "in_git": false,
+      "why_not_in_git": "holds hidden fields as Python literals; hashed so an edit is detectable without publishing it"
+    },
+    {
+      "path": "grade_blind.py",
+      "bytes": 15909,
+      "sha256": "92d16e3bbc0b789452bdaf84077f6a406e47bc23973b874b7bc0de66a0bac610",
+      "in_git": true
+    },
+    {
+      "path": "phase.py",
+      "bytes": 9491,
+      "sha256": "6ba769c5a95c52b4cda0822458fad389e71c004ac14a8cf7ead939e55cccf204",
+      "in_git": true
+    },
+    {
+      "path": "problems/B1/spec_public.json",
+      "bytes": 536,
+      "sha256": "a23f7334e75707928beeda92e5ad48b71aac8708c004d364b82d09c0589426ec",
+      "in_git": true
+    },
+    {
+      "path": "problems/B1/task.txt",
+      "bytes": 2294,
+      "sha256": "83ba4a1cc3f4923032dc3a111795e6ebdba5d4372e4598a5080e4339a72e06a2",
+      "in_git": true
+    },
+    {
+      "path": "problems/B2/spec_public.json",
+      "bytes": 570,
+      "sha256": "05f748421aebbcebf557658ad24bbdedb04413fd2ca2022e822f244405f11f84",
+      "in_git": true
+    },
+    {
+      "path": "problems/B2/task.txt",
+      "bytes": 2454,
+      "sha256": "75e209f99f85dcac9159c81f4ff00686498824db4a4b1bbd0a4c8b453efd5064",
+      "in_git": true
+    },
+    {
+      "path": "problems/B3/spec_public.json",
+      "bytes": 582,
+      "sha256": "b7a3616c1131f8f295ea68abc45da1a9ecd3ba09b9f788c5a87ab5e980f2b418",
+      "in_git": true
+    },
+    {
+      "path": "problems/B3/task.txt",
+      "bytes": 3042,
+      "sha256": "41896a587c1290199fc9f8513d75f135e7934ce9bcf9fad441cd909ad664d4ce",
+      "in_git": true
+    },
+    {
+      "path": "problems/B4/task.txt",
+      "bytes": 3882,
+      "sha256": "4267860f09573883f0343d5c729cd4d9cc749f59d8a3af7470fe7472e707a622",
+      "in_git": true
+    },
+    {
+      "path": "problems/B5/task.txt",
+      "bytes": 2561,
+      "sha256": "2a3a75fdceec237bcb03ba02d619ae6eff135bd9070e7c0c6c5f3db6182d62de",
+      "in_git": true
+    },
+    {
+      "path": "problems/B6/task.txt",
+      "bytes": 3475,
+      "sha256": "687e226ea0a4131a33dbf5769c1c2c9c9ee74ac907f8437dcf8744a7267d6b9d",
+      "in_git": true
+    },
+    {
+      "path": "problems/B7/task.txt",
+      "bytes": 3211,
+      "sha256": "14e8e204494af1fa44779cc77b8f0a1eeb10bd8d766dab00c60b942682fc3186",
+      "in_git": true
+    },
+    {
+      "path": "problems/D1/spec_public.json",
+      "bytes": 2367,
+      "sha256": "a4ccb5c550a7bc40eeb150ad1d9518d89618aa369bd2ac0064d2df2571d070e6",
+      "in_git": true
+    },
+    {
+      "path": "problems/D1/task.txt",
+      "bytes": 5081,
+      "sha256": "f027f9ce905d2982dd94bdcff1e35ff90d8688a3363a9a81e8ad018bcf674344",
+      "in_git": true
+    },
+    {
+      "path": "problems/D2/spec_public.json",
+      "bytes": 2380,
+      "sha256": "3ca6aef1c4346d5db28f52cba5a01575285ecb899d8414f4aac9adaa2533e8da",
+      "in_git": true
+    },
+    {
+      "path": "problems/D2/task.txt",
+      "bytes": 5878,
+      "sha256": "a832dacc93124cd2003cc70fd9664495bdef16c0269c2d369c7ea6647af443b3",
+      "in_git": true
+    },
+    {
+      "path": "problems/D3/spec_public.json",
+      "bytes": 2261,
+      "sha256": "cccf388c34c5e1c39980a2229f02efd430a0d77340411e9e47c8e390b1308c09",
+      "in_git": true
+    },
+    {
+      "path": "problems/D3/task.txt",
+      "bytes": 4947,
+      "sha256": "af1fe23c65b3c7fd70dadb55f11f75c50a13215a191e522f740ef72904472992",
+      "in_git": true
+    },
+    {
+      "path": "problems/D4/spec_public.json",
+      "bytes": 3076,
+      "sha256": "155af99e9226c2e0d3f77bb10f08d7db1ef2bdb4ca03607b1fadd3cfe7e207bc",
+      "in_git": true
+    },
+    {
+      "path": "problems/D4/task.txt",
+      "bytes": 6324,
+      "sha256": "90641da76ce682aa9fba10245bd24db562e9b971062b67714e96369def2bc5fb",
+      "in_git": true
+    },
+    {
+      "path": "problems/D5/spec_public.json",
+      "bytes": 3340,
+      "sha256": "04650f86c6bcb44994681d5de61ba4dbcf6e04b91c4da87fc61779911486a5b6",
+      "in_git": true
+    },
+    {
+      "path": "problems/D5/task.txt",
+      "bytes": 6825,
+      "sha256": "401667b3c64383bfcd16a4dd908b439d487742e380dc33f9ea6a3b795b301ccb",
+      "in_git": true
+    },
+    {
+      "path": "problems/D6/spec_public.json",
+      "bytes": 2397,
+      "sha256": "c863256c839d572c818b7634c9ce06f6fce4faf68aca8fcf136a75307d0d659c",
+      "in_git": true
+    },
+    {
+      "path": "problems/D6/task.txt",
+      "bytes": 5197,
+      "sha256": "d37957fa9e2e6697f574d9eebbcc044aa522656af45e995ba4077877b7b29a07",
+      "in_git": true
+    },
+    {
+      "path": "problems/D7/spec_public.json",
+      "bytes": 2333,
+      "sha256": "a0b3fa205eaa64af6800764b2aa93d422208d9c65cd3a14d10f74cfb8fc4a183",
+      "in_git": true
+    },
+    {
+      "path": "problems/D7/task.txt",
+      "bytes": 5086,
+      "sha256": "516d751efc692fe5eda2103380c65c6ff7d48617b4366eb1d86577e899bd4be3",
+      "in_git": true
+    },
+    {
+      "path": "problems/D8/spec_public.json",
+      "bytes": 2614,
+      "sha256": "30d75a0cfa4c85ba89747e125814639b60898c77ee9673aa074507374a7672fb",
+      "in_git": true
+    },
+    {
+      "path": "problems/D8/task.txt",
+      "bytes": 5805,
+      "sha256": "aab121d44b9e1c96389817a1ea63e1e50a65453eb28bb4f2add534ad44fd8a57",
+      "in_git": true
+    },
+    {
+      "path": "run_blind.py",
+      "bytes": 14165,
+      "sha256": "5c6102913ecb1b7a0ff78cdf0251b35d4cd8e1b09bdd63f3f6091e3a7db3e690",
+      "in_git": true
+    },
+    {
+      "path": "shield_keys.sh",
+      "bytes": 516,
+      "sha256": "bca7fd025be95da1599ba7e9cb582a950b6793c4f9ff45d391eed6aa691b5e9a",
+      "in_git": true
+    }
+  ],
+  "manifest_sha256": "5e549cf7c3d2ccc2ebddc33a99c02a27ba833868d4848d552858e815ef2b2cc4"
+}

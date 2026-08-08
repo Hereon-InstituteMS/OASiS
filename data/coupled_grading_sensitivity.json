@@ -1,0 +1,434 @@
+{
+  "instances": [
+    {
+      "tag": "OLD SHAPE  same material both sides (D1/D2/D4)",
+      "kA": 1.0,
+      "kB": 1.0,
+      "transmission": "VACUOUS (fields_differ): the check cannot fail",
+      "transmission_vacuous": [
+        "fields_differ"
+      ],
+      "variants": {
+        "correct": {
+          "T_iface_scalar": 0.08861772453906791,
+          "T_iface_exact": 0.0872705357142857,
+          "u_order_halving": 1.860470045860346,
+          "u_selfconv_diffs": [
+            0.003139002169517898,
+            0.0008644389477627238
+          ],
+          "u_true_error": [
+            0.004133370720526931,
+            0.0011427887726205806,
+            0.0003136013868131222
+          ],
+          "u_true_order": 1.8601574599116992,
+          "q_iface_scalar": 0.0678367524024636,
+          "q_jump_two_sided": 1.1195627411020929e-14,
+          "q_jump_all_levels": [
+            2.6338231282975625e-15,
+            8.11313723369521e-15,
+            1.1195627411020929e-14
+          ],
+          "iterations": [
+            9,
+            9,
+            9
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.0,
+            "T_iface_profile": 0.0,
+            "q_iface_scalar": 0.0,
+            "q_iface_profile": 0.0
+          }
+        },
+        "MUT_KRATIO": {
+          "T_iface_scalar": 0.08861772453906791,
+          "T_iface_exact": 0.0872705357142857,
+          "u_order_halving": 1.860470045860346,
+          "u_selfconv_diffs": [
+            0.003139002169517898,
+            0.0008644389477627238
+          ],
+          "u_true_error": [
+            0.004133370720526931,
+            0.0011427887726205806,
+            0.0003136013868131222
+          ],
+          "u_true_order": 1.8601574599116992,
+          "q_iface_scalar": 0.0678367524024636,
+          "q_jump_two_sided": 1.1195627411020929e-14,
+          "q_jump_all_levels": [
+            2.6338231282975625e-15,
+            8.11313723369521e-15,
+            1.1195627411020929e-14
+          ],
+          "iterations": [
+            9,
+            9,
+            9
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.0,
+            "T_iface_profile": 0.0,
+            "q_iface_scalar": 0.0,
+            "q_iface_profile": 0.0
+          }
+        },
+        "MUT_SIGN": {
+          "T_iface_scalar": 2600.061413774482,
+          "T_iface_exact": 0.0872705357142857,
+          "u_order_halving": 3.4614975073098537,
+          "u_selfconv_diffs": [
+            60661.83725586724,
+            5506.821254382085
+          ],
+          "u_true_error": [
+            67462.23714204384,
+            6830.484913365681,
+            1351.6525160992157
+          ],
+          "u_true_order": 2.820641972859545,
+          "q_iface_scalar": 8539.473541446876,
+          "q_jump_two_sided": 1.9999999999999991,
+          "q_jump_all_levels": [
+            1.9999999999999991,
+            1.9999999999999991,
+            1.9999999999999991
+          ],
+          "iterations": [
+            400,
+            400,
+            400
+          ],
+          "converged": [
+            false,
+            false,
+            false
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 29339.196075878946,
+            "T_iface_profile": 29846.64561537732,
+            "q_iface_scalar": 125881.69984953981,
+            "q_iface_profile": 131998.34046753673
+          }
+        },
+        "MUT_MAP": {
+          "T_iface_scalar": 0.08861772453906798,
+          "T_iface_exact": 0.0872705357142857,
+          "u_order_halving": 1.8702362423117609,
+          "u_selfconv_diffs": [
+            0.003149880346142459,
+            0.0008615824593509669
+          ],
+          "u_true_error": [
+            0.005154744768150104,
+            0.00302852305785304,
+            0.0027399724717734756
+          ],
+          "u_true_order": 0.4558697985816531,
+          "q_iface_scalar": 0.06783675240246352,
+          "q_jump_two_sided": 1.2290675706982068,
+          "q_jump_all_levels": [
+            1.2052978835722934,
+            1.2239819040983095,
+            1.2290675706982068
+          ],
+          "iterations": [
+            9,
+            9,
+            9
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 7.83014226555564e-16,
+            "T_iface_profile": 0.08845772127268776,
+            "q_iface_scalar": 1.2274574459708772e-15,
+            "q_iface_profile": 0.7514062271070686
+          }
+        },
+        "MUT_KB": {
+          "T_iface_scalar": 0.07893914509200019,
+          "T_iface_exact": 0.0872705357142857,
+          "u_order_halving": 1.8521196861875846,
+          "u_selfconv_diffs": [
+            0.00279152076450147,
+            0.0007732096784543654
+          ],
+          "u_true_error": [
+            0.010535601595323841,
+            0.010386027890042072,
+            0.010446823428891435
+          ],
+          "u_true_order": 0.0061041840781329015,
+          "q_iface_scalar": 0.034320567385255435,
+          "q_jump_two_sided": 2.99280762680345e-14,
+          "q_jump_all_levels": [
+            7.875616161954023e-15,
+            1.442194478960679e-14,
+            2.99280762680345e-14
+          ],
+          "iterations": [
+            13,
+            13,
+            13
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.10921719664332878,
+            "T_iface_profile": 0.10918783881981753,
+            "q_iface_scalar": 0.49407119047153814,
+            "q_iface_profile": 0.4825630477812661
+          }
+        }
+      }
+    },
+    {
+      "tag": "NEW SHAPE  two-material interface (D3-style)",
+      "kA": 1.0,
+      "kB": 4.0,
+      "transmission": "PASS (6 binding checks)",
+      "transmission_vacuous": [],
+      "variants": {
+        "correct": {
+          "T_iface_scalar": 0.02215337892822195,
+          "T_iface_exact": 0.021817633928571424,
+          "u_order_halving": 1.8375886361095306,
+          "u_selfconv_diffs": [
+            0.0008348195060667258,
+            0.0002335733496252276
+          ],
+          "u_true_error": [
+            0.0010937466507564312,
+            0.00030329271865730444,
+            8.026207089980637e-05
+          ],
+          "u_true_order": 1.88420820416219,
+          "q_iface_scalar": -0.05812717248037478,
+          "q_jump_two_sided": 1.5804395609434928e-14,
+          "q_jump_all_levels": [
+            4.410522428789015e-15,
+            7.31965768107977e-15,
+            1.5804395609434928e-14
+          ],
+          "iterations": [
+            29,
+            29,
+            29
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.0,
+            "T_iface_profile": 0.0,
+            "q_iface_scalar": 0.0,
+            "q_iface_profile": 0.0
+          }
+        },
+        "MUT_KRATIO": {
+          "T_iface_scalar": 0.02870891376260296,
+          "T_iface_exact": 0.021817633928571424,
+          "u_order_halving": 1.8650241764600042,
+          "u_selfconv_diffs": [
+            0.0010001615683574746,
+            0.00027456295658778636
+          ],
+          "u_true_error": [
+            0.0038907196835450304,
+            0.0034130726867367357,
+            0.003329421242391554
+          ],
+          "u_true_order": 0.11238281400231498,
+          "q_iface_scalar": -0.0359236155830521,
+          "q_jump_two_sided": 3.000000000000003,
+          "q_jump_all_levels": [
+            2.999999999999998,
+            2.999999999999991,
+            3.000000000000003
+          ],
+          "iterations": [
+            9,
+            9,
+            9
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.295915799374049,
+            "T_iface_profile": 0.2981465391248993,
+            "q_iface_scalar": 0.3819824008267247,
+            "q_iface_profile": 0.3822841689989836
+          }
+        },
+        "MUT_SIGN": {
+          "T_iface_scalar": 0.01011013834200082,
+          "T_iface_exact": 0.021817633928571424,
+          "u_order_halving": 1.844426310482202,
+          "u_selfconv_diffs": [
+            0.0005558909139631134,
+            0.00015479678314642638
+          ],
+          "u_true_error": [
+            0.006100703589652706,
+            0.006074086136127368,
+            0.00608122640233277
+          ],
+          "u_true_order": 0.0023066677874220634,
+          "q_iface_scalar": -0.09886867963878082,
+          "q_jump_two_sided": 2.0000000000000004,
+          "q_jump_all_levels": [
+            2.0000000000000004,
+            2.0000000000000013,
+            2.0000000000000004
+          ],
+          "iterations": [
+            59,
+            59,
+            59
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.5436299638642859,
+            "T_iface_profile": 0.5479092762476206,
+            "q_iface_scalar": 0.7009029584599425,
+            "q_iface_profile": 0.7024017355360332
+          }
+        },
+        "MUT_MAP": {
+          "T_iface_scalar": 0.022153378928221945,
+          "T_iface_exact": 0.021817633928571424,
+          "u_order_halving": 1.846953170659382,
+          "u_selfconv_diffs": [
+            0.0008258947856791734,
+            0.000229581251625168
+          ],
+          "u_true_error": [
+            0.0013598251513560167,
+            0.000842198976403931,
+            0.0007754072431924302
+          ],
+          "u_true_order": 0.40519752125734954,
+          "q_iface_scalar": -0.05812717248037484,
+          "q_jump_two_sided": 0.7491046551264727,
+          "q_jump_all_levels": [
+            0.815508590669807,
+            0.7609180394507444,
+            0.7491046551264727
+          ],
+          "iterations": [
+            29,
+            29,
+            29
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 1.5661028338813665e-16,
+            "T_iface_profile": 0.11609215279397483,
+            "q_iface_scalar": 1.0743692230384986e-15,
+            "q_iface_profile": 0.29117525547400536
+          }
+        },
+        "MUT_KB": {
+          "T_iface_scalar": 0.01848501661507837,
+          "T_iface_exact": 0.021817633928571424,
+          "u_order_halving": 1.8468656913028654,
+          "u_selfconv_diffs": [
+            0.0007298992050936071,
+            0.00020290881736603511
+          ],
+          "u_true_error": [
+            0.0024384679341119763,
+            0.0024090943937784782,
+            0.0024331555926306514
+          ],
+          "u_true_order": 0.0015732110058132957,
+          "q_iface_scalar": -0.07081624162027728,
+          "q_jump_two_sided": 1.5982477335033705e-14,
+          "q_jump_all_levels": [
+            2.8887889829050382e-15,
+            8.29014552755144e-15,
+            1.5982477335033705e-14
+          ],
+          "iterations": [
+            31,
+            31,
+            31
+          ],
+          "converged": [
+            true,
+            true,
+            true
+          ],
+          "moved_vs_correct": {
+            "T_iface_scalar": 0.16558929114286605,
+            "T_iface_profile": 0.16557273444015846,
+            "q_iface_scalar": 0.21829840672512757,
+            "q_iface_profile": 0.21469265701623913
+          }
+        }
+      }
+    }
+  ],
+  "band_demonstration": [
+    [
+      1.0,
+      306.15384615384613,
+      0.0,
+      18.461538461538492,
+      0.0
+    ],
+    [
+      2.0,
+      306.15384615384613,
+      0.0,
+      36.923076923076984,
+      100.0
+    ],
+    [
+      5.0,
+      306.15384615384613,
+      0.0,
+      92.30769230769246,
+      400.0
+    ],
+    [
+      0.25,
+      306.15384615384613,
+      0.0,
+      4.615384615384623,
+      75.0
+    ]
+  ]
+}

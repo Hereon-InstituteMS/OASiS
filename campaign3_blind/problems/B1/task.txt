@@ -1,0 +1,41 @@
+Using NGSolve, solve the following boundary value problem.
+
+DOMAIN: the unit square (0,1) x (0,1)
+EQUATION: -div(K grad u) = f
+COEFFICIENTS: constant SPD tensor K = [[3, -1], [-1, 2]]
+SOURCE TERM: f(x, y) = (-28*x**2*y**2 - 20*x**2*y + 8*x**2 + 12*x*y**2 + 68*x*y - 24*x - 16*y**2 + 8)*exp(x + 2*y)
+BOUNDARY CONDITIONS: u = 0 on the entire boundary
+DISCRETISATION: Lagrange P1 elements
+MESH SEQUENCE: uniform meshes with h = 1/8, 1/16, 1/32, 1/64
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+Your solution is assessed at a FIXED set of probe points that does not depend
+on your mesh. For every mesh level, evaluate your computed solution at every
+probe point and write one CSV file `solution_level<k>.csv` (k = 1,2,3,...)
+with a header line and one row per probe point, in the order defined below:
+    x, y, u
+
+PROBE POINTS: the 1024 points given by x = (i_x+0.5)/32; y = (i_y+0.5)/32, for i_x, i_y = 0, 1, ..., 31 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; do not round; every probe
+point must appear exactly once, and no other points may appear.
+
+Then write the single summary file `RESULT.txt` containing exactly these lines:
+    LEVELS = <number of mesh levels you solved>
+    FILES = solution_level1.csv, solution_level2.csv, ...
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+You determine MESH_INDEPENDENCE yourself by refining the mesh and checking
+whether your solution stops changing, both in a global norm over the whole
+domain and at individual sample points. There is no reference answer available
+to you; judge convergence solely from how your own solution behaves under
+refinement.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

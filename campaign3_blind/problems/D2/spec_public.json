@@ -1,0 +1,82 @@
+{
+  "id": "D2",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "dealii"
+  ],
+  "dim": 3,
+  "coords": [
+    "x",
+    "y",
+    "z"
+  ],
+  "code_a_label": "FEniCSx (dolfinx)",
+  "code_b_label": "deal.II (build and run the C++ program)",
+  "domain": "the box (0, 3/2) x (0,1) x (0,1)",
+  "subdomain_a": "A = (0, 5/8) x (0,1) x (0,1), thermal conductivity k = 1",
+  "subdomain_b": "B = (5/8, 3/2) x (0,1) x (0,1), thermal conductivity k = 6",
+  "interface": "the plane x = 5/8, where the two materials meet",
+  "equation": "-div(k grad u) = f in each subdomain",
+  "coefficients": "thermal conductivity k = 1 in subdomain A; thermal conductivity k = 6 in subdomain B",
+  "interface_condition": "the field and its normal flux",
+  "element": "Lagrange P1 elements in both codes",
+  "mesh_text": "uniform meshes, h halved per level: h = 1/8, 1/16, 1/32",
+  "bc_text": "u = 0 on the entire outer boundary",
+  "interface_tol": "1e-6 relative",
+  "iface_header": "x, y, z, u, qn",
+  "qn_name": "qn",
+  "qn_desc": "conductive flux qn = -(K grad u) . n_out",
+  "probe_iface": "the 441 points (x, y, z) = (5/8, 1/4 + (i+0.5)*1/2/21, 1/4 + (j+0.5)*1/2/21) for i, j = 0, 1, ..., 20, ordered with j varying fastest. These cover the INTERIOR of the interface only: where the interface meets the outer boundary the recovered flux does not converge, so the edges are not graded",
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "extent_a": [
+    [
+      0.0,
+      0.625
+    ],
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "extent_b": [
+    [
+      0.625,
+      1.5
+    ],
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_M": 21,
+  "iface_graded_band": [
+    0.25,
+    0.75
+  ],
+  "iface_clearance_reason": "the interface ends are Dirichlet-Neumann corners of the split problem; the recovered flux there does not converge under refinement, so grading them would fail a correct submission",
+  "material_contrast": "1:6",
+  "evidence_grade": 1,
+  "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",
+  "qoi": "convergence order of the coupled field, plus the two-sided interface flux jump",
+  "graded_against": "hidden manufactured solution (true error) AND reference-free mesh halving",
+  "physics": "two-material conduction, 3D"
+}

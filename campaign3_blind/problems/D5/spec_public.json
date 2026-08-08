@@ -1,0 +1,96 @@
+{
+  "id": "D5",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "skfem"
+  ],
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "code_a_label": "FEniCSx (dolfinx)",
+  "code_b_label": "scikit-fem",
+  "physics": "four-material conduction on a notched domain, bent interface",
+  "domain": "the unit square (0,1) x (0,1) with the square (3/4, 1) x (3/4, 1) REMOVED (an L-shaped, non-convex domain)",
+  "subdomain_a": "A = the domain minus subdomain B, i.e. everything except (1/2, 1) x (0, 1/2). A is NOT a rectangle",
+  "subdomain_b": "B = (1/2, 1) x (0, 1/2)",
+  "interface": "the bent polyline consisting of the segment x = 1/2, 0 < y < 1/2 and the segment y = 1/2, 1/2 < x < 1. Its two legs have different outward normals AND different material contrasts",
+  "equation": "-div(k grad u) = f, with k piecewise constant",
+  "coefficients": "k = 1 on (0,1/2)x(0,1/2); k = 5/2 on (1/2,1)x(0,1/2); k = 5 on (1/2,1)x(1/2,1); k = 2 on (0,1/2)x(1/2,1). The contrast is 1:5/2 across the vertical leg of the interface and 1:2 across the horizontal leg.",
+  "interface_condition": "the field and its normal flux",
+  "element": "Lagrange P1 elements in both codes",
+  "mesh_text": "uniform meshes, h halved per level: h = 1/8, 1/16, 1/32 (every material line and the notch lie on mesh lines at every level)",
+  "bc_text": "u = 0 on the entire outer boundary, INCLUDING the two faces of the removed square (x = 3/4 for y > 3/4, and y = 3/4 for x > 3/4)",
+  "interface_tol": "1e-6 relative",
+  "iface_header": "x, y, u, qn",
+  "qn_name": "qn",
+  "qn_desc": "conductive flux qn = -(k grad u) . n_out",
+  "probe_iface": "44 points on each leg, covering the INTERIOR of that leg only. Leg 1 is (x, y) = (1/2, 1/8 + (i+0.5)*(1/4)/44) and leg 2 is (x, y) = (5/8 + (i+0.5)*(1/4)/44, 1/2), for i = 0, 1, ..., 43. Write leg 1 first, then leg 2, 88 rows in total. The ends of each leg are excluded: one end of each meets the outer boundary and the other meets the corner where the two legs join, and the recovered flux does not converge at either",
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "extent_a": [
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_a_exclude": [
+    [
+      [
+        0.5,
+        1.0
+      ],
+      [
+        0.0,
+        0.5
+      ]
+    ],
+    [
+      [
+        0.75,
+        1.0
+      ],
+      [
+        0.75,
+        1.0
+      ]
+    ]
+  ],
+  "extent_b": [
+    [
+      0.5,
+      1.0
+    ],
+    [
+      0.0,
+      0.5
+    ]
+  ],
+  "iface_graded_band": [
+    0.125,
+    0.375
+  ],
+  "iface_clearance_reason": "each leg is graded on its interior: one end meets the outer boundary and the other the corner where the legs join, and the recovered flux converges at neither",
+  "probe_M": 44,
+  "material_contrast": "1:5/2 on leg 1, 1:2 on leg 2",
+  "evidence_grade": 1,
+  "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",
+  "qoi": "convergence order of the coupled field, plus the two-sided interface flux jump on both legs",
+  "graded_against": "hidden manufactured solution (true error) AND reference-free mesh halving",
+  "arrangement": "notched (non-convex) domain, non-rectangular subdomain, bent interface with two normals and two contrasts, four material cells meeting at a cross point"
+}

@@ -1,0 +1,73 @@
+Solve the following boundary value problem as a COUPLED simulation using TWO codes: FEniCSx (dolfinx) on subdomain A and deal.II (build and run the C++ program) on subdomain B.
+
+GLOBAL DOMAIN: the rectangle (0, 3/2) x (0,1)
+SUBDOMAIN A: A = (0, 5/8) x (0,1), thermal conductivity k = 1, heat capacity 1
+SUBDOMAIN B: B = (5/8, 3/2) x (0,1), thermal conductivity k = 4, heat capacity 1
+INTERFACE: the line x = 5/8, where the two materials meet
+EQUATION: du/dt - div(k grad u) = f in each subdomain
+COEFFICIENTS: thermal conductivity k = 1, heat capacity 1 in subdomain A; thermal conductivity k = 4, heat capacity 1 in subdomain B
+SOURCE TERM: f(x, y) = in subdomain A: (480*t*x**3*y**3 - 288*t*x**3*y**2 - 5952*t*x**3*y + 1152*t*x**3 - 597*t*x**2*y**3 + 115*t*x**2*y**2 + 7646*t*x**2*y - 460*t*x**2 - 5598*t*x*y**3 + 3564*t*x*y**2 + 90*t*x*y - 432*t*x + 2388*t*y**3 - 460*t*y**2 - 1928*t*y + 960*x**3*y**3 - 576*x**3*y**2 - 384*x**3*y - 1194*x**2*y**3 + 230*x**2*y**2 + 964*x**2*y + 324*x*y**3 + 216*x*y**2 - 540*x*y)*exp(t/2)/640
+               in subdomain B: (1920*t*x**3*y**3 - 1152*t*x**3*y**2 - 92928*t*x**3*y + 18432*t*x**3 + 1248*t*x**2*y**3 - 4640*t*x**2*y**2 - 56512*t*x**2*y + 74240*t*x**2 - 97362*t*x*y**3 + 56958*t*x*y**2 + 290100*t*x*y - 26592*t*x - 21453*t*y**3 + 86075*t*y**2 + 6658*t*y - 189360*t + 3840*x**3*y**3 - 2304*x**3*y**2 - 1536*x**3*y + 2496*x**2*y**3 - 9280*x**2*y**2 + 6784*x**2*y - 10404*x*y**3 + 3324*x*y**2 + 7080*x*y - 2970*y**3 + 23670*y**2 - 20700*y)*exp(t/2)/163840
+INITIAL CONDITION: u = 0 everywhere at t = 0
+TIME DISCRETISATION: Crank-Nicolson, integrate to t_end = 1/4 with dt = h/4, so dt = 1/32, 1/64, 1/128 on the three levels. Report the solution at t = t_end.
+OUTER BOUNDARY CONDITIONS: u = 0 on the entire outer boundary at all times
+INTERFACE CORNERS: at the points where the interface meets the outer boundary, the outer boundary condition above applies on BOTH subdomains. Those points belong to the outer boundary, not to the interface, on either side.
+INTERFACE CONDITIONS: the field and its normal flux must be continuous across the interface. Achieve this by exchanging interface data between the two codes and iterating until the interface mismatch is below 1e-6 relative.
+DISCRETISATION: Lagrange P1 elements in both codes
+MESH SEQUENCE: uniform meshes, h halved per level: h = 1/8, 1/16, 1/32, with dt halved alongside
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+
+(1) FIELD. Your solution is assessed at FIXED probe points that do not depend on
+your mesh, defined separately for each subdomain. For every mesh level and for
+EACH subdomain, evaluate your computed solution at every probe point of that
+subdomain and write one CSV file
+    solution_level<k>_<side>.csv        (k = 1,2,3,...; side = A or B)
+with a header line and one row per probe point, in the order defined below:
+    x, y, u
+
+PROBE POINTS, subdomain A: the 1936 points given by x = 0 + (i_x+0.5)*0.625/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+PROBE POINTS, subdomain B: the 1936 points given by x = 0.625 + (i_x+0.5)*0.875/44; y = 0 + (i_y+0.5)*1/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; every probe point must
+appear exactly once and no other points may appear.
+
+(2) INTERFACE. For every mesh level and EACH subdomain, write
+    interface_level<k>_<side>.csv
+with a header line and one row per interface probe point, in this order:
+    x, y, u, qn
+where qn is that subdomain's OUTWARD normal conductive flux qn = -(K grad u) . n_out, evaluated from
+that subdomain's own solution and its own material, with the unit normal
+pointing OUT of that subdomain. The two subdomains therefore use opposite
+normals at the same physical point.
+
+INTERFACE PROBE POINTS: the 44 points (x, y) = (5/8, 1/4 + (i+0.5)*1/2/44) for i = 0, 1, ..., 43. These cover the INTERIOR of the interface only: the two points where the interface meets the outer boundary are corners of the split problem and the recovered flux there does not converge, so they are not graded
+
+(3) COUPLING HISTORY. For every mesh level write
+    residual_level<k>.csv
+with a header line and one row per coupling iteration:
+    iteration, interface_residual
+listing the relative interface mismatch at every iteration of your partitioned
+scheme, from the first to the last. A coupled run that cannot produce this did
+not couple.
+
+(4) Then write the single summary file `RESULT.txt` with exactly these lines:
+    LEVELS = <number of mesh levels solved>
+    FILES = <comma-separated list of all CSV files you wrote>
+    INTERFACE_RESIDUAL = <final relative interface mismatch of the coupling iteration>
+    COUPLING_ITERATIONS = <number of coupling iterations at the finest level>
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+Both codes named below must actually run and must exchange interface data;
+solving the whole problem in one code is not a valid solution. Judge
+MESH_INDEPENDENCE solely from how your own solution behaves under refinement,
+globally and at individual points: no reference answer is available to you.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

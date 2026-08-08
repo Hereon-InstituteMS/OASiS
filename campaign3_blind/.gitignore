@@ -1,0 +1,11 @@
+# Answers. Never in git — the commitment in data/blind_key_commitment.json
+# proves they were fixed in advance without publishing them.
+keys/
+# Run output and the legacy builders that hold hidden fields as literals.
+runs/
+build_logs/
+build_problems.py
+build_extra.py
+build_coupled.py
+__pycache__/
+FROZEN.json
