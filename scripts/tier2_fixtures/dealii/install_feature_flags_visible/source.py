@@ -10,18 +10,28 @@ compile-time features:
   DEAL_II_WITH_TRILINOS  — TrilinosWrappers::*, Amesos solvers
   DEAL_II_WITH_SLEPC     — Eigenvalue solvers via SLEPc
 
-The conda-forge dealii-9.1.1 default install has ALL of
-the above UNDEFINED (verified 2026-06-01). This fixture:
+CORRECTION 2026-08-08, measured. The claim this probe was
+cited for -- "MPI, P4EST, PETSc, Trilinos and SLEPc are all
+undefined in this install" -- is FALSE for the install the
+fixture actually reads. /usr/include/deal.II (9.1.1), which
+is also the header tree the deal.II fixtures compile
+against, has all five DEFINED; the only feature off is
+METIS. The build with those five undefined is the OTHER one
+on this host, ~/dealii/build (9.8.0-pre), which is what
+T2_MUTATE=1 points at. The catalog gap the probe was
+written to expose does not exist on the install in use, and
+the ledger it prints for it is empty. This fixture:
 
   * Locates the install's config.h (via $CONDA_PREFIX or
     the known miniconda env path).
   * Parses the '/* #undef DEAL_II_WITH_X */' lines.
   * Reports which features are ON vs OFF.
 
-Pass condition (deliberately tolerant): the fixture
-PASSES if it can detect a deal.II install at all and emit
-a feature-flag report. It FAILS if it cannot find any
-config.h (install completely missing).
+Pass condition: the fixture pins the flags of the install
+it reads, one expectation per feature, so it fails if it
+cannot find a config.h AND if it finds a different install.
+It used to pass on the mere existence of a report, which is
+why it passed against two installs with opposite answers.
 
 The point is to expose the install state in the fixture
 runner output so the MCP catalog ↔ install alignment
@@ -124,6 +134,15 @@ def main() -> int:
             print(f"feat_unknown={feat}")
     print(f"features_on={sorted(on)}")
     print(f"features_off={sorted(off)}")
+    # PER-FLAG, because the five expectations used to be bare `key=` prefixes.
+    # `features_on=` matches whatever list the run produced, so the fixture was
+    # satisfied by an install with the parallel features ON and by one with them
+    # OFF alike -- and it was cited as the evidence for "this host cannot verify
+    # the parallel claims" while measuring the opposite. Each flag is now its
+    # own value, so pointing the probe at another install goes red.
+    for feat in FEATURES_OF_INTEREST:
+        state = "on" if feat in on else ("off" if feat in off else "unknown")
+        print(f"feature[{feat}]={state}")
 
     # Diagnostic: list of broken catalog claims for THIS install.
     catalog_broken = []

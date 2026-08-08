@@ -58,9 +58,6 @@ FIXTURES = REPO / "scripts" / "tier2_fixtures"
 # Each entry is a fixture whose expectations cannot distinguish any value from
 # any other, so its verdict rests entirely on forbid_in_output.
 BASELINE = {
-    # The stated evidence for a capability claim it cannot tell from its
-    # opposite. Fix by asserting the specific flags, not their presence.
-    "dealii/install_feature_flags_visible",
     # MMS convergence: `max_error=` / `observed_order=` are left unpinned on
     # purpose, so that measured values do not leak into the corpus and become
     # answers an evaluated agent could quote. The fix is to assert a BOUND
