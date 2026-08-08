@@ -106,6 +106,130 @@ def test_quoted_diagnostics_exist_in_the_software(backend):
           "running the software, never as a verdict.")
 
 
+def test_the_screen_still_catches_a_fabrication_after_widening():
+    """MUTATION CONTROL for the screen itself. It must fail on invented text.
+
+    Every fix that stops a false accusation also makes this screen more
+    permissive, and a screen that has been widened until it accuses nobody
+    protects nothing. So the widening has to be paid for in the other
+    direction, measured, on every change.
+
+    That is not hypothetical here. Tightening FEniCSx cost four separate
+    loosenings — the exception-class strip, the MPI rank strip, a suffix
+    search and a printf-template probe — and the FIRST version of the suffix
+    search waved through three of twelve inventions on the strength of a
+    generic English tail:
+
+        "ADIOS2 VTX only supports Lagrange elements"
+                        excused by <= "supports Lagrange elements"
+        "cannot assemble: form has not been compiled"
+                        excused by <= "has not been compiled"
+        "solver exploded during the quadrature loop"
+                        excused by <= "the quadrature loop"
+
+    None of the three is emitted by anything. Requiring the skipped head to be
+    a SINGLE token — the shape of a substituted name, not a run of prose —
+    recovered all three while keeping nanobind's genuine
+    `create_matrix(): incompatible function arguments`.
+
+    Both directions are asserted, because either alone is satisfiable by a
+    degenerate screen: one that flags everything, or one that flags nothing.
+    """
+    real_backend = "fenics"
+    if audit.audit_backend(real_backend)["verdict"].startswith("UNKNOWN"):
+        pytest.skip(f"{real_backend} corpus not searchable here")
+
+    invented = [
+        "the mesh is haunted by a ghost element",
+        "ADIOS2 VTX only supports Lagrange elements",
+        "Value shape must match function space",
+        "ScalarType is not complex",
+        "expected basix.ufl element or tuple (family, degree)",
+        "TypeError: indices must be numpy array",
+        "AttributeError: Function.sub() returns a sub-function not a sub-space",
+        "RuntimeError: cannot assemble: form has not been compiled",
+        "solver exploded during the quadrature loop",
+        "Newton refused to converge on this element",
+        "XDMF mesh must be P1 only",
+    ]
+    # Measured from live dolfinx 0.10.0 runs, or confirmed present in the
+    # corpus. Not one of these may be reported ABSENT.
+    measured = [
+        "Newton solver did not converge",
+        "ValueError: Unexpected complex value in real expression.",
+        "RuntimeError: Rank mismatch between Constant and function space "
+        "in DirichletBC",
+        "RuntimeError: Only (discontinuous) Lagrange functions are "
+        "supported. Interpolate Functions before output.",
+        "TypeError: LinearProblem.__init__() missing 1 required "
+        "keyword-only argument: petsc_options_prefix",
+        "Zero pivot in LU factorization",
+        "MUMPS error in numerical factorization: INFOG(1)=-9",
+        "SystemError: <cyfunction EPS.solve at 0x...> returned a result "
+        "with an exception set",
+        "ValueError: This integral is missing an integration domain.",
+        "Degree of output Function must be same as mesh degree",
+        "TypeError: create_matrix(): incompatible function arguments",
+        "AttributeError: 'Form' object has no attribute 'function_spaces'",
+    ]
+
+    caught = _audit_over(invented, real_backend)
+    accused = _audit_over(measured, real_backend)
+
+    assert not accused["fragments_absent"], (
+        "FALSE ACCUSATION: text measured from a live run was reported as a "
+        "fabricated diagnostic:\n"
+        + "\n".join(f"  {a['fragment']}" for a in accused["fragments_absent"]))
+
+    n_caught = len(caught["fragments_absent"])
+    assert n_caught >= len(invented) - 1, (
+        f"THE SCREEN HAS GONE BLIND: only {n_caught} of {len(invented)} "
+        f"invented messages were flagged. A widening went too far — check the "
+        f"suffix search and the printf-template probe, which are the two that "
+        f"can excuse text nothing emits.\n"
+        + "\n".join(f"  excused: {a['fragment']} <= {a['matched_prefix']}"
+                    for a in caught["fragments_assembled"]))
+
+
+def _audit_over(messages, backend):
+    """Run the real audit over a throwaway backend built from `messages`."""
+    import ast
+    import json
+    import shutil
+    import tempfile
+
+    # Backticks delimit: a quote character the extractor honours and that none
+    # of these strings contains, so the generated module is valid Python and
+    # the harness can never be the thing that failed.
+    assert not any("`" in m for m in messages)
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        be = tmp / "src" / "backends" / backend
+        be.mkdir(parents=True)
+        src = "PITFALLS = [\n" + "".join(
+            "    " + json.dumps(f"[API] probe {i}. Signal: it raises `{m}`.")
+            + ",\n" for i, m in enumerate(messages)) + "]\n"
+        ast.parse(src)
+        (be / "probe.py").write_text(src)
+
+        real_repo = audit.REPO
+        audit.REPO = tmp
+        try:
+            result = audit.audit_backend(backend)
+        finally:
+            audit.REPO = real_repo
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    seen = (result["fragments_present"] + len(result["fragments_absent"])
+            + len(result["fragments_assembled"])
+            + result["fragments_unjudgeable"])
+    assert seen == len(messages), (
+        f"the harness is broken, not the screen: the extractor saw {seen} of "
+        f"{len(messages)} probe strings")
+    return result
+
+
 def test_the_auditor_pairs_quotes_correctly():
     """Regression: the extractor must not straddle adjacent quoted fragments.
 
