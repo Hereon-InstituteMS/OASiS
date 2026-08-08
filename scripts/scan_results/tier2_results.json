@@ -1,7 +1,7 @@
 {
   "_what": "Execution record, imported from data/execution_ledger_*.json.",
   "_honesty": "status=passed means the fixture ran and its expectations matched. It does NOT mean the fixture detects the pathology it names \u2014 that is mutation_evidence, recorded separately. Rows marked 'pre-fix ledger' come from runs where the mutation arm was never applied and carry no discrimination claim. Rows marked 'not_run' were never executed here and are counted as such.",
-  "_generated": "2026-08-08T00:28:06+00:00",
+  "_generated": "2026-08-08T01:44:51+00:00",
   "_ledgers": {
     "execution_ledger_coupling.json": {
       "commit": "61a72566e723",
@@ -34,8 +34,8 @@
       "pre_fix": false
     },
     "execution_ledger_kratos.json": {
-      "commit": "30ec83105f8c",
-      "rows": 139,
+      "commit": "05a53a44f09b",
+      "rows": 151,
       "pre_fix": false
     },
     "execution_ledger_ngsolve.json": {
@@ -54,9 +54,9 @@
       "pre_fix": false
     }
   },
-  "fixture_fingerprint": "3b867a1d2c6e23fac0080ea37448acef57836c5c1fcf1f38a88960879505d2d0",
+  "fixture_fingerprint": "6e3c5fc130a7a08cbc47a3540764210191b3ede47fd175f6a66ef6009d61ce82",
   "summary": {
-    "passed": 1222,
+    "passed": 1237,
     "_meaning": "rows whose recorded run matched the fixture's expectations. Not a discrimination claim \u2014 see mutation_evidence per row."
   },
   "results": {
@@ -6888,7 +6888,7 @@
       "status": "passed",
       "fixture_id": "kratos/aux_dem_is_3d_only_spheric_particle",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6896,7 +6896,7 @@
       "status": "passed",
       "fixture_id": "kratos/beam_requires_rotation_variable",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6904,7 +6904,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_check_before_initialize_segfaults",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6912,7 +6912,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_empirical_spring_polynomial_variable",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6920,7 +6920,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_empirical_spring_rhs_aliasing",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6928,7 +6928,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_line3dn_stub_geometry",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6936,7 +6936,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_process_wrappers_fail",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6944,7 +6944,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_registry_split_vs_structural",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6952,7 +6952,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_ring_check_ignores_properties",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6960,7 +6960,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_sliding_cable_requires_constitutive_law",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6968,7 +6968,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_sliding_edge_process_paths",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6976,7 +6976,7 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_spring_mass_matrix_always_lumped",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -6984,23 +6984,23 @@
       "status": "passed",
       "fixture_id": "kratos/cablenet_vtkoutput_rejects_line3dn",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::poisson::4": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/cda_conductivity_is_nodal",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
+      "mutation_evidence": "discriminates"
     },
     "kratos::poisson::2": {
       "status": "passed",
       "fixture_id": "kratos/cda_element_diffusion_vs_mass",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7008,7 +7008,7 @@
       "status": "passed",
       "fixture_id": "kratos/chimera_requires_fluiddynamics",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7016,7 +7016,7 @@
       "status": "passed",
       "fixture_id": "kratos/chimera_wheel_installs_but_import_fails",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7024,7 +7024,7 @@
       "status": "passed",
       "fixture_id": "kratos/constitutive_law_class_not_instance",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7032,7 +7032,7 @@
       "status": "passed",
       "fixture_id": "kratos/constitutive_law_registry_names",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7040,7 +7040,7 @@
       "status": "passed",
       "fixture_id": "kratos/contact_application_is_on_pypi_after_all",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7048,7 +7048,7 @@
       "status": "passed",
       "fixture_id": "kratos/contact_condition_naming_with_shape_suffix",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7056,7 +7056,7 @@
       "status": "passed",
       "fixture_id": "kratos/contact_mortar_entities_are_conditions",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7064,7 +7064,7 @@
       "status": "passed",
       "fixture_id": "kratos/cosimulation_accelerator_mapper_names",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7072,7 +7072,7 @@
       "status": "passed",
       "fixture_id": "kratos/cpf_freestream_variable_names",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7080,7 +7080,7 @@
       "status": "passed",
       "fixture_id": "kratos/cpf_potentialwall_needs_shape_suffix",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7088,7 +7088,7 @@
       "status": "passed",
       "fixture_id": "kratos/curved_mms_conductivity_is_nodal_not_property",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7096,7 +7096,7 @@
       "status": "passed",
       "fixture_id": "kratos/dam_hydro_condition_load_process_surface",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7104,7 +7104,7 @@
       "status": "passed",
       "fixture_id": "kratos/dam_needs_sma_line_load_condition",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7112,7 +7112,7 @@
       "status": "passed",
       "fixture_id": "kratos/dam_smoothing_scheme_nodal_set",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7120,7 +7120,7 @@
       "status": "passed",
       "fixture_id": "kratos/dam_thermal_law_class_vs_registered_string",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7128,7 +7128,7 @@
       "status": "passed",
       "fixture_id": "kratos/dam_thermomech_element_variables",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7136,47 +7136,39 @@
       "status": "passed",
       "fixture_id": "kratos/dem_constitutive_law_names_exact",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::6": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_density_spelling_erases_every_particle",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::10": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_every_entity_submodelpart_needs_an_assignation_row",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::9": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_finaltime_overrides_problem_data_end_time",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::dem::13": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/dem_has_real_2d_cylinder_particles",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
-      "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
-    },
-    "kratos::dem::12": {
-      "status": "passed",
-      "fixture_id": "kratos/dem_materials_law_name_must_match",
-      "backend": "kratos",
-      "commit": "30ec83105f8c",
-      "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "discriminates"
-    },
-    "kratos::dem::4": {
-      "status": "passed",
-      "fixture_id": "kratos/dem_materials_needs_three_top_level_keys",
-      "backend": "kratos",
-      "commit": "30ec83105f8c",
-      "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "discriminates"
-    },
-    "kratos::dem::5": {
-      "status": "passed",
-      "fixture_id": "kratos/dem_particle_friction_is_not_a_variable",
-      "backend": "kratos",
-      "commit": "30ec83105f8c",
-      "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "discriminates"
-    },
-    "kratos::dem::0": {
-      "status": "passed",
-      "fixture_id": "kratos/dem_project_parameters_is_a_flat_schema",
-      "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7184,7 +7176,31 @@
       "status": "passed",
       "fixture_id": "kratos/dem_radius_is_a_core_variable",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::12": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_materials_law_name_must_match",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::4": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_materials_needs_three_top_level_keys",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::8": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_maxtimestep_is_used_verbatim",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7192,7 +7208,31 @@
       "status": "passed",
       "fixture_id": "kratos/dem_spheric_particle_2d_rejected",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::7": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_missing_young_modulus_reads_zero",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::5": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_particle_friction_is_not_a_variable",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::0": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_project_parameters_is_a_flat_schema",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7200,7 +7240,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_structures_compute_fem_results_option",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7208,7 +7248,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_structures_nodal_variables_split_three_ways",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7216,7 +7256,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_structures_properties_id_on_wall_part",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7224,7 +7264,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_structures_requires_dem_and_structural",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7232,7 +7272,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_structures_surfaceload_no_quad_skin",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7240,7 +7280,23 @@
       "status": "passed",
       "fixture_id": "kratos/dem_total_forces_lives_in_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::11": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_unknown_keys_rejected_but_only_at_the_top",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::dem::16": {
+      "status": "passed",
+      "fixture_id": "kratos/dem_vtk_output_process_cannot_attach_to_spherespart",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7248,7 +7304,7 @@
       "status": "passed",
       "fixture_id": "kratos/dem_wall_rigidface_is_3d_only",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7256,7 +7312,7 @@
       "status": "passed",
       "fixture_id": "kratos/droplet_dynamics_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7264,7 +7320,7 @@
       "status": "passed",
       "fixture_id": "kratos/echo_level_missing",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7272,7 +7328,7 @@
       "status": "passed",
       "fixture_id": "kratos/elasticity_mms_convergence",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7280,7 +7336,7 @@
       "status": "passed",
       "fixture_id": "kratos/element_name_missing_node_count",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "passes both ways \u2014 proves nothing"
     },
@@ -7288,7 +7344,7 @@
       "status": "passed",
       "fixture_id": "kratos/element_no_constitutive_law",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7296,7 +7352,7 @@
       "status": "passed",
       "fixture_id": "kratos/fem_to_dem_application_absent",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7304,7 +7360,7 @@
       "status": "passed",
       "fixture_id": "kratos/fluid_biomedical_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7312,7 +7368,7 @@
       "status": "passed",
       "fixture_id": "kratos/fluid_hydraulics_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7320,7 +7376,7 @@
       "status": "passed",
       "fixture_id": "kratos/fluid_inlet_velocity_outlet_pressure_variables",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7328,7 +7384,7 @@
       "status": "passed",
       "fixture_id": "kratos/fluid_material_variables_live_in_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7336,7 +7392,7 @@
       "status": "passed",
       "fixture_id": "kratos/fluid_twofluid_distance_variable",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7344,7 +7400,7 @@
       "status": "passed",
       "fixture_id": "kratos/free_surface_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7352,7 +7408,7 @@
       "status": "passed",
       "fixture_id": "kratos/friction_angle_wrong_module",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7360,7 +7416,7 @@
       "status": "passed",
       "fixture_id": "kratos/fsi_application_accelerator_classes",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7368,7 +7424,7 @@
       "status": "passed",
       "fixture_id": "kratos/fsi_needs_four_applications",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7376,7 +7432,7 @@
       "status": "passed",
       "fixture_id": "kratos/fsi_requires_mapping_and_meshmoving",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7384,7 +7440,7 @@
       "status": "passed",
       "fixture_id": "kratos/geomechanics_and_poromechanics_coexist",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7392,7 +7448,7 @@
       "status": "passed",
       "fixture_id": "kratos/geomechanics_cl_naming",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7400,7 +7456,7 @@
       "status": "passed",
       "fixture_id": "kratos/heat_dirichlet_constrained_flag_fixes_dof",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7408,7 +7464,7 @@
       "status": "passed",
       "fixture_id": "kratos/heat_neumann_targets_face_heat_flux",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7416,7 +7472,7 @@
       "status": "passed",
       "fixture_id": "kratos/heat_transient_consistent_mass_beats_lumped",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7424,7 +7480,7 @@
       "status": "passed",
       "fixture_id": "kratos/heat_transient_crank_nicolson_is_second_order",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7432,7 +7488,7 @@
       "status": "passed",
       "fixture_id": "kratos/heat_transient_template_violates_maximum_principle",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7440,7 +7496,7 @@
       "status": "passed",
       "fixture_id": "kratos/iga_nurbs_geometry_classes_are_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7448,7 +7504,7 @@
       "status": "passed",
       "fixture_id": "kratos/iga_surface_condition_naming",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7456,7 +7512,7 @@
       "status": "passed",
       "fixture_id": "kratos/iga_surfaceload_vs_surface_condition",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7464,7 +7520,7 @@
       "status": "passed",
       "fixture_id": "kratos/kratos_knowledge_source_of_truth",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7472,7 +7528,7 @@
       "status": "passed",
       "fixture_id": "kratos/kratos_runs_in_a_venv_not_only_system_python",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7480,7 +7536,7 @@
       "status": "passed",
       "fixture_id": "kratos/linear_elasticity_max_iteration_is_positional",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7488,7 +7544,7 @@
       "status": "passed",
       "fixture_id": "kratos/linear_elasticity_point_load_direction_process",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7496,55 +7552,71 @@
       "status": "passed",
       "fixture_id": "kratos/mapperfactory_moved_to_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::mpm::6": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/mpm_boundary_conditions_live_on_the_grid",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::mpm::9": {
+      "status": "passed",
+      "fixture_id": "kratos/mpm_constitutive_law_names_are_fully_qualified",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
     },
     "kratos::mpm::0": {
       "status": "passed",
       "fixture_id": "kratos/mpm_element_naming_mpm_prefix",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::mpm::2": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/mpm_material_points_per_element_is_required",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
+      "mutation_evidence": "discriminates"
     },
     "kratos::mpm::10": {
       "status": "passed",
       "fixture_id": "kratos/mpm_points_leaving_the_grid_are_erased",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
+      "source_ledger": "execution_ledger_kratos.json",
+      "mutation_evidence": "discriminates"
+    },
+    "kratos::mpm::8": {
+      "status": "passed",
+      "fixture_id": "kratos/mpm_scheme_type_is_partitioned_by_solver",
+      "backend": "kratos",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::mpm::7": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/mpm_solver_type_is_a_label_not_a_class",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
+      "mutation_evidence": "discriminates"
     },
     "kratos::optimization::3": {
       "status": "passed",
       "fixture_id": "kratos/optimization_point_load_not_in_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7552,7 +7624,7 @@
       "status": "passed",
       "fixture_id": "kratos/optimization_response_utils_are_compiled_statics",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7560,7 +7632,7 @@
       "status": "passed",
       "fixture_id": "kratos/optimization_tensor_adaptors_not_on_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7568,23 +7640,23 @@
       "status": "passed",
       "fixture_id": "kratos/optimization_thickness_needs_plane_stress_law",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
     "kratos::structural_dynamics::1": {
-      "status": "fail",
+      "status": "passed",
       "fixture_id": "kratos/parameters_unknown_key_raises",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
-      "mutation_evidence": "no verdict \u2014 FAIL"
+      "mutation_evidence": "discriminates"
     },
     "kratos::pfem2::0": {
       "status": "passed",
       "fixture_id": "kratos/pfem2_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7592,7 +7664,7 @@
       "status": "passed",
       "fixture_id": "kratos/pfem_applications_absent",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7600,7 +7672,7 @@
       "status": "passed",
       "fixture_id": "kratos/pfem_requires_delaunay_meshing",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7608,7 +7680,7 @@
       "status": "passed",
       "fixture_id": "kratos/pfem_solid_has_no_template",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7616,7 +7688,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_all_dirichlet_cell_is_vacuous",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7624,7 +7696,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_factory_takes_no_args",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7632,7 +7704,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_hardening_curve_not_range_checked",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7640,7 +7712,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_j2_planestrain_strain_size_4",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7648,7 +7720,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_law_check_required_properties",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7656,7 +7728,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_mohr_coulomb_two_parameterisations",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7664,7 +7736,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_outputs_read_from_element",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7672,7 +7744,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_perfect_plasticity_needs_curve_three",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7680,7 +7752,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_rankine_simoju_are_damage_only",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7688,7 +7760,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_tangent_operator_estimation_knob",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7696,7 +7768,7 @@
       "status": "passed",
       "fixture_id": "kratos/plasticity_two_registry_holes",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7704,7 +7776,7 @@
       "status": "passed",
       "fixture_id": "kratos/point_load_direction_process_rejects",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7712,7 +7784,7 @@
       "status": "passed",
       "fixture_id": "kratos/poisson_cda_element_string_factory",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7720,7 +7792,7 @@
       "status": "passed",
       "fixture_id": "kratos/poisson_convectiondiffusionsettings_on_processinfo",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7728,7 +7800,7 @@
       "status": "passed",
       "fixture_id": "kratos/poisson_laplacian_element_assembles_heat_flux",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7736,7 +7808,7 @@
       "status": "passed",
       "fixture_id": "kratos/poisson_mms_convergence",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7744,7 +7816,7 @@
       "status": "passed",
       "fixture_id": "kratos/poisson_vtk_output_process_surface",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7752,7 +7824,7 @@
       "status": "passed",
       "fixture_id": "kratos/poromechanics_biot_coefficient_is_required",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7760,7 +7832,7 @@
       "status": "passed",
       "fixture_id": "kratos/poromechanics_newmark_scheme_signature",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7768,7 +7840,7 @@
       "status": "passed",
       "fixture_id": "kratos/poromechanics_upl_exotic_nodal_variables",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7776,7 +7848,7 @@
       "status": "passed",
       "fixture_id": "kratos/poromechanics_upl_not_upw",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7784,7 +7856,7 @@
       "status": "passed",
       "fixture_id": "kratos/poromechanics_variables_cpp_registered_only",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7792,7 +7864,7 @@
       "status": "passed",
       "fixture_id": "kratos/prefer_modern_over_legacy_solid_apps",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7800,7 +7872,7 @@
       "status": "passed",
       "fixture_id": "kratos/quad4_shear_locking_vs_quad8",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7808,7 +7880,7 @@
       "status": "passed",
       "fixture_id": "kratos/rans_requires_fluiddynamics",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7816,7 +7888,7 @@
       "status": "passed",
       "fixture_id": "kratos/rans_shallowwater_element_naming",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7824,7 +7896,7 @@
       "status": "passed",
       "fixture_id": "kratos/rom_works_with_structural_and_fluid",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7832,7 +7904,7 @@
       "status": "passed",
       "fixture_id": "kratos/shallowwater_bdf2_scheme_exists",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7840,7 +7912,7 @@
       "status": "passed",
       "fixture_id": "kratos/shallowwater_element_is_boussinesq_stem",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7848,7 +7920,7 @@
       "status": "passed",
       "fixture_id": "kratos/shallowwater_free_surface_elevation_is_derived",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7856,7 +7928,7 @@
       "status": "passed",
       "fixture_id": "kratos/shallowwater_gravity_is_scalar_processinfo",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7864,7 +7936,7 @@
       "status": "passed",
       "fixture_id": "kratos/shallowwater_is_2d_only",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7872,7 +7944,7 @@
       "status": "passed",
       "fixture_id": "kratos/structural_dynamics_echo_level_missing",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7880,7 +7952,7 @@
       "status": "passed",
       "fixture_id": "kratos/structural_dynamics_lumped_mass_flag",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7888,7 +7960,7 @@
       "status": "passed",
       "fixture_id": "kratos/structural_dynamics_schemes_live_on_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7896,7 +7968,7 @@
       "status": "passed",
       "fixture_id": "kratos/submodelpart_case_sensitive",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7904,7 +7976,7 @@
       "status": "passed",
       "fixture_id": "kratos/swimming_dem_requires_fluid_and_dem",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7912,7 +7984,7 @@
       "status": "passed",
       "fixture_id": "kratos/swimming_dem_wheel_pins_older_core",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7920,7 +7992,7 @@
       "status": "passed",
       "fixture_id": "kratos/temperature_variable_not_added",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7928,7 +8000,7 @@
       "status": "passed",
       "fixture_id": "kratos/thermal_dem_application_absent",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7936,7 +8008,7 @@
       "status": "passed",
       "fixture_id": "kratos/thermal_dem_requires_dem_base",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7944,7 +8016,7 @@
       "status": "passed",
       "fixture_id": "kratos/topology_optimization_requires_structural",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7952,7 +8024,7 @@
       "status": "passed",
       "fixture_id": "kratos/trilinos_absent_metis_present",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7960,7 +8032,7 @@
       "status": "passed",
       "fixture_id": "kratos/variable_not_added_before_access",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7968,7 +8040,7 @@
       "status": "passed",
       "fixture_id": "kratos/velocity_variable_not_added",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7976,7 +8048,7 @@
       "status": "passed",
       "fixture_id": "kratos/wind_engineering_application_absent",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7984,7 +8056,7 @@
       "status": "passed",
       "fixture_id": "kratos/wind_engineering_requires_fluid_and_rans",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -7992,7 +8064,7 @@
       "status": "passed",
       "fixture_id": "kratos/yield_surface_tags_are_not_laws",
       "backend": "kratos",
-      "commit": "30ec83105f8c",
+      "commit": "05a53a44f09b",
       "source_ledger": "execution_ledger_kratos.json",
       "mutation_evidence": "discriminates"
     },
@@ -10471,6 +10543,110 @@
     "coupling::driver_invariants::34": {
       "status": "not_run",
       "fixture_id": "coupling/driver_invariants_the_contract_asserts",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::fsi_added_mass_instability::33": {
+      "status": "not_run",
+      "fixture_id": "coupling/fsi_added_mass_instability",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::fsi_pair_fenics_fourc::34": {
+      "status": "not_run",
+      "fixture_id": "coupling/fsi_pair_fenics_fourc",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::fsi_partitioned_two_way::32": {
+      "status": "not_run",
+      "fixture_id": "coupling/fsi_partitioned_two_way",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::tsi_matches_native_4c::5": {
+      "status": "not_run",
+      "fixture_id": "coupling/tsi_matches_native_4c",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::tsi_twoway_fenics_skfem::5": {
+      "status": "not_run",
+      "fixture_id": "coupling/tsi_twoway_fenics_skfem",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::tsi_twoway_ngsolve_fenics::5": {
+      "status": "not_run",
+      "fixture_id": "coupling/tsi_twoway_ngsolve_fenics",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::tsi_twoway_skfem_skfem::5": {
+      "status": "not_run",
+      "fixture_id": "coupling/tsi_twoway_skfem_skfem",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_conservation_needs_a_surface_integral::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_conservation_needs_a_surface_integral",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_pair_fenics_dealii::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_pair_fenics_dealii",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_pair_fenics_skfem::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_pair_fenics_skfem",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_pair_ngsolve_skfem::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_pair_ngsolve_skfem",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_relaxation_needs_the_worst_component::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_relaxation_needs_the_worst_component",
+      "backend": "coupling",
+      "commit": "",
+      "source_ledger": "",
+      "mutation_evidence": "not run on this host"
+    },
+    "coupling::vector_traction_recovery_at_the_interface_ends::0": {
+      "status": "not_run",
+      "fixture_id": "coupling/vector_traction_recovery_at_the_interface_ends",
       "backend": "coupling",
       "commit": "",
       "source_ledger": "",
