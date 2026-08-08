@@ -94,9 +94,28 @@ def main() -> int:
     print(f"component_is_a_view_not_a_copy={abs(moved - 7.0) < 1e-12}")
 
     # ...and the other way round.
+    #
+    # This used to write gf.vec[0] -= 7.0 and then re-evaluate comps[0] at
+    # mesh(0.4, 0.6).  DOF 0's basis function is exactly 0.0 at that point
+    # (0.20 elsewhere, measured), so the probe could not see the write at all:
+    # it printed True under the mutation too, where a live -7 sits in the
+    # parent, and unmutated only because the +7 and -7 cancelled.  The
+    # parent-to-component direction was never tested.  It is now read off the
+    # component's own entry, which is what "a view" means.
+    parent_before = float(gf.vec[0])
+    comp_before = float(comps[0].vec[0])
     gf.vec[0] -= 7.0
-    back = float(comps[0](pt))
-    print(f"component_sees_parent_write={abs(back - v0) < 1e-12}")
+    parent_after = float(gf.vec[0])
+    comp_after = float(comps[0].vec[0])
+    print(f"parent_dof0_before={parent_before:.6f} after={parent_after:.6f}")
+    print(f"component_dof0_before={comp_before:.6f} after={comp_after:.6f}")
+    print(f"parent_write_moved_the_parent="
+          f"{abs((parent_after - parent_before) + 7.0) < 1e-12}")
+    d_parent = parent_after - parent_before
+    d_comp = comp_after - comp_before
+    sees = bool(abs(d_comp - d_parent) < 1e-12 and abs(d_comp) > 1e-12)
+    print(f"component_dof0_delta={d_comp:.6f} parent_dof0_delta={d_parent:.6f}")
+    print(f"component_sees_parent_write={sees}")
 
     ok = (
         type(comps).__name__ == "tuple"
@@ -106,7 +125,7 @@ def main() -> int:
         and comps[0].vec.size == scalar_ndof
         and comps[0].vec.size + comps[1].vec.size == fes.ndof
         and abs(moved - 7.0) < 1e-12
-        and abs(back - v0) < 1e-12
+        and sees
     )
     if ok:
         return 0
