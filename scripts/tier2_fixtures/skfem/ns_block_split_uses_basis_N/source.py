@@ -107,12 +107,41 @@ def main() -> int:
     bu = Basis(tri, ElementVector(ElementTriP2()))
     bp = Basis(tri, ElementTriP1())
     total = bu.N + bp.N
-    x = np.arange(total, dtype=float)
+
+    # WHAT THE VECTOR BEING SPLIT HAS TO BE.
+    #
+    # It used to be `x = np.arange(total)`, and the contamination test was
+    # `bad_p[:len(bad_p) - bp.N] < bu.N`.  On an arange that reduces to
+    # `index < bu.N` -- an arithmetic identity, worth exactly `max(bu.N - cut,
+    # 0)` for every mesh, every element and every physics, and saying nothing
+    # about a velocity or a pressure.  It also merely restated
+    # `tri_P2_naive_matches_basis_N=False`, which is asserted above.
+    #
+    # The vector is now a real pair of FIELDS: a velocity projected onto the
+    # ElementVector space and a pressure projected onto P1, on separated value
+    # ranges (|u| near 10, |p| <= 1) so an entry can be told apart by WHAT IT
+    # IS rather than by where it sits.  "Contaminated" then means the pressure
+    # slice holds entries carrying velocity magnitudes, which is a statement
+    # about skfem's DOF layout and can come out false -- and the field error
+    # below says how wrong the resulting pressure is.
+    u_h = bu.project(lambda x: np.array([10.0 + np.sin(np.pi * x[0]),
+                                         10.0 + np.cos(np.pi * x[1])]))
+    p_h = bp.project(lambda x: np.sin(2.0 * np.pi * x[0]) * np.cos(np.pi * x[1]))
+    vec = np.concatenate([u_h, p_h])
+    print(f"velocity_block_min_abs={np.abs(u_h).min():.4f}")
+    print(f"pressure_block_max_abs={np.abs(p_h).max():.4f}")
+    ranges_separate = bool(np.abs(u_h).min() > 2.0 and np.abs(p_h).max() < 2.0)
+    print(f"velocity_and_pressure_value_ranges_separate={ranges_separate}")
+    if not ranges_separate:
+        print("FAIL: the two blocks overlap in value, so 'came from the "
+              "velocity block' cannot be read off the numbers", file=sys.stderr)
+        ok = False
+
     cut = split_index(bu, guess)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        good_u, good_p = x[:bu.N], x[bu.N:]
-        bad_u, bad_p = x[:cut], x[cut:]
+        good_u, good_p = vec[:bu.N], vec[bu.N:]
+        bad_u, bad_p = vec[:cut], vec[cut:]
         msgs = sorted({str(c.message) for c in caught})
     print(f"total_length={total} basis_N={bu.N} pressure_N={bp.N}")
     print(f"correct_split_pressure_length={len(good_p)}")
@@ -120,15 +149,31 @@ def main() -> int:
     print(f"naive_split_warnings={msgs!r}")
     print(f"naive_split_is_silent={not msgs}")
     print(f"naive_pressure_slice_is_nonempty={len(bad_p) > 0}")
-    contaminated = int(np.sum(bad_p[:max(len(bad_p) - bp.N, 0)] < bu.N))
+    contaminated = int(np.sum(np.abs(bad_p) > 2.0))
     print(f"naive_pressure_entries_taken_from_velocity={contaminated}")
     print(f"naive_split_contaminates_pressure={contaminated > 0}")
+    # And what the mis-sliced pressure is as a FIELD.  A caller reads the slice
+    # from its FRONT -- p[0], p[1], ... -- so the comparison is over the leading
+    # bp.N entries, which is what downstream code would use as the pressure.
+    # (Aligning on the TAIL instead compares vec[bu.N:] with itself and prints
+    # a relative error of exactly 0 whatever the split did; that is the same
+    # mistake one level up, and it was caught by running this.)
+    got_p = bad_p[:len(good_p)]
+    n = min(len(got_p), len(good_p))
+    rel = float(np.abs(got_p[:n] - good_p[:n]).max()
+                / max(1e-30, np.abs(good_p).max()))
+    print(f"naive_pressure_field_relative_error={rel:.4e}")
+    print(f"naive_pressure_field_is_wrong={rel > 0.5}")
     if msgs:
         print(f"FAIL: the naive split warned {msgs!r}", file=sys.stderr)
         ok = False
     if contaminated <= 0:
         print("FAIL: the naive split did not pull velocity entries into the "
               "pressure slice", file=sys.stderr)
+        ok = False
+    if rel <= 0.5:
+        print(f"FAIL: the mis-sliced pressure field is within {rel!r} of the "
+              f"real one, so the split is not silently wrong", file=sys.stderr)
         ok = False
 
     return 0 if ok else 2
