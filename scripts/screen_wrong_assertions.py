@@ -96,6 +96,10 @@ SOLVERS = {
     "solve_problem", "apply", "condense", "Solve_", "linsolve",
 }
 OUTPUT_FUNCS = {"print", "write", "echo"}
+# Methods that build a value in place, so the name is not the literal it was
+# first bound to.
+_MUTATORS = {"append", "extend", "insert", "add", "update", "pop", "remove",
+             "sort", "clear", "setdefault", "__setitem__"}
 _KEYVAL = re.compile(r"^[A-Za-z_][\w.\[\]]*=")
 # An `except` handler's text lands in one of these shapes.
 _EXC_TEXT = re.compile(r"\b(str|repr|format_exc|traceback)\b")
@@ -438,6 +442,15 @@ def _collect_defs(fn: ast.AST) -> dict[str, ast.AST]:
         elif isinstance(node, ast.For):
             bind(node.target, node.iter)
             note(node.target)
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+                and node.func.attr in _MUTATORS:
+            # `hits.append(...)`, `seen.add(...)`: the name is still bound to its
+            # first literal, but its VALUE is built at run time. Without this,
+            # `hits = []` ... `hits.append(p)` ... `hits == []` read as a
+            # comparison of two literals, which is four of the four CONSTCMP
+            # hits that survived the first pass -- all false.
+            note(node.func.value)
+            note(node.func.value)
     _REBOUND[id(defs)] = {n for n, c in counts.items() if c > 1}
     return defs
 
