@@ -27,6 +27,7 @@ be wrong identically. The closed-form handles below are what stands in for that
 on the fluid and structure separately, and an independent-code FSI reference is
 what stands in for it on the coupled problem.
 """
+import math
 import sys
 from pathlib import Path
 
@@ -214,7 +215,15 @@ def body() -> None:
     L.check(eq_ok, "signflip_still_balances",
             "the force balance caught the whole-convention flip after all — "
             "then this limit no longer holds and the note must be rewritten")
-    L.check(relb == relb and relb < 1e-5, "signflip_reference_still_agrees",
+    # `math.isfinite(relb)`, not the `relb == relb` NaN idiom it replaced.
+    # relb defaults to NaN when the reference reports no relative_l2, so the
+    # guard is meant; but `relb < 1e-5` is ALREADY False for NaN, so the idiom
+    # added nothing and its identical operands are the exact shape
+    # scripts/screen_wrong_assertions.py flags as SELFSAME. The screen is right
+    # that `x == x` carries no information here; the intent is spelled out
+    # instead of loosening the screen, which is what keeps it able to catch a
+    # real `G == G`.
+    L.check(math.isfinite(relb) and relb < 1e-5, "signflip_reference_still_agrees",
             f"the shared-script reference disagreed by {relb:.3e} on the "
             f"flipped run; if it can see this, say so instead")
     L.check(bool(dy_flip.max() <= 0), "signflip_deflection_reverses",
@@ -228,7 +237,7 @@ def body() -> None:
             f"({fyb:.4g}) on the flipped run, so the flip is not visible even "
             f"in the load")
     caught_only_by_physics = (bool(b.get("converged")) and eq_ok
-                              and relb == relb and relb < 1e-5)
+                              and math.isfinite(relb) and relb < 1e-5)
     print(f"signflip_caught_only_by_closed_form={caught_only_by_physics}")
 
     print("configurations_run=6")
