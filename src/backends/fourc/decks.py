@@ -97,13 +97,36 @@ def _resolve_root(text: str) -> str:
     Left verbatim when FOURC_ROOT is unset: a wrong absolute path is a worse
     failure than a visible placeholder, because 4C reports the missing file
     and not the missing configuration.
+
+    EVERY SUBSTITUTED LINE SAYS WHERE ITS PATH CAME FROM. The resolved deck is
+    handed to an agent by `generate_input`, so an unannotated
+    `/home/<someone>/4C/tests/...` in it reads as a fact about 4C rather than
+    as a fact about this machine, and is wrong on every other one. The deck
+    header already says to set FOURC_ROOT, but the substituted lines sit
+    thousands of characters below it — far outside the window
+    test_no_served_payload_hard_codes_a_host_path looks in, and far outside
+    what a reader skimming the middle of a deck would connect it to.
+    A trailing YAML comment is ignored by 4C, so the deck still runs verbatim.
     """
     if FOURC_ROOT_TOKEN not in text:
         return text
     root = os.environ.get("FOURC_ROOT")
     if not root:
         return text
-    return text.replace(FOURC_ROOT_TOKEN, str(Path(root).resolve()))
+    resolved = str(Path(root).resolve())
+    out = []
+    for line in text.split("\n"):
+        if FOURC_ROOT_TOKEN not in line:
+            out.append(line)
+            continue
+        line = line.replace(FOURC_ROOT_TOKEN, resolved)
+        # Only where a comment cannot change the value: a `#` inside a quoted
+        # scalar would be part of the string, and a line that already carries
+        # one needs nothing.
+        if "#" not in line:
+            line = f"{line}    # path from $FOURC_ROOT on this machine"
+        out.append(line)
+    return "\n".join(out)
 
 
 # ── the catalog ────────────────────────────────────────────────────────────

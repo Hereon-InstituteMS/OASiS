@@ -118,6 +118,34 @@ CANONICAL_CATEGORIES = {
     # SINGLE tag rather than a compound one. Whether Assert is compiled in is a
     # build-time fact, so it sits on the same axis as [Integration][BuildConfig].
     "build": "Integration",
+    # Sub-kinds that arrived with feature/tsi-coupling and feature/fsi-coupling,
+    # which tagged four entries with their GROUP NAME in `pitfalls.py`
+    # (silent_wrong, verification_limits, participant_contract,
+    # capability_limits) rather than with an axis. Every other entry in those
+    # same groups is tagged by axis — _SILENT_WRONG's own members carry
+    # [Validation], [Numerical], [Mesh], [BC], [Units], [Integration] — so the
+    # group is not the category and these four fell outside the vocabulary,
+    # which silently dropped them from category filtering.
+    #
+    # Each folds onto the axis its own group predominantly uses, so filtering
+    # returns them alongside the entries they belong with, while the tag keeps
+    # the sub-kind visible to a reader:
+    #
+    #   Silent-Wrong  -> Validation   (_SILENT_WRONG is Validation-dominant; a
+    #                                  coupling that converges to a wrong answer
+    #                                  with nothing firing is a validation blind
+    #                                  spot, which is what the group is about)
+    #   Verification  -> Validation   (_CHECK_LIMITS is 5x Validation; these say
+    #                                  what the checks CANNOT see)
+    #   Contract      -> API          (_CONTRACT is API-dominant; it is how a
+    #                                  participant script must be written)
+    #   Capability    -> Integration  (_CAPABILITY_LIMITS's tool-fact axis: 4C's
+    #                                  match_nodes octree tolerance is a fixed
+    #                                  property of the build, not of the model)
+    "silent-wrong": "Validation",
+    "verification": "Validation",
+    "contract": "API",
+    "capability": "Integration",
 }
 
 # `_cross.py` carries the cross-backend collation pitfalls — the ones that only
