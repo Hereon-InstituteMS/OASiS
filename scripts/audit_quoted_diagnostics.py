@@ -458,12 +458,55 @@ def longest_found_prefix(fragment: str, roots: list[Path],
     evidence rather than proof.
     """
     words = fragment.split()
-    for n in range(len(words), 0, -1):
-        cand = " ".join(words[:n])
-        if len(cand) < floor:
-            break
-        if grep_literal(cand, roots):
-            return cand
+
+    # Longest CONTIGUOUS WINDOW, not longest leading slice.
+    #
+    # This used to take words[:n] only, so it could see interpolation at the
+    # END of a message ("... does not exist for " + type_name) and was blind to
+    # interpolation at the FRONT. Every KRATOS_ERROR prepends "Error: " at
+    # runtime, and many also interpolate a name at the tail, so the literal in
+    # the binary is an INTERIOR run of the message a user sees:
+    #
+    #     Error: Getting a value that does not exist. entry string : strategy
+    #     ^^^^^^^                                                    ^^^^^^^^
+    #     added at runtime                                    interpolated
+    #
+    # Measured on the 28-application build: the full fragment and its leading
+    # slices score 0, while the interior run scores 1. Twelve flagged Kratos
+    # entries have this shape, several captured verbatim from real runs, so a
+    # whole class of true messages was being reported absent.
+    #
+    # Windows are tried longest-first and the search returns on the first hit,
+    # so the cost is a few greps in the common case rather than O(n^2).
+    n = len(words)
+    for length in range(n, 0, -1):
+        if len(" ".join(words[:length])) < floor and length < n:
+            # every window of this length is below the floor
+            shortest = min(len(" ".join(words[i:i + length]))
+                           for i in range(n - length + 1))
+            if shortest < floor:
+                continue
+        for i in range(n - length + 1):
+            cand = " ".join(words[i:i + length])
+            if len(cand) < floor:
+                continue
+            # A window that trims BOTH ends has lost its anchors, so it must
+            # still be MOST of the message. Runtime insertions are short — a
+            # "Error: " prefix, one interpolated name — so a literal that
+            # accounts for only half the words is not that message, it is a
+            # coincidence of common English.
+            #
+            # Measured, before this rule: the invented
+            #   "PARTICLE_FRICTION must be positive for every DEM material"
+            # was excused by the 20-character run "must be positive for",
+            # which occurs somewhere in any large C++ corpus. Requiring 60% of
+            # the words rejects it (4 of 8) while keeping the real messages:
+            #   "Error: Getting a value ... entry string : strategy"  10/12
+            #   "Error: STEP not found in process info of Main"        6/9
+            if i > 0 and i + length < n and length < 0.6 * n:
+                continue
+            if grep_literal(cand, roots):
+                return cand
     return ""
 
 

@@ -1,0 +1,3927 @@
+{
+  "commit": "30ec83105f8c",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "skfem",
+      "fixture": "adapt_f2t_boundary_marker",
+      "claim": "adaptive_poisson:3",
+      "claim_text_sha": "db2e39bfa67aa466",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "neighbour_array_has_the_expected_shape=True",
+          "boundary_columns_equal_the_last_element=True",
+          "every_boundary_facet_is_corrupted=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "adapt_interpolate_grad_axis_order",
+      "claim": "adaptive_poisson:2",
+      "claim_text_sha": "60166e50d5270546",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": [
+          "wrong_result_is_one_per_quadrature_point=True",
+          "wrong_slice_is_silently_wrong=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "adapt_lshape_corner_singularity",
+      "claim": "adaptive_poisson:5",
+      "claim_text_sha": "68c1b1a706caa4a2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "unrefined_indicator_is_nearly_uniform=True",
+          "one_uniform_refinement_sharpens_the_indicator=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "adapt_marking_theta_conventions",
+      "claim": "adaptive_poisson:4",
+      "claim_text_sha": "5afc9b64f0e4f859",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "max_strategy_marks_fewer_as_theta_rises=True",
+          "the_two_conventions_run_in_opposite_directions=True",
+          "max_theta_tiny_is_everything=True",
+          "max_theta_one_is_nothing=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "adapt_p1_volume_residual_vanishes",
+      "claim": "adaptive_poisson:0",
+      "claim_text_sha": "29c449189ecd428d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "jumponly_effectivity_is_lower=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "adapt_refined_takes_element_indices",
+      "claim": "adaptive_poisson:1",
+      "claim_text_sha": "59ad7473d3259679",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "facet_indices_raise_IndexError=True",
+          "message_says_out_of_bounds=True",
+          "message_names_axis_1=True",
+          "message_quotes_the_element_count=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "asm_quadrature_mismatch",
+      "claim": "stokes:6",
+      "claim_text_sha": "790799c70a72c16f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "ValueError",
+          "Quadrature mismatch",
+          "same number of integration points"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "biharmonic_argyris_dof_count",
+      "claim": "biharmonic:1",
+      "claim_text_sha": "9e68ce46ff002630",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "p1_bilaplace_raises_valueerror=True",
+          "too many subscripts",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "biharmonic_bfs_dof_count",
+      "claim": "biharmonic:2",
+      "claim_text_sha": "e93002d031a8c469",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "bfs_on_meshtri_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "biharmonic_element_dof_counts",
+      "claim": "biharmonic:0",
+      "claim_text_sha": "b66fabe036128a94",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "Morley_Nbfun=6",
+          "Argyris_Nbfun=21",
+          "BFS_Nbfun=16"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "biharmonic_hermite_beam_dof_count",
+      "claim": "biharmonic:3",
+      "claim_text_sha": "34391d59e1f6571a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "linep1_beam_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "boundary_not_tagged",
+      "claim": "linear_elasticity:4",
+      "claim_text_sha": "11511f36a8d6181c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "ValueError",
+          "Boundary 'left' not found"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "cd_facet_normal_needs_facet_basis",
+      "claim": "convection_diffusion:1",
+      "claim_text_sha": "753ae2089c79caee",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "Attribute 'n' not found in 'w'.",
+          "cellbasis_normal_raises_attributeerror=True",
+          "message_names_w_not_basis=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "cd_grad_helper_vs_attribute",
+      "claim": "convection_diffusion:0",
+      "claim_text_sha": "d5d2a72c0cae287c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "matmul: Input operand 1 has a mismatch in its core dimension",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "cd_high_peclet_cg_oscillation",
+      "claim": "convection_diffusion:3",
+      "claim_text_sha": "97f8accbc73a4c32",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "cg_undershoots_at_every_level=True",
+          "cg_undershoot_survives_to_finest=True",
+          "supg_fixes_coarsest_mesh=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "cd_periodic_is_on_dg_mesh_classes",
+      "claim": "convection_diffusion:2",
+      "claim_text_sha": "ea246009fda77e1c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no attribute 'periodic'",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "condense_solve_signature_pinned",
+      "claim": "mixed_poisson:2",
+      "claim_text_sha": "295b618dbb9dc3e5",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "condense_missing_required=[]",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_cg_on_nonsymmetric",
+      "claim": "dg_methods:9",
+      "claim_text_sha": "d60d059c4b0241ff",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "cg_info_nonzero=True",
+          "cg_relative_residual_gt_1=True",
+          "gmres_beats_cg_by_gt_1e8=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_elementdg_wrapper",
+      "claim": "dg_methods:0",
+      "claim_text_sha": "3572a280446ed84a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "bare_p1_n_dofs=81",
+          "bare_p1_equals_n_vertices=True",
+          "bare_p1_upwind_flux_matrix_is_zero=True",
+          "bare_p1_penalty_matrix_is_zero=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_inflow_wrong_basis",
+      "claim": "dg_methods:2",
+      "claim_text_sha": "62cf2e29a72b9d89",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "n_interior_facets=176",
+          "wrong_max_abs_dev_from_one_gt_1=True",
+          "wrong_violates_max_principle=True",
+          "wrong_streamwise_decreases_gt_0=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_ip_penalty_sigma",
+      "claim": "dg_methods:5",
+      "claim_text_sha": "6e84380473980d5c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:11:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.8,
+        "missing": [
+          "sigma_1_coercive=False",
+          "sigma_2_coercive=False",
+          "sigma_3_coercive=False",
+          "coercivity_threshold_is_the_rule_of_thumb=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_nodal_projection",
+      "claim": "dg_methods:7",
+      "claim_text_sha": "f4857fc636c90068",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "vtk_point_data_rejected=True",
+          "len(point_data[\"u\"]) = 96",
+          "naive_truncation_err_gt_half_of_range=True",
+          "projection_beats_truncation_by_gt_1e10=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_plain_basis_facet_normals",
+      "claim": "dg_methods:1",
+      "claim_text_sha": "be31f9bb735b6aa0",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "plain_basis_raises_attributeerror=True",
+          "Attribute 'n' not found in 'w'.",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_project_deprecated",
+      "claim": "dg_methods:8",
+      "claim_text_sha": "82d77996ef2ac562",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "project_emits_deprecationwarning=True",
+          "project is deprecated in favor of Basis.project (will be removed in the next release).",
+          "projection is deprecated in favor of Basis.project.",
+          "project_warning_mentions_removal=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_shipped_template_nan",
+      "claim": "dg_methods:6",
+      "claim_text_sha": "1b7eae3e442a62df",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "Matrix is exactly singular",
+          "shipped_all_nan=True",
+          "shipped_any_finite=False",
+          "rank_deficiency=3"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_single_sided_jump",
+      "claim": "dg_methods:4",
+      "claim_text_sha": "8fe8e26de42839da",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "continuous_field_wrong_penalty_is_zero=False",
+          "continuous_field_wrong_penalty_gt_0p1=True",
+          "wrong_is_not_a_scalar_multiple_of_right=True",
+          "wrong_interelement_entries=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_supg_vs_pure_dg",
+      "claim": "dg_methods:10",
+      "claim_text_sha": "0940947c68c662f6",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "dofs_dg=[384, 1536, 6144]",
+          "dg_rings_at_coarse_level=True",
+          "dg_damps_monotonically=False",
+          "dg_ringing_cleared_after_3_levels=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "dg_upwind_sign",
+      "claim": "dg_methods:3",
+      "claim_text_sha": "df7f6c6ee0d16a32",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "centered_quadform_all_positive=False",
+          "centered_quadform_indefinite=True",
+          "downwind_quadform_all_negative=True",
+          "upwind_dissipation_exceeds_centered_by_gt_10x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "eigenvalue_analytic_dirichlet_spectrum",
+      "claim": "eigenvalue:2",
+      "claim_text_sha": "cfba1705df823f19",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "coarse_mesh_error_larger=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "eigenvalue_generalised_vs_standard_pencil",
+      "claim": "eigenvalue:3",
+      "claim_text_sha": "08aca55ab6f86d44",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "standard_pencil_differs_by_over_10x=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "eigenvalue_sigma_zero_shift_invert",
+      "claim": "eigenvalue:1",
+      "claim_text_sha": "ffa00c2b37a72b12",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "default_returns_top_of_spectrum=True",
+          "default_min_exceeds_sigma0_max=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "elasticity_form_object_and_asm_shape",
+      "claim": "linear_elasticity:2",
+      "claim_text_sha": "60efc07ab42c1518",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "scalar_basis_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "elasticity_lame_parameters_formula",
+      "claim": "linear_elasticity:1",
+      "claim_text_sha": "e71f9d63c20c790b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "lam_matches_formula=True",
+          "mu_matches_formula=True",
+          "returns_lam_then_mu_not_mu_then_lam=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "elasticity_mms_convergence",
+      "claim": "linear_elasticity:98",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "elasticity_vector_basis_and_lame",
+      "claim": "linear_elasticity:0",
+      "claim_text_sha": "5c0b7f8e65285b00",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "vector_Nbfun=8"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "elasticity_vibration_sigma_required",
+      "claim": "linear_elasticity:3",
+      "claim_text_sha": "0d142603a1618feb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no_sigma_returns_top_of_spectrum=True",
+          "no_sigma_min_over_sigma0_max_gt_100=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "element_class_inventory_vs_catalog",
+      "claim": "mixed_poisson:0",
+      "claim_text_sha": "c351d1d45565bb51",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "catalog_phantom_present=[]",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "element_vector_dof_interleaving",
+      "claim": "linear_elasticity:97",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "do not match"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "forward_euler_instability",
+      "claim": "heat:3",
+      "claim_text_sha": "ca30de511c13ce47",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "linfty_norm grows",
+          "CFL violated"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "heat_dofsview_and_condense_x_shape",
+      "claim": "heat:0",
+      "claim_text_sha": "c3bc5e28fcf5c593",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "dofsview_subscript_raises_typeerror=True",
+          "dofsview_msg_has_not_subscriptable=True",
+          "condense_short_x_raises_indexerror=True",
+          "condense_short_msg_has_out_of_bounds=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_abc_omitted_reflection",
+      "claim": "helmholtz:2",
+      "claim_text_sha": "8d8bc49247b52f19",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no_abc_swr_gt_10=True",
+          "default_dtype_abc_identical_to_no_abc=True",
+          "abc_improves_swr_by_gt_50x=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_complex_dtype_assembly",
+      "claim": "helmholtz:0",
+      "claim_text_sha": "02c66ee8096e99c9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "abc_default_dtype=float64",
+          "abc_default_nnz=0",
+          "abc_default_max_abs_is_exactly_zero=True",
+          "complexwarning_raised=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_complex_output_split",
+      "claim": "helmholtz:6",
+      "claim_text_sha": "5dc906eb44139bbc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "payload_dtype=complex128",
+          "tofile_bytes_is_double=True",
+          "float64_readback_len_is_double=True",
+          "float64_readback_is_interleaved=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_eigsh_non_hermitian",
+      "claim": "helmholtz:5",
+      "claim_text_sha": "349683aaf8d19842",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "eigsh_evals_dtype=float64",
+          "eigsh_returns_real_dtype=True",
+          "eigsh_lowest_error_gt_1=True",
+          "eigsh_lowest_is_bare_real_part=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_elements_per_wavelength",
+      "claim": "helmholtz:1",
+      "claim_text_sha": "efdd2b3db8e96e23",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "coarse_elements_per_wavelength=3 coarse_n_dofs=26",
+          "coarse_kh_gt_1=True",
+          "coarse_phase_velocity_error_gt_10pct=True",
+          "coarse_arrival_time_error_in_10_to_30pct=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_high_k_p1_vs_p2",
+      "claim": "helmholtz:4",
+      "claim_text_sha": "1d3b79f401b18893",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "p1_element=ElementQuad1 p1_n_dofs=322",
+          "p1_drift_gt_0p2_wavelengths=True",
+          "p1_drift_is_about_a_quarter_wavelength=True",
+          "p1_l2_rel_gt_0p2=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_init_tensor_boundaries",
+      "claim": "helmholtz:8",
+      "claim_text_sha": "f6730d0c6700af9e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "init_tensor_boundaries_is_none=True",
+          "named_lookup_exc=ValueError",
+          "Boundary 'left' not found.",
+          "subscript_exc=TypeError"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_pml_thickness_sigma",
+      "claim": "helmholtz:3",
+      "claim_text_sha": "961424aff322cf66",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "thin_thickness_lam=0.125 thin_is_under_half_wavelength=True",
+          "thin_n_dofs=166",
+          "thin_R_gt_1e-2=True",
+          "thin_R_worse_than_tuned_by_gt_100x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "helmholtz_pollution_fixed_kh",
+      "claim": "helmholtz:7",
+      "claim_text_sha": "000241f4325f5d50",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.4,
+        "missing": [
+          "low_k=5 low_k_element=ElementQuad1 low_k_n_dofs=102",
+          "high_k=50 high_k_element=ElementQuad1 high_k_n_dofs=1002",
+          "pollution_l2_growth_gt_4x=True",
+          "long_run_l2_rel_in_2_to_10pct=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ht_backward_euler_rhs_mass_term",
+      "claim": "heat:1",
+      "claim_text_sha": "d58bbc7d761ccdde",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "K_u_old_blows_up=True",
+          "bare_u_old_blows_up=True",
+          "neither_wrong_variant_decays_to_zero=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ht_condense_x_length_bounds",
+      "claim": "heat:5",
+      "claim_text_sha": "b135bed3ff002439",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "out of bounds for axis 0 with size 10",
+          "short_x_raises_indexerror=True",
+          "reported_index_is_a_global_dof_number=True",
+          "reported_size_equals_len_short_x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ht_conjugate_interface_continuity",
+      "claim": "heat:2",
+      "claim_text_sha": "ad581ce19f67a4e1",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:24+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "isolated_interface_jump_is_full_delta_t=True",
+          "isolated_jump_over_monolithic_spread_gt_1e12=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ht_dofsview_is_not_a_mapping",
+      "claim": "heat:4",
+      "claim_text_sha": "be05ef4fc4a4f9c7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:24+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "'DofsView' object is not subscriptable",
+          "no attribute 'keys'",
+          "not iterable",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "htrans_backward_euler_first_order",
+      "claim": "heat_transient:0",
+      "claim_text_sha": "4d09edad7576f45d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 3.5,
+        "missing": [
+          "be_factor_is_about_two=True",
+          "be_slope_is_one=True",
+          "be_factor_is_about_four=False",
+          "the_two_schemes_are_distinguishable=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "htrans_crank_nicolson_symmetric_rhs",
+      "claim": "heat_transient:2",
+      "claim_text_sha": "192be6fa9b9f0330",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.3,
+        "missing": [
+          "dropped_factor_only_halves_the_error=True",
+          "dropped_factor_still_quarters=False",
+          "both_are_first_order=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "htrans_factorized_fill_in_structure",
+      "claim": "heat_transient:1",
+      "claim_text_sha": "679b937f7e285357",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "factorisations_performed=1",
+          "exactly_one_factorisation_for_all_steps=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "htrans_lifting_vs_recondense",
+      "claim": "heat_transient:4",
+      "claim_text_sha": "a142e039f2f37878",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "sep_frozen_boundary_error_is_order_one=True",
+          "nonsep_scaled_lifting_is_order_one=True",
+          "lifting_shortcut_is_only_safe_for_separable_data=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "htrans_shipped_mass_is_the_same_form",
+      "claim": "heat_transient:3",
+      "claim_text_sha": "5c03e7c1e7707125",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "difference_stored_entries=0",
+          "matrices_are_bit_identical=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_bmat_zero_block",
+      "claim": "hydraulic_resistance:1",
+      "claim_text_sha": "634834810faf7f1b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "scalar_int_raises=True",
+          "scalar_float_raises=True",
+          "is_a_ValueError=True",
+          "actual_message_mentions_instantiation_from_a_scalar=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_entrance_effect_is_a_formulation_artifact",
+      "claim": "hydraulic_resistance:0",
+      "claim_text_sha": "c254bba45c051d43",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:12:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 9.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 10.1,
+        "missing": [
+          "template_Q=4.100936e-05",
+          "template_R_fe=2.438468e+04",
+          "reproduces_entry_relative_error=True",
+          "stress_deviates=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_flux_needs_facetbasis",
+      "claim": "hydraulic_resistance:4",
+      "claim_text_sha": "74e6c6ae1542f1a4",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "ratio_tracks_channel_length_everywhere=True",
+          "ratio_grows_with_length=True",
+          "R_from_volume_is_exact_over_length=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_inlet_traction_sign",
+      "claim": "hydraulic_resistance:3",
+      "claim_text_sha": "6a421e4b55e9c5e7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "flipped_Q_is_negative=True",
+          "flipped_R_is_negative=True",
+          "flipped_pressure_rises=True",
+          "flip_is_an_exact_negation=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_pressure_pin_not_required",
+      "claim": "hydraulic_resistance:2",
+      "claim_text_sha": "b37e9993e48e90f0",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.9,
+        "missing": [
+          "enclosed_has_one_dimensional_nullspace=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_pressure_slice_truncation",
+      "claim": "hydraulic_resistance:6",
+      "claim_text_sha": "8fb2fe7cd3cd2534",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "truncation_is_invisible_by_length=True",
+          "edge_peaked_range_check_detects_truncation=True",
+          "range_check_is_field_dependent=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyd_taylor_hood_vs_equal_order",
+      "claim": "hydraulic_resistance:5",
+      "claim_text_sha": "e1a8e73655a4c795",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "eq_refine2_emits_matrixrankwarning=True",
+          "eq_refine3_emits_matrixrankwarning=True",
+          "eq_refine4_emits_matrixrankwarning=True",
+          "eq_refine4_finite=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_deformation_gradient_identity",
+      "claim": "hyperelasticity:3",
+      "claim_text_sha": "52ef8f5c119763cd",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "without_identity_detF_all_zero=True",
+          "no_identity_first_residual_all_nan=True",
+          "no_identity_first_residual_finite=False",
+          "without_identity_solution_free_dofs_all_nan=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_geometric_stiffness_term",
+      "claim": "hyperelasticity:5",
+      "claim_text_sha": "3f98cc0258a94f10",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "small_material_only_is_linear_not_quadratic=True",
+          "small_material_only_costs_more_iterations=True",
+          "large_material_only_drops_about_10x=True",
+          "large_material_only_reached_nan=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_helpers_det_inv_zero_above_3x3",
+      "claim": "hyperelasticity:11",
+      "claim_text_sha": "05c25771356e213a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "d4_det_any_nonzero=False",
+          "d5_det_any_nonzero=False",
+          "d6_det_any_nonzero=False",
+          "d4_inv_any_nonzero=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_interpolate_state_into_form",
+      "claim": "hyperelasticity:6",
+      "claim_text_sha": "8af7f58a9003c440",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "frozen_converges=False",
+          "frozen_residual_stalls=True",
+          "frozen_answers_differ=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_load_stepping_basin",
+      "claim": "hyperelasticity:8",
+      "claim_text_sha": "d2a05965fdc42a32",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.2,
+        "missing": [
+          "n1_first_residual_is_nan=True",
+          "n1_element_inverted=True",
+          "n1_detF_guard_would_fire=True",
+          "n1_shows_10x_per_iteration_ramp=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_matmul_on_tensor_fields",
+      "claim": "hyperelasticity:9",
+      "claim_text_sha": "a17f24c435ebe675",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:25+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "matmul_raises=True",
+          "matmul_exception_type=ValueError",
+          "quoted_prefix_matches=True",
+          "matmul_silently_wrong=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_meshquad_to_meshtri_rename",
+      "claim": "hyperelasticity:7",
+      "claim_text_sha": "586c853448514123",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "to_simplex_raises_AttributeError=True",
+          "object has no attribute 'to_simplex'",
+          "message_names_MeshQuad1=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_negative_jacobian_silent_nan",
+      "claim": "hyperelasticity:10",
+      "claim_text_sha": "8e94e1bb847e1993",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "aggressive_min_detF_went_negative=True",
+          "aggressive_solution_has_nan=True",
+          "aggressive_run_is_completely_silent=False",
+          "Matrix is exactly singular"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_neohookean_lnj_sign",
+      "claim": "hyperelasticity:1",
+      "claim_text_sha": "6edafd7b8a780e5d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "flipped_stress_free_at_reference=False",
+          "F_eq_I_check_discriminates=True",
+          "flipped_first_step_overshoots_bc_by_gt_10x=True",
+          "flipped_reaches_nan=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_no_builtin_hyperelastic_model",
+      "claim": "hyperelasticity:0",
+      "claim_text_sha": "16f00011cfe46331",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "neohookean_import_raises_ImportError=True",
+          "hyperelastic_names_in_models_elasticity=[]",
+          "no_hyperelastic_model_anywhere=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_pk1_vs_pk2_weak_form",
+      "claim": "hyperelasticity:2",
+      "claim_text_sha": "4d69bbb32a3e4463",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "s05_answers_differ=True",
+          "s20_answers_differ=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "hyper_tangent_missing_i4sym",
+      "claim": "hyperelasticity:4",
+      "claim_text_sha": "8023d1cc3dc1a715",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "s02_dropped_needs_more_iterations=True",
+          "s02_dropped_rate_is_constant_linear=True",
+          "s30_dropped_needs_more_iterations=True",
+          "s30_dropped_rate_is_constant_linear=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "laplace_eigenvalue_basics",
+      "claim": "eigenvalue:0",
+      "claim_text_sha": "bc1930de5a75c131",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "eig0_rel_err_lt_0.05=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "missing_condense_singular",
+      "claim": "poisson:94",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "singular"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "mixpoi_linearform_lambda_vs_decorator",
+      "claim": "mixed_poisson:3",
+      "claim_text_sha": "417317af6f79ffc7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "takes 1 positional argument but 2 were given",
+          "one_arg_lambda_raises_typeerror=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "mixpoi_neumann_flux_must_be_constrained",
+      "claim": "mixed_poisson:4",
+      "claim_text_sha": "8cdbb5d0dff80beb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "unconstrained_flux_deviates_by_order_one=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "mixpoi_orientedboundary_submodule_only",
+      "claim": "mixed_poisson:5",
+      "claim_text_sha": "78e1427d1d2517a2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:34+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no attribute 'OrientedBoundary'",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "mixpoi_refdom_normals_not_unit",
+      "claim": "mixed_poisson:6",
+      "claim_text_sha": "d9b8c3a31cd04b2c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "reftri_hypotenuse_norm_is_sqrt2=True",
+          "reftet_slanted_norm_is_sqrt3=True",
+          "refwedge_diagonal_norm_is_sqrt2=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nbfun_vs_global_dof",
+      "claim": "stokes:4",
+      "claim_text_sha": "ecfe2bb8447ef572",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "P1_Nbfun=3",
+          "P2_Nbfun=6",
+          "global_differs"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nlin_backtracking_line_search",
+      "claim": "nonlinear:5",
+      "claim_text_sha": "352dc7af363ceed7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "full_step_residual_grows=True",
+          "full_step_never_reaches_1e_9=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nlin_discretefield_value_and_grad",
+      "claim": "nonlinear:2",
+      "claim_text_sha": "b4e60ebd07c9a40c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "missing_field_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nlin_exact_jacobian_gives_quadratic",
+      "claim": "nonlinear:1",
+      "claim_text_sha": "54f78938132c6e2c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "frozen_jacobian_ratio_stays_within_2p5x=True",
+          "frozen_jacobian_stalls_above_1e_9=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nlin_grad_axis_order_and_shape",
+      "claim": "nonlinear:3",
+      "claim_text_sha": "4f12a345a90d6df7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "transposed_read_has_wrong_shape=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nlin_residual_ratio_diagnostic",
+      "claim": "nonlinear:4",
+      "claim_text_sha": "444d2231b48fba83",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "inexact_ratio_stays_within_2p5x=True",
+          "diagnostic_separates_the_two=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "nonlinear_helpers_present",
+      "claim": "nonlinear:0",
+      "claim_text_sha": "e0b19b4941bd8ca3",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no_newton_in_skfem=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_block_split_uses_basis_N",
+      "claim": "navier_stokes:6",
+      "claim_text_sha": "8adc2ff07a44b017",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "formula_is_wrong_for_at_least_one_space=True",
+          "discrepancy_exceeds_a_factor_of_three=True",
+          "naive_split_contaminates_pressure=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_convection_needs_vector_basis",
+      "claim": "navier_stokes:2",
+      "claim_text_sha": "b7b8c89cbd9b0125",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "scalar_block_is_dim_times_too_small=True",
+          "stacking_scalar_block_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_high_re_newton_basin",
+      "claim": "navier_stokes:4",
+      "claim_text_sha": "8fb01d75c196b1fc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.1,
+        "missing": [
+          "re800_refine3_converged=False",
+          "same_Re_converges_on_a_finer_mesh=True",
+          "re800_stagnates_before_blowing_up=True",
+          "re800_explodes_within_three_iterations=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_no_builtin_newton_or_ns",
+      "claim": "navier_stokes:0",
+      "claim_text_sha": "f2c869e0783dd33b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "nonlinear_names_found=[]",
+          "no_nonlinear_solver_anywhere=True",
+          "utils_offers_only_linear_and_eigen_solvers=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_picard_vs_newton_linearization",
+      "claim": "navier_stokes:5",
+      "claim_text_sha": "1e29ccdc1e65a477",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "picard_needs_more_iterations_than_newton=True",
+          "picard_rate_is_slower_than_stokes_jacobian=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_pressure_nullspace_warning_absent",
+      "claim": "navier_stokes:3",
+      "claim_text_sha": "d72bbe7b497175bf",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.9,
+        "missing": [
+          "r2_nullspace_is_one_dimensional=True",
+          "r3_nullspace_is_one_dimensional=True",
+          "r4_nullspace_is_one_dimensional=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "ns_stokes_jacobian_loses_quadratic",
+      "claim": "navier_stokes:1",
+      "claim_text_sha": "0b3fe378e0c51c86",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "stokes_needs_more_iterations=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_assembly_library_no_solver_layer",
+      "claim": "poisson:1",
+      "claim_text_sha": "6535502a3a102688",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "no attribute 'LinearProblem'",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_boundaries_none_until_tagged",
+      "claim": "poisson:2",
+      "claim_text_sha": "728fc0eb4feb8ed3",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "with_boundaries_returns_new_mesh=True",
+          "original_still_untagged=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_condense_d_argument_forms",
+      "claim": "poisson:4",
+      "claim_text_sha": "8ca0a2a30f053568",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "boolean_mask_answer_is_wrong=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_element_catalog_by_cell_type",
+      "claim": "poisson:5",
+      "claim_text_sha": "f8235bd43ae2a426",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "Incompatible Mesh and Element",
+          "trip1_on_meshquad_raises=True",
+          "quad1_on_meshtri_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_l2_order_deg_plus_one",
+      "claim": "poisson:7",
+      "claim_text_sha": "ea63c71766c77a3b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "P3_intorder2_error_exceeds_1e6=True",
+          "P3_intorder2_rate_is_negative=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_quadrature_order_ceilings",
+      "claim": "poisson:6",
+      "claim_text_sha": "b9da7055d56dda2b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "quadratureis not implemented",
+          "of quadrature is not available",
+          "is not supported",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poi_to_meshio_moved_off_toplevel",
+      "claim": "poisson:3",
+      "claim_text_sha": "8f66b204b4731fc3",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "no attribute 'to_meshio'",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poisson_get_dofs_named_boundary",
+      "claim": "poisson:0",
+      "claim_text_sha": "09ed255a655c9e70",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "get_dofs_left_unregistered_raise=True",
+          "left_dof_count=5",
+          "all_boundary_dof_count=16",
+          "top_level_to_meshio=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "poisson_mms_convergence",
+      "claim": "poisson:99",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_condense_four_tuple_unpack",
+      "claim": "point_source:3",
+      "claim_text_sha": "36586348c0428ec6",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "spsolve_exception_type=ValueError",
+          "The truth value of an array with more than one element is ambiguous",
+          "quoted_valueerror_text_matches=True",
+          "traceback_comes_from_linsolve=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_dirac_regularity_convergence",
+      "claim": "point_source:0",
+      "claim_text_sha": "e78a52c9cf1d0adb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:13:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.5,
+        "missing": [
+          "l2_rate_is_below_two=True",
+          "h1_rate_is_below_one=True",
+          "h1_barely_moves_while_l2_falls=True",
+          "peak_is_not_converging=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_green_integral_balance",
+      "claim": "point_source:4",
+      "claim_text_sha": "5fa2905d902e40de",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.3,
+        "missing": [
+          "magnitude_error_is_caught=True",
+          "sign_error_is_caught=True",
+          "bc_error_is_caught=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_meshio_2d_points_no_exception",
+      "claim": "point_source:5",
+      "claim_text_sha": "2914742f11302db9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "VTU requires 3D points, but 2D points given",
+          "meshio_added_a_column_you_never_supplied=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_offnode_argmin_rounding",
+      "claim": "point_source:2",
+      "claim_text_sha": "e590bb3e446e4368",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "the_two_placements_differ=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "psrc_zeros_vs_unit_load",
+      "claim": "point_source:1",
+      "claim_text_sha": "990ac70914fe81bf",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "unit_load_entries_are_basis_integrals=True",
+          "point_peak_exceeds_unit_load_peak=True",
+          "greens_function_reciprocity_holds=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_diffusion_ratio",
+      "claim": "reaction_diffusion:4",
+      "claim_text_sha": "62e55b8ef3fd7d64",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.8,
+        "missing": [
+          "equal_diffusivity_fails_turing_condition=True",
+          "lambda_max_at_equal_diffusivity_lt_0=True",
+          "equal_diffusivity_spread_lt_1e_8=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_fisher_kpp_scalar",
+      "claim": "reaction_diffusion:8",
+      "claim_text_sha": "9b6745c7042d09cb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.4,
+        "missing": [
+          "block_matrix_shape=578x578 block_nnz=9604",
+          "block_ndofs_is_double=True",
+          "block_nnz_ratio_eq_4=True",
+          "contaminated_block_u_maxdev_gt_0p1=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_gamma_domain_threshold",
+      "claim": "reaction_diffusion:7",
+      "claim_text_sha": "04c43b2a1a2a2d88",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.3,
+        "missing": [
+          "gamma_12_spread_lt_1e_5=True",
+          "gamma_12_spread_monotonically_decaying=True",
+          "empirical_threshold_between_12_and_20=True",
+          "quoted_inequality_falsified=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_neumann_natural_vs_dirichlet",
+      "claim": "reaction_diffusion:6",
+      "claim_text_sha": "f40407e639f1822c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.5,
+        "missing": [
+          "dirichlet_mass_rel_change_gt_0p5=True",
+          "dirichlet_boundary_u_exactly_zero=True",
+          "dirichlet_pattern_spread_lt_0p3=True",
+          "amplitude_suppressed_gt_10x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_offdiag_jacobian_newton_rate",
+      "claim": "reaction_diffusion:1",
+      "claim_text_sha": "b0f21e879139a792",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "diag_updates_ge_8=True",
+          "diag_min_ratio_gt_1e_2=True",
+          "diag_ratio_decades_lt_1=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_pattern_absent",
+      "claim": "reaction_diffusion:0",
+      "claim_text_sha": "3d020254015de264",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:14:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 7.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 10.6,
+        "missing": [
+          "be_amp_at_shipped_dt_lt_1=True",
+          "shipped_spread_lt_1e_10=True",
+          "shipped_min_max_identical_to_4dp=True",
+          "spread_ratio_gt_1e10=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_reaction_block_mass_vs_stiffness",
+      "claim": "reaction_diffusion:2",
+      "claim_text_sha": "9ea63d0f54515a35",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "stiffness_block_kills_uniform_coupling=True",
+          "stiffness_form_rowsums_are_zero=True",
+          "norm_ratio_grows_like_one_over_h_squared=True",
+          "stiffness_form_relerr_gt_1=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_steady_state_formula",
+      "claim": "reaction_diffusion:5",
+      "claim_text_sha": "1c756caba6db878c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.6,
+        "missing": [
+          "dropped_square_detected_when_a_plus_b_ne_1=True",
+          "wrong_ic_peak_rel_dev_gt_0p1=True",
+          "mistyped_b_rel_dev_pct_between_5_and_15=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rd_unperturbed_ic",
+      "claim": "reaction_diffusion:3",
+      "claim_text_sha": "9c1c75abc7b5a911",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.9,
+        "missing": [
+          "uniform_state_is_exact_discrete_equilibrium=True",
+          "unperturbed_spread_lt_1e_5=True",
+          "unperturbed_seed_grows_from_roundoff=True",
+          "spread_ratio_gt_1e6=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "rt0_element_registration",
+      "claim": "mixed_poisson:1",
+      "claim_text_sha": "98588a8d0325703d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "RaviartThomas_full_name_present=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_cg_on_indefinite_block",
+      "claim": "stokes:0",
+      "claim_text_sha": "f86f85c5c11ef962",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "block_matrix_is_indefinite=True",
+          "negative_count_equals_free_pressure_unknowns=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_elementvector_interleaving_is_stable",
+      "claim": "stokes:5",
+      "claim_text_sha": "57b21a7db8c5d087",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "blocked_slice_is_silently_wrong=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_krylov_uzawa_outer_rate",
+      "claim": "stokes:1",
+      "claim_text_sha": "37eb41107cd9260d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "uzawa_rate_worsens_with_refinement=True",
+          "uzawa_rate_far_above_quoted_band=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_pressure_nullspace_enclosed",
+      "claim": "stokes:2",
+      "claim_text_sha": "be8f21ca2926513d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "nullspace_is_one_dimensional=True",
+          "nullvector_is_zero_on_velocity=True",
+          "nullvector_is_constant_on_pressure=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_pressure_sign_convention",
+      "claim": "stokes:7",
+      "claim_text_sha": "195f0b77723045bf",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "skfem_flipped_convention_gives_negative_inlet_pressure=True",
+          "skfem_pressures_are_exact_negatives=True",
+          "ngsolve_pressure_sign_flips_with_the_form=True",
+          "mechanism_reproduces_in_both_libraries=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stk_taylor_hood_3d_mode_count",
+      "claim": "stokes:3",
+      "claim_text_sha": "db3cf6e460bfa88c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:15:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 82.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 166.0,
+        "missing": [
+          "equal_order_mode_count_grows=True",
+          "equal_order_exceeds_taylor_hood=True",
+          "mode_count_separates_the_pairs=True",
+          "equal_order_pressure_range_grows_10x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "stokes_mms_convergence",
+      "claim": "stokes:99",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_backward_euler_first_order",
+      "claim": "time_dependent:0",
+      "claim_text_sha": "a13b9d29504b15d8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 4.7,
+        "missing": [
+          "cn_analytic_slope_collapses=True",
+          "analytic_reference_would_misdiagnose_cn_as_dt_too_large=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_crank_nicolson_oscillation",
+      "claim": "time_dependent:1",
+      "claim_text_sha": "290a5daf781f2d7c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.8,
+        "missing": [
+          "be_undershoot_below_cn_by_gt_1000x=True",
+          "cn_always_undershoots=True",
+          "cn_undershoot_spans_more_than_10x=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_doflocs_initial_condition",
+      "claim": "time_dependent:6",
+      "claim_text_sha": "fd26bc17843c5262",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "padded_ic_majority_of_dofs_are_zero=True",
+          "padded_ic_is_wrong_by_order_one=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_explicit_euler_mass_not_diagonal",
+      "claim": "time_dependent:7",
+      "claim_text_sha": "3092e972d58bf56f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.3,
+        "missing": [
+          "growth_factor_matches_analytic=True",
+          "non_finite_value_is_nan=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_factorized_reuse_call_counts",
+      "claim": "time_dependent:2",
+      "claim_text_sha": "21bb0a3eab0717cc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "spsolve_loop_spsolve_calls=20",
+          "spsolve_called_once_per_step=True",
+          "splu_counter_alone_is_blind_to_spsolve=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_implicit_dt_accuracy_not_stability",
+      "claim": "time_dependent:4",
+      "claim_text_sha": "4bfe72a544042a5b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.3,
+        "missing": [
+          "coarse_dt_smears_the_front=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_recondense_time_varying_bc",
+      "claim": "time_dependent:3",
+      "claim_text_sha": "86631cfc0f4b4691",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "frozen_boundary_tracks_bc=False",
+          "frozen_boundary_stuck_at_initial_value=True",
+          "interior_is_wrong_too=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "td_stiff_explicit_dt_bound",
+      "claim": "time_dependent:5",
+      "claim_text_sha": "7a517b97caacb5d1",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:19:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.2,
+        "missing": [
+          "explicit_above_bound_blew_up=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_cfl_lumped_exact_bound",
+      "claim": "wave:0",
+      "claim_text_sha": "b129235ce73e4dba",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "all_ratios_from_1p061_blow_up=True",
+          "long_run_reveals_instability=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_dirichlet_reapplied_each_step",
+      "claim": "wave:5",
+      "claim_text_sha": "b6e7d940f9c21336",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "free_boundary_exceeds_1e_minus_6=True",
+          "free_boundary_reaches_order_one=True",
+          "free_boundary_order_one_within_100_steps=True",
+          "interior_is_wrong_too=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_lumping_dispersion_order",
+      "claim": "wave:2",
+      "claim_text_sha": "2e76653b44539aef",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.5,
+        "missing": [
+          "lumped_underestimates_frequency=True",
+          "lumping_flips_the_sign_of_the_error=True",
+          "lumping_costs_a_constant_factor_near_3=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_mass_rowsum_matrix_type",
+      "claim": "wave:3",
+      "claim_text_sha": "7d9099fd65dcd9cb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "rowsum_is_np_matrix=True",
+          "rowsum_shape=(25, 1)",
+          "division_result_is_N_by_N=True",
+          "division_silently_broadcasts_to_a_matrix=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_meshio_points_and_cell_tag",
+      "claim": "wave:6",
+      "claim_text_sha": "3c5f2e5d3c92d1be",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "VTU requires 3D points, but 2D points given"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_meshquad_legacy_constructor",
+      "claim": "wave:1",
+      "claim_text_sha": "150f49af466c221b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "legacy_p_is_one_dimensional=True",
+          "legacy_has_a_single_bogus_element=True",
+          "Unable to calculate global DOF locations.",
+          "basis_on_legacy_mesh_raises=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "skfem",
+      "fixture": "wave_zero_velocity_first_step",
+      "claim": "wave:4",
+      "claim_text_sha": "3c6fbcd18f722891",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.3,
+        "missing": [
+          "entry_minus_sign_gives_first_order=True",
+          "entry_sign_worse_than_no_correction=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}
