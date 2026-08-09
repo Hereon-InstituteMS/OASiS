@@ -252,6 +252,19 @@ class DuneBackend(SolverBackend):
                 template_variants=["2d"],
             ),
             PhysicsCapability(
+                name="poisson_mms",
+                description=(
+                    "3D variable-coefficient Poisson manufactured-solution "
+                    "(MMS) convergence family — -div(kappa grad u) = f on "
+                    "[0,L]^3, affine kappa, exact Dirichlet data, uniform "
+                    "refinement with per-level L2/H1 error lines; L2 order "
+                    "k+1 / H1 order k verified live"),
+                spatial_dims=[3],
+                element_types=["Lagrange-P1", "Lagrange-P2",
+                               "Lagrange-P3", "Lagrange-P4"],
+                template_variants=["3d_varcoeff"],
+            ),
+            PhysicsCapability(
                 name="heat",
                 description="Steady heat conduction (UFL)",
                 spatial_dims=[2],

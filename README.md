@@ -186,6 +186,7 @@ FEniCSx     deal.II      4C   NGSolve   skfem   Kratos    DUNE    FEBio
 | `prepare_simulation` | Knowledge + real examples + template in one call — always the first step |
 | `run_simulation` | Execute Python-based solvers (FEniCSx, NGSolve, scikit-fem, DUNE-fem) |
 | `run_with_generator` | Generate input + run compiled solvers (4C, deal.II, Kratos) |
+| `verify_mesh_independence` | Heuristic mesh-refinement study for problems without an exact solution: re-runs at refined resolutions, compares global norms + probe values, converged/not-converged verdict |
 | `knowledge` | Physics knowledge, pitfalls, materials, coupling docs, cross-backend collation |
 | `examples` | Real test files from the solvers' own test suites |
 | `couple` | General partitioned coupling for any physics (contract + Aitken relaxation) |
