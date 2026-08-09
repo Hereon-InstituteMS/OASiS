@@ -26,7 +26,13 @@ def _dem_2d_kratos(params: dict) -> str:
     dt = params.get("dt", None)
     dt_safety = float(params.get("dt_safety_factor", 0.02))
     problem_name = str(params.get("problem_name", "granular"))
-    threads = int(params.get("omp_threads", 2))
+    # Clamp: OMP_NUM_THREADS=0 is not "use the default", it is undefined
+    # behaviour — some runtimes abort, others silently serialise. A user
+    # passing omp_threads=0 meaning "let OpenMP decide" would get a deck that
+    # fails for a reason unrelated to anything they were trying to simulate,
+    # and the DEM run reports particle loss silently, so a crash here is the
+    # kinder outcome of the two. Flagged in review of PR #53.
+    threads = max(1, int(params.get("omp_threads", 2)))
 
     header = f'''\
 """Kratos DEM — 2D granular settling — writes a complete DEMApplication deck.
