@@ -72,7 +72,16 @@ REPO = Path(__file__).resolve().parents[1]
 # audit reports UNKNOWN for that backend rather than guessing.
 SOURCE_HINTS: dict[str, list[str]] = {
     # 4C: the source tree is READ ONLY — we only ever grep it.
-    "fourc": ["/home/alexander/4C/src", "/home/alexander/4C/tests"],
+    #
+    # `apps/` was missing and it is where the executable's own banners live.
+    # 4C_global_full_main.cpp holds printf("processor %d finished normally\n"),
+    # so the exit line every 4C fixture greps for was invisible to this audit
+    # and two entries quoting it were reported as fabricated diagnostics. 16
+    # files; the entry point of the shipped binary is not an optional part of
+    # 4C's source. `unittests/` is deliberately NOT added: a string that exists
+    # only in a test's expected output is not evidence the solver emits it.
+    "fourc": ["/home/alexander/4C/src", "/home/alexander/4C/apps",
+              "/home/alexander/4C/tests"],
     # FEBio is installed as a BINARY with no source tree — `/opt/febio` and
     # `/usr/local/febio` are both absent on this host, so the audit reported
     # UNKNOWN for every FEBio claim. The real install is below, and a binary is
@@ -602,6 +611,34 @@ def cpython_runtime(package_dirs: list[Path]) -> list[Path]:
                     real = cand.resolve()
                     if real.is_file() and real not in out:
                         out.append(real)
+                # A VENV DOES NOT CONTAIN ITS OWN libpython. It contains a
+                # pyvenv.cfg naming the base interpreter, and on this host that
+                # is a uv-managed CPython under ~/.local/share/python — so the
+                # glob above found nothing and libpython was absent from the
+                # corpus entirely.
+                #
+                # Measured: `float() argument must be a string or a real
+                # number, not 'complex'`, reproduced live in one line
+                # (lil_matrix()[0,0] = 1j), scored 0 hits and was reported as a
+                # fabricated skfem diagnostic. It is in
+                # cpython-3.12.13/lib/libpython3.12.so, 1 hit. Same class of
+                # instrument fault as the FEBio symlink and the missing -a:
+                # a corpus that cannot answer is not evidence of absence.
+                for cfg in (libdir / "pyvenv.cfg",
+                            libdir.parent / "pyvenv.cfg"):
+                    try:
+                        text = cfg.read_text(errors="ignore")
+                    except OSError:
+                        continue
+                    for line in text.splitlines():
+                        k, _, v = line.partition("=")
+                        if k.strip() != "home":
+                            continue
+                        base = Path(v.strip()).parent
+                        for cand in sorted(base.glob("lib/libpython3*.so*")):
+                            real = cand.resolve()
+                            if real.is_file() and real not in out:
+                                out.append(real)
                 break
     return out
 

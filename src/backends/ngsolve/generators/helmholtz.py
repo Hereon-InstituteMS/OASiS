@@ -68,8 +68,11 @@ KNOWLEDGE = {
             "alpha=2j) without origin. Use origin=(0, 0) for 2-D "
             "centered PML or origin=(0, 0, 0) for 3-D. "
             "Signal: pml.Radial(rad=..., alpha=...) without "
-            "origin raises 'TypeError: Radial(): incompatible "
-            "function arguments' at the call site, BEFORE "
+            "origin raises a pybind11 TypeError whose only "
+            "literal is 'arguments. The following argument types "
+            "are supported:'; the head is built from the bound "
+            "signature, so the line reads Radial(): incompatible "
+            "function arguments. at the call site, BEFORE "
             "mesh.SetPML is reached. (Verified empirically "
             "against NGSolve 6.2.2604 2026-06-01.)",
             "[Numerical] PML setup uses mesh.SetPML(pml.Radial("
