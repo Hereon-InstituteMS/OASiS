@@ -92,3 +92,67 @@ def test_shared_helpers_are_directories(backend):
           "the module — as coupling, fourc and dealii already do. Then re-run "
           "the mutation harness for that backend and confirm the verdicts are "
           "KILLED rather than VACUOUS_BASELINE.")
+
+
+def test_the_runner_tells_a_staged_fixture_where_the_checkout_is():
+    """The fourth instance of the same failure class, and its fix.
+
+    A fixture that audits the CATALOG rather than a solver has to find the
+    checkout. In place it walks up from `__file__`; staged into the scratch
+    tree there is no such ancestor, so it aborts with
+    FIXTURE_ABORT=no_oasis_checkout and the harness scores VACUOUS_BASELINE —
+    "this verdict would mean nothing" — on every run.
+
+    Measured: 7 of the 11 Kratos fixtures that ship a `_mutation` block sat in
+    that state, so the ledger carried no machine discrimination evidence for
+    any of them, even though each had been proved KILLED by hand with
+    OASIS_REPO exported on the command line. With the runner exporting it,
+    all 11 are KILLED and 0 are vacuous.
+
+    The runner knows where the checkout is and the staged fixture cannot, so
+    saying it is the runner's job. Asserted on the environment the runner
+    builds, not on a source grep.
+    """
+    import os
+    import sys
+
+    sys.path.insert(0, str(REPO / "scripts"))
+    import run_tier2_fixtures as runner  # noqa: E402
+
+    seen: dict[str, str] = {}
+    real_run = runner.subprocess.run
+
+    def spy(*args, **kwargs):
+        env = kwargs.get("env")
+        if env and "OASIS_REPO" in env:
+            seen["OASIS_REPO"] = env["OASIS_REPO"]
+        return real_run(*args, **kwargs)
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td) / "probe"
+        d.mkdir()
+        (d / "source.py").write_text(
+            "import os\nprint('checkout=' + os.environ.get('OASIS_REPO', ''))\n")
+        meta = {"backend": "skfem", "physics": "poisson", "pitfall_index": 0,
+                "mode": "python", "expect_in_output": ["checkout="]}
+        runner.subprocess.run = spy
+        try:
+            result = runner._eval_fixture(d, meta)
+        finally:
+            runner.subprocess.run = real_run
+
+    if result.status == "skipped":
+        pytest.skip(f"no interpreter to run the probe here: {result.notes}")
+
+    assert seen.get("OASIS_REPO"), (
+        "the fixture runner did not export OASIS_REPO, so a fixture staged "
+        "into the mutation scratch tree cannot find the checkout it audits. "
+        "Every such fixture reports VACUOUS_BASELINE and its mutation evidence "
+        "silently disappears. See run_tier2_fixtures._eval_fixture.")
+    assert Path(seen["OASIS_REPO"], "src", "backends").is_dir(), (
+        f"OASIS_REPO={seen['OASIS_REPO']} does not look like an OASiS "
+        f"checkout; a wrong pin is worse than none, because the fixture then "
+        f"audits somebody else's catalog and says nothing about this one.")
+    assert os.environ.get("OASIS_REPO", seen["OASIS_REPO"]) == seen["OASIS_REPO"], (
+        "the runner overrode an OASIS_REPO the caller had already set")
