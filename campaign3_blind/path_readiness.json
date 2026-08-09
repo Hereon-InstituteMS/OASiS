@@ -17,15 +17,24 @@
     "D6": "partitioned DN at contrast 1:1000, order 1.958/1.976",
     "D7": "partitioned DN with different operators either side, order 1.929/1.944"
   },
-
   "path_verified": {
-    "B1": true, "B2": true, "B3": true, "B4": true, "B5": true, "B6": true,
+    "B1": true,
+    "B2": true,
+    "B3": true,
+    "B4": true,
+    "B5": true,
+    "B6": true,
     "B7": true,
-    "D1": true, "D2": true, "D3": true, "D4": true, "D5": true, "D6": true,
-    "D7": true, "D8": true
+    "D1": true,
+    "D2": true,
+    "D3": true,
+    "D4": true,
+    "D5": true,
+    "D6": true,
+    "D7": true,
+    "D8": true
   },
   "blocking": "No instance is now blocked on an unwalked execution path. All fifteen were walked non-blind and the results discarded. TWO NON-PATH BLOCKERS remain and are recorded under `grader_probe_grid_mismatch` below: the grader's probe grid disagrees with the task text for B1-B7 and for D5's subdomain A, so those eight submissions would be rejected as INVALID_SUBMISSION before any comparison against truth. That is a grading defect, not a path defect, and it was deliberately not repaired here.",
-
   "walk_2026_08_09": {
     "what_this_is": "One throwaway, NON-BLIND run per instance through the path that instance names. Nothing here is a result: every field was compared against an independent un-split reference solve and then discarded. No key was opened; every problem statement used is the PUBLIC task.txt and spec_public.json the agent under test also sees.",
     "how_the_coupled_ones_were_driven": "Through the REGISTERED `couple` tool, reached the same way src/server.py reaches it (FastMCP tool manager over tools.consolidated), with `probe: true` and with the tool's own `monolithic` cross-check pointed at an independent un-split solve of the same public problem. The un-split reference is a separate script that never reads anything the participants wrote.",
@@ -36,7 +45,6 @@
       "kratos": "/usr/bin/python3 (KratosMultiphysics + ConvectionDiffusionApplication); /mnt/kratos-tier2/kv/bin/python also imports it",
       "dealii": "C++ built by cmake against DEAL_II_DIR=/home/alexander/dealii/build (9.8.0-pre, Release, SERIAL: no MPI, no PETSc/Trilinos/p4est, UMFPACK on)"
     },
-
     "coupled": {
       "D1": {
         "path": "FEniCSx (Dirichlet role) <-> NGSolve (Neumann role), 2-D, anisotropic tensor K either side, straight interface x = 5/8",
@@ -60,7 +68,7 @@
       },
       "D5": {
         "path": "FEniCSx on the NOTCHED non-rectangular subdomain (Dirichlet) <-> scikit-fem on the rectangle (Neumann), BENT interface: leg 1 at x = 1/2, leg 2 at y = 1/2, two outward normals, two contrasts",
-        "ran": "level 0 (h = 1/8) converged to tol 1e-8 in 130 iterations, 164 s, with CONSTANT relaxation theta = 0.2",
+        "ran": "2 levels, with CONSTANT relaxation theta = 0.2. Level 0 (h = 1/8) and level 1 (h = 1/16) both converged to tol 1e-8 in 130 iterations, 164 s at level 0. Interface error against the un-split notched reference 5.7025e-02 -> 1.7958e-02 (order 1.67); field error at the task's own 1331 + 1936 probe points 1.2097e-01 -> 3.2178e-02 (order 1.91).",
         "first_attempt_diverged": "theta = 0.5 with Aitken blew up to 1e36 and hit max_iter = 300. The reason is a real property of this instance, not a tool fault: the two legs have OPPOSITE conductance ratios. Measured from the geometry, with Dirichlet on A: leg 1 rho = 0.4, leg 2 rho = 2.0, and rho = 4.0 where the notch thins the k = 5 block above leg 2 to a quarter-width. A single global theta must satisfy theta < 2/(1 + rho_max), so theta < 0.4 here; the driver applies ONE theta to the whole interface and has no per-leg option.",
         "geometry_note": "Subdomain A's mesh had to be built by hand (a structured grid of the unit square with subdomain B and the notch removed, assembled through dolfinx.mesh.create_mesh) because no shipped generator makes a non-rectangular subdomain. Interface data is exchanged as a function of ARCLENGTH along the polyline, which both sides compute from the coordinates the driver moves; the corner where the legs meet then needs no special case.",
         "flux_note": "The interface flux on the bent side was recovered VARIATIONALLY from the discrete residual. That is not a refinement, it is what makes the bend tractable at all: no outward normal is needed anywhere, so the leg-to-leg normal flip and the corner cost nothing."
@@ -77,11 +85,10 @@
       },
       "D8": {
         "path": "FEniCSx (Dirichlet) <-> deal.II (Neumann), TRANSIENT, Crank-Nicolson to t_end = 1/4",
-        "ran": "level 0 (h = 1/8, dt = 1/32, 8 steps) converged in 34 iterations, 47 s, and the tool returned ZERO findings",
-        "how_a_steady_driver_ran_a_transient_coupling": "Dirichlet-Neumann WAVEFORM relaxation. Each participant integrates the WHOLE time window per iteration and the exchanged object is the entire space-time interface trace: n interface points with nsteps components each, which the driver moves and relaxes unchanged because it treats values as opaque numbers on coordinates. The alternative — calling `couple` once per time step — would need the participants to carry state across driver invocations and was not used. A transient deal.II participant was written for this; none ships."
+        "ran": "2 levels. Level 0 (h = 1/8, dt = 1/32, 8 steps) converged in 34 iterations, 47 s, and the tool returned ZERO findings. Level 1 (h = 1/16, dt = 1/64, 16 steps) converged in 32 iterations. Interface error against the un-split transient reference 1.3408e-02 -> 2.8914e-03, order 2.21.",
+        "how_a_steady_driver_ran_a_transient_coupling": "Dirichlet-Neumann WAVEFORM relaxation. Each participant integrates the WHOLE time window per iteration and the exchanged object is the entire space-time interface trace: n interface points with nsteps components each, which the driver moves and relaxes unchanged because it treats values as opaque numbers on coordinates. The alternative \u2014 calling `couple` once per time step \u2014 would need the participants to carry state across driver invocations and was not used. A transient deal.II participant was written for this; none ships."
       }
     },
-
     "single_code": {
       "note": "path_readiness/1 did not cover B1-B7 at all. All seven were walked here. Every one RUNS: the named backend, in the named interpreter, solves the named problem at every mesh level the task lists, evaluates at the task's off-node probe points, writes the required CSVs and RESULT.txt, and self-converges under refinement.",
       "B1": "NGSolve, 2-D anisotropic Poisson, P1, h = 1/8..1/64. All 4 levels, 0.79 s total. Off-node evaluation exact to 8.9e-16 on a P1-reproducible field.",
@@ -92,36 +99,62 @@
       "B6": "deal.II C++, 3-D elasticity, vector Q1, N = 4, 8, 16. Builds in 21.6 s, zero warnings; all 3 levels; 12288 vector point evaluations with zero failures; SSOR-CG cross-checked against UMFPACK to 1e-13.",
       "B7": "FEniCSx, nearly incompressible nu = 0.49999, Taylor-Hood P2/P1 mixed. Runs, and the walk established WHICH solution it delivers rather than assuming: three independent discretisations (P3/P2 Taylor-Hood, P4 displacement-only, P2 displacement-only) land on it to ~2e-5, while a displacement-only P1 control locks and is off by 98.7% with its successive changes GROWING under refinement."
     },
-
     "what_was_not_done": [
       "D4 was not re-run; its 2026-08-08 walk stands.",
       "D2 was run at 2 of its 3 levels (h = 1/8, 1/16), not the finest. The path is proven; the finest 3-D level was not timed.",
-      "D5 and D8 were walked at level 0 (and level 1 where it finished inside the session); the coarsest level is what proves the path, and the finer ones were not needed for that.",
+      "D5 and D8 were walked at their two coarsest levels, not the finest. Two levels give an order; the finest was not needed to prove the path.",
       "No arrangement was run with the roles swapped except D6, where the swap was run deliberately to show the shipped Kratos participant cannot serve that instance.",
       "The exact solutions were never opened. Correctness was judged against independent un-split reference solves of the same PUBLIC problem, which is weaker than the sealed key and is enough to answer whether the machinery works."
     ]
   },
-
   "interface_flux_recovery_decides_the_graded_order": {
     "why_this_is_a_path_finding": "The coupled instances are graded on the observed convergence order of the FIELD at fixed probe points, PASS being |order - 2| <= 0.4. The order a partitioned run achieves is set by how accurately the Dirichlet side recovers the interface flux it hands to the Neumann side, and the recovery the shipped participant templates use lands on the wrong side of that band's edge.",
     "measured_here_on_D1_same_meshes_same_driver_same_tolerance": {
       "L2_projection_of_-K_grad_u_dot_n_over_the_volume": {
         "note": "This is what data/coupling_participants/participant_fenics.py and participant_ngsolve.py do.",
-        "interface_trace_relative_error": ["3.1632e-02", "1.2544e-02", "5.8023e-03"],
-        "interface_trace_order": [1.334, 1.112],
-        "field_error_at_the_grader_probe_grid": ["4.3882e-02", "1.2336e-02", "3.8959e-03"],
-        "field_order": [1.831, 1.663],
+        "interface_trace_relative_error": [
+          "3.1632e-02",
+          "1.2544e-02",
+          "5.8023e-03"
+        ],
+        "interface_trace_order": [
+          1.334,
+          1.112
+        ],
+        "field_error_at_the_grader_probe_grid": [
+          "4.3882e-02",
+          "1.2336e-02",
+          "3.8959e-03"
+        ],
+        "field_order": [
+          1.831,
+          1.663
+        ],
         "reading": "mean field order 1.75, inside the [1.6, 2.4] band but drifting DOWN with refinement and within 0.15 of being graded CONFIDENTLY_WRONG on a slightly rougher instance"
       },
       "variationally_consistent_flux_from_the_discrete_residual": {
         "note": "int_Gamma qn phi_i ds = -(a(u_h, phi_i) - (f, phi_i)), divided by int_Gamma phi_i ds to give a density the partner can sample.",
-        "interface_trace_relative_error": ["7.4528e-03", "1.1256e-03", "2.4037e-04"],
-        "interface_trace_order": [2.727, 2.227],
-        "field_error_at_the_grader_probe_grid": ["3.6641e-02", "8.8470e-03", "2.0609e-03"],
-        "field_order": [2.05, 2.102],
+        "interface_trace_relative_error": [
+          "7.4528e-03",
+          "1.1256e-03",
+          "2.4037e-04"
+        ],
+        "interface_trace_order": [
+          2.727,
+          2.227
+        ],
+        "field_error_at_the_grader_probe_grid": [
+          "3.6641e-02",
+          "8.8470e-03",
+          "2.0609e-03"
+        ],
+        "field_order": [
+          2.05,
+          2.102
+        ],
         "reading": "mean field order 2.08, comfortably CORRECT, and the interface trace is 24x more accurate at the finest level"
       },
-      "cost": "32/33/34 iterations against 29/32/33 — the accurate recovery costs nothing in the coupling."
+      "cost": "32/33/34 iterations against 29/32/33 \u2014 the accurate recovery costs nothing in the coupling."
     },
     "the_other_instances_show_the_same_shape": {
       "D3": "interface-trace order 1.196, 1.122 with the L2 recovery",
@@ -131,7 +164,6 @@
     },
     "not_established": "Whether the drift takes the FIELD order below 1.6 on any specific held-out instance. It was measured on D1 only, at three levels, against a fine P2 reference rather than the sealed exact solution."
   },
-
   "grader_probe_grid_mismatch": {
     "status": "FOUND HERE, NOT REPAIRED. Repairing it would be changing the grading, which was out of scope for this work.",
     "what": "grade_blind.py builds the expected probe grid from a module constant PROBE_M = {2: 44, 3: 21} and compares it against the submitted points with matches_probe_grid(). scripts/blind_grade.py calls the same two functions. Neither reads a probe count from the key or the spec.",
@@ -156,9 +188,8 @@
     "consequence": "A submission that follows its task text exactly is rejected at the probe-grid check with INVALID_SUBMISSION, before any comparison against truth, for B1-B7 and for D5. Eight of the fifteen. The B task texts appear to predate the coupled redesign that moved PROBE_M to 44/21; D5's exclusion was added to the task text and never to the grader.",
     "related_dead_guard": "grade_blind.assert_probe_grid_incommensurate() exists and is never called from anywhere in grade_blind.py (checked by counting call sites in the module source: zero). It would not have caught this in any case, because it checks PROBE_M against the mesh levels, not the task text against PROBE_M."
   },
-
   "probe_grid_aliases_the_finest_mesh_on_the_single_code_tasks": {
-    "what": "The coupled instances use a 44-point (2-D) / 21-point (3-D) probe grid precisely because a probe count commensurate with a mesh level biases the observed order DOWN — the reasoning is written out in grade_blind.py's own comment, with 1.71 measured against a true 1.97. The single-code tasks use 32 (2-D) and 16 (3-D) against mesh levels 8/16/32/64 and 4/8/16, so their probe grid has exactly the mesh spacing at the finest level and every probe sits on a mesh node or a cell-box centre.",
+    "what": "The coupled instances use a 44-point (2-D) / 21-point (3-D) probe grid precisely because a probe count commensurate with a mesh level biases the observed order DOWN \u2014 the reasoning is written out in grade_blind.py's own comment, with 1.71 measured against a true 1.97. The single-code tasks use 32 (2-D) and 16 (3-D) against mesh levels 8/16/32/64 and 4/8/16, so their probe grid has exactly the mesh spacing at the finest level and every probe sits on a mesh node or a cell-box centre.",
     "measured_in_the_walks": {
       "B1": "successive-difference ratios 5.14 then 1.85 on the required sequence; extending to h = 1/128, 1/256 gives 4.00 / 4.00",
       "B3": "5.58 then 1.93 on the required sequence; 4.00 / 4.00 when extended",
@@ -168,7 +199,6 @@
     "consequence": "An agent that judges MESH_INDEPENDENCE by 'does the change shrink 4x per refinement' sees ~1.9 at the last step of a perfectly converged solve. If MESH_INDEPENDENCE or an inferred order is scored, correct work is penalised, and the penalty is charged to the arm under test.",
     "not_repaired": "Same reason as above: this is task-text and grading design, not an execution path."
   },
-
   "participants_that_do_not_ship_and_had_to_be_written": {
     "note": "Absence of a participant is not inability, but it IS work the agent under test has to do, and none of these existed to be adapted.",
     "kratos_neumann_side": "participant_kratos.py is Dirichlet-only. D3 and D6 both need the Neumann role, and D6 CANNOT converge without it (measured: 60 iterations, residual 0.988).",
@@ -178,18 +208,27 @@
     "non_rectangular_subdomain": "every shipped participant meshes a rectangle from an extent. D5's subdomain A is the unit square minus two blocks.",
     "bent_interface_exchange": "every shipped participant samples the partner by y along a straight interface at x = const. D5 needs an arclength parametrisation along a polyline.",
     "vector_participants": {
-      "exist_for": ["fenics", "skfem", "ngsolve", "dealii", "febio"],
-      "absent_for": ["4C", "dune", "kratos", "sparta"],
+      "exist_for": [
+        "fenics",
+        "skfem",
+        "ngsolve",
+        "dealii",
+        "febio"
+      ],
+      "absent_for": [
+        "4C",
+        "dune",
+        "kratos",
+        "sparta"
+      ],
       "absence_of_evidence_not_inability": true
     }
   },
-
   "path_verified_detail": {
     "D2": "SUPERSEDES the 2026-08-08 entry, which read: 'NO 3-D COUPLED SOLVER RUN EXISTS ... its path remains unproven.' A 3-D scalar coupled solve now exists and has run: FEniCSx <-> deal.II through the registered `couple` tool, two mesh levels, converged in 24 iterations both times, cross-checked against an independent un-split 3-D solve.",
     "D4": "FEniCSx <-> deal.II vector exchange through `couple`, executed 2026-08-08 and passed, both arrangements. Unchanged.",
     "scalar_instances": "D1, D3, D5, D6, D7 were the pre-existing conduction exchange with fixtures but no throwaway run recorded against these instances. Each now has one."
   },
-
   "d4_measured_here": {
     "rho_normal": 0.6532,
     "rho_shear": 0.4667,
