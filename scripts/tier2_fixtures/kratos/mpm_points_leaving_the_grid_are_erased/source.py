@@ -172,6 +172,16 @@ def run() -> tuple[int, int, str]:
 def main() -> int:
     before, after, msg = run()
     erased = after == 0 and before > 0
+    # Kratos writes its banner from C++ with its own buffering, so a Python
+    # print can land mid-line: this fixture was observed emitting
+    # "::[MPM Analysis]:: : TIME:  0.6initial_material_points=1". The needle is
+    # present but no longer starts at a word boundary, and the runner's matcher
+    # requires that (deliberately — it is what stops `count=1` matching
+    # `count=10`). Whether it happened depended on flush timing, so the fixture
+    # passed or failed for reasons unrelated to what it tests. Start on a fresh
+    # line and flush, so every assertion below owns its line.
+    sys.stdout.flush()
+    print()
     print(f"initial_material_points={before}")
     print(f"surviving_material_points={after}")
     print(f"material_points_were_erased={erased}_expected=True")
