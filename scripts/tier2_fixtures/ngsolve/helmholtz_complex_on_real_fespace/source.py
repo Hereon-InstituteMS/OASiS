@@ -9,19 +9,29 @@ a complex coefficient (e.g. for an absorbing boundary
 NGSolve type-check 'real Evaluate called for complex ScaleCF
 in Assemble BilinearForm "biform_from_py"' from the BFI
 assembler.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site — the FESpace is built with complex=True instead
+of complex=False. Assemble then succeeds, no exception is raised
+and all three expectations ("NgException", "real Evaluate called
+for complex", "ScaleCF") vanish from the output.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 from netgen.geom2d import unit_square
 from ngsolve import H1, Mesh, BilinearForm, grad, dx
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.5))
-    fes = H1(mesh, order=1, complex=False)
+    fes = H1(mesh, order=1, complex=True if MUTATE else False)
     u, v = fes.TnT()
     k = 5.0
     a = BilinearForm(fes)

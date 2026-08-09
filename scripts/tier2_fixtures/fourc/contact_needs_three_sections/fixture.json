@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::contact — mortar contact adds exactly THREE sections to an otherwise ordinary structural deck (CONTACT DYNAMIC, MORTAR COUPLING, DESIGN SURF MORTAR CONTACT CONDITIONS 3D), and each way of getting them wrong has its own diagnostic. One self-contained two-block penalty deck (inline nodes, inline elements, no mesh file) is built and then broken seven ways. Six break loudly: LINEAR_SOLVER omitted and the whole CONTACT DYNAMIC section omitted give the SAME message; PENALTYPARAM omitted is rejected because its default of 0 is not allowed; MORTAR COUPLING at its defaults (LM_SHAPEFCN Dual + LM_DUAL_CONSISTENT boundary) is invalid for any non-Lagrange strategy; two Master entries lose the Slave; mismatched InterfaceIDs cannot pair. The SEVENTH arm is the dangerous one and is why this fixture exists: deleting the contact CONDITION section while leaving CONTACT DYNAMIC and MORTAR COUPLING in place runs all ten load steps, exits 0, and never prints 'Building contact interface' — the bodies pass through each other and it looks exactly like success. The fixture pins GOOD_BUILDS_INTERFACE=1 against NOCONDITION_BUILDS_INTERFACE=0 so that presence-of-the-banner remains the detector. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): the seven broken arms are rebuilt from the GOOD arm's CONTACT DYNAMIC, MORTAR COUPLING and condition blocks. The six EXIT_*=1 expectations, the five quoted diagnostics and NOCONDITION_BUILDS_INTERFACE=0 all disappear, and the forbidden NOCONDITION_BUILDS_INTERFACE=1 appears. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "GOOD_STEPS=10",
+    "GOOD_BUILDS_INTERFACE=1",
+    "EXIT_NOSOLVER=1",
+    "EXIT_NOCONTACTSEC=1",
+    "EXIT_NOPENALTY=1",
+    "EXIT_MORTARDEF=1",
+    "EXIT_TWOMASTER=1",
+    "EXIT_MISMATCH=1",
+    "EXIT_NOCONDITION=0",
+    "NOCONDITION_BUILDS_INTERFACE=0",
+    "no linear solver defined for meshtying/contact problem. Please set LINEAR_SOLVER in CONTACT DYNAMIC to a valid number!",
+    "Penalty parameter eps = 0, must be greater than 0",
+    "Consistent dual shape functions in boundary elements only for Lagrange multiplier strategy.",
+    "Slave side missing in contact condition group!",
+    "Cannot find matching contact condition for id"
+  ],
+  "forbid_in_output": [
+    "EXIT_GOOD=1",
+    "GOOD_BUILDS_INTERFACE=0",
+    "NOCONDITION_BUILDS_INTERFACE=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology from all seven broken arms: each is rebuilt from the three CORRECT blocks the GOOD arm uses. Every EXIT_*=1 expectation becomes 0, all five quoted 4C diagnostics disappear, and the NOCONDITION arm - the dangerous silent one - now carries its contact condition, so it builds the interface and the forbidden NOCONDITION_BUILDS_INTERFACE=1 appears. The fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

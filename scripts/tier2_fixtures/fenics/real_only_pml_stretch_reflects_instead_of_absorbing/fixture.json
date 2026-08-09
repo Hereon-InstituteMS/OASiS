@@ -1,0 +1,27 @@
+{
+  "_comment": "CLAIM maxwell::2: [Numerical] PML (Perfectly Matched Layer): requires coordinate stretching of the form x_i \u2192 x_i*(1 + i*sigma(x_i)/omega) inside the PML region. A real-only stretching (real sigma) gives a lossy real boundary, NOT a radiating PML. Signal: a fem.Function evaluated in the PML region decays by orders \u2026 WHAT THIS RUNS: a PML needs a COMPLEX coordinate stretch. If the stretch coefficient is built with a real sigma, the layer is just a different real material: it does not absorb, it reflects, and the physical region fills with a standing wave. Setup: 1D Helmholtz on (0, 1.25) with the physical region (0, 1) and a PML in (1, 1.25). The stretched equation is ((1/s) u')' + k^2 s u = 0 with s = 1 + i sigma(x)/omega inside the layer, k = 20, omega = k, a quadratic sigma profile, u(0) = 1 and a natural condition at the outer end. s is a DG0 fem.Function, so the difference between the two variants is exactly the dtype and value the claim talks about. With a perfect PML the physical region carries the pure outgoing wave, |u| = 1 flat, and |u| collapses inside the layer. Observed on dolfinx 0.10.0 with a complex PETSc build: the complex stretch gives a flat |u| in the physical region (swing 0.000000) and |u| down by a factor 7.5e-06 across the layer; the real-only stretch (same magnitude, no imaginary part) gives an |u| that swings by 1.017 across the physical region -- the reflected wave -- and does not decay at all in the layer (|u| at the outer end is 4.6 times the value at the layer entry). OBSERVED, copied from the run: scalar_type=complex128; complex_build=True; complex_pml_physical_region_is_flat=True; complex_pml_decays_by_orders_of_magnitude=True; under_test_shows_standing_wave_reflection=True; under_test_fails_to_absorb=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "maxwell",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": [
+    "maxwell::2"
+  ],
+  "env": {
+    "FENICS_PYTHON": "/home/alexander/miniconda3/envs/fenicsc/bin/python"
+  },
+  "expect_in_output": [
+    "scalar_type=complex128",
+    "complex_build=True",
+    "complex_pml_physical_region_is_flat=True",
+    "complex_pml_decays_by_orders_of_magnitude=True",
+    "under_test_shows_standing_wave_reflection=True",
+    "under_test_fails_to_absorb=True",
+    "VERDICT=real_only_stretch_reflects_complex_stretch_absorbs"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=stretch_under_test_absorbed_like_a_pml",
+    "VERDICT=needs_the_complex_build"
+  ]
+}

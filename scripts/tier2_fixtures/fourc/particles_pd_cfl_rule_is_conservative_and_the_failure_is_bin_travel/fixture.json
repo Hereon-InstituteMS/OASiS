@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::particles#8, and a falsification of both the number and the symptom. Evaluating the entry's own formula on upstream particle_sph_2d_pdbody_gravity.4C.yaml (YOUNG 190.0e3, INITDENSITY 8000.0e-9, dx 1.0) gives dt < 3.24e-06 s, yet the shipped deck runs at 8.0e-06 s — 2.47 times that limit — for 3000 steps with all ten result tests exact to abs(diff) 0.00000000000000000e+00. Raising dt to 1.0e-05, 3.08 times the limit, still takes every one of the 3001 evaluations with zero instability aborts. So the quoted CFL bound is conservative by more than a factor of three, and an agent applying it literally would shrink a working time step for nothing. When dt really is too large the symptom is also wrong: at 1.6e-04 the run is killed after 8 steps by \"a particle of phase 'pdphase' traveled more than one bin on this processor!\" from particle/src/algorithm/4C_particle_algorithm.cpp line 790. No NaN appears in any of the three logs, the message never mentions CFL or the time step, and the string 'energy not conserved' does not exist in 4C at all. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "CLAIMED_CFL_LIMIT_SECONDS=3.24e-06",
+    "UPSTREAM_TIMESTEP_OVER_CLAIMED_LIMIT=2.47",
+    "STABLE_TIMESTEP_1E5_OVER_CLAIMED_LIMIT=3.08",
+    "EXIT_UPSTREAM=0",
+    "EXIT_DT16E4=1",
+    "processor 0 finished normally",
+    "UPSTREAM_FAILURES=0",
+    "UPSTREAM_EXACT_ZERO_DIFFS=10",
+    "UPSTREAM_STEPS_RUN=3001",
+    "DT1E5_STEPS_RUN=3001",
+    "DT1E5_TRAVEL_ABORTS=0",
+    "a particle of phase 'pdphase' traveled more than one bin on this processor!",
+    "4C_particle_algorithm.cpp, line 790",
+    "DT16E4_STEPS_BEFORE_ABORT=8",
+    "NAN_IN_ANY_LOG=0",
+    "CLAIMED_ENERGY_NOT_CONSERVED_TEXT=0",
+    "DT16E4_DIAGNOSTIC_MENTIONS_CFL_OR_TIMESTEP=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_UPSTREAM=1",
+    "EXIT_DT16E4=0",
+    "UPSTREAM_EXACT_ZERO_DIFFS=0",
+    "DT1E5_STEPS_RUN=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the failing arm: leave TIMESTEP at the upstream 8.0e-6 instead of 1.6e-4. That arm then takes all 3001 steps, the bin-travel abort disappears, DT16E4_STEPS_BEFORE_ABORT becomes 3001 and EXIT_DT16E4 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  TIMESTEP: 8.0e-6/  TIMESTEP: 1.6e-4/' \"$BASE\" > \"$TMP/dt16e4.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/dt16e4.yaml\""
+    },
+    {
+      "note": "remove the pathology from the reference arm: make it OBEY the claimed CFL bound by dropping TIMESTEP to 3.0e-6, below the 3.24e-06 limit. The deck no longer reaches its reference state, UPSTREAM_FAILURES stops being 0, UPSTREAM_EXACT_ZERO_DIFFS stops being 10 and EXIT_UPSTREAM becomes 1, so the evidence that the shipped deck is stable ABOVE the limit is gone and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "cp \"$BASE\" \"$TMP/upstream.yaml\"",
+      "to": "sed 's/  TIMESTEP: 8.0e-6/  TIMESTEP: 3.0e-6/' \"$BASE\" > \"$TMP/upstream.yaml\""
+    }
+  ]
+}

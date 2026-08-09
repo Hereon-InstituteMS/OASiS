@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2: Kratos 10.4.x renamed the poromechanics u-Pw formulation to u-Pl. Pitfall (kratos.poromechanics #1): UPwSmallStrainElement2D4N is not registered; UPlSmallStrainElement2D4N is. Executed on Kratos 10.4.3 (PoromechanicsApplication 10.4.3): the UPw name raises RuntimeError 'The Element \"UPwSmallStrainElement2D4N\" is not registered!' while the UPl name constructs a 2D quad element. This fixture runs against a real KratosMultiphysics import; with Kratos absent the import fails and the runner records a skip, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 puts the CORRECT registered name UPlSmallStrainElement2D4N into the slot where the fixture expects the wrong UPw name, so nothing is rejected. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: rejected_name=UPwSmallStrainElement2D4N, is not registered. Re-verify: cd scripts/tier2_fixtures/kratos/poromechanics_upl_not_upw && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "registered_ok=UPlSmallStrainElement2D4N",
+    "rejected_name=UPwSmallStrainElement2D4N",
+    "is not registered"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

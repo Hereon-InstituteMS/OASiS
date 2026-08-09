@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#2 — INITIALFIELD 'field_by_function' + INITFUNCNO evaluates the space-time function at t=0 at the nodes, exactly. NUMSTEP 0 makes the RESULT DESCRIPTION read the initial state and nothing else, so this is a direct measurement rather than an inference from a later step. Two nodes match the analytic u*(x,0) to 1e-14 (BY_FUNCTION_CORRECT=2, exit 0), and a recording run prints them: node 41 -> 2.25000000000000000e+00 (analytic 2.25) and node 29 -> 1.41605339059327373e+00 (analytic 1.4160533905932737). The 'zero_field' control puts both at exactly 0.00000000000000000e+00 and matches neither (ZERO_FIELD_CORRECT=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BY_FUNCTION=0",
+    "EXIT_ZERO_FIELD=1",
+    "BY_FUNCTION_CORRECT=2",
+    "ZERO_FIELD_CORRECT=0",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 2.25000000000000000e+00",
+    "is WRONG --> actresult= 1.41605339059327373e+00",
+    "is WRONG --> actresult= 0.00000000000000000e+00"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BY_FUNCTION=1",
+    "EXIT_ZERO_FIELD=0",
+    "BY_FUNCTION_CORRECT=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the control arm: let it use the function too. Both arms then reproduce u*(x,0), ZERO_FIELD_CORRECT becomes 2 and the exactly-zero reading disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "\\\"initialfield\\\":\\\"zero_field\\\",",
+      "to": ""
+    },
+    {
+      "note": "break the exactness claim itself: ask for the initial field at a node whose analytic value is different. BY_FUNCTION_CORRECT drops below 2 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "[[41,2.25,1e-14],[29,1.4160533905932737,1e-14]]",
+      "to": "[[41,2.26,1e-14],[29,1.4160533905932737,1e-14]]"
+    }
+  ]
+}

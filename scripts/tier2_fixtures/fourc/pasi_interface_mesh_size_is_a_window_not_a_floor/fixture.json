@@ -1,0 +1,57 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#2: the symptom is confirmed and measured, the advice is corrected from a floor to a window. Upstream pasi_twoway_disprelaxaitken_particle_dem_1d_normalcontact_linspring_walldiscretcond.4C.yaml drops one DEM particle of diameter 1.0 onto a clamped 1.75x1.75 membrane; the membrane is regenerated as an NxN QUAD4 patch over the same square so h_structure is the only thing that varies, with identical instrumentation in every arm. At h/d = 0.583 the interface has 4 free nodes, every moving node deflects by exactly the same amount (peak/mean = 1.000) — the entry's 'stress field looks uniform', literally — while at h/d = 0.250 there are 36 free nodes, a real contact patch with peak/mean 5.063, and the regenerated deck reproduces the shipped answer with all six particle result tests correct. But refining past that is fatal: at h/d = 0.146 the partitioned loop dies with 'The partitioned PASI solver did not converge in ITEMAX steps!' from pasi/4C_pasi_partitioned_twowaycoup.cpp line 419 — the identical sentence produced by the too-coarse h/d = 0.875 arm. One diagnostic, two opposite causes, and it names neither the mesh nor the particle diameter nor the interface. So the entry's target of h ~ 0.5*d sits inside the admissible band but must not be read as a floor. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "H_OVER_PARTICLE_DIAMETER_N2=0.875",
+    "H_OVER_PARTICLE_DIAMETER_N3=0.583",
+    "H_OVER_PARTICLE_DIAMETER_N7=0.250",
+    "H_OVER_PARTICLE_DIAMETER_N12=0.146",
+    "FREE_INTERFACE_NODES_N3=4",
+    "FREE_INTERFACE_NODES_N7=36",
+    "EXIT_N2=1",
+    "EXIT_N7=0",
+    "EXIT_N12=1",
+    "processor 0 finished normally",
+    "N7_FAILURES=0",
+    "N7_CORRECT_TESTS=6",
+    "The partitioned PASI solver did not converge in ITEMAX steps!",
+    "4C_pasi_partitioned_twowaycoup.cpp, line 419",
+    "DIVERGED_N2=1",
+    "DIVERGED_N3=0",
+    "DIVERGED_N7=0",
+    "DIVERGED_N12=1",
+    "DIAGNOSTIC_NAMES_THE_MESH=0",
+    "MOVING_INTERFACE_NODES_N3=4",
+    "MOVING_INTERFACE_NODES_N7=36",
+    "DEFLECTION_PEAK_OVER_MEAN_N3=1.000",
+    "DEFLECTION_PEAK_OVER_MEAN_N7=5.063",
+    "COARSE_INTERFACE_RESPONSE_IS_UNIFORM=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_N7=1",
+    "EXIT_N12=0",
+    "DIVERGED_N12=0",
+    "DIVERGED_N7=1",
+    "COARSE_INTERFACE_RESPONSE_IS_UNIFORM=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the over-refined arm: point it at the admissible N = 7 mesh instead of the N = 12 one. The divergence disappears, DIVERGED_N12 becomes 0 and EXIT_N12 becomes 0, so the evidence that refining past the entry's target is fatal is gone and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe N12 \"$TMP/n12.yaml\"",
+      "to": "probe N12 \"$TMP/n7.yaml\""
+    },
+    {
+      "note": "remove the coarse-interface arm: build it at N = 7 as well. Its interface then carries 36 moving nodes with a peak/mean of 5.063 instead of 4 nodes at exactly 1.000, so MOVING_INTERFACE_NODES_N3, DEFLECTION_PEAK_OVER_MEAN_N3 and COARSE_INTERFACE_RESPONSE_IS_UNIFORM all change and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "probe N3  \"$TMP/n3.yaml\"",
+      "to": "probe N3  \"$TMP/n7.yaml\""
+    }
+  ]
+}

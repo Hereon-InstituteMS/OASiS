@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii heat#0. Tier-2 for dealii heat#0 \u2014 probe \"reassemble_cost\" of the shared transient-heat translation unit _shared/heat_family.cc, compiled once and cached so several fixtures share one build. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run. EXPECTATION DROPPED 2026-08-06: this fixture used to require assembly_fraction_in_claimed_60_to_80_band=false. On a quiet machine the assembly share measured 32 per cent and the claim's 60-80 per cent band did not reproduce; under load a later run landed INSIDE the band and the fixture went red. That is a pinned measurement wearing a boolean's clothes \u2014 the share depends on what else the machine is doing, so no fixture can assert it either way. The value is still printed. What is asserted is the RATIO, reassembling versus assemble-once for a bit-identical answer, which is a property of the algorithm and not of the host.",
+  "backend": "dealii",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "assembly_calls_in_loop_reassembling=40 assembly_calls_in_loop_once=0",
+    "reassembling_does_one_assembly_per_step=true",
+    "VERDICT=reassembly_costs_multiples_for_the_same_answer"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_measurable_cost"
+  ],
+  "timeout_seconds": 900,
+  "_wall_clock_note": "This fixture used to rest ENTIRELY on the clock: its only two expectations were reassembling_is_measurably_slower (reassembling_seconds/assemble_once_seconds > 1.3) and a VERDICT line emitted only when that held. Unlike the other timing fixtures there was no structural half to fall back on, so heat_family.cc now COUNTS the assemblies each loop performs and the verdict rests on that count instead. The count is the mechanism the claim is about \u2014 40 assemblies against 0 \u2014 and is identical on every host. The seconds and the slowdown are still measured and printed. EXECUTED against deal.II 9.8.0-pre on this host: assembly_calls_in_loop_reassembling=40 assembly_calls_in_loop_once=0, reassembling_does_one_assembly_per_step=true, exit_code=0. MUTATION CONTROL re-verified after the change: T2_MUTATE=1 gives assembly_calls_in_loop_reassembling=0, reassembling_does_one_assembly_per_step=false and VERDICT=no_measurable_cost, so none of the three expectations is satisfied and the fixture goes red \u2014 the new verdict is evidence, not a formality."
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM obstacle_problem::0: [Numerical] Non-smooth problem \u2014 requires special solver (active set, penalty). Signal: a vanilla Newton SolverControl loop on a variational inequality (elastic body pressing into a rigid obstacle) either diverges or oscillates between two active-set AffineConstraints states without converging; \u2026 WHAT THIS RUNS: -- probe \"obstacle_active_set\" of the shared goal-oriented translation unit _shared/goal_family.cc, compiled once and cached so three fixture directories share ONE C++ build. The step-41 membrane: -laplace(u) = -10 on (-1,1)^2 pushed down onto the staircase obstacle, u = 0 on the boundary, u >= psi. The Laplace matrix, its right-hand side and a lumped mass diagonal are assembled ONCE; only the AffineConstraints move between outer iterations, so what is compared is purely the active-set rule. The naive rule -- constrain the dofs that currently violate the obstacle -- is the one the entry describes, and it cycles with period two, measured rather than assumed: the loop records every active set it has seen and reports the period at which one repeats. 202 dofs, then 0, then 202 again. A dof pinned to the obstacle has zero gap, so the gap test releases it, and it violates again the moment it is free. The worst obstacle violation is back at 2.5 when the cycle closes. T2_MUTATE=1 switches to step-41's own rule, lambda + c * m_i * gap > 0, which also weighs the contact force. Two consecutive active sets become identical after four outer iterations -- inside the entry's stated 3-10 -- and the obstacle is satisfied everywhere. The fixture then fails its own expectations. OBSERVED, copied from the run: active_set_criterion=gap_only; two_consecutive_active_sets_became_identical=false; active_set_repeats_an_earlier_state=true; active_set_cycles_with_period_two=true; converged_within_ten_outer_iterations=false; VERDICT=active_set_loop_never_settled. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "obstacle_problem",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "active_set_criterion=gap_only",
+    "two_consecutive_active_sets_became_identical=false",
+    "active_set_repeats_an_earlier_state=true",
+    "active_set_cycles_with_period_two=true",
+    "converged_within_ten_outer_iterations=false",
+    "VERDICT=active_set_loop_never_settled"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=active_set_loop_reached_two_identical_sets"
+  ],
+  "timeout_seconds": 900
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics poisson#2: VTXWriter rejects non-Lagrange families, at CONSTRUCTION time. The claim carries an exact-text assertion and an explicit denial of two older strings, so the fixture prints the message it actually got and checks the denial too. Mutation control: T2_MUTATE=1 writes a Lagrange Function instead of an N1curl one; construction succeeds. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "stage=raised_at_construction",
+    "Only (discontinuous) Lagrange functions are supported",
+    "old_string_1_present=False",
+    "old_string_2_present=False",
+    "VERDICT=vtx_rejects_non_lagrange_at_construction"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ]
+}

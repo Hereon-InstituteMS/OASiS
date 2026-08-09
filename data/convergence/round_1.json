@@ -1,0 +1,95 @@
+{
+  "round": 1,
+  "what_it_was": "The extraction/verification pass on each backend, followed by an independent adversarial audit of that pass. Eight backends, seven audits.",
+  "note_on_gaps": "Several fields are null because round 1 did not record them uniformly — each pass reported what it happened to count. A null is NOT a pass: the freeze criterion treats 'not measured' as failing, because an unmeasured quantity is exactly where round 1 found its damage. Round 2 must record all fields for every backend.",
+  "backends": {
+    "dealii": {
+      "checked": 223,
+      "falsified": 43,
+      "total_claims": null,
+      "audit_defects": 3,
+      "unmatchable_signals": null,
+      "contamination_hits": null,
+      "notes": "31 wrong + 12 stale = 19% of executed claims. Audit found a phantom API (GridTools::get_boundary_ids) written INTO two rewritten Signals, an 'it throws' claim for something that aborts uncatchably (rc=134), and a false 'identical iteration counts' claim. Knowledge had been verified against 9.1.1; install is 9.8.0-pre."
+    },
+    "fenics": {
+      "checked": 70,
+      "falsified": null,
+      "total_claims": 812,
+      "audit_defects": 4,
+      "unmatchable_signals": null,
+      "contamination_hits": 0,
+      "notes": "~9% of leaf claims executed. Eight physics topics (37 pitfalls) never touched. Three templates exit 0 with wrong output. Audit found a correction tagged 're-verified by execution' that raises AttributeError when executed."
+    },
+    "ngsolve": {
+      "checked": 40,
+      "falsified": 5,
+      "total_claims": null,
+      "audit_defects": 5,
+      "unmatchable_signals": null,
+      "contamination_hits": 13,
+      "notes": "Measured convergence tables shipped through prepare_simulation, evading the guard by wording. PETSc KSP diagnostics (KSPSolve: DIVERGED_BREAKDOWN, DIVERGED_INDEFINITE_PC) in a backend whose library contains no PETSc KSP strings."
+    },
+    "skfem": {
+      "checked": 40,
+      "falsified": null,
+      "total_claims": null,
+      "audit_defects": 1,
+      "unmatchable_signals": null,
+      "contamination_hits": null,
+      "notes": "MortarFacetBasis cited twice; does not exist in scikit-fem 12.0.1."
+    },
+    "fourc": {
+      "checked": 41,
+      "falsified": 6,
+      "total_claims": 478,
+      "audit_defects": 6,
+      "unmatchable_signals": null,
+      "contamination_hits": 0,
+      "notes": "8.6% of input sections. STRUCTURE ELEMENTS and THERMO ELEMENTS absent entirely, so an agent cannot write a mesh block. Contact 0 of 4. 19 template section names the binary rejects. Sufficiency verdict: NO."
+    },
+    "febio": {
+      "checked": 22,
+      "falsified": 6,
+      "total_claims": 81,
+      "audit_defects": 6,
+      "unmatchable_signals": 25,
+      "contamination_hits": 8,
+      "notes": "27% of the pitfall surface executed. The untouched 73% held 11 non-existent material type names shipped as copy-ready and 25 error messages absent from the binary, including NOX and KSPSolve diagnostics from Trilinos and PETSc, which FEBio links neither of."
+    },
+    "kratos": {
+      "checked": 18,
+      "falsified": 3,
+      "total_claims": null,
+      "audit_defects": 3,
+      "unmatchable_signals": null,
+      "contamination_hits": null,
+      "notes": "Templates never executed by the pass. Four run clean and physically wrong; heat_transient/2d is off by 40.088 K on a 100 K span. 8 of 21 'Kratos' templates never import Kratos."
+    },
+    "sparta": {
+      "checked": 12,
+      "falsified": 6,
+      "total_claims": null,
+      "audit_defects": 6,
+      "unmatchable_signals": null,
+      "contamination_hits": 4,
+      "notes": "Zero Signal clauses. 555 KB flat JSON dump; 92.3% of a prepare_simulation payload is a verbatim manual paste, truncated at 16 KB so half never reaches the agent. installed_build ships four absolute host paths through the live knowledge tool."
+    },
+    "dune": {
+      "checked": 43,
+      "falsified": 6,
+      "total_claims": null,
+      "audit_defects": 6,
+      "unmatchable_signals": null,
+      "contamination_hits": 11,
+      "notes": "Worst contamination of the eight: knowledge(topic='overview') returned 45,884 bytes carrying the manufactured solution AND its measured EOCs. A test pinned those digits while _REQUIRED_SECTIONS forbade deleting the section, making the contamination unremovable. linear_elasticity_2d was `return _poisson_2d(params)  # Placeholder`."
+    }
+  },
+  "round_1_summary": {
+    "falsified_total_approx": 260,
+    "backends_where_the_audit_found_defects_in_the_pass_own_corrections": 7,
+    "of_backends_audited": 7,
+    "signal_clauses_with_an_execution_fixture": "131 / 1180 = 11.1%",
+    "verdict": "NOT CONVERGED. Every audited backend had errors inside its own corrections, and the damage concentrated in the fraction each pass never executed."
+  }
+}

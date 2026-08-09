@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fenics eigenvalue#0 + #4 / helmholtz#3: SLEPc availability and dolfinx.default_scalar_type. Verifies slepc4py.SLEPc.EPS resolves AND default_scalar_type is numpy.float64 in the conda-forge real build. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for fenics eigenvalue#0 + #4 / helmholtz#3: SLEPc availability and dolfinx.default_scalar_type. Verifies slepc4py.SLEPc.EPS resolves AND default_scalar_type is numpy.float64 in the conda-forge real build. Verified empirically 2026-06-01. MUTATION CONTROL (T2_MUTATE=1, re-runnable): pointing the EPS probe at petsc4py.PETSc instead of slepc4py.SLEPc measures EPS_available=False (petsc4py imports fine; it simply has no EPS), so 'EPS_available=True' goes missing while slepc_available=True and scalar_type=float64 stay. Proved KILLED 2026-08-07. Scope note: this fixture asserts the REAL build (scalar_type=float64), which is what the runner's conda env `fenics` provides; the complex env `fenicsc` would report complex128 and the fixture would fail there by design.",
   "backend": "fenics",
   "physics": "eigenvalue",
   "pitfall_index": 0,
@@ -9,5 +9,11 @@
     "EPS_available=True",
     "scalar_type=float64"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "Antidote: ask the WRONG package for the eigensolver — petsc4py.PETSc instead of slepc4py.SLEPc. petsc4py imports perfectly well, so the run does not crash and slepc_available is untouched, but PETSc does not own EPS: the eigensolver class lives in SLEPc, which is the pitfall's own content.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

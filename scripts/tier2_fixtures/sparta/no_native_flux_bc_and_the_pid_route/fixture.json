@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for sparta conjugate_heat_transfer:7, :8, :9 and :10, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). An argon slab between two diffuse walls; the lower wall's temperature is an internal-style variable driven by 'fix controller' from the boundary energy tally. conjugate_heat_transfer:8 — with one sign of kp the loop is positive feedback: the control variable rises monotonically between every pair of stats rows and ends more than a million times its initial value, with rc = 0, no warning and no clamp, and the fix's own P/I/D 3-vector tracks it; kp = 0 holds it exactly fixed, which is the control that makes the runaway attributable to the gain. The only guard that ever fires is the consumer's, 'ERROR: Surf_collide tsurf <= 0.0 (../surf_collide.cpp:183)', when the other sign drives the wall below absolute zero. conjugate_heat_transfer:9 — the proportional term the fix publishes is exactly -kp*alpha*tau*err with tau = Nevery*dt: the ratio -f_pid[1]/err on every controller step equals kp*alpha*Nevery*dt at three different schedules (Nevery 100 and 200, dt 1e-8 and 5e-9), an IDENTITY between two columns of one stats table and four numbers the deck sets, with a 1e-6 tolerance that is the limit of the table's ~8 printed digits and not a fudge. conjugate_heat_transfer:7 — the control variable must be internal-style ('ERROR: Fix controller variable is not internal-style variable (../fix_controller.cpp:135)'); a global ARRAY as process variable is rejected ('ERROR: Fix controller compute does not calculate a global scalar or vector (../fix_controller.cpp:104)'); and a TWO-INDEX reference f_av[3][1] is NOT rejected — the parser truncates at the first '[' and the loop runs identically to the single-index form, which the fixture shows by comparing the two trajectories. A DRAFT of conjugate_heat_transfer:7 claimed the internal control variable needed an equal-style wrapper before a surf_collide would take it; execution falsified that (an internal variable is accepted directly, because Variable::equal_style() returns true for INTERNAL, variable.cpp:1016) and the entry was corrected before shipping. conjugate_heat_transfer:10 — the wall that needs no controller is the one whose temperature is a NUMBER, and it runs; the flux is then an output. No temperature, flux or gain value is stored anywhere; every controller assertion is a shape, a direction or an identity. COVERS: conjugate_heat_transfer:7, conjugate_heat_transfer:8, conjugate_heat_transfer:9, conjugate_heat_transfer:10. MUTATION CONTROL (T2_MUTATE=1, re-runnable): kp of the diverging loop is set to 0 — the single edit that removes the runaway — with the plant, the setpoint, alpha, Nevery, the averaging window, the wall models, the seed and the run length identical. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: the_loop_diverges_monotonically=True, divergence_returns_success=True, the_fixes_p_i_d_vector_tracks_the_control=True, it_behaves_as_the_single_index_form=True. The variable-style, gain-identity and no-flux-BC assertions run on decks the hook does not touch. Re-verify: cd scripts/tier2_fixtures/sparta/no_native_flux_bc_and_the_pid_route && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure. CLAIM KEYS REPOINTED 2026-08-07: a 25 kB per-physics payload ceiling (test_kratos_sparta_verified_2026_08) forced four cross-cutting claims into better-fitting rows, so the keys quoted above moved with them. The decks, the evidence and the mutation control are unchanged.",
+  "backend": "sparta",
+  "physics": "conjugate_heat_transfer",
+  "pitfall_index": 7,
+  "covers": [
+    "conjugate_heat_transfer:10",
+    "conjugate_heat_transfer:7",
+    "conjugate_heat_transfer:8",
+    "conjugate_heat_transfer:9"
+  ],
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "the_pid_deck_completes=True",
+    "zero_gain_holds_the_control_variable_fixed=True",
+    "the_loop_diverges_monotonically=True",
+    "divergence_returns_success=True",
+    "the_fixes_p_i_d_vector_tracks_the_control=True",
+    "the_other_sign_drives_the_wall_below_absolute_zero=True",
+    "an_internal_variable_is_accepted_as_a_wall_temperature=True",
+    "the_control_variable_must_be_internal_style=True",
+    "a_global_array_process_variable_is_rejected=True",
+    "a_two_index_process_variable_is_not_rejected=True",
+    "it_behaves_as_the_single_index_form=True",
+    "the_p_term_is_exactly_minus_kp_alpha_tau_err=True",
+    "a_plain_temperature_wall_needs_no_controller_and_runs=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

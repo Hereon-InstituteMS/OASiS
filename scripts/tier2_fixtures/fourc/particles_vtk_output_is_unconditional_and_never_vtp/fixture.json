@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particles#1, which execution FALSIFIED on every clause. Upstream particle_sph_2d_pdbody_gravity.4C.yaml carries no IO/RUNTIME VTK OUTPUT section at all, yet 4C writes ParaView particle output unconditionally: 2 .pvd files (one per phase) and 26 .vtu pieces under <prefix>-vtk-files, e.g. particle-pdphase-owned-00000-0.vtu. No .vtp file is produced anywhere, so the file type in the entry is wrong as well. Worse, the remedy is destructive: adding IO/RUNTIME VTK OUTPUT/PARTICLES with PARTICLE_OUTPUT: true turns a passing deck into a hard parse error, \"Section 'IO/RUNTIME VTK OUTPUT/PARTICLES' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp line 546, and not one time step runs. 4C's runtime-VTK vocabulary is IO/RUNTIME VTK OUTPUT plus /BEAMS, /FLUID and /STRUCTURE only; neither a /PARTICLES section nor a PARTICLE_OUTPUT key exists in the source. Output frequency is set by RESULTSEVERY in PARTICLE DYNAMIC. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "ASIS_RUNTIME_VTK_SECTIONS=0",
+    "CLAIMED_RUNTIME_VTK_SECTIONS=2",
+    "EXIT_ASIS=0",
+    "EXIT_CLAIMED=1",
+    "processor 0 finished normally",
+    "ASIS_FAILURES=0",
+    "PVD_FILES_WITHOUT_ANY_VTK_SECTION=2",
+    "VTP_FILES_ANYWHERE=0",
+    "particle-pdphase-owned-00000-0.vtu",
+    "Section 'IO/RUNTIME VTK OUTPUT/PARTICLES' is not a valid section name.",
+    "4C_io_input_file.cpp, line 546",
+    "CLAIMED_TIME_STEPS_RUN=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ASIS=1",
+    "EXIT_CLAIMED=0",
+    "PVD_FILES_WITHOUT_ANY_VTK_SECTION=0",
+    "VTU_FILES_WITHOUT_ANY_VTK_SECTION=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: do not inject the claimed IO/RUNTIME VTK OUTPUT/PARTICLES block into the second arm. It then parses and runs like the baseline, the 'not a valid section name' abort disappears, CLAIMED_RUNTIME_VTK_SECTIONS becomes 0 and EXIT_CLAIMED becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[3], \"w\").write(t[:i] + blk + t[i:])",
+    "to": "open(sys.argv[3], \"w\").write(t)"
+  }
+}

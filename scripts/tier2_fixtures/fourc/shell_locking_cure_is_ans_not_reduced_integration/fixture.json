@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::shell#1, and a correction to it. Reissner-Mindlin shells do lock, but 4C's cure is not 'reduced integration' — SHELL7P has no integration-rule key at all, and the WALL-style 'GP 2 2' is rejected with \"After parsing, the line still contains 'GP 2 2'.\" followed by the full list of keys it does accept (AXI CIR EAS FIBER1..3 MAT RAD SDC THICK USE_ANS). The knobs are EAS and USE_ANS. On a flat 8x2 SHELL7P plate with t/L = 1e-3, EAS N_4 N_4 N_4 none none with USE_ANS true is pinned as the deck's result test and exits 0 at -2.52367752125895084e+00; turning ANS off alone gives -5.11934726979820223e-04, about three orders of magnitude too stiff. A third trap: setting every EAS slot to 'none' makes reference BLAS abort with ' ** On entry to DGEMM parameter number 10 had an illegal value', and because LAPACK's XERBLA terminates via Fortran STOP the process EXITS 0 having finalised zero steps and run zero result tests — a silent no-op that reads as success. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "shell",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_EAS_ANS=0",
+    "EXIT_EAS_NO_ANS=1",
+    "EXIT_GP_KEY=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=-5.11934726979820223e-04",
+    "NO_EAS_STEPS=0",
+    "NO_EAS_RESULT_TESTS_RUN=0",
+    "On entry to DGEMM parameter number 10 had an illegal value",
+    "After parsing, the line still contains 'GP 2 2'.",
+    "Parsed parameters: AXI : none CIR : none EAS :"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_EAS_ANS=1",
+    "EXIT_EAS_NO_ANS=0",
+    "EXIT_GP_KEY=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: switch ANS on in the second arm. It then matches the pinned answer, EXIT_EAS_NO_ANS becomes 0 and the locked number disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"N_4 N_4 N_4 none none\"     false \"\"        \"$TMP/eas.4C.yaml\"",
+      "to": "deck \"N_4 N_4 N_4 none none\"     true \"\"        \"$TMP/eas.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: give the third arm a real EAS vector. The BLAS abort disappears and NO_EAS_STEPS stops being 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"none none none none none\"  true  \"\"        \"$TMP/noeas.4C.yaml\"",
+      "to": "deck \"N_4 N_4 N_4 none none\"  true  \"\"        \"$TMP/noeas.4C.yaml\""
+    },
+    {
+      "note": "remove the third pathology: drop the WALL-style integration key. The leftover-token diagnostic vanishes and EXIT_GP_KEY becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"N_4 N_4 N_4 none none\"     true  \" GP 2 2\" \"$TMP/gp.4C.yaml\"",
+      "to": "deck \"N_4 N_4 N_4 none none\"     true  \"\" \"$TMP/gp.4C.yaml\""
+    }
+  ]
+}

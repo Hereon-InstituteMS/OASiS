@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#2 and a FALSIFICATION of its Signal. The entry claimed an open cutter surface aborts with 'inside/outside classification inconsistent' or silently lets fluid permeate the structure. The string does not exist in 4C and there is no silent path. On the upstream mesh-cutter deck xfluid_mesh_neumann_inflow_stab, removing the fourth of four coupling sides (its DESIGN XFEM DISPLACEMENT and DESIGN XFEM NEUMANN entries plus the DSURF topology line) leaves an open cutter ring, and 4C aborts with 'negative volume predicted by the DirectDivergence integration rule;' from 4C_cut_direct_divergence.cpp -- a quadrature message that never mentions the surface being open. The run never reaches a result test. The rule (the cutter must be closed) stands; the diagnostic to grep for is the negative-volume one. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 2,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CLOSED=0",
+    "EXIT_OPEN=1",
+    "processor 0 finished normally",
+    "CLOSED_RESULT_FAILURES=0",
+    "negative volume predicted by the DirectDivergence integration rule",
+    "4C_cut_direct_divergence.cpp",
+    "CLAIMED_CLASSIFICATION_TEXT=0",
+    "OPEN_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep all four cutter sides, so the cutter stays closed. The negative-volume abort vanishes and the arm exits 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(disp, \"\").replace(neum, \"\").replace(topo, \"\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLOSED=1",
+    "EXIT_OPEN=0",
+    "OPEN_REACHED_RESULT_TEST=1"
+  ]
+}

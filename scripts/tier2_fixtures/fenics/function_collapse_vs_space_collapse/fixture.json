@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#2: fem.Function.collapse() returns ONE Function; fem.FunctionSpace.collapse() returns a (FunctionSpace, dofmap) pair. Unpacking the Function version into two names is the mistake. Wrong variant: a_h, dofs = w.sub(0).collapse(). Right variants: a_h = w.sub(0).collapse() (a Function on the collapsed space, ready for .x.array.min()) and V0, sub_map = W.sub(0).collapse() (the space plus the index array, so w.x.array[sub_map] is that species' block). Observed on dolfinx 0.10.0: the unpacking raises NotImplementedError: Cannot take length of non-vector expression. because Python calls len() on the returned Function. The two correct forms give a dolfinx Function and a (FunctionSpace, ndarray) pair, and w.x.array[sub_map] agrees with the collapsed Function's array exactly. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "NotImplementedError: Cannot take length of non-vector expression.",
+    "function_collapse_cannot_be_unpacked=True",
+    "function_collapse_returns_one_function=True",
+    "space_collapse_returns_a_pair=True",
+    "sub_map_indexes_the_same_block=True",
+    "VERDICT=function_collapse_is_not_a_pair"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=function_collapse_unpacked_fine"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii wave#1. Tier-2 for dealii wave#1 \u2014 probe \"reassemble_each_step\" of the shared wave translation unit _shared/wave_family.cc, compiled once and cached so six fixtures share one build. Two loops on the same problem in one process, the reference (assemble once) timed FIRST and after an untimed warm-up so the ordering works against the result: re-assembling M, K and the effective matrix inside the time loop costs several times the wall time of assembling them once, for an identical answer (the CG iteration counts of the two loops are equal). The entry's two quantitative clauses are measured rather than repeated: \"assemble_system dominating at 60-80%\" and \"scaling as O(ndof^2)\". Both come out false here, and the fixture pins them false. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant (assemble once), and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "wave",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "assemble_system",
+    "cg_iteration_count_is_unchanged=true",
+    "assembly_scales_quadratically_in_ndofs=false"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=no_measurable_cost"
+  ],
+  "timeout_seconds": 900,
+  "_wall_clock_note": "reassembling_is_measurably_slower is reassembling_seconds/assemble_once_seconds > 1.5 and the VERDICT is gated on it. Removed from expect_in_output; still printed. Structural evidence retained: assemble_system, cg_iteration_count_is_unchanged (the answer is identical) and assembly_scales_quadratically_in_ndofs."
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#0: the mixed space for a multi-species system is built with basix.ufl.mixed_element and a LIST of elements, then fem.functionspace. Wrong variants: basix.ufl.mixed_element(P1, P1) with the elements as separate positional arguments, and the legacy ufl.MixedElement([P1, P1]). Observed on dolfinx 0.10.0 / basix 0.10.0: basix.ufl.mixed_element(P1, P1) -> TypeError: mixed_element() takes 1 positional argument but 2 were given ufl.MixedElement([P1, P1]) -> AttributeError: module 'ufl' has no attribute 'MixedElement' and the working call basix.ufl.mixed_element([P1, P1]) gives a 2-subspace element. Species may use different degrees -- mixed_element([P1, P2]) is also a valid 2-subspace element -- and when all species share one element the blocked space fem.functionspace(msh, (\"Lagrange\", 1, (2,))) has the same global dof count as the mixed one (162 on an 8x8 unit square). Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "mixed_element() takes 1 positional argument but 2 were given",
+    "mixed_element_rejects_positional_elements=True",
+    "module 'ufl' has no attribute 'MixedElement'",
+    "ufl_mixedelement_is_gone=True",
+    "mixed_element_list_builds_two_subspaces=True",
+    "different_degrees_per_species_allowed=True",
+    "blocked_space_has_the_same_dof_count=True",
+    "VERDICT=mixed_element_takes_one_list_argument"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=positional_or_legacy_spelling_was_accepted"
+  ],
+  "timeout_seconds": 300
+}

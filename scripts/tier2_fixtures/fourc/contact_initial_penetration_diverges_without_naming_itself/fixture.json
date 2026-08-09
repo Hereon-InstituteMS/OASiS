@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::contact#7. The rule holds: on a two-block mortar penalty deck, a gap of 0.1 and an exactly-touching start both converge through all ten steps, while an initial overlap of one tenth of an element aborts with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp before finalising a single step, with a full four-node active set already present at step 0. The residual half of the Signal is confirmed as an ordering rather than a number: the overlapping deck's NOX force norm at Nonlinear Solver Step 0 is more than an order of magnitude above the touching one, because the penalty is already pushing on a closed gap. The diagnostic half is fabricated: no MortarInterface prints 'initial penetration X.X > tolerance', CLAIMED_TOLERANCE_TEXT=0, and INITIAL_PENETRATION_IS_NAMED=no — the log mentions neither penetration nor overlap nor the interface, so nothing in it distinguishes this failure from any other non-convergence. That is what makes it worth a pitfall entry: the cause has to be found by inspecting the geometry, never by reading the error. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GAP=0",
+    "EXIT_TOUCHING=0",
+    "EXIT_OVERLAP=1",
+    "processor 0 finished normally",
+    "GAP_STEPS=10",
+    "TOUCHING_STEPS=10",
+    "OVERLAP_STEPS=0",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "Contact-Normal-Active-Set-Size = 4",
+    "OVERLAP_STARTS_WITH_LARGER_RESIDUAL=yes",
+    "OVERLAP_RESIDUAL_IS_AN_ORDER_LARGER=yes",
+    "INITIAL_PENETRATION_IS_NAMED=no",
+    "CLAIMED_TOLERANCE_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_GAP=1",
+    "EXIT_TOUCHING=1",
+    "EXIT_OVERLAP=0",
+    "OVERLAP_STARTS_WITH_LARGER_RESIDUAL=no",
+    "OVERLAP_RESIDUAL_IS_AN_ORDER_LARGER=no",
+    "INITIAL_PENETRATION_IS_NAMED=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: start the upper block exactly touching instead of overlapping. That arm then converges through all ten steps and exits 0, so the non-convergence abort and the raised step-0 residual both disappear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck 0.9 1.9 > \"$TMP/overlap.yaml\"",
+    "to": "deck 1.0 2.0 > \"$TMP/overlap.yaml\""
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for dune::poisson_mms#0, and a CORRECTION to its wording. Measured 2026-08-06 on dune-fem 2.12.0.2, wall time 4 s. The claim says the DeprecationWarning fires when you IMPORT from dune.fem.function; it does not. A fresh subprocess that only does `from dune.fem.function import integrate` recorded ZERO warnings. The warning is emitted by the CALL, and its text is 'dune.fem.function.integrate is deprecated use dune.fem.integrate instead. New signature is (expr, gridView, order)'. The fixture asserts both halves so the old wording cannot be restored silently. It also pins the part that actually bites: the DEPRECATED function keeps the old positional order and raises TypeError \"integrate() got an unexpected keyword argument 'gridView'\" if you give it the new one, while dune.fem.integrate(expr, gridView=gv, order=3) works. Both returned 0.34375 for the interpolant of x^2 on a 4x4 grid, so the change is a pure rename plus a re-ordering. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 calls the replacement dune.fem.integrate in the slot where the deprecated dune.fem.function.integrate is called. Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'call_warning_count=1', 'call_warns_deprecated=True', 'call_names_the_replacement=True', 'call_states_the_new_signature=True', 'dune_integrate_deprecation_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "poisson_mms",
+  "pitfall_index": 0,
+  "covers": [
+    "poisson_mms:0"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "import_warning_count=0",
+    "import_is_silent=True",
+    "call_warning_count=1",
+    "call_warns_deprecated=True",
+    "call_names_the_replacement=True",
+    "call_states_the_new_signature=True",
+    "deprecated_rejects_new_signature=TypeError",
+    "unexpected keyword argument 'gridView'",
+    "both_routes_agree=True",
+    "dune_integrate_deprecation_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem biharmonic#3, previously flagged 'claim inherited -- not yet empirically verified'. Now measured on skfem 12.0.1: Basis(MeshLine(), ElementLineHermite()).Nbfun == 4 (deflection + slope at each endpoint) against ElementLineP1's 2, and a cantilever Euler-Bernoulli solve reproduces the analytic tip deflection PL^3/(3EI). MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the element assembled into the bending form u.hess[0][0] * v.hess[0][0] becomes ElementLineHermite instead of the C^0 ElementLineP1. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 4 expect_in_output strings; the assembly succeeds, which removes 'linep1_beam_raises=True' and fires the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "biharmonic",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "hermite_nbfun=4",
+    "linep1_nbfun=2",
+    "linep1_beam_raises=True",
+    "hermite_tip_matches_analytic=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

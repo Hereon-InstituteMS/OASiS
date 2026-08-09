@@ -34,9 +34,19 @@ This fixture asserts:
                      petsc_options_prefix='probe_',
                      petsc_options={...})  → OK
   * Same pattern for LinearProblem.
+
+Mutation control: T2_MUTATE=1 issues the three probe calls in their
+CORRECT 0.10 spelling (bcs keyword-only, petsc_options_prefix
+supplied). Nothing raises, so the three ..._raises booleans are
+measured as False and printed as such — no crash, a different and
+correct measurement — and the expectations
+'positional_bcs_raises=True', 'no_prefix_raises=True',
+'no_prefix_diag_has_prefix_name=True' and
+'linear_problem_no_prefix_raises=True' all disappear.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import ufl
@@ -44,6 +54,8 @@ from dolfinx import fem
 from dolfinx import mesh as dmesh
 from dolfinx.fem.petsc import LinearProblem, NonlinearProblem
 from mpi4py import MPI
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -60,7 +72,11 @@ def main() -> int:
     pos_raises = False
     msg_pos = ""
     try:
-        NonlinearProblem(F, u_nl, [])
+        if MUTATE:
+            NonlinearProblem(F, u_nl, bcs=[],
+                             petsc_options_prefix="probe_mut_pos_")
+        else:
+            NonlinearProblem(F, u_nl, [])
     except TypeError as exc:
         msg_pos = str(exc)
         pos_raises = (
@@ -72,8 +88,13 @@ def main() -> int:
     no_prefix_raises = False
     msg_np = ""
     try:
-        NonlinearProblem(F, u_nl, bcs=[],
-                         petsc_options={"ksp_type": "preonly"})
+        if MUTATE:
+            NonlinearProblem(F, u_nl, bcs=[],
+                             petsc_options_prefix="probe_mut_np_",
+                             petsc_options={"ksp_type": "preonly"})
+        else:
+            NonlinearProblem(F, u_nl, bcs=[],
+                             petsc_options={"ksp_type": "preonly"})
     except TypeError as exc:
         msg_np = str(exc)
         no_prefix_raises = (
@@ -99,8 +120,13 @@ def main() -> int:
     # (4) Same pattern for LinearProblem
     lp_no_prefix_raises = False
     try:
-        LinearProblem(a_lin, L_lin, bcs=[],
-                      petsc_options={"ksp_type": "preonly"})
+        if MUTATE:
+            LinearProblem(a_lin, L_lin, bcs=[],
+                          petsc_options_prefix="probe_mut_lp_",
+                          petsc_options={"ksp_type": "preonly"})
+        else:
+            LinearProblem(a_lin, L_lin, bcs=[],
+                          petsc_options={"ksp_type": "preonly"})
     except TypeError as exc:
         lp_no_prefix_raises = (
             "petsc_options_prefix" in str(exc))

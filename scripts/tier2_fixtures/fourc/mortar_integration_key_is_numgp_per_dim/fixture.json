@@ -1,0 +1,55 @@
+{
+  "_comment": "Tier-2 for fourc::constraint#2, and a correction of the key name. Mortar coupling does need its interface integration configured, but there is no INTPOINTS_MORTAR in 4C — writing it is a parse error, 'Could not match this input'. The key is NUMGP_PER_DIM in the MORTAR COUPLING section and it is only consulted when INTTYPE is Elements or Elements_BS. On upstream meshtying3D_elebased: omitting it leaves the default 0, refused with 'Invalid Gauss point number NUMGP_PER_DIM for element-based integration.' from contact/src/4C_contact_meshtying_strategy_factory.cpp; a value of 1 is refused by the same message from a different guard; 7 runs and still meets the deck's 1e-08 result test. The arm worth remembering is INTTYPE Segments with the same NUMGP_PER_DIM still present: the number is not ignored, it is reinterpreted as a triangle rule and the run dies deeper in with 'unknown tri gauss rule' from mortar/src/4C_mortar_integrator.cpp. PARSER_SUGGESTS_THE_RIGHT_KEY=0 records that the parser offers no hint toward the correct spelling. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "constraint",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SHIPPED=0",
+    "EXIT_NOGP=1",
+    "EXIT_GP1=1",
+    "EXIT_GP7=0",
+    "EXIT_SEGMENTS=1",
+    "EXIT_CLAIMEDKEY=1",
+    "processor 0 finished normally",
+    "SHIPPED_RESULT_FAILURES=0",
+    "GP7_RESULT_FAILURES=0",
+    "Invalid Gauss point number NUMGP_PER_DIM for element-based integration.",
+    "4C_contact_meshtying_strategy_factory.cpp",
+    "unknown tri gauss rule",
+    "4C_mortar_integrator.cpp",
+    "Could not match this input",
+    "PARSER_SUGGESTS_THE_RIGHT_KEY=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SHIPPED=1",
+    "EXIT_GP7=1",
+    "EXIT_NOGP=0",
+    "EXIT_GP1=0",
+    "EXIT_SEGMENTS=0",
+    "EXIT_CLAIMEDKEY=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the omission arm: keep NUMGP_PER_DIM. That arm then runs to completion and the Gauss-point refusal disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed '/  NUMGP_PER_DIM: 2/d'                          \"$BASE\" > \"$TMP/nogp.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/nogp.yaml\""
+    },
+    {
+      "note": "remove the pathology from the INTTYPE arm: leave INTTYPE at Elements, where the shipped NUMGP_PER_DIM is valid. The triangle-rule failure then never happens and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  INTTYPE: \"Elements\"/  INTTYPE: \"Segments\"/' \"$BASE\" > \"$TMP/segments.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/segments.yaml\""
+    },
+    {
+      "note": "remove the pathology from the key-name arm: spell the key the way 4C spells it. That arm then parses and runs, so 'Could not match this input' disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  NUMGP_PER_DIM: 2/  INTPOINTS_MORTAR: 2/'    \"$BASE\" > \"$TMP/claimedkey.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/claimedkey.yaml\""
+    }
+  ]
+}

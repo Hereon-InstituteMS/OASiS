@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::fluid#0. <Module type=\"solid\"/> with <solver type=\"fluid\"> gives 'tag \"solver\" (line N) : invalid value for attribute \"type\"' and 'Reading file ...FAILED!' \u2014 the solver factory is module-scoped and is checked before <Material> is read, which the fixture pins by asserting the material name never appears in the output. Positive control: the shipped template, unmodified, which reaches normal termination \u2014 so the message is attributable to the single thing that was changed. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'fluid_module_solver=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "fluid",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "fluid_module_solver=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

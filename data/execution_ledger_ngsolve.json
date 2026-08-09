@@ -1,0 +1,3147 @@
+{
+  "commit": "30ec83105f8c",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "ngsolve",
+      "fixture": "api_inventory_toplevel_vs_submodule",
+      "claim": "helmholtz:2",
+      "claim_text_sha": "da681b79b4d6c6d9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "fem_missing=[]",
+          "krylov_missing=[]",
+          "solvers_missing=[]",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "arnoldi_shift_zero_singular",
+      "claim": "maxwell:5",
+      "claim_text_sha": "ca87d932cb2b66db",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "UmfpackInverse",
+          "matrix is singular"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "cd_downwind_flux_swap",
+      "claim": "convection_diffusion:3",
+      "claim_text_sha": "31a01d1b082a071f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.2,
+        "missing": [
+          "swapped_has_positive_growth_everywhere=True",
+          "swapped_growth_rate_increases_under_refinement=True",
+          "unconditional_because_the_continuous_solution_grows=True",
+          "swapped_grows_without_bound=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "cd_other_omitted_jump_vanishes",
+      "claim": "convection_diffusion:1",
+      "claim_text_sha": "2b94f708e050d265",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "broken_matrix_has_no_entries_at_all=True",
+          "broken_form_has_no_inter_element_coupling=True",
+          "broken_scheme_is_just_a_per_element_fit=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "cd_penalty_coercivity_and_cond",
+      "claim": "convection_diffusion:4",
+      "claim_text_sha": "b25cab44c8897e3c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "cond_grows_linearly_in_alpha=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "cd_skeleton_flag_required_at_iadd",
+      "claim": "convection_diffusion:2",
+      "claim_text_sha": "060cebade39408f1",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "plain_dx_raised=True",
+          "plain_dx_message_literal=True",
+          "raised_at_iadd_not_assemble=True",
+          "assemble_never_reached=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_contactboundary_exists",
+      "claim": "contact:5",
+      "claim_text_sha": "61f1e7eace8879c0",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "addintegrator_with_measure_raises=True",
+          "addintegrator_message_literal=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_displacement_criterion_hides_gap",
+      "claim": "contact:6",
+      "claim_text_sha": "b749e0cb3e08d008",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "gap_violation_in_claimed_1_to_5_pct_band=True",
+          "gap_criterion_fires=True",
+          "displacement_ok_but_gap_violated=True",
+          "gap_verdict_changed_between_runs=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_gap_comparison_rejected_at_construction",
+      "claim": "contact:2",
+      "claim_text_sha": "90d4df0a578fa619",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "lt_raises=True",
+          "lt_message_literal=True",
+          "all_four_orderings_raise=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_normal_orientation_sign",
+      "claim": "contact:3",
+      "claim_text_sha": "992224e08a18cb2d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "flipped_sign_pushes_in=True",
+          "flipped_penetration_grows_with_gamma=True",
+          "flipped_growth_at_least_5x_per_decade=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_penalty_gamma_both_ends",
+      "claim": "contact:0",
+      "claim_text_sha": "cfa5386325bab908",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "high_gamma_penetration_under_5pct_of_edge=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_penalty_gap_floor_vs_active_set",
+      "claim": "contact:1",
+      "claim_text_sha": "f04c6f6c2196a376",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "active_set_violation_is_exactly_zero=True",
+          "active_set_beats_every_penalty_gamma=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "contact_tangential_penalty_removes_slide_mode",
+      "claim": "contact:4",
+      "claim_text_sha": "f78ce438ad2b3f5f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "tangential_slide_mode_costs_no_energy=True",
+          "null_mode_is_tangential_translation=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "convection_diffusion_dgjumps_required",
+      "claim": "convection_diffusion:0",
+      "claim_text_sha": "4f0cf3a839b4f97f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "default_assemble_raises=True",
+          "default_diag_has_illegal_dnums=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_abs_on_basevector_rejected",
+      "claim": "dg_methods:7",
+      "claim_text_sha": "658a9462aa246163",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "abs_raises_typeerror=True",
+          "abs_message_literal=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_abs_on_coefficientfunction_rejected",
+      "claim": "dg_methods:9",
+      "claim_text_sha": "6aabce52389ef5fa",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "bare_cf_raises=True",
+          "bare_cf_message_literal=True",
+          "all_three_shapes_give_same_literal=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_advection_breaks_symmetry_cg_silent",
+      "claim": "dg_methods:6",
+      "claim_text_sha": "798dd193357ba757",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:23+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "advection_breaks_symmetry=True",
+          "cg_exhausted_its_iteration_cap=True",
+          "cg_relative_error_exceeds_the_solution=True",
+          "cg_fails_silently_not_loudly=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_central_flux_loses_the_dt_limit",
+      "claim": "dg_methods:4",
+      "claim_text_sha": "ac1c77deb1ac8ef2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:24+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.1,
+        "missing": [
+          "upwind_more_damped_on_every_mesh=True",
+          "upwind_admits_larger_dt_on_every_mesh=True",
+          "dt_penalty_grows_under_refinement=True",
+          "central_grows_at_this_dt=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_dgjumps_allocates_coupling",
+      "claim": "dg_methods:0",
+      "claim_text_sha": "806cbaac8f395511",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "plain_form_built_without_error=True",
+          "plain_assemble_raised=True",
+          "plain_msg_has_illegal_dnums=True",
+          "plain_msg_has_assemble_tail=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_facet_term_over_plain_dx_rejected",
+      "claim": "dg_methods:2",
+      "claim_text_sha": "e851d637765c1259",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "plain_dx_raised=True",
+          "plain_dx_message_literal=True",
+          "raised_at_iadd_not_assemble=True",
+          "assemble_never_reached=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_no_tanh_but_sinh_cosh_exist",
+      "claim": "dg_methods:8",
+      "claim_text_sha": "b992ab16635705bc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "tanh_call_raises_nameerror=True",
+          "tanh_nameerror_literal=True",
+          "nameerror_names_tanh=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_other_is_the_only_neighbour_spelling",
+      "claim": "dg_methods:1",
+      "claim_text_sha": "da233e47de359630",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "neighbour_raises_attributeerror=True",
+          "msg_names_proxyfunction=True",
+          "msg_says_no_attribute_neighbour=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_sip_penalty_coercivity_threshold",
+      "claim": "dg_methods:3",
+      "claim_text_sha": "5e226b05e0f513d0",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "mesh0_loses_coercivity_for_small_alpha=True",
+          "mesh1_loses_coercivity_for_small_alpha=True",
+          "cond_grows_linearly_in_alpha=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dg_sip_penalty_still_needed_at_high_pe",
+      "claim": "dg_methods:5",
+      "claim_text_sha": "57edc046a9b26781",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:31+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "dg_alpha0_goes_negative=True",
+          "alpha0_undershoot_exceeds_the_whole_field=True",
+          "alpha0_is_not_small_amplitude_ringing=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "dirichlet_case_mismatch_silent",
+      "claim": "poisson:0",
+      "claim_text_sha": "2fb852a8409b9d0e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "wrong_case_n_free=8",
+          "wrong_case_n_dirichlet=0"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "eigen_dirichlet_laplacian_analytic",
+      "claim": "eigenvalue:2",
+      "claim_text_sha": "9f66cfd70aea0b41",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "all_five_within_half_a_percent=True",
+          "degeneracy_resolved_as_two_modes=True",
+          "first_mode_is_2pi2=True",
+          "tolerance_discriminates=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "eigen_same_matrix_twice_singular",
+      "claim": "eigenvalue:3",
+      "claim_text_sha": "d19674e088d3d6f7",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "same_matrix_twice_raises=NgException",
+          "same_matrix_message_mentions_factorization=True",
+          "no_identity_fallback_happened=True",
+          "pencil_is_exactly_zero_at_shift_one=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "eigen_shift_zero_depends_on_kernel_size",
+      "claim": "eigenvalue:0",
+      "claim_text_sha": "1d8739eb5edf8287",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:35+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "hcurl_shift0_names_umfpackinverse=True",
+          "failure_is_the_shift_not_the_operator=True",
+          "kernel_alone_does_not_predict_the_failure=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "elasticity_body_force_shape_mismatch",
+      "claim": "linear_elasticity:1",
+      "claim_text_sha": "fa81f4fa741d4bd8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:36+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "scalar_gives_the_symboliclfi_message=True",
+          "scalar_raised_at_iadd=True",
+          "neither_reached_assemble=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "elasticity_components_tuple_view",
+      "claim": "linear_elasticity:2",
+      "claim_text_sha": "6d270142e5dab732",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "component_is_a_view_not_a_copy=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "elasticity_matrixvalued_symmetric_ndof",
+      "claim": "linear_elasticity:3",
+      "claim_text_sha": "59d58272333f8752",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:37+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "2d_sym_is_half_d_dplus1_times_scalar=True",
+          "3d_sym_is_half_d_dplus1_times_scalar=True",
+          "symmetric_space_cannot_hold_the_skew_part=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "elasticity_mms_convergence",
+      "claim": "linear_elasticity:98",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "h1_curl_operator_unknown",
+      "claim": "maxwell:7",
+      "claim_text_sha": "d80ecf796bb69f08",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "does not exist for H1"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hcurl_grad_mismatch",
+      "claim": "maxwell:8",
+      "claim_text_sha": "d6db6ff8686ad6f9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "SymbolicBFI",
+          "scalar-valued"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hcurl_singular_without_nograds",
+      "claim": "maxwell:0",
+      "claim_text_sha": "24950405bd312539",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:41+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "UmfpackInverse",
+          "matrix is singular"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_clamped_dwdn_multiplier",
+      "claim": "hdivdiv:1",
+      "claim_text_sha": "1cd35b66ac98a500",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "no_dwdn_term_3x_to_4x_clamped=True",
+          "no_dwdn_term_is_simply_supported=True",
+          "with_dwdn_term_reduces_bnd_dwdn=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_divdiv_operator_absent",
+      "claim": "hdivdiv:7",
+      "claim_text_sha": "a454dcd50e3fe0d3",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "divdiv_expression_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_hhj_order_optimal_eoc",
+      "claim": "hdivdiv:3",
+      "claim_text_sha": "5b1ddd7af60a7811",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "mistyped_moment_space_l2_gt_1e6=True",
+          "mistyped_moment_space_error_grows_under_refinement=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_moment_space_conformity",
+      "claim": "hdivdiv:0",
+      "claim_text_sha": "c296cc3c7f3fc18c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "Trace of non-matrix called",
+          "vectorh1_moment_space_raises=True",
+          "wrong_moment_space_wc_gt_1e6=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_navier_reference_value",
+      "claim": "hdivdiv:6",
+      "claim_text_sha": "94552cb2e8b0cf2b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "shipped_template_low_by_gt_70pct=True",
+          "shipped_template_within_5pct_of_navier=False",
+          "defects_are_multiplicative=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_regge_3d_hcurlcurl",
+      "claim": "hdivdiv:4",
+      "claim_text_sha": "02d675ca0149d65d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.8,
+        "missing": [
+          "ported_2d_form_on_3d_raises=True",
+          "Dimensions don't match",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_shear_locking_thin_plate",
+      "claim": "hdivdiv:5",
+      "claim_text_sha": "e63ec493e4312cc8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "disp_only_locking_factor_in_10_1000=True",
+          "locking_grows_with_h_over_t=True",
+          "hhj_beats_disp_only=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hdivdiv_simply_supported_mnn_essential",
+      "claim": "hdivdiv:2",
+      "claim_text_sha": "3dd718ca685044bb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "no_mnn_dirichlet_more_than_2x_too_small=True",
+          "no_mnn_dirichlet_leaves_bnd_mnn_nonzero=True",
+          "mnn_dirichlet_makes_plate_softer=True",
+          "mnn_dirichlet_removes_free_dofs=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "heat_dirichlet_two_step_residual",
+      "claim": "heat:3",
+      "claim_text_sha": "d93767b7ced96d1f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "one_step_error_order_one=True",
+          "one_step_boundary_values_lost=True",
+          "error_ratio_over_1e10=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "heat_nonsym_kwarg_warning",
+      "claim": "heat:0",
+      "claim_text_sha": "f29d21e41ac97528",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:52+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": [
+          "kwarg 'nonsym'",
+          "undocumented flags option",
+          "BilinearForm"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "heat_refine_autoupdates_but_not_data",
+      "claim": "heat:2",
+      "claim_text_sha": "cd49ed631a8afb40",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "old_dof_values_preserved=True",
+          "refine_alone_buys_no_accuracy=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "heat_summatrix_inverse_returns_none",
+      "claim": "heat:1",
+      "claim_text_sha": "63052d8b54577360",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "BaseMatrix::InverseMatrix not available",
+          "sum_type_name=SumMatrix",
+          "sum_inverse_returns_none=True",
+          "DynamicBaseScalVec AssignTo not available"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "helmholtz_cavity_shift_near_analytic",
+      "claim": "helmholtz:5",
+      "claim_text_sha": "15ca8ed555505650",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.6,
+        "missing": [
+          "shift0_names_umfpackinverse=True",
+          "exception_is_the_usable_signal=True",
+          "only_shift_zero_fails=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "helmholtz_complex_on_real_fespace",
+      "claim": "helmholtz:0",
+      "claim_text_sha": "49e0f1ffc43c4c45",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "real Evaluate called for complex",
+          "ScaleCF"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "hyperelasticity_newton_maxit_kwarg",
+      "claim": "hyperelasticity:0",
+      "claim_text_sha": "3a8b078a216426aa",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "newton_maxits_raises_typeerror=True",
+          "newton_maxits_diag_has_maxits=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mhd_divergence_free_b_hdiv_vs_h1",
+      "claim": "mhd:5",
+      "claim_text_sha": "1a458f1b127bd509",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:20:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "hdiv_divergence_orders_below_vectorh1=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mhd_graddiv_stabilisation_on_velocity",
+      "claim": "mhd:6",
+      "claim_text_sha": "390ed8d90774cb4a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "tau_equals_nu_barely_helps=True",
+          "divergence_falls_monotonically_in_tau=True",
+          "velocity_moves_further_from_unstabilised_as_tau_grows=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mhd_hartmann_core_right_wall_shear_wrong",
+      "claim": "mhd:2",
+      "claim_text_sha": "7a932198fb8cb780",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.3,
+        "missing": [
+          "core_exact_on_every_mesh=True",
+          "core_exact_on_the_coarsest_mesh=True",
+          "core_is_no_evidence_about_the_layer=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mhd_hartmann_layer_needs_h_over_ha",
+      "claim": "mhd:3",
+      "claim_text_sha": "fc5244756ce0ee2e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 13.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "L_over_10Ha_rule_gives_under_one_percent=True",
+          "scaled_h_error_does_not_grow_with_Ha=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mhd_scalar_linearform_integrand",
+      "claim": "mhd:7",
+      "claim_text_sha": "685d9e3eb2ee65c9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "integrand_is_vector_valued=True",
+          "vector_integrand_raised=True",
+          "message_literal=True",
+          "raised_at_iadd=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mp_mispaired_direct_solver_singular",
+      "claim": "mixed_poisson:2",
+      "claim_text_sha": "720e67555ab5748f",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "UmfpackInverse: Numeric factorization failed",
+          "matrix is singular",
+          "mispaired_inverse_raises_ngexception=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mp_other_only_inside_skeleton_assembly",
+      "claim": "mixed_poisson:1",
+      "claim_text_sha": "84cb6c49690d6686",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:19+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "other mir not set",
+          "standalone_integrate_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "mp_rt_flag_l2_partner_pairing",
+      "claim": "mixed_poisson:0",
+      "claim_text_sha": "d1c976b19c822150",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 3.2,
+        "missing": [
+          "mispaired_does_not_converge=True",
+          "mispaired_error_over_50pct=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "multidim_gridfunction_vecs",
+      "claim": "eigenvalue:1",
+      "claim_text_sha": "ab601606c2a66d12",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "n_vecs=4"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nlelast_newton_returns_status_first",
+      "claim": "nonlinear_elasticity:8",
+      "claim_text_sha": "76c71629369c79d2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "hard_first_entry_is_minus_one=True",
+          "misreading_reports_iters_minus_1_on_a_failed_solve=True",
+          "real_warning_present_on_the_hard_solve=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_cauchy_pushforward",
+      "claim": "nonlinear_elasticity:5",
+      "claim_text_sha": "c137559c95f91363",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "wrong_form_reldiff_gt_0p1=True",
+          "wrong_is_symmetric=False",
+          "wrong_symmetry_defect_gt_1e-3=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_dampfactor_rescue",
+      "claim": "nonlinear_elasticity:6",
+      "claim_text_sha": "fd939e3ccd90457d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "UmfpackInverse: Numeric factorization failed",
+          "undamped_one_shot_breaks=True",
+          "undamped_still_breaks_with_maxit_300=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_detf_negative_guess",
+      "claim": "nonlinear_elasticity:0",
+      "claim_text_sha": "e30448c837c1bbfc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "crushed_mean_detF_le_zero=True",
+          "crushed_inverted_area_fraction_is_one=True",
+          "crushed_energy_is_nan=True",
+          "crushed_residual_has_nan=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_incompressible_locking",
+      "claim": "nonlinear_elasticity:4",
+      "claim_text_sha": "1fa23741bff1cb69",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:30+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.1,
+        "missing": [
+          "locked_ratio_lt_0p6=True",
+          "order2_pure_beats_order1=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_load_step_warm_start",
+      "claim": "nonlinear_elasticity:1",
+      "claim_text_sha": "4a38dc746cba72f5",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 3.0,
+        "missing": [
+          "UmfpackInverse: Numeric factorization failed",
+          "cold_restart_broke_before_full_load=True",
+          "cold_iteration_count_grows=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_neohooke_minus_d",
+      "claim": "nonlinear_elasticity:2",
+      "claim_text_sha": "5d2790b517443aa4",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "wrong_energy_at_identity_nonzero=True",
+          "wrong_energy_equals_half_mu_d_area=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_variation_vs_handcoded_tangent",
+      "claim": "nonlinear_elasticity:3",
+      "claim_text_sha": "435f373259afe1ee",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:39+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "mismatched_tangent_iters_ge_4x_exact=True",
+          "mismatched_tangent_ratio_constant_linear=True",
+          "wrongP_solution_is_wrong=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "nonlinear_elasticity_vtk_proxyfunction_stress",
+      "claim": "nonlinear_elasticity:7",
+      "claim_text_sha": "8538e7517892d164",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "cannot evaluate ProxyFunction without userdata",
+          "proxy_stress_raises_userdata_error=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_convection_form_energy_and_the_half_factor",
+      "claim": "time_dependent_ns:1",
+      "claim_text_sha": "9d0220685c6539e8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.8,
+        "missing": [
+          "rotational_drift_at_least_100x_smaller=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_dirichlet_wiped_not_drifted",
+      "claim": "time_dependent_ns:2",
+      "claim_text_sha": "605f05501f491783",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "naive_loses_the_bc=True",
+          "boundary_condition_effectively_absent=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_imex_cfl_blowup",
+      "claim": "time_dependent_ns:0",
+      "claim_text_sha": "b278aa635dfec0ae",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "below_0p2_all_decay=True",
+          "between_0p2_and_0p5_energy_grows_10x=True",
+          "above_0p5_all_leave_double_precision=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_pressure_nullspace_umfpack_silent",
+      "claim": "time_dependent_ns:4",
+      "claim_text_sha": "11efb89f614e7364",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "exactly_one_zero_mode=True",
+          "nullmode_is_the_constant_pressure=True",
+          "pinning_removes_exactly_one_dof=True",
+          "pressures_differ_by_a_constant=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_schafer_turek_drag_lift",
+      "claim": "time_dependent_ns:6",
+      "claim_text_sha": "ae056985b87ed930",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:21:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 56.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 17.3,
+        "missing": [
+          "finest_cd_inside_published_bounds=True",
+          "finest_cl_inside_published_bounds=True",
+          "benchmark_reproduced=True",
+          "drag_alone_would_pass_the_coarse_mesh=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "ns_taylor_hood_inf_sup_vs_p1p1",
+      "claim": "time_dependent_ns:5",
+      "claim_text_sha": "609c832651c0b6b9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:22:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.0,
+        "missing": [
+          "p1p1_has_spurious_pressure_modes=True",
+          "taylor_hood_beta_beats_p1p1_by_5x_everywhere=True",
+          "p1p1_beta_does_not_settle=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_allen_cahn_mass_drift",
+      "claim": "phase_field:0",
+      "claim_text_sha": "6f1a2495e014e60c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "ac_mass_drift_gt_1pct=True",
+          "ac_mass_monotone_decreasing=True",
+          "ch_conserves_better_than_ac_by_gt_1e10=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_cahn_hilliard_hesse_nonconforming",
+      "claim": "phase_field:7",
+      "claim_text_sha": "916cad4fc571179c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.4,
+        "missing": [
+          "hesse_umfpack_raised=True",
+          "UmfpackInverse: Numeric factorization failed.",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_interface_underresolved",
+      "claim": "phase_field:1",
+      "claim_text_sha": "eec0f1529d568fba",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "underresolved_overshoot_gt_10pct=True",
+          "underresolved_undershoot_gt_10pct=True",
+          "overshoot_grows_with_h_over_eps=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_irreversibility_healing",
+      "claim": "phase_field:3",
+      "claim_text_sha": "b2918498019a955e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "no_projection_damage_decreased_on_unload=True",
+          "no_projection_final_dmax_below_half_peak=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_l0_vs_mesh_refinement",
+      "claim": "phase_field:6",
+      "claim_text_sha": "b0310b4ceb8973c9",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:09+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.3,
+        "missing": [
+          "peak_matches_analytic_l0_0p10_maxh0p1=True",
+          "refining_h_at_fixed_l0_changes_peak_lt_1pct=True",
+          "halving_l0_changes_peak_gt_20pct=True",
+          "peak_ratio_matches_inverse_sqrt_l0_within_2pct=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_miehe_split_compression",
+      "claim": "phase_field:5",
+      "claim_text_sha": "e1de4defcc5fe302",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "nosplit_compression_dmax_gt_1em3=True",
+          "nosplit_compression_equals_tension=True",
+          "voldev_reduces_compression_vs_nosplit=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_semi_implicit_vs_newton",
+      "claim": "phase_field:2",
+      "claim_text_sha": "2584d66479642982",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:14+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.9,
+        "missing": [
+          "newton_iters_per_step_gt_2=True",
+          "newton_needs_at_least_3x_the_linear_solves=True",
+          "bigdt_newton_stayed_bounded=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "phase_field_staggered_vs_monolithic",
+      "claim": "phase_field:4",
+      "claim_text_sha": "409731fe737f8d7a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "monolithic_cold_start_converged=False",
+          "monolithic_cold_start_dmax_exceeds_1=True",
+          "monolithic_warning_emitted=True",
+          "Newton might not converge! Error ="
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_consistent_tangent",
+      "claim": "plasticity:6",
+      "claim_text_sha": "38411d078c536d91",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "continuum_hits_iteration_cap=True",
+          "continuum_still_above_tol=True",
+          "continuum_ratio_constant_linear=True",
+          "continuum_drop_per_iter_faster_than_factor_2=False"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_internal_var_quadrature_space",
+      "claim": "plasticity:3",
+      "claim_text_sha": "7dbf44115c697285",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:20+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "l2_dofs_per_element=10",
+          "l2_ndof_equals_ne_times_quadpoints=False",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_load_step_divergence_signature",
+      "claim": "plasticity:4",
+      "claim_text_sha": "395a4077ccd0d4ba",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:21+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.3,
+        "missing": [
+          "oneshot_first_element=-1",
+          "oneshot_diverged_at_every_maxit=True",
+          "oneshot_second_element_equals_maxit=True",
+          "raising_maxit_does_not_help=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_multiplicative_vs_additive",
+      "claim": "plasticity:5",
+      "claim_text_sha": "60dfc062dff2734b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:26+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "reldiff_at_20pct_strain_gt_10pct=True",
+          "reldiff_monotonically_increasing=True",
+          "gap_is_order_inverse_detF=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_newtoncf_in_fem_submodule",
+      "claim": "plasticity:0",
+      "claim_text_sha": "f9afa5cea4023ee2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:27+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "submodule_NewtonCF_callable=True",
+          "submodule_MinimizationCF_callable=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_post_yield_slope",
+      "claim": "plasticity:1",
+      "claim_text_sha": "a04e49abf6fd3acf",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 5.4,
+        "missing": [
+          "elastic_only_post_yield_slope_equals_E=True",
+          "elastic_only_overshoots_yield_by_gt_3x=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "plasticity_return_map_newton",
+      "claim": "plasticity:2",
+      "claim_text_sha": "7b33a9a420809341",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:38+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 2.1,
+        "missing": [
+          "returns_nan=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "pml_radial_requires_origin",
+      "claim": "helmholtz:1",
+      "claim_text_sha": "08aeb7641625001b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "missing_origin_raises_typeerror=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "poisson_dirichlet_lifting_required",
+      "claim": "poisson:2",
+      "claim_text_sha": "863e587b2a943929",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:43+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "unlifted_residual_is_order_one=True",
+          "interior_solutions_differ=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "poisson_max_vec_is_not_pointwise_max",
+      "claim": "poisson:1",
+      "claim_text_sha": "c56f8afa330be4a1",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:44+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "the_two_numbers_differ_at_every_order=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "poisson_mms_convergence",
+      "claim": "poisson:99",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:45+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "poisson_vtk_subdivision_cell_counts",
+      "claim": "poisson:4",
+      "claim_text_sha": "e145337b9e9d4da8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:46+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "cells_per_element=[1, 3, 10, 36]",
+          "matches_triangular_formula=True",
+          "is_1_3_10_36=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "poisson_vtkoutput_writes_vtu_linear_cells",
+      "claim": "poisson:3",
+      "claim_text_sha": "83bfe9df1e0aabf2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "subdivision2_also_emits_quads=True",
+          "claim_all_triangles_holds_only_at_subdivision0=True",
+          "subdivision_adds_sample_points=True",
+          "p2_enrichment_reaches_the_file_only_via_subdivision=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_block_matrix_is_indefinite",
+      "claim": "stokes:0",
+      "claim_text_sha": "52a337ce0b03b1ae",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "cg_exhausted_its_budget=True",
+          "cg_failure_is_silent=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_compound_space_tnt",
+      "claim": "stokes:1",
+      "claim_text_sha": "69ae6d51c82a1839",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:49+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "u_type=ProxyFunction"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_direct_solver_names_raise_two_types",
+      "claim": "stokes:4",
+      "claim_text_sha": "20e53deac7556609",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:50+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "naive_loop_is_broken=True",
+          "chosen_solver_actually_solves=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_mms_convergence",
+      "claim": "stokes:99",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:51+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 1.1,
+        "missing": [
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_plus_p_divv_flips_the_pressure",
+      "claim": "stokes:5",
+      "claim_text_sha": "e662b613d7203481",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "plus_convention_has_the_wrong_sign=True",
+          "pressures_are_exact_negatives=True",
+          "both_valid_is_true_of_velocity_only=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "stokes_pressure_nullspace_is_silent",
+      "claim": "stokes:2",
+      "claim_text_sha": "f1f2feeb82a2d124",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "open_flow_pressure_is_unique=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_ale_vs_remesh",
+      "claim": "surface_pde:4",
+      "claim_text_sha": "17a73e7119911469",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "remesh_ndof_changed=True",
+          "remesh_raw_dof_copy_raised=True",
+          "BaseVector::Set: size of me =",
+          "remesh_cross_mesh_set_lost_everything=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_beltrami_constant_mode",
+      "claim": "surface_pde:2",
+      "claim_text_sha": "5efb6289d6b41db6",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:56+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.7,
+        "missing": [
+          "noreg_umfpack_linf_gt_1e6=True",
+          "noreg_sparsecholesky_linf_gt_1e6=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_curve_order_area",
+      "claim": "surface_pde:3",
+      "claim_text_sha": "4528e0e89dc43fac",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:58+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.8,
+        "missing": [
+          "fresh_mesh_curve_order=1",
+          "nocurve_rel_err_gt_1pct=True",
+          "curve1_area_bitwise_identical_to_nocurve=True",
+          "curve2_beats_nocurve_by_gt_10x=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_ds_vs_dx_trace",
+      "claim": "surface_pde:0",
+      "claim_text_sha": "106e8f402b950eba",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:23:59+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "dx_form_raised=True at_stage=iadd",
+          "Trialfunction does not support VOL-forms, maybe a Trace() operator is missing, type = gradboundary",
+          "dx_msg_has_VOL_forms=True",
+          "dx_msg_has_gradboundary=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_grad_already_tangential",
+      "claim": "surface_pde:1",
+      "claim_text_sha": "19295cd180f788ee",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:00+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.6,
+        "missing": [
+          "proj_integrand_strictly_larger=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "surface_pde_occ_solid_vs_faces",
+      "claim": "surface_pde:5",
+      "claim_text_sha": "69e7ad6f66c8245d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:01+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.5,
+        "missing": [
+          "solid_geo_has_volume_elements=True",
+          "solid_geo_dx_is_ball_volume=True",
+          "solid_geo_plain_h1_bigger_than_surface=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_gridfunction_name_setter",
+      "claim": "thermal_structural:5",
+      "claim_text_sha": "4939dcd62a72f26e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:02+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "displacement_rename_raises=True",
+          "property of 'GridFunction' object has no setter",
+          "temperature_rename_raises=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_isotropic_eps_th",
+      "claim": "thermal_structural:0",
+      "claim_text_sha": "5d7f418ff24d5386",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "wrong_tensor_expansion_anisotropic=True",
+          "wrong_tensor_contracts_transversely=True",
+          "wrong_tensor_misses_uniform_strain=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_set_overwrites_region",
+      "claim": "thermal_structural:1",
+      "claim_text_sha": "cb8ea443957b8511",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:04+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "two_call_template_temperature_is_all_zero=True",
+          "two_call_template_displacement_is_zero=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_three_k_rhs_factor",
+      "claim": "thermal_structural:2",
+      "claim_text_sha": "a45e9683ff324987",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "wrong_factor_matches_1_minus_2nu_law=True",
+          "wrong_factor_misses_exact_expansion=True",
+          "error_factor_matches_closed_form=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_twoway_picard",
+      "claim": "thermal_structural:3",
+      "claim_text_sha": "d5e96486627359b2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "one_way_sweeps=1",
+          "one_way_error_gt_5pct=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "thermal_structural_zero_rhs_linearform",
+      "claim": "thermal_structural:4",
+      "claim_text_sha": "a3b57bf1523061d0",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "zero_integrand_raises=True",
+          "exc_type=NgException",
+          "Linearform must have TestFunction",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "vector_h1_vs_h1_dim2_equivalence",
+      "claim": "linear_elasticity:0",
+      "claim_text_sha": "35a451d0eb427aed",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "h1_dim2_type=H1",
+          "FORBIDDEN:ERROR"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "ngsolve",
+      "fixture": "vector_source_on_scalar_form",
+      "claim": "poisson:92",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:24:08+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 1,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 2,
+        "seconds": 0.4,
+        "missing": [
+          "NgException",
+          "SymbolicLFI",
+          "scalar-valued"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}

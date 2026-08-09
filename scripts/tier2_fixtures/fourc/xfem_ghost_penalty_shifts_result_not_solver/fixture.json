@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#1 and a FALSIFICATION of its Signal. The entry claimed the linear solver fails with 'Belos: condition number > 1e16' or 'solver diverged after 0 iterations'. Neither string is emitted by 4C or by any Trilinos library it links. On the upstream Fluid_XFEM deck xfluid_ls_neumann_inflow_stab, GHOST_PENALTY_STAB: false runs the full three steps, reaches 'Checking results of 4 tests', and fails three of them -- pressure moves by 7.2e-4 -- while the solver reports nothing at all. Ghost penalty is therefore an accuracy switch whose absence is silent, not a solver-robustness switch that announces itself. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 1,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITHGP=0",
+    "EXIT_NOGP=1",
+    "processor 0 finished normally",
+    "WITHGP_RESULT_FAILURES=0",
+    "NOGP_REACHED_RESULT_TEST=1",
+    "NOGP_RESULT_FAILURES=3",
+    "is WRONG --> actresult=",
+    "CLAIMED_SOLVER_TEXT=0",
+    "SOLVER_ABORTED=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave ghost-penalty stabilisation on. The second arm becomes the baseline, exits 0 and matches every result test, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/GHOST_PENALTY_STAB: true/GHOST_PENALTY_STAB: false/' \"$BASE\" > \"$TMP/nogp.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nogp.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHGP=1",
+    "EXIT_NOGP=0",
+    "NOGP_RESULT_FAILURES=0"
+  ]
+}

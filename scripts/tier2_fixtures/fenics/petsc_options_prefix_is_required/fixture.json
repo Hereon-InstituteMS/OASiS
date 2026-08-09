@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics heat#11: LinearProblem and NonlinearProblem take petsc_options_prefix as a REQUIRED keyword-only argument in dolfinx 0.10, and there is no dolfinx.nls.petsc.NewtonSolver path around it. \"Traceback\" is deliberately NOT in this fixture's forbid_in_output. The TypeError leaves a half-constructed LinearProblem / NonlinearProblem whose __del__ then raises AttributeError on `self._solver` / `self._snes`, and Python prints that as an ignored-exception traceback on stderr. That noise is dolfinx's, not the fixture's, and forbidding it would fail a fixture that is working. Mutation control: T2_MUTATE=1 passes the prefix; construction succeeds. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 11,
+  "mode": "python",
+  "expect_in_output": [
+    "LinearProblem_without_prefix_raised=True",
+    "NonlinearProblem_without_prefix_raised=True",
+    "missing 1 required keyword-only argument: 'petsc_options_prefix'",
+    "VERDICT=petsc_options_prefix_is_required_on_both"
+  ],
+  "forbid_in_output": [
+    "VERDICT=prefix_optional"
+  ]
+}

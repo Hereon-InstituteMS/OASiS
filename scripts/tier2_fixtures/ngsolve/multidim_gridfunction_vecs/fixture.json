@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for NGSolve eigenvalue#1: GridFunction(fes, multidim=n) allocates n independent vectors, accessed via gfu.vecs (a list-like sequence), not via gfu.mdcomponents (which does NOT exist). Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for NGSolve eigenvalue#1: GridFunction(fes, multidim=n) allocates n independent vectors, accessed via gfu.vecs (a list-like sequence), not via gfu.mdcomponents (which does NOT exist). Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): T2_MUTATE=1 drops the multidim=4 argument, constructing GridFunction(fes) instead of GridFunction(fes, multidim=4) -- the omission that removes the multi-vector allocation the claim is about. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 3 expect_in_output strings; under T2_MUTATE=1 only one vector is allocated (n_vecs=1), so it removes 'n_vecs=4' and the fixture goes red. 'vecs_present=True' and 'mdcomponents_present=False' are properties of the binding rather than of the allocation and survive by design. Re-run: T2_MUTATE=1 python source.py",
   "backend": "ngsolve",
   "physics": "eigenvalue",
   "pitfall_index": 1,

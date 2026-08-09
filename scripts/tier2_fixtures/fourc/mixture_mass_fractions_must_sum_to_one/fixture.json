@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::mixture#0. The sum-to-one rule holds but the entry got both the quantity and the remedy wrong. The input is MASSFRAC — mass fractions (UPSTREAM_USES_VOLFRAC=0) — and no pre-processing check is needed because MIX_Rule_Simple validates it itself: on upstream mixture_elast_hyper_dynamic.4C.yaml, changing the fractions to sum to 0.8 or to 1.3 aborts from SimpleMixtureRule::setup() with 'Mass fractions at element 0 sum to <value> instead of 1.0, which is unphysical.' in src/mixture/src/4C_mixture_rule_simple.cpp, exit 1, in both directions. No stress is ever evaluated, so the predicted 'total > sum of constituents' artefact cannot occur. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "mixture",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SUM1=0",
+    "EXIT_UNDER=1",
+    "EXIT_OVER=1",
+    "processor 0 finished normally",
+    "Mass fractions at element 0 sum to 0.8 instead of 1.0, which is unphysical.",
+    "4C_mixture_rule_simple.cpp",
+    "CHECKED_IN_SIMPLE_MIXTURE_RULE_SETUP=1",
+    "instead of 1.0, which is unphysical.",
+    "UPSTREAM_USES_MASSFRAC=1",
+    "UPSTREAM_USES_VOLFRAC=0",
+    "UNDER_RESULT_TESTS_PERFORMED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SUM1=1",
+    "EXIT_UNDER=0",
+    "EXIT_OVER=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the under-sum arm: leave the fractions summing to one. The rule's own check passes, EXIT_UNDER becomes 0 and the diagnostic vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/        constant: \\[0.4, 0.6\\]/        constant: [0.4, 0.4]/' \"$BASE\" > \"$TMP/under.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/under.yaml\""
+    },
+    {
+      "note": "remove the pathology from the over-sum arm: leave the fractions summing to one. EXIT_OVER becomes 0 and the unphysical-sum line vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/        constant: \\[0.4, 0.6\\]/        constant: [0.7, 0.6]/' \"$BASE\" > \"$TMP/over.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/over.yaml\""
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "ngsolve contact#6 (checking the displacement residual alone can return with the contact gap still violated). Run 2026-08-06 on NGSolve 6.2.2604: elastic block E=1000 nu=0.3 on maxh 0.2, fixed on top, body force 150 onto a floor 0.01 below, penalty contact through ngsolve.solvers.Newton at gamma=1e4. Newton returns status 0 in 3 iterations, and one further Newton step taken by hand from the converged state gives a relative increment of 7.8e-17 -- ten decades under the claim's 1e-6, so the displacement criterion is met with enormous margin. At that same state the claim's own expression, max over the boundary of min(gap,0) with gap = u_y+G0, is 5.96e-3, which is 2.98% of an element edge and sits inside the 1-5% band the claim names. The gap check fires there; the displacement check does not. Raising gamma to 1e7 clears the gap check (7.2e-6) while the displacement verdict is unchanged, so the gap check carries information the displacement check never had. Mutation: setting gamma to 1e7 for the first solve puts the gap under tolerance and the fixture fails on gap_violation_in_claimed_1_to_5_pct_band and displacement_ok_but_gap_violated. MUTATION CONTROL (re-runnable): T2_MUTATE=1 raises GAMMA_LOOSE, the penalty parameter of the first solve, from 1e4 to 1e7, i.e. it applies the penalty that actually enforces the constraint. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 9 expect_in_output strings; T2_MUTATE=1 removes 'gap_violation_in_claimed_1_to_5_pct_band=True', 'gap_criterion_fires=True', 'displacement_ok_but_gap_violated=True' and 'gap_verdict_changed_between_runs=True' (and prints the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "contact",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "newton_reports_converged=True",
+    "displacement_criterion_satisfied=True",
+    "gap_violation_in_claimed_1_to_5_pct_band=True",
+    "gap_criterion_fires=True",
+    "displacement_ok_but_gap_violated=True",
+    "tight_gamma_displacement_criterion_satisfied=True",
+    "tight_gamma_gap_criterion_clear=True",
+    "displacement_verdict_identical_both_runs=True",
+    "gap_verdict_changed_between_runs=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

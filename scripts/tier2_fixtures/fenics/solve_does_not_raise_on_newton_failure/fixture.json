@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#2: problem.solve() does not raise when the nonlinear solve fails. It returns a Function whatever happened. The fixture drives a nonlinear problem into failure with a one-iteration budget, then shows that the only way to find out is problem.solver.getConvergedReason(). Mutation control: T2_MUTATE=1 gives the solver a real iteration budget, so the reason turns positive. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "solve_raised=False",
+    "reason_is_negative_or_zero=True",
+    "returned_a_finite_field=True",
+    "VERDICT=failed_solve_returns_quietly_check_the_reason"
+  ],
+  "forbid_in_output": [
+    "VERDICT=failure_was_announced"
+  ],
+  "timeout_seconds": 300
+}

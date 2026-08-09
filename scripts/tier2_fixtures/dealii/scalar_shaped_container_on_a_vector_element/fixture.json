@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#11. The trap is the container SHAPE, not a missing extractor. u = (3x, 7y) is interpolated onto FESystem(FE_Q(1)^2) and its gradient read back three ways at the same quadrature point. The extractor form into std::vector<Tensor<2,dim>> returns [[3,0],[0,7]]. The plain call into std::vector<std::vector<Tensor<1,dim>>> with the inner vector sized n_components returns comp0 = (3,0) and comp1 = (0,7) -- complete and correct, so the plain call does NOT drop components. What goes wrong is handing the plain call a SCALAR-shaped std::vector<Tensor<1,dim>> on a vector-valued element: the shape check is an Assert, compiled out on this Release build, so the call returns normally with (3,7) -- neither component's gradient but a mixture of both -- and throws nothing. That reproduces the claim exactly, including its numbers. T2_MUTATE=1 puts the correctly shaped container under test. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "expect_in_output": [
+    "container_under_test=scalar_std_vector_of_Tensor_1_on_a_vector_valued_element",
+    "extractor_form_is_complete_and_correct=true",
+    "component_shaped_plain_form_is_complete_and_correct=true",
+    "result_mixes_two_components=true",
+    "result_matches_a_single_component=false",
+    "call_returned_without_an_exception=true",
+    "VERDICT=scalar_shaped_container_returns_silent_garbage"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=correctly_shaped_containers_return_complete_data"
+  ],
+  "timeout_seconds": 900
+}

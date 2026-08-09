@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for dune::linear_elasticity#3, #4 and #6 \u2014 mu and lam are dune.ufl.Constants, so the swap and the plane-stress substitution are VALUE changes that cost no rebuild and only two modules are compiled (the sym(grad(u)) form and the bare-grad(u) one). Wall time 5 s warm, 310 s cold (2026-08-06, dune-fem 2.12.0.2). Uniaxial pull on a 32x32 dimRange=2 Q1 grid, E=210e9, nu=0.3, t=1e6: u_x(1) = 4.340198e-06 and min(u_y) = -1.859393e-06, i.e. the lateral contraction is NEGATIVE under tension, which is the sign detector #3 asks for. Judged against the plane-STRESS value t/E = 4.761905e-06 the ratio is 0.9114 against 1-nu^2 = 0.9100 \u2014 the run looks ~9% too SOFT, confirming the direction the catalog corrected; substituting lam_ps = 2*mu*lam/(lam+2*mu) brings the ratio to 1.0016. Swapping mu and lam still converged and still printed a plausible 3.306729e-06. For #4: a rigid-body rotation interpolated into the space gives inner(sym(grad(u)),sym(grad(u))) integrated = 2.31e-36, i.e. zero, while inner(grad(u),grad(u)) gives 2.000000e-06 \u2014 bare grad(u) invents strain in a pure rotation \u2014 and the wrong FORM still assembles and solves. GRID NOTE: the 0.9114 ratio is discretisation-sensitive; at 8x8 it reads 0.9330 and the assertion band of 0.02 fails. Grid resolution is not part of the generated code, so refining to 32x32 is free. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 substitutes the PLANE-STRESS Lame parameter lam_ps = 2 mu lam / (lam + 2 mu) before the first run, so the run is no longer a plane-strain one judged against the plane-stress formula. lam is a dune.ufl.Constant, so the mutation costs no rebuild. Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'plane_strain_over_plane_stress_ratio=0.9114', 'strain_run_judged_by_stress_formula_looks_soft=True', 'dune_elasticity_constitutive_traps_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "linear_elasticity",
+  "pitfall_index": 3,
+  "covers": [
+    "linear_elasticity:3",
+    "linear_elasticity:4",
+    "linear_elasticity:6"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "correct_converged=True",
+    "correct_lateral_contraction_is_negative=True",
+    "plane_strain_over_plane_stress_ratio=0.9114",
+    "one_minus_nu_squared=0.9100",
+    "strain_run_judged_by_stress_formula_looks_soft=True",
+    "plane_stress_substitution_recovers_the_formula=True",
+    "swapped_still_converges=True",
+    "swapped_displacement_is_plausible=True",
+    "swapped_changes_the_answer=True",
+    "sym_grad_sees_no_strain_in_a_rotation=True",
+    "bare_grad_invents_strain_in_a_rotation=True",
+    "bare_grad_form_assembles_and_solves=True",
+    "dune_elasticity_constitutive_traps_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

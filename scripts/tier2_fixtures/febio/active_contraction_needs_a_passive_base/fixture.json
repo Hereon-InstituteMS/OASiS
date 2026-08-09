@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::active_contraction#0, and a CORRECTION to its Signal. The bare active material (no passive solid in a `solid mixture`) reads SUCCESS and then dies with WARNING 'No force acting on the system.', ERROR 'Negative jacobian detected.' \u2014 SINGULAR and with no count \u2014 then '------- failed to converge at time' and error termination. The claim quoted '8 negative jacobians detected.' and zero completed steps; the plural string never appears and the run completes some steps before dying. The fixture asserts the plural form is ABSENT so the wrong Signal cannot come back. Substance of the claim (element inversion for want of a passive base) stands. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'active_needs_passive=reproduced_with_correction' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "active_contraction",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "active_needs_passive=reproduced_with_correction"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#22, and it extends the claim. A Neumann condition on a 1-element HEX8 deck is pointed at FUNCT 7 four ways. FUNCT 0 (no function, VAL used directly) exits 0. FUNCT1..FUNCT7 all defined -> index 7 resolves, exit 0, and the answer is bit-identical to the FUNCT-0 arm ('is CORRECT, abs(diff)= 0.00000000000000000e+00'). Defining only FUNCT1 and FUNCT7 and pointing at 7 FAILS with exactly the same text as defining no function at all (GAP_AND_NONE_SAY_THE_SAME=yes): 'Function with index 7 (i.e. input FUNCT7) not available.' from core/utils/src/functions/4C_utils_function_manager.hpp line 110, whose guard is 'functions_.size() < num'. So the index is POSITIONAL — 4C reads FUNCT1, FUNCT2, ... consecutively and stops at the first gap, and a lone FUNCT7 is never read. The throw comes after the input was read and fill_complete() ran twice (GAP_REACHED_FILL_COMPLETE=2) with no parser involvement (GAP_BLAMED_THE_PARSER=0), i.e. at first evaluation, not at parse time. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 22,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ZERO=0",
+    "EXIT_ALL7=0",
+    "EXIT_GAP=1",
+    "EXIT_NONE=1",
+    "processor 0 finished normally",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "Function with index 7 (i.e. input FUNCT7) not available.",
+    "4C_utils_function_manager.hpp",
+    "GAP_AND_NONE_SAY_THE_SAME=yes",
+    "GAP_REACHED_FILL_COMPLETE=2",
+    "GAP_BLAMED_THE_PARSER=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ZERO=1",
+    "EXIT_ALL7=1",
+    "EXIT_GAP=0",
+    "EXIT_NONE=0",
+    "GAP_AND_NONE_SAY_THE_SAME=no",
+    "GAP_BLAMED_THE_PARSER=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the GAP arm: give it the full FUNCT1..FUNCT7 run so index 7 is reachable. The not-available diagnostic vanishes, GAP exits 0, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$ONE_AND_SEVEN\"   7 \"$TMP/gap.yaml\"",
+      "to": "mk \"$ONE_TO_SEVEN\"    7 \"$TMP/gap.yaml\""
+    },
+    {
+      "note": "remove the pathology from the NONE arm: stop referencing a function that was never defined. NONE exits 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk ''                 7 \"$TMP/none.yaml\"",
+      "to": "mk ''                 0 \"$TMP/none.yaml\""
+    }
+  ]
+}

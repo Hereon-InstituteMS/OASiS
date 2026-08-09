@@ -1,0 +1,55 @@
+{
+  "_comment": "COUPLING tier-2, FSI. Establishes that a partitioned fluid-structure interaction runs end to end through the public `couple` tool across two codes (FEniCSx ALE Navier-Stokes fluid under the conda fenics interpreter, scikit-fem plane-strain structure under the repo venv), on non-matching interface discretisations (49 fluid points against 41 structure ones), and that BOTH DIRECTIONS carry physics. Six configurations, all numbers below from the run of 2026-08-07. (1) CROSS-CODE TWO-WAY: converged 19 iterations, validation empty, verdict not NOT VERIFIED; interface equilibrium 2.621e-04 (x) / 7.375e-04 (y) componentwise; kinematic continuity 3.476e-12 / 4.075e-11 componentwise; 2.201e-10 relative L2 against a Newton-Krylov re-solve of the same coupled interface equation handed to couple(monolithic=); max|dy| = 1.059485302e-02. (2) SAME-CODE CONTROL with the structure in FEniCSx instead: max|dy| = 1.059505430e-02, the two structure codes agreeing to 2.272e-05 relative L2 on the whole converged interface profile, so the answer is not an artefact of one of them. (3) STRUCTURE->FLUID SUPPRESSED (the fluid stops moving its mesh), which is also the rigid-wall configuration where the closed forms bite: net interface force (29.674402, 148.182755) against plane Poiseuille's (30, 150) \u2014 1.1% and 1.2% \u2014 and max|dy| = 1.149524376e-02 against clamped-clamped beam theory's 1.1375e-02, 1.06%. Suppressing that direction moves the converged deflection by 8.4984e-02 relative, and the fluid's interface sensitivity collapses from S=1.3178 to S=0.0 with signal equal to noise at 6.6e-16, which couple reports unprompted as NOT A FUNCTION of its imports. (4) FLUID->STRUCTURE SUPPRESSED: the deflection collapses to exactly 0 and the force balance breaks. (5) FALSIFIABILITY OF THE REFERENCE CHECK: a run truncated at 3 iterations under a tolerance MEASURED from a calibration run (5.840e-01) reports CONVERGED and is 6.746e-01 relative L2 from the Newton-Krylov root. Without this the agreement in (1) would be unfalsifiable. (6) THE LIMIT, run rather than argued: the whole traction convention flipped in the fluid, both in the load the structure applies and in the flux the conservation check sees. That run CONVERGES, balances to 5.033e-05 (x) / 7.068e-04 (y), and the shared-script reference agrees with it to 4.899e-11 \u2014 because the reference drives the same flipped scripts. The structure deflects the wrong way (max|dy| = 1.279715026e-02, larger than the correct answer because the flip turns the negative feedback positive) and the exported net normal interface force is -164.75. Nothing internal separates it; only the sign of the load against the physics does. The added-mass instability is measured separately (fixture fsi_added_mass_instability); it is not here because it is a property of the transient problem and this one is steady. The independent-code check is 4C's own monolithic FSI on the same geometry, in benchmarks/fsi_channel_plate.",
+  "_mutation": [
+    {
+      "note": "Give the fluid participant a viscosity 25% away from the one the closed forms in FsiCase are computed from. The COUPLING is untouched: it converges, both directions still work, equilibrium and kinematic continuity still hold to the same tolerances, the same-code control still agrees, and the Newton-Krylov reference still lands on the root \u2014 because every one of those checks is internally consistent with whatever problem the two scripts actually solved. Only the plane-Poiseuille handle on the rigid-wall configuration sees it, and it sees it as 25% in both the normal and the tangential net interface force. That is the whole reason a closed-form anchor is in this fixture at all. VERIFIED 2026-08-07, and it kills what it was aimed at rather than something incidental: on the rigid-wall configuration the fluid's net interface force goes from (29.674, 148.183) to (37.093, 185.237), i.e. from 1.09%/1.21% off the plane-Poiseuille closed forms to 23.64%/23.49%, against a 2% limit. The deflection handle moves with it, 1.06% -> 26.3% against a 3% limit.",
+      "file": "../_lib/fsilib.py",
+      "from": "\"MU\": f\"{case.mu}\", \"RHO_F\": f\"{case.rho_f}\",",
+      "to": "\"MU\": f\"{1.25 * case.mu}\", \"RHO_F\": f\"{case.rho_f}\","
+    },
+    {
+      "note": "Halve the Young's modulus the structure participant is configured with while leaving FsiCase.e_mod \u2014 which the Euler-Bernoulli handle is computed from \u2014 alone. The structure then deflects about twice as far under the same load. Everything internal still agrees: the coupling converges, the force transfer balances, the two structure codes still agree with each other because BOTH get the halved modulus, and the reference still finds the root. The clamped-clamped beam estimate is the only thing that separates the softened structure from the one the fixture says it is running. VERIFIED 2026-08-07, and it kills ONLY the structural handle, which is what makes it a clean control: the fluid's net interface force is bit-identical to the unmutated run (29.674, 148.183), while max|dy| goes from 1.149524e-02 to 2.299049e-02 \u2014 from 1.06% off the clamped-clamped beam estimate to 102.1%, against a 3% limit.",
+      "file": "../_lib/fsilib.py",
+      "from": "\"E_MOD\": f\"{case.e_mod}\", \"NU\": f\"{case.nu}\",",
+      "to": "\"E_MOD\": f\"{0.5 * case.e_mod}\", \"NU\": f\"{case.nu}\","
+    },
+    {
+      "note": "Pin the fluid's mesh motion off in every configuration, so the structure->fluid direction never exists. This is the mutation that matters most for what this fixture claims: it turns a two-way FSI into a rigid-wall flow solve with a structure bolted on the side, which is exactly the thing that must never be reported as FSI. Three checks die on it, independently: kinematic continuity (the fluid imposes zero where the structure has moved), the Newton-Krylov reference (the coupled root is not the rigid-wall answer), and reverse_direction_is_active (the two-way and suppressed deflections become identical, so the measured effect of the reverse direction goes to zero). VERIFIED 2026-08-07. The harness recorded cross_validation_empty=True and same_validation_empty=True as MISSING from the mutant's output, i.e. `couple`'s own silent-wrong checks fired on the two-way configurations without being asked \u2014 the fluid stops being a function of its imports the moment the mesh motion is pinned off.",
+      "file": "../_lib/fsilib.py",
+      "from": "\"D_INIT\": \"0.0\", \"MOVE_MESH\": \"True\" if move_mesh else \"False\"}",
+      "to": "\"D_INIT\": \"0.0\", \"MOVE_MESH\": \"False\"}"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "fsi_partitioned_two_way",
+  "pitfall_index": 32,
+  "mode": "python",
+  "timeout_seconds": 5400,
+  "expect_in_output": [
+    "cross_converged=True",
+    "cross_validation_empty=True",
+    "cross_meshes_nonmatching=True",
+    "cross_reference_status=checked",
+    "same_converged=True",
+    "same_validation_empty=True",
+    "rigid_validation_nonempty=True",
+    "noload_validation_nonempty=True",
+    "signflip_deflects_the_other_way=True",
+    "signflip_caught_only_by_closed_form=True",
+    "configurations_run=6",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "cross_converged=False",
+    "cross_validation_empty=False",
+    "same_validation_empty=False",
+    "cross_reference_status=not supplied",
+    "rigid_validation_nonempty=False",
+    "noload_validation_nonempty=False",
+    "signflip_deflects_the_other_way=False"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "_comment": "Tier-2 for fourc::particles#5. PROVENANCE WARNING: PRE_CRACKS and the deck particle_sph_2d_pdbody_precrack_fixedflag.4C.yaml are NOT in upstream 4C main — they are local branch work on bond-based peridynamics in the checkout this ran against, so this fixture certifies branch behaviour and aborts loudly (no_upstream_decks) where the deck is absent. The separator rule is real but its consequence is the opposite of the one claimed. The parser splits on ';' and reads exactly four numbers per piece, so a comma-separated or run-together list collapses to the FIRST crack and silently discards the rest — nothing is concatenated and nothing spurious breaks. On the same 10x10 plate: no crack 1058 bonds, one segment 974 (84 broken), two ';'-separated segments 890 (168 broken), the same two written with a comma 974, and written with no separator at all 974. Both malformed spellings land on the one-segment count exactly (EXTRA_BONDS_BROKEN_BY_COMMA_FORM=0), 4C prints 'Number of pre-crack segments: 1', and the run then exits 0 with every result test passing, because the deck's references were built for one crack. A silently halved crack set that still reports PASS is a worse failure mode than the claimed over-breaking, which cannot occur. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NOCRACK=1",
+    "EXIT_ONESEG=0",
+    "EXIT_SEMI=1",
+    "EXIT_COMMA=0",
+    "EXIT_NOSEP=0",
+    "processor 0 finished normally",
+    "ONESEG_FAILURES=0",
+    "Number of pre-crack segments: 2",
+    "Number of pre-crack segments: 1",
+    "SEGMENTS_SEMI=2",
+    "SEGMENTS_COMMA=1",
+    "SEGMENTS_NOSEP=1",
+    "BONDS_NOCRACK=1058",
+    "BONDS_ONESEG=974",
+    "BONDS_SEMI=890",
+    "BONDS_COMMA=974",
+    "BONDS_NOSEP=974",
+    "BROKEN_SEMI=168",
+    "BROKEN_COMMA=84",
+    "EXTRA_BONDS_BROKEN_BY_COMMA_FORM=0",
+    "COMMA_IS_EXACTLY_THE_FIRST_SEGMENT=yes",
+    "COMMA_FAILURES=0",
+    "COMMA_PRE_CRACK_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ONESEG=1",
+    "EXIT_COMMA=1",
+    "SEGMENTS_COMMA=2",
+    "BONDS_COMMA=890",
+    "COMMA_IS_EXACTLY_THE_FIRST_SEGMENT=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: separate the two cracks in the COMMA arm with a semicolon, the way the entry says to. That arm then reports 2 segments and 890 bonds, SEGMENTS_COMMA becomes 2, BONDS_COMMA becomes 890, EXIT_COMMA becomes 1 and COMMA_IS_EXACTLY_THE_FIRST_SEGMENT becomes no, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$TMP/comma.yaml\"   \"$SEG1 , $SEG2\"",
+      "to": "mk \"$TMP/comma.yaml\"   \"$SEG1 ; $SEG2\""
+    },
+    {
+      "note": "remove the pathology from the no-separator arm as well: with a semicolon it reports 2 segments and 890 bonds, so SEGMENTS_NOSEP=1 and BONDS_NOSEP=974 both fail and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$TMP/nosep.yaml\"   \"$SEG1 $SEG2\"",
+      "to": "mk \"$TMP/nosep.yaml\"   \"$SEG1 ; $SEG2\""
+    }
+  ]
+}

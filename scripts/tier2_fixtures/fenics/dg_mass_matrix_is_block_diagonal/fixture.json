@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#8: the DG mass matrix is block-DIAGONAL, one block per cell, so inverting it in an explicit time step is a local operation. Handing it to a generic sparse solver throws that structure away. Wrong variant: scipy.sparse.linalg.spsolve on the assembled DG mass matrix, once per time step, instead of a per-cell solve of the cell blocks. Measured on 32x32 triangles with DG2 (2048 cells, 6 dofs per cell, 12288 dofs). The structure is verified before it is exploited: the dofmap really is cell blocked, the mass matrix has ZERO stored entries outside its cell blocks, and the implicit DG operator (stiffness plus an interior-facet jump coupling) has hundreds of thousands of them \u2014 so the claim's last sentence, that only the mass is block-diagonal, is checked too. Then both solvers are timed on the same right-hand side, best of five runs each, and their answers are compared. Observed: the generic sparse solve is several times slower than the batched per-cell solve, which is the operation an explicit DG step actually needs. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "dofmap_is_cell_blocked=True",
+    "mass_matrix_is_block_diagonal=True",
+    "implicit_dg_operator_is_not_block_diagonal=True",
+    "same_answer_both_ways=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_advantage_from_the_block_structure"
+  ],
+  "timeout_seconds": 300,
+  "_wall_clock_note": "generic_sparse_solver_is_slower is a ratio of solve TIMES (>2.0) and the VERDICT is gated on it. Removed from expect_in_output; still printed. The structural evidence that carries the claim is untouched: dofmap_is_cell_blocked, mass_matrix_is_block_diagonal, implicit_dg_operator_is_not_block_diagonal and same_answer_both_ways."
+}

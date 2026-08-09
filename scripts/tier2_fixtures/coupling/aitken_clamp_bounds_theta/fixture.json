@@ -1,0 +1,52 @@
+{
+  "_comment": "COUPLING tier-2. The description of the `couple` tool's DEFAULT accelerator is four independent assertions in one sentence and none had ever been run: ONE theta for the whole interface state, starting from the theta you pass, clamped into [0.05, 1.0], with the two fallback paths clamped the same way. UNIT LEVEL, and said plainly because it carries less weight than a coupling: the two BOUNDS are pinned by calling core.coupling_driver._aitken directly with residual vectors chosen so the unclamped rule theta = -theta_prev*<r_old,dr>/<dr,dr> lands around -50/+50 and -1000/+1000, far outside the interval in both directions, and the returned theta must be EXACTLY the bound, no tolerance, because it is a min/max against a literal; a third call whose unclamped value is 0.25 must come back unchanged, so a driver that clamped everything to one number could not satisfy all three. A fourth unit arm pins the FALLBACKS: theta_prev=0.07 lies strictly between the served floor 0.05 and the 0.1 an earlier driver floored them at, so it separates the two rules by construction, and both paths (no previous residual, and a zero residual change) must return it unchanged while theta_prev=0.001 comes back at 0.05. END TO END, everything else, and it takes TWO different couplings because on this driver one case cannot carry both halves. THE CONVERGING CASE is rho=2, theta0=0.5, checked against the closed-form interface temperature and flux from both sides plus the conservation balance, and from it: that the number of adaptations is exactly one per iteration after the first (ONE global theta \u2014 a per-participant scheme would give twice as many, so neither assertion can be satisfied by the other implementation), that the theta seeding the first adaptation is the theta that was passed, that no theta ever left the interval, and that not every adaptation sat on a bound. THE CLAMP-REACHING CASE is rho=4, max_iter=60, and it is separate because at rho=2 the low bound is never reached at all: the run is well conditioned and Aitken never asks for a theta under 0.05. At rho=4 it is reached 12 times in 59 with 47 still strictly inside, and that run does not converge in the budget \u2014 the clamp and the stall are the same event seen twice, so the fixture prints both rather than only the flattering one. This fixture previously asserted theta adapts PER PARTICIPANT and ran its end-to-end arm at rho=4; both were correct against the driver on knowledge/coupling-revision and are not against the merged one. The run is observed by wrapping _aitken in a recorder that returns the real function's values verbatim, and the wrapping is PROVEN inert rather than asserted to be: the same case runs first with the driver untouched and the recorded run must match its convergence flag, iteration count and interface temperature exactly.",
+  "_mutation": [
+    {
+      "note": "Lower the floor the fixture asserts against to a value the driver does not use. The driver still returns exactly 0.05 for an unclamped -50, so the unit assertion fires; no adaptation in either real run equals 0.01 either, so clamp_low_exercised_end_to_end prints False as well; and the fallback arm, whose probe theta_prev=0.07 must lie strictly between CLAMP_LOW and 0.1, stops being between them and fires too. A fixture that only checked 'theta stayed inside some interval' would survive this, because 0.05 is inside [0.01, 1.0] \u2014 pinning the bound is the whole point.",
+      "file": "source.py",
+      "from": "CLAMP_LOW = 0.05",
+      "to": "CLAMP_LOW = 0.01"
+    },
+    {
+      "note": "Widen the ceiling the fixture asserts against, the other half of the same claim. The driver returns exactly 1.0 for an unclamped +50 and +1000, so clamp_high_respected prints False. Note that the containment check every_theta_within_the_bounds still passes under this mutation \u2014 being inside [0.05, 2.0] is a weaker statement than being clamped at 1.0 \u2014 which is exactly why the fixture pins the bound rather than only bracketing it.",
+      "file": "source.py",
+      "from": "CLAMP_HIGH = 1.0",
+      "to": "CLAMP_HIGH = 2.0"
+    },
+    {
+      "note": "Run the clamp-reaching arm at the SAME ratio as the converging one. The coupling is then well conditioned, Aitken never asks for a theta below the floor, the low bound is reached zero times and clamp_low_exercised_end_to_end prints False. This is the control for splitting the end-to-end arm in two at all: it shows the second run is doing something the first cannot, rather than being a duplicate that happens to cost another coupling.",
+      "file": "source.py",
+      "from": "RHO_CLAMP = 4.0",
+      "to": "RHO_CLAMP = 2.0"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "relaxation",
+  "pitfall_index": 42,
+  "mode": "python",
+  "timeout_seconds": 5400,
+  "expect_in_output": [
+    "clamp_low_respected=True",
+    "clamp_high_respected=True",
+    "unclamped_value_inside_the_bounds_passed_through=True",
+    "fallbacks_clamp_into_the_same_interval=True",
+    "aitken_reached_closed_form=True",
+    "recorder_did_not_change_the_run=True",
+    "one_theta_for_the_whole_interface_state=True",
+    "first_theta_prev_was_the_theta_passed=True",
+    "every_theta_within_the_bounds=True",
+    "clamp_low_exercised_end_to_end=True",
+    "adaptation_was_not_all_clamp=True",
+    "end_to_end_runs=3",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "one_theta_for_the_whole_interface_state=False",
+    "fallbacks_clamp_into_the_same_interval=False",
+    "clamp_low_exercised_end_to_end=False"
+  ]
+}

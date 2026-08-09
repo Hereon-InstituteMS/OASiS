@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics hyperelasticity#1: putting the whole load on in one step makes the hyperelastic Newton solve diverge, and incremental load stepping is what recovers it. A compressible Neo-Hookean cantilever (mu = 1, lambda = 10, P = dPsi/dF through ufl.variable/ufl.diff) is pulled down by a body-force fem.Constant. The same total load is applied twice: all at once, and ramped over 8 increments with the previous solution kept as the initial guess. Observed on dolfinx 0.10.0 / petsc4py 3.24.4: the single step ends at problem.solver.getConvergedReason() = -5, SNES_DIVERGED_MAX_IT, with the residual still at 2.1e-1 after the 30-iteration budget, while every one of the 8 increments converges (reason 3) and ends at a residual around 1e-10. Nothing is raised either way, and the failed single step still returns a displacement field -- a different, smaller one (max|u| 2.41 against the correct 3.13), so the answer looks plausible unless the reason is checked. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "hyperelasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "single_step_diverged=True",
+    "single_step_reason_name=DIVERGED_MAX_IT",
+    "residual_at_failure_stays_far_above_the_converged_one=True",
+    "stepped_run_converges_at_every_increment=True",
+    "failed_solve_returned_a_different_displacement=True",
+    "nothing_was_raised=True",
+    "VERDICT=one_big_load_step_diverges_incremental_stepping_recovers"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=single_load_step_was_fine"
+  ]
+}

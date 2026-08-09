@@ -1,0 +1,52 @@
+{
+  "_comment": "COUPLING tier-2, on the DRIVER rather than on a pair. Coupling coverage has been counted in pairs, and pairs are cheap combinatorics once both sides' roles are proven; the scarce thing is the driver's own behaviour \u2014 statements an agent is told to design around, that hold or fail for every pair at once, and that no pair fixture can see because every pair fixture is written to succeed. Four of them, all quoted from the served contract, none previously exercised. (1) The driver is JACOBI: on iteration 2 each side must read its partner's ITERATION-1 export, and reversing the participant list must change nothing \u2014 checked by making each participant log what it received and export its own iteration number, so a Gauss-Seidel sweep would be caught red-handed rather than inferred from a residual. (2) The FILE IS NOT ENOUGH and the EXIT CODE is enforced: a participant that writes a complete exports.json and then exits non-zero ENDS THE RUN, because a solver that diverges commonly writes its last iterate and then aborts and the iteration used to continue on it. This arm was originally written the other way round against the driver on knowledge/coupling-revision, where the exit code really was ignored; feature/coupling-robustness closed the route and the served contract has been corrected to match, so the arm now asserts the refusal. What makes it discriminating rather than a restatement of 'the run failed' is its second half: the BYTE-IDENTICAL participant exiting 0 must be ACCEPTED, which a driver that refused everything would fail. (3) What comes back is the RELAXED blend, not the raw output: a participant whose raw export steps once must come back at target*(1-(1-theta)^k), a value the raw output never takes. (4) `data_files` reaches the DRIVER through the TOOL and the file arrives in work_dir \u2014 both levels are checked separately, because they fail independently. This arm was also written the other way round against knowledge/coupling-revision, where the tool dropped the key while the Participant dataclass had the field and run_coupling staged it; the tool now passes it through and the served contract has been corrected from 'NOT supported, silently ignored' to a description of what it does. Synthetic participants on purpose: the claims are about the driver, and a real solver would only add ways to fail for reasons that are not the claim.",
+  "_mutation": [
+    {
+      "note": "Set the relaxation to 1.0. The relaxed blend and the raw export become the same number, so returned_export_was_the_raw_value fires \u2014 the sentence 'the exports returned are the RELAXED blend, not the last raw output' is then untestable, which is exactly the state this arm exists to leave behind.",
+      "file": "source.py",
+      "from": "THETA = 0.5                 # the relaxation the relaxed-vs-raw check predicts",
+      "to": "THETA = 1.0                 # the relaxation the relaxed-vs-raw check predicts"
+    },
+    {
+      "note": "Make the crashing participant exit 0 instead of 7. Nothing else about it changes \u2014 same complete exports.json, same values \u2014 so the run is accepted, no error names an exit code, and participant_exited_nonzero_and_the_run_was_refused goes False. This is the control the arm needs: it isolates the exit code as the cause of the refusal. The earlier mutation (write the file under another name) does NOT discriminate for this direction, because the run fails either way and the refusal assertion would survive it.",
+      "file": "source.py",
+      "from": "    \"field_name\": \"x\", \"n_points\": 1, \"coordinates\": [[0.0]], \"values\": [%(v)s]}))\nsys.exit(7)",
+      "to": "    \"field_name\": \"x\", \"n_points\": 1, \"coordinates\": [[0.0]], \"values\": [%(v)s]}))\nsys.exit(0)"
+    },
+    {
+      "note": "Take `data_files` off the spec handed to the TOOL. The file no longer arrives, data_files_key_staged_the_file goes False and the check fires \u2014 which is what attributes the arrival to the key rather than to anything else in the harness. The driver-level half is unaffected by this mutation and stays True, so the two levels are demonstrably independent.",
+      "file": "source.py",
+      "from": "    a = put(root, \"A\", LOOKER % {\"f\": \"needed.dat\"}, [\"B\"],\n            data_files=[str(payload)])",
+      "to": "    a = put(root, \"A\", LOOKER % {\"f\": \"needed.dat\"}, [\"B\"])"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "driver_invariants",
+  "pitfall_index": 34,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "both_sides_read_the_previous_iteration=True",
+    "reversing_the_participant_order_changes_nothing=True",
+    "participant_exited_nonzero_and_the_run_was_refused=True",
+    "same_participant_exiting_zero_is_accepted=True",
+    "relaxed_export_equals_the_unmoving_raw_value=True",
+    "returned_value_is_the_relaxed_blend_not_the_raw_export=True",
+    "data_files_key_staged_the_file=True",
+    "driver_itself_does_stage_data_files=True",
+    "invariants_checked=4",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "both_sides_read_the_previous_iteration=False",
+    "participant_exited_nonzero_and_the_run_was_refused=False",
+    "same_participant_exiting_zero_is_accepted=False",
+    "returned_value_is_the_relaxed_blend_not_the_raw_export=False",
+    "data_files_key_staged_the_file=False",
+    "driver_itself_does_stage_data_files=False"
+  ]
+}

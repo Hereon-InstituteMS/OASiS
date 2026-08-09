@@ -22,17 +22,31 @@ MMS:
                        -π·sin(2πx)·sin(πy)²)
   p_exact = sin(πx)·cos(πy)  (zero mean on [0,1]²)
   f = -ν·Δu + grad(p)        (CoefficientFunction, ν = 1)
+
+Mutation control (INVERTED POLARITY): this is a correctness
+gate, not a pitfall demonstration -- it only ever runs the
+CORRECT discretisation, so the control commits one of the two
+bugs the _comment records catching during development.
+T2_MUTATE=1 drops the negation of p_h (`p_h_signed = p_h_raw`
+instead of `-p_h_raw`), which is the +div(v)·p sign-convention
+bug.  The pressure error then jumps from 3.7e-03 to ~1.0, the
+gate's real assertion fires and the forbidden string
+"FAIL: P1 p L2 err" APPEARS on stderr, so the fixture goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_stokes_mms(maxh: float) -> tuple[float, float]:
@@ -135,7 +149,9 @@ def run_stokes_mms(maxh: float) -> tuple[float, float]:
     # computing the error, then subtract mean to remove
     # the indeterminacy from the single-DOF pin.
     p_h_raw = gfu.components[1]
-    p_h_signed = -p_h_raw
+    # MUTATION SITE: this negation IS the sign-convention fix the _comment
+    # records.  T2_MUTATE=1 commits the original bug by dropping it.
+    p_h_signed = p_h_raw if MUTATE else -p_h_raw
     p_mean = ngs.Integrate(p_h_signed, mesh)
     p_diff = p_h_signed - p_mean - p_ex
     err_u = math.sqrt(

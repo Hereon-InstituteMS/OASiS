@@ -1,0 +1,43 @@
+{
+  "_comment": "COUPLING tier-2, the fixture that justifies every other one asserting a closed form instead of `converged`. Runs the SAME coupling twice, changing exactly one constant: the right subdomain's outer boundary temperature, written once in kelvin and once as the same physical temperature in degrees Celsius. `couple` cannot tell them apart \u2014 both converge in a comparable number of iterations to a comparable residual, both have an EMPTY validation block, and both balance the interface flux to roundoff (the mismatched run balanced BETTER than the correct one, because conservation is a property of the fixed point and holds whatever units the boundary data is in). The difference is visible only against an independent answer, and it is not subtle: the interface temperature is out by tens of percent and the flux by an order of magnitude. Then check_monolithic_consistency is run explicitly on both, and fires on exactly one. The control run is the built-in mutation: remove the unit mismatch and the 'disagrees with the closed form' assertions fail.",
+  "_mutation": {
+    "note": "Remove the unit mismatch: write the right subdomain's outer boundary in kelvin like the left one, so both decks agree. This is the fixture's own built-in control promoted to a declared mutation, and it is the whole demonstration \u2014 with the pathology gone the two runs become indistinguishable in the physics as well as in couple's verdict, so mismatch_did_not_move_the_answer, mismatch_flux_barely_moved and monolithic_check_missed_the_mismatch all fire. Verified by hand: 3 failures, with mismatched_T_disagreement_with_closed_form=0.0pct, which forbid_in_output also catches independently.",
+    "file": "source.py",
+    "from": "CELSIUS = 26.85",
+    "to": "CELSIUS = 300.0"
+  },
+  "backend": "coupling",
+  "physics": "silent_wrong",
+  "pitfall_index": 15,
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "mismatched_flux_still_balanced=True",
+    "consistent_converged=True",
+    "consistent_validation_entries=0",
+    "consistent_balance_warnings=0",
+    "consistent_matches_closed_form=True",
+    "mismatched_converged=True",
+    "mismatched_validation_entries=0",
+    "mismatched_balance_warnings=0",
+    "mismatched_validation_is_empty=True",
+    "mismatched_T_disagrees_with_closed_form=True",
+    "mismatched_q_disagrees_with_closed_form=True",
+    "monolithic_check_on_control=0",
+    "monolithic_check_on_mismatch=1",
+    "runs_compared=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "mismatched_T_disagreement_with_closed_form=0.0pct",
+    "consistent_matches_closed_form=False",
+    "mismatched_T_disagrees_with_closed_form=False",
+    "mismatched_q_disagrees_with_closed_form=False",
+    "mismatched_flux_still_balanced=False",
+    "mismatched_validation_is_empty=False",
+    "failures_count=1"
+  ]
+}

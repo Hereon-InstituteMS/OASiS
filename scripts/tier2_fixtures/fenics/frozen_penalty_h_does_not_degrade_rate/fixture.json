@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics biharmonic#1: the claim says the interior-penalty weight must use ufl.CellDiameter / ufl.FacetArea so it tracks the local element size, and that hard-coding h degrades the convergence rate from O(h^2) to about O(h). On a UNIFORM refinement sequence that degradation does not happen, and this fixture pins what really happens instead. Wrong variant: h_E hard-coded as fem.Constant(msh, 1/8) in the penalty weight alpha/h_E while the mesh is refined from 8x8 to 32x32. Right variant: alpha/avg(ufl.CellDiameter(msh)). C0-IP MMS on the unit square, u = sin(pi x) sin(pi y), simply supported, P2, alpha = 8, L2 error at N = 8 / 16 / 32. The fixture also measures the penalty weight itself, as the facet-average of alpha/h_E, so \"does the weight track the mesh\" is checked directly rather than inferred. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "biharmonic",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_penalty_weight_does_not_track_the_mesh=True",
+    "primary_rate_stays_above_two=True",
+    "primary_rate_at_least_as_good_as_celldiameter=True",
+    "claimed_degradation_to_order_one_not_observed=True",
+    "VERDICT=frozen_penalty_h_does_not_degrade_uniform_convergence"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=frozen_penalty_h_degraded_the_rate"
+  ],
+  "timeout_seconds": 900
+}

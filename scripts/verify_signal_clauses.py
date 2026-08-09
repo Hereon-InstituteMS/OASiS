@@ -393,12 +393,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "matrix", "vector_norm",
             "energy_norm", "L2_norm", "H1_norm",
             "solver_iterations", "iter_count",
-            # ── PETSc-status tokens that NGSolve also surfaces
-            #    via krylovspace bindings ──────────────────────
-            "KSPSolve", "KSP",
-            "DIVERGED_INDEFINITE_PC",
-            "DIVERGED_BREAKDOWN", "DIVERGED_MAX_IT",
-            "DIVERGED_FNORM_NAN", "DIVERGED_INF",
+            # PETSc status tokens were allowlisted here, justified as ones
+            # "NGSolve also surfaces via krylovspace bindings". Measured:
+            # `strings -n 6` over NGSolve's shared library finds NO PETSc KSP
+            # strings at all. The knowledge was telling agents to watch for
+            # `KSPSolve: DIVERGED_BREAKDOWN` and `DIVERGED_INDEFINITE_PC` from a
+            # library that cannot emit them, and this list was what let those
+            # Signals pass tier 0. Removed. If an NGSolve build ever links
+            # PETSc, re-add them after confirming the strings are present in
+            # THAT build rather than on the strength of a plausible comment.
             "DivisionByZero", "ZeroDivisionError",
             # ── NGSolve special CoefficientFunctions / normals
             "specialcf", "normal", "tangential",
@@ -729,8 +732,16 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "mesh", "create_box", "create_rectangle",
             "create_unit_square", "create_unit_cube",
             "Mesh", "CellType", "cell_dim",
-            "PETScKrylovSolver", "PETScLUSolver",
-            "NonlinearProblem", "NewtonSolver",
+            # 2026-08-03: "PETScKrylovSolver" and "PETScLUSolver" were
+            # REMOVED from this allowlist. Neither exists anywhere in
+            # dolfinx 0.10 — hasattr is False on dolfinx, on
+            # dolfinx.fem.petsc and on dolfinx.nls.petsc. They are legacy
+            # DOLFIN names. Keeping them here let a Signal: clause that
+            # named a class the backend cannot emit pass the Tier-0
+            # code-symbol gate, i.e. the gate certified fabrication. Use
+            # LinearProblem(...).solver (a petsc4py KSP) or the SNES/KSP
+            # tokens below instead.
+            "LinearProblem", "NonlinearProblem", "NewtonSolver",
             "PETSc", "MPI",
             "grad", "div", "curl", "inner", "outer", "dot",
             "tr", "sym", "skew", "det", "Identity",
@@ -861,6 +872,20 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "SolverBiCGStab", "preconditioner",
             "writeVTK", "VTKWriter", "ParaView",
             "GMRES", "BiCGStab",
+            # ── symbols confirmed to EXIST in the installed
+            #    dune-fem 2.12.0.2 (hasattr / import checked
+            #    2026-08-03; see src/backends/dune/generators/
+            #    verified_api.py::module_inventory_2_12) ─────────
+            "GridMarker", "canAdapt", "adaptiveLeafGridView",
+            "globalRefine", "gridAdapt", "hierarchicalGrid",
+            "finiteVolume", "cartesianDomain", "aluConformGrid",
+            "aluSimplexGrid", "aluCubeGrid", "dimRange",
+            "as_numpy", "writeVTK", "subsampling",
+            "getDunePyDir", "DUNE_PY_DIR", "CONDA_DEFAULT_ENV",
+            "threading", "parameters", "maxiterations",
+            "nonlinear", "linear_iterations", "converged",
+            "Integrands", "inspectBoundaryIds", "gridWidth",
+            "product", "composite", "combined",
             # ── Misc identifiers used in dune.fem catalog ────
             "u_old", "u_new",
             # (rhs/lhs/sigma/epsilon dropped — math notation)
@@ -889,6 +914,20 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "MAT_Newtonian", "MAT_Carreau",
             "MAT_LinElast1D",
             "CAPA", "CONDUCT",
+            # ── Poro density laws and their parameter keys.
+            #    Added 2026-08-06 deliberately, NOT as a quiet
+            #    widening: porous_media#7 names MAT_PoroDensityLawExp
+            #    and BULKMODULUS, which are registered 4C material
+            #    entities no textbook uses, and which a critic can
+            #    grep in the source and in `4C --parameters`. They are
+            #    the same shape as MAT_Fourier / CAPA / CONDUCT above.
+            #    Time-integrator names (BDF2, One_Step_Theta, THETA)
+            #    were considered and DELIBERATELY LEFT OUT: those are
+            #    the textbook method words this gate exists to reject,
+            #    and admitting them would let "use BDF2" satisfy
+            #    Tier-0 while naming nothing 4C emits.
+            "MAT_PoroDensityLawExp", "MAT_PoroDensityLawConstant",
+            "MAT_PoroLawNeoHooke", "BULKMODULUS",
             # ── 4C input-spec builder classes (the ones that
             #    emit the empirical diagnostics) ─────────────────
             "InputSpec", "InputFile", "InputParameterContainer",
@@ -1107,6 +1146,55 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             # ── 4C particle PD bond / neighbor diagnostics ────
             "neighbor_count", "bond_count",
             "PDWaveSpeed", "DeltaConvergence",
+            # ── 4C RESULT DESCRIPTION self-verification vocab ──
+            #    (2026-08-03: harvested from
+            #    src/global_legacy_module/4C_global_legacy_module.cpp
+            #    valid_result_lines() and
+            #    src/core/utils/src/result_test/4C_utils_result_test.cpp;
+            #    every name below is a literal string the binary
+            #    matches or echoes, so a post-execution critic can
+            #    grep for it.)
+            "RESULT_DESCRIPTION", "QUANTITY", "TOLERANCE",
+            "XFLUID", "THERMAL", "LUBRICATION",
+            "POROFLUIDMULTIPHASE", "SCATRA", "RED_AIRWAY",
+            "ARTNET", "PARTICLEWALL", "RIGIDBODY",
+            "CARDIOVASCULAR0D", "SPECIAL",
+            "dispx", "dispy", "dispz",
+            "velx", "vely", "velz",
+            "accx", "accy", "accz",
+            "reactx", "reacty", "reactz",
+            "utils_result_test", "structure_new_resulttest",
+            # ── 4C source-file stems reached by the 2026-08-03
+            #    execution sweep (bare stems, because the Signal
+            #    tokenizer splits on the leading '4C_' digit) ──
+            "solid_3D_ele_surface_evaluate",
+            "structure_new_integrator",
+            "structure_new_timint_basedataio",
+            "fem_condition", "fem_discretization_utils_dbc",
+            "fem_general_element_definition",
+            "function_manager", "io_control",
+            "inpar_io", "inpar_structure",
+            "global_legacy_module_validmaterials",
+            "global_legacy_module_validparameters",
+            # ── 4C input keys whose SECTION placement is
+            #    load-bearing (all verified by execution) ───────
+            "RESTARTEVERY", "INTERVAL_STEPS", "EVERY_ITERATION",
+            "OUTPUT_STRUCTURE", "OUTPUT_DATA_FORMAT",
+            "MAXTIME", "NUMSTEP", "TIMESTEP", "NUMDOF",
+            "ONOFF", "PROBLEMTYPE", "DYNAMICTYPE",
+            "LINEAR_SOLVER", "TOLDISP", "TOLRES",
+            "ELEMENTS", "NODES", "MATERIALS", "NPATCHES",
+            # ── 4C element / material spellings that the
+            #    installed build accepts or rejects verbatim ────
+            "STRESS_STRAIN", "PLANE_ASSUMPTION", "THICKNESS",
+            "eas_full", "eas_mild", "shell_ans", "shell_eas_ans",
+            "plane_strain", "plane_stress",
+            "orthopressure", "pseudo_orthopressure",
+            "PressureGrad", "Live", "Dead",
+            "MAT_Struct_StVenantKirchhoff", "MAT_ElastHyper",
+            "MAT_Fourier", "ELAST_CoupNeoHooke",
+            "ELAST_VolSussmanBathe", "CONDUCT", "CAPA",
+            "MATIDS", "NUMMAT",
         })
     elif backend == "febio":
         code_symbols.update({
@@ -1136,10 +1224,15 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "Newtonian", "Carreau", "Bingham",
             "fluid_solute", "isotropic_Fourier",
             "Bauschinger_shift", "yield_stress",
-            # ── Solver / NOX-status tokens that real FEBio logs
-            #    emit ───────────────────────────────────────────
-            "NOX", "FullNewton", "BFGS", "Quasi",
-            "DIVERGED_LINE_SEARCH", "DIVERGED_FNORM_NAN",
+            # `NOX`, `DIVERGED_LINE_SEARCH` and `DIVERGED_FNORM_NAN` were
+            # allowlisted here as "tokens that real FEBio logs emit". They are
+            # Trilinos and PETSc names and FEBio links NEITHER — confirmed
+            # against febio4 and all twelve of its shared libraries. An audit
+            # found 25 fabricated FEBio Signals, and this entry is why they
+            # passed: the gate was made green by declaring the fabrications
+            # real. FullNewton/BFGS/Quasi are genuine FEBio solver names and
+            # stay.
+            "FullNewton", "BFGS", "Quasi",
             "MaxIters", "lc", "load_controller",
             "step_size", "dt_0", "Jacobian",
             "max_refs", "max_ups", "Rtol", "Etol",
@@ -1155,28 +1248,27 @@ def _load_entity_split(backend: str) -> tuple[set[str], set[str]]:
             "x_dof", "y_dof", "z_dof",
             "gx_dof", "gy_dof", "gz_dof",
             "center_of_mass", "initial_stress",
-            "rigid_displacement", "shedding_period",
+            "rigid_displacement",
             # ── Output / runtime helpers ─────────────────────────
             "write_vtu", "post_vtu", "xplt", "plt",
-            # ── More FEBio runtime / PETSc-via-FEBio identifiers
-            #    extracted from actual error logs and catalog
-            #    Signal: prose ──────────────────────────────────
-            "KSPSolve", "ALE", "Hookean", "HGO",
+            # A second `KSPSolve` sat here, described as a "PETSc-via-FEBio"
+            # identifier "extracted from actual error logs". FEBio links no
+            # PETSc, so no log can have contained it. Two separate entries in
+            # one backend's list, both with a confident provenance note, is why
+            # this now has a guard rather than a code review.
+            "ALE", "Hookean", "HGO",
             "Holzapfel_Gasser_Ogden",
             "kappa", "fiber", "Elements", "node",
-            "prescribed", "concentration", "sol",
-            "micro_rotation", "Cosserat",
-            "drainage", "tissue", "contact",
-            "fluid_pressure", "effective_concentration",
+            "prescribed", "concentration", "sol", "contact",
+            "fluid_pressure",
             # ── FEBio XML attribute / parameter lowercase tokens
             #    that show up in `<material>`/`<Element>` errors ──
             "material", "parameter", "element",
             "isotropic", "elastic", "displacement",
             "restart", "history", "cycle",
             # ── Output / plotfile observables ─────────────────
-            "plotfile_xplt", "logfile",
-            "stress_strain", "kinetic_energy",
-            "fluid_velocity", "elastic_strain",
+            "logfile",
+            "fluid_velocity",
         })
 
     code_symbols.update({

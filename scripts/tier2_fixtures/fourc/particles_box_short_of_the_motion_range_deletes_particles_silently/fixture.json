@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::particles#10, and a falsification of its Signal. The rule holds — DOMAINBOUNDINGBOX must cover where the particles GO, not just where they start — but nothing aborts. Upstream particle_sph_2d_pdbody_gravity.4C.yaml is driven by gravity along +x; pulling the box's +x face in from 20.0 to 17.0 removes 120 outermost wall particles at setup and then, twice more while the body travels, deletes 3 particles at a time that were inside the box at t=0 and walked out of it. Those two mid-run events are exactly the motion-range effect the entry is about. The only trace is 'on processor 0 removed 3 particle(s) being outside the computational domain!', which names no id, no position, no step and no phase; the string 'particle out of domain' appears nowhere; and all 3001 evaluations still run, the same number as the healthy baseline, so there is no mid-run abort. The damage only surfaces at the very end as 8 wrong result values via core/utils/src/result_test/4C_utils_result_test.cpp line 181. A too-small box therefore does not stop a run: it silently deletes part of the model and hands back an answer. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BIGBOX=0",
+    "EXIT_SMALLBOX=1",
+    "processor 0 finished normally",
+    "BIGBOX_FAILURES=0",
+    "BIGBOX_REMOVAL_EVENTS=0",
+    "on processor 0 removed 120 particle(s) being outside the computational domain!",
+    "on processor 0 removed 3 particle(s) being outside the computational domain!",
+    "SMALLBOX_REMOVAL_EVENTS=3",
+    "SMALLBOX_SETUP_REMOVAL_EVENTS=1",
+    "SMALLBOX_MIDRUN_REMOVAL_EVENTS=2",
+    "SMALLBOX_STEPS_RUN=3001",
+    "CLAIMED_PARTICLE_OUT_OF_DOMAIN_TEXT=0",
+    "SMALLBOX_FAILURES=8",
+    "4C_utils_result_test.cpp, line 181",
+    "SIMULATION_ABORTED_MID_RUN=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BIGBOX=1",
+    "EXIT_SMALLBOX=0",
+    "SMALLBOX_MIDRUN_REMOVAL_EVENTS=0",
+    "SMALLBOX_FAILURES=0",
+    "SIMULATION_ABORTED_MID_RUN=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave DOMAINBOUNDINGBOX at its upstream extent in the second arm. No particle ever leaves the box, all three removal events disappear, SMALLBOX_MIDRUN_REMOVAL_EVENTS becomes 0, SMALLBOX_FAILURES becomes 0 and EXIT_SMALLBOX becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(old, new))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

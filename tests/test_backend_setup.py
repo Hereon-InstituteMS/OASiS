@@ -42,11 +42,26 @@ from core.backend_setup import (  # noqa: E402
 class TestRouteCatalogInvariants(unittest.TestCase):
 
     def test_every_backend_has_at_least_one_route(self) -> None:
-        self.assertEqual(
-            sorted(SETUP_ROUTES),
-            sorted(["skfem", "ngsolve", "kratos", "dune", "fenics",
-                    "dealii", "fourc", "febio"]),
-            "Route catalog must cover all 8 backends.")
+        """Every REGISTERED backend needs an install route.
+
+        This used to compare against a hardcoded list of eight names, which
+        is how SPARTA — the ninth backend, and the only one with no route at
+        all — went unnoticed: adding a backend did not fail any test, so a
+        user asking how to install it got nothing back. Deriving the
+        expectation from the registry means the next backend added cannot
+        repeat that."""
+        from core.registry import all_backends, load_all_backends
+
+        load_all_backends()
+        registered = {b.name() for b in all_backends()}
+        self.assertTrue(registered, "no backends registered at all")
+        missing = sorted(registered - set(SETUP_ROUTES))
+        self.assertFalse(
+            missing,
+            f"registered backend(s) with no install route: {missing}. "
+            f"Add one to SETUP_ROUTES in src/core/backend_setup.py — a "
+            f"backend a user cannot be told how to install is a backend "
+            f"they cannot use.")
         for be, routes in SETUP_ROUTES.items():
             self.assertGreater(len(routes), 0, be)
 
@@ -140,16 +155,52 @@ class TestDetectAndStatus(unittest.TestCase):
         but this machine's real config lives at the pre-rebrand
         ~/.config/open-fem-agent/. The fallback must surface fourc's
         source tree. (Regression found + fixed 2026-06-12.)"""
-        legacy = (Path.home() / ".config" / "open-fem-agent"
-                  / "sources.json")
-        new = Path.home() / ".config" / "oasis" / "sources.json"
-        if not legacy.exists() and not new.exists():
-            self.skipTest("no sources.json on this machine")
-        d = detect_backend("fourc")
-        self.assertIsNotNone(
-            d["source_tree"],
-            "fourc source tree not resolved — the legacy-config "
-            "fallback in source_config.load() regressed.")
+        # HERMETIC. This test used to call `detect_backend("fourc")` and assert
+        # its source tree resolved, gated only on whether SOME sources.json
+        # existed. That made the outcome a function of a mutable file OUTSIDE the
+        # repository: a fourc entry present -> PASS, the file present without one
+        # -> FAIL, the file absent -> SKIP. Three separate audits were misled by
+        # it into reporting three different suite baselines, and one wasted a run
+        # proving its own changes innocent. A test whose colour depends on
+        # machine state is worse than no test — it manufactures disagreement
+        # about whether the suite is green.
+        #
+        # What the 2026-06-12 regression was actually about is the FALLBACK: the
+        # rebrand moved the config from ~/.config/open-fem-agent/ to
+        # ~/.config/oasis/, and installs with only the old path stopped
+        # resolving. That mechanism is testable without touching the real config.
+        import importlib
+
+        from core import source_config
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            legacy_dir = root / ".config" / "open-fem-agent"
+            legacy_dir.mkdir(parents=True)
+            # Real schema, read off the machine's own config rather than
+            # guessed: {"backends": {"<name>": {"source": "<path>"}}}. My first
+            # attempt invented {"sources": {...: {"source_tree": ...}}} and the
+            # test failed for that reason alone — which is the same mistake as
+            # writing a Signal clause from memory.
+            (legacy_dir / "sources.json").write_text(json.dumps(
+                {"backends": {"fourc": {"source": "/tmp/pretend-4c"}}}))
+
+            with mock.patch.object(Path, "home", staticmethod(lambda: root)):
+                mod = importlib.reload(source_config)
+                cfg = mod.load()
+
+            # `backends[name]` is a BackendPaths dataclass whose `source` is a
+            # PosixPath — not a dict. Two wrong guesses at this structure cost
+            # two runs; reading what `load()` actually returns cost one command.
+            entry = (cfg.backends or {}).get("fourc")
+            tree = str(getattr(entry, "source", "")) if entry else ""
+            self.assertEqual(
+                tree, "/tmp/pretend-4c",
+                "the legacy ~/.config/open-fem-agent/sources.json fallback did "
+                "not resolve — the rebrand regression is back.")
+
+        # Restore the module to the real environment for any later test.
+        importlib.reload(source_config)
 
     def test_status_table_renders(self) -> None:
         md = render_status_markdown()
@@ -173,22 +224,47 @@ class TestSetupSessionRegressions(unittest.TestCase):
 
     def test_prefer_unavailable_route_is_explicit_error(self) -> None:
         """Finding 2: plan(dune, route='source') used to silently
-        return the conda route. dune has only a conda route — asking
-        for anything else must error, not substitute."""
+        return a different route. Asking for a route a backend does not
+        have must error and name what it does have, not substitute."""
         p = plan_setup("dune", prefer="source")
         self.assertIn("error", p)
         self.assertIn("source", p["error"])
-        self.assertIn("conda", str(p["error"]))
+        # The error must name the kinds that DO exist, so the caller can
+        # pick one without a second round-trip.
+        available = {r["kind"] for r in SETUP_ROUTES["dune"]}
+        self.assertTrue(
+            any(k in str(p["error"]) for k in available),
+            f"error must name an available route kind {sorted(available)}: "
+            f"{p['error']}")
 
-    def test_dune_conda_route_not_marked_verified_on_linux(self) -> None:
-        """Finding 1: dune-fem is not on conda-forge (confirmed
-        2026-06-12 via api.anaconda.org) — the route must not claim
-        verified_on_this_os until that changes."""
-        dune_conda = [r for r in SETUP_ROUTES["dune"]
-                      if r["kind"] == "conda"][0]
-        self.assertFalse(dune_conda["os_support"]["linux"]["verified"])
-        notes = " ".join(dune_conda["os_support"]["linux"]["notes"])
-        self.assertIn("conda-forge", notes)
+    def test_dune_route_is_pip_and_documents_the_absent_conda_package(self):
+        """dune-fem has no conda-forge package, so there is no conda route
+        to mark verified or unverified — there is only the pip route.
+
+        This test replaced one that asserted the conda route existed but
+        was flagged unverified. That was the wrong shape: a route the user
+        cannot execute is not a route, and leaving it in the catalog meant
+        `setup_backend(action='plan', solver='dune')` could still offer it.
+        Confirmed by execution: `conda search -c conda-forge
+        --override-channels dune-fem` answers "No match found for:
+        dune-fem". What the catalog must keep is the KNOWLEDGE that the
+        conda path is a dead end, so nobody re-adds it."""
+        kinds = {r["kind"] for r in SETUP_ROUTES["dune"]}
+        self.assertIn("pip", kinds,
+                      "dune's working route is pip (PyPI), not conda")
+        self.assertNotIn(
+            "conda", kinds,
+            "a conda route for dune cannot work — conda-forge has no "
+            "dune-fem package")
+        notes = " ".join(
+            n for r in SETUP_ROUTES["dune"]
+            for n in r["os_support"]["linux"]["notes"])
+        self.assertIn("conda-forge", notes,
+                      "the absent conda-forge package must stay documented "
+                      "so the dead route is not re-added")
+        self.assertIn("mpi4py", notes,
+                      "mpi4py is an undeclared dependency of the dune "
+                      "wheels; without it the first import stops")
 
     def test_smoke_dune_honours_ok_false(self) -> None:
         """Finding 3: the dune smoke script exits 0 even on

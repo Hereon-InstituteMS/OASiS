@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii stokes#2. Tier-2 for dealii stokes#2 -- probe \"pressure_nullspace\" of the shared translation unit _shared/stokes_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Lid-driven cavity, velocity Dirichlet on the whole boundary. The probe checks that the constant-pressure vector is in the kernel of the assembled matrix, then runs the SAME unrestarted GMRES twice differing only in the starting vector: the velocity agrees to 1e-10 and the pressure shape agrees to 1e-10, but the pressure LEVEL differs by exactly the shift put into the start. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "stokes",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "constant_pressure_is_in_the_kernel=true",
+    "same_flow_different_pressure_level=true",
+    "pressure_exceeds_1e10=false",
+    "VERDICT=pressure_is_undetermined_up_to_a_constant"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=pressure_is_determined"
+  ],
+  "timeout_seconds": 900
+}

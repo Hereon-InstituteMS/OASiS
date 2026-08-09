@@ -1,0 +1,29 @@
+{
+  "_comment": "Tier-2 for NGSolve surface_pde#2: the Laplace-Beltrami stiffness matrix on the sphere is singular (constants in the kernel) and NEITHER failure mode is loud. Verified on NGSolve 6.2.2604, OCC sphere maxh=0.4 Curve(4), H1 order 3 on Boundaries('.*'), f=6z^2-2 (2026-08-06): with no regulariser both umfpack and sparsecholesky return WITHOUT raising and WITHOUT printing anything, giving |u|_inf = 6.1e+09 / 2.7e+09; with the shipped 1e-8*u*v*ds regulariser max(gfu.vec)=171.5 and the L2 error against the analytic z^2-1/3 is 6.1e+02, while after removing the surface mean it is 2.6e-04 -- which is why the shipped surface_pde_3d template prints max=3387.7 for a field whose true range is [-1/3, 2/3]. Also confirms NGSolve emitted no PETSc-style DIVERGED_BREAKDOWN / DIVERGED_INDEFINITE_PC text. MUTATION CONTROL (re-runnable): T2_MUTATE=1 adds the documented 1e-8*u*v*ds regulariser to a_sing, the form that deliberately omits it, so the constant mode leaves the kernel and both direct solves return a bounded field. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 removes 'noreg_umfpack_linf_gt_1e6=True' and 'noreg_sparsecholesky_linf_gt_1e6=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "surface_pde",
+  "pitfall_index": 2,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "noreg_umfpack_raised=False",
+    "noreg_umfpack_linf_gt_1e6=True",
+    "noreg_sparsecholesky_raised=False",
+    "noreg_sparsecholesky_linf_gt_1e6=True",
+    "noreg_sparsecholesky_inverse_class=SparseCholesky_d",
+    "noreg_solver_printed_nothing=True",
+    "petsc_string_KSPSolve_DIVERGED_BREAKDOWN_emitted=False",
+    "petsc_string_DIVERGED_INDEFINITE_PC_emitted=False",
+    "reg_rawvec_max_gt_100=True",
+    "reg_l2err_without_mean_removal_gt_1=True",
+    "meanremoved_l2err_lt_1em3=True",
+    "meanremoved_beats_raw_by_gt_1e4=True",
+    "meanremoved_p1_range_matches_analytic=True",
+    "meanremoved_p1_max_below_1=True",
+    "pinned_plus_meanremoved_l2err_lt_1em3=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2: for POINT_LOAD on NODES use AssignVectorVariableProcess; there is no AssignVectorByDirectionProcess class on StructuralMechanicsApplication, and the CORE python module of that name genuinely fails on load variables because it tries to fix/free the DOF. Pitfall (kratos.linear_elasticity #6). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). This is the linear_elasticity copy; the structural_dynamics copy (#6 there) has its own fixture, point_load_direction_process_rejects. Measured: SMA.AssignVectorByDirectionProcess raises AttributeError (route (a) of the claim), while the core modules assign_vector_by_direction_process, assign_vector_variable_process and assign_vector_by_direction_to_condition_process all import and all expose Factory — so the directional process really does exist as a core module, which is what makes route (b) reachable and the claim's two-failure-mode structure correct. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 6 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 6. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 6 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/linear_elasticity_point_load_direction_process && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "linear_elasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[SMA.AssignVectorByDirectionProcess]=False_expected=False",
+    "probe[core_assign_vector_by_direction_process]=True_expected=True",
+    "probe[core_assign_vector_variable_process]=True_expected=True",
+    "probe[core_assign_vector_by_direction_to_condition_process]=True_expected=True",
+    "probe[SMA.POINT_LOAD]=True_expected=True",
+    "probe[KM.POINT_LOAD]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

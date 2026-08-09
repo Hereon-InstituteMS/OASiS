@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for Kratos linear_elasticity#7: problem_data MUST include 'echo_level'. Parameters::GetValue raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from kratos/sources/kratos_parameters.cpp when the field is missing. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for Kratos linear_elasticity#7: problem_data MUST include 'echo_level'. Parameters::GetValue raises RuntimeError 'Error: Getting a value that does not exist. entry string : echo_level' from kratos/sources/kratos_parameters.cpp when the field is missing. Verified empirically 2026-06-01. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 puts an echo_level field into the problem_data block, so the lookup finds it and GetInt succeeds. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: RuntimeError, Getting a value that does not exist, kratos_parameters. Re-verify: cd scripts/tier2_fixtures/kratos/echo_level_missing && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers. FIXED 2026-08-08: the expectation 'echo_level' was a bare word this fixture writes in its own error arm. Replaced by Kratos's own 'entry string : echo_level' from kratos_parameters.cpp:426. SCOPE, recorded rather than repaired: the CLAIM says problem_data MUST include echo_level, and this fixture only shows that Parameters::GetValue raises for an absent key -- nothing in it is specific to echo_level or shows a Kratos solver requiring it. Repairing that needs a different fixture (run a solver without the key and observe the consequence), not a different assertion, so it is left and stated.",
   "backend": "kratos",
   "physics": "linear_elasticity",
   "pitfall_index": 7,
@@ -7,8 +7,8 @@
   "expect_in_output": [
     "RuntimeError",
     "Getting a value that does not exist",
-    "echo_level",
-    "kratos_parameters"
+    "kratos_parameters",
+    "entry string : echo_level"
   ],
   "forbid_in_output": []
 }

@@ -1,0 +1,51 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#6 \u2014 PREDICT: TangDis buys Newton iterations, not convergence, and the size of the saving is the part the entry had to be corrected on. Four arms on a four-element geometrically nonlinear SOLID HEX8 cantilever (YOUNG 1000, NUE 0.3, tip surface Neumann ramped over ten steps, TOLDISP 1e-10 / TOLRES 1e-09), two load levels x two predictors, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. The RESULT DESCRIPTION is pinned to the SAME tip dispy for both predictors at each load and passes in all four runs (RESULT_FAILURES_*=0, all exit 0), so the predictor changes only the path to equilibrium and never the equilibrium. The cost: ConstDis spends exactly ONE more Newton iteration than TangDis at every one of the ten steps, at both loads (PER_STEP_PENALTY=[1] in both cases, 62 total against 52) \u2014 CONSTDIS_COSTS_EXACTLY_ONE_MORE_PER_STEP=yes and CONSTDIS_IS_AN_ORDER_SLOWER=no. That is a 20% surcharge, which is why TangDis is worth setting to trim iterations and is not a remedy for a diverging solve. The ratio marker is computed from Newton iteration counts (nlniter), never from elapsed time; it was originally named ..._IS_AN_ORDER_SLOWER, which claimed a timing result this fixture does not measure and tripped the wall-clock gate on the word alone. Renamed to say what it computes.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TANG_100=0",
+    "EXIT_CONST_100=0",
+    "EXIT_TANG_600=0",
+    "EXIT_CONST_600=0",
+    "processor 0 finished normally",
+    "RESULT_FAILURES_TANG_100=0",
+    "RESULT_FAILURES_CONST_100=0",
+    "RESULT_FAILURES_TANG_600=0",
+    "RESULT_FAILURES_CONST_600=0",
+    "STEPS_TANG_100=10",
+    "TOTAL_ITERS_TANG_100=52",
+    "TOTAL_ITERS_CONST_100=62",
+    "TOTAL_ITERS_TANG_600=52",
+    "TOTAL_ITERS_CONST_600=62",
+    "PER_STEP_PENALTY_100=[1]",
+    "PER_STEP_PENALTY_600=[1]",
+    "CONSTDIS_COSTS_EXACTLY_ONE_MORE_PER_STEP=yes",
+    "CONSTDIS_ITERATION_RATIO_AT_LEAST_2X=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_TANG_100=1",
+    "EXIT_CONST_100=1",
+    "CONSTDIS_COSTS_EXACTLY_ONE_MORE_PER_STEP=no",
+    "CONSTDIS_ITERATION_RATIO_AT_LEAST_2X=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the contrast: give the ConstDis arm at load 100 the tangent predictor. Its iteration count drops to TangDis's, the per-step penalty set becomes [0] and TOTAL_ITERS_CONST_100=62 disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck ConstDis 100.0 4.39899542151476375e+00 \"$TMP/const_100.4C.yaml\"",
+      "to": "deck TangDis  100.0 4.39899542151476375e+00 \"$TMP/const_100.4C.yaml\""
+    },
+    {
+      "note": "same at load 600. TOTAL_ITERS_CONST_600=62 disappears and PER_STEP_PENALTY_600 flips to [0], so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck ConstDis 600.0 5.80711867329991538e+00 \"$TMP/const_600.4C.yaml\"",
+      "to": "deck TangDis  600.0 5.80711867329991538e+00 \"$TMP/const_600.4C.yaml\""
+    }
+  ]
+}

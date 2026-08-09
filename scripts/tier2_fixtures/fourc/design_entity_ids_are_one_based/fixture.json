@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#24. A 1-element HEX8 deck declares DSURFACE 1 and 2 in DSURF-NODE TOPOLOGY. With the Dirichlet on E: 1 it exits 0; with the Dirichlet on E: 5 it exits 1 before solving anything (BAD_RAN_A_RESULT_TEST=0), so an empty entity is never silently dropped. The message is off by one from what was written: the deck says E: 5 and 4C says 'DSurface 4 not in range [0:2[' followed by 'DSurface condition on non existent DSurface?Could not read set from entity type.' from core/fem/src/condition/4C_fem_condition.cpp line 133 — the internal id is 0-based and the range is half-open, and the id the author typed is never echoed (BAD_ECHOES_THE_WRITTEN_ID=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 24,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_BAD=1",
+    "processor 0 finished normally",
+    "DSurface 4 not in range [0:2[",
+    "DSurface condition on non existent DSurface?Could not read set from entity type.",
+    "4C_fem_condition.cpp",
+    "BAD_ECHOES_THE_WRITTEN_ID=0",
+    "BAD_RAN_A_RESULT_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_BAD=0",
+    "BAD_ECHOES_THE_WRITTEN_ID=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: put the Dirichlet on an entity the topology actually declares. The run completes, the range diagnostic vanishes, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "mk 5 \"$TMP/bad.yaml\"",
+    "to": "mk 1 \"$TMP/bad.yaml\""
+  }
+}

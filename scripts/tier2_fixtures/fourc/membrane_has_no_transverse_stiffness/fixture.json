@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::membrane#0 — zero bending stiffness decides whether the deck runs at all, not just how it looks. One flat 4x4 MEMBRANE4 patch, all four edges Dirichlet. (1) A plate-style normal traction (third dof slot, TYPE Live) is refused outright: 'membrane pressure on 1st dof only!' from membrane/4C_membrane_evaluate.cpp. (2) With the edges held at zero and no load, the out-of-plane block of the tangent is identically empty — nothing fills it, because there is no bending term — and the run dies with 'Signal: Floating point exception (8)' inside libumfpack's triangular solve, exit 136, zero steps and ZERO 4C-level error lines (NO_INPLANE_STRESS_4C_ERROR_LINES=0), so there is no diagnostic to read. (3) The same mesh with the edges pulled outward by 10% runs all four steps and exits 0: the geometric stiffness produced by the in-plane stress is the only thing holding the sheet out of plane. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "membrane",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TRANSVERSE_LOAD=1",
+    "EXIT_NO_INPLANE_STRESS=136",
+    "EXIT_INPLANE_TENSION=0",
+    "membrane pressure on 1st dof only!",
+    "4C_membrane_evaluate.cpp",
+    "NO_INPLANE_STRESS_STEPS=0",
+    "NO_INPLANE_STRESS_4C_ERROR_LINES=0",
+    "Signal: Floating point exception (8)",
+    "umfpack",
+    "processor 0 finished normally",
+    "INPLANE_TENSION_STEPS=4"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TRANSVERSE_LOAD=0",
+    "EXIT_NO_INPLANE_STRESS=0",
+    "EXIT_INPLANE_TENSION=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the second arm: give the patch the in-plane stretch that generates geometric stiffness. It then solves like the third arm, EXIT_NO_INPLANE_STRESS becomes 0 and the floating-point exception disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.0 \"\"                 \"$TMP/nostress.4C.yaml\"",
+      "to": "deck 0.1 \"\"                 \"$TMP/nostress.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the first arm: drop the plate-style traction the membrane cannot take. Its refusal message vanishes and EXIT_TRANSVERSE_LOAD becomes 136 rather than 1 — either way the expected pair no longer holds, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.0 \"$NORMAL_TRACTION\" \"$TMP/transverse.4C.yaml\"",
+      "to": "deck 0.1 \"\" \"$TMP/transverse.4C.yaml\""
+    }
+  ]
+}

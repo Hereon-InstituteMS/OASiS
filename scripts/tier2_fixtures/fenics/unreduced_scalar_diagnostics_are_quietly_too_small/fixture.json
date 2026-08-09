@@ -1,0 +1,29 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::6: [API] Any scalar diagnostic must be reduced: `comm.allreduce(fem.assemble_scalar(fem.form(...)), op=MPI.SUM)`, and `u.x.array.min()/.max()` are RANK-LOCAL - reduce them with MPI.MIN / MPI.MAX over `u.x.array[:nr]`. Signal: an integral norm that comes out too SMALL on multiple ranks (measured \u2026 WHAT THIS RUNS: any scalar diagnostic must be reduced -- `comm.allreduce(fem.assemble_scalar(fem.form(...)), op=MPI.SUM)` -- and `u.x.array.min()/.max()` are RANK-LOCAL, so they need MPI.MIN / MPI.MAX over `u.x.array[:nr]`. Wrong variant: report fem.assemble_scalar(...) and u.x.array.min()/.max() straight out, as one would in serial. Right variant: allreduce them. This is an MPI-only failure, so the fixture is a driver: it writes one child script and runs it on 1 rank and on 2 ranks, reporting the diagnostic raw and reduced, through the mpirun that ships next to this interpreter. OBSERVED, copied from the run: two_rank_reported_norm_is_smaller_than_the_serial_value=True; the_too_small_number_is_finite_and_nothing_raised=True; rank_local_extremum_disagrees_with_the_reduced_one=True; allreduced_norm_equals_the_serial_norm=True; on_one_rank_raw_and_reduced_are_identical=True; both_runs_converged=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 6,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::6"
+  ],
+  "expect_in_output": [
+    "two_rank_reported_norm_is_smaller_than_the_serial_value=True",
+    "the_too_small_number_is_finite_and_nothing_raised=True",
+    "rank_local_extremum_disagrees_with_the_reduced_one=True",
+    "allreduced_norm_equals_the_serial_norm=True",
+    "on_one_rank_raw_and_reduced_are_identical=True",
+    "both_runs_converged=True",
+    "two_rank_reported_norm=",
+    "VERDICT=unreduced_scalar_diagnostics_are_quietly_too_small"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "mpirun_not_found=True",
+    "child_produced_no_result",
+    "nan",
+    "VERDICT=children_did_not_run",
+    "VERDICT=unreduced_scalar_diagnostics_matched_the_serial_value"
+  ],
+  "timeout_seconds": 300
+}

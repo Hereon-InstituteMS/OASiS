@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::membrane#1, and a correction to its recipe. The entry said to stabilise a membrane 'via PRESTRESS section or internal pressure DESIGN SURF NEUMANN'. On a FLAT sheet neither works: the same 4x4 MEMBRANE4 patch with orthopressure and no edge drive dies with 'Signal: Floating point exception (8)' after zero steps, and adding STRUCTURAL DYNAMIC PRESTRESS: 'MULF' changes nothing — it dies identically. Both are loads, and neither puts stress into the reference configuration, so the out-of-plane block of the tangent stays empty. Stretching the edges of the identical mesh by 10% runs all four steps and exits 0. The upstream membrane_cyl_new_struc deck shows the other half: on a CURVED surface orthopressure alone drives all ten steps, because there the pressure does generate in-plane stress. The stabiliser is in-plane stress, not the pressure or the PRESTRESS keyword as such. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "membrane",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PRESSURE_ONLY=136",
+    "EXIT_PRESTRESS_MULF=136",
+    "EXIT_INPLANE_TENSION=0",
+    "EXIT_CURVED_PRESSURE=0",
+    "PRESSURE_ONLY_STEPS=0",
+    "PRESTRESS_MULF_STEPS=0",
+    "Signal: Floating point exception (8)",
+    "processor 0 finished normally",
+    "INPLANE_TENSION_STEPS=4",
+    "CURVED_PRESSURE_STEPS=10"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PRESSURE_ONLY=0",
+    "EXIT_PRESTRESS_MULF=0",
+    "EXIT_INPLANE_TENSION=1",
+    "EXIT_CURVED_PRESSURE=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the pressure-only arm the in-plane stretch it lacks. It then solves, EXIT_PRESSURE_ONLY becomes 0 and PRESSURE_ONLY_STEPS stops being 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.0 0.05 \"\"                                              \"$TMP/pressure.4C.yaml\"",
+      "to": "deck 0.1 0.05 \"\"                                              \"$TMP/pressure.4C.yaml\""
+    },
+    {
+      "note": "remove the pathology from the MULF arm the same way. EXIT_PRESTRESS_MULF becomes 0 and its floating-point exception disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.0 0.05 $'\\n  PRESTRESS: \"MULF\"\\n  PRESTRESSTIME: 0.5'  \"$TMP/mulf.4C.yaml\"",
+      "to": "deck 0.1 0.05 $'\\n  PRESTRESS: \"MULF\"\\n  PRESTRESSTIME: 0.5'  \"$TMP/mulf.4C.yaml\""
+    },
+    {
+      "note": "remove the control: take the in-plane tension away from the third arm. It then dies like the first two, EXIT_INPLANE_TENSION stops being 0 and the fixture loses the contrast that carries the correction, so it must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.1 0.00 \"\"                                              \"$TMP/tension.4C.yaml\"",
+      "to": "deck 0.0 0.00 \"\"                                              \"$TMP/tension.4C.yaml\""
+    }
+  ]
+}

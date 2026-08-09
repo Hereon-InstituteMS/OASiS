@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 FALSIFICATION: pitfall (kratos.curved_mms #0) records that 'Kratos 10.4 on this host works ONLY under the system /usr/bin/python3 (Python 3.8)' and that 'the pip Kratos wheel inside the repo .venv is BROKEN: its shared libraries require GLIBC 2.32 which the OS libc does not provide'. THAT IS A PROPERTY OF THE 10.4.2 WHEEL, NOT OF THE HOST. Measured: on the same glibc-2.31 machine, KratosMultiphysics 10.4.3 in a Python 3.12 venv imports and runs — nothing in the 10.4.3 wheel needs a symbol above GLIBC_2.17, and its manylinux_2_28 tag is satisfied by glibc 2.31. This fixture asserts that it is itself running under a non-system, non-3.8 interpreter inside a venv, and that a real Kratos call works there, so it cannot pass by accident on the interpreter the claim prescribes. The operational advice in that entry — run generated scripts with /usr/bin/python3 — is therefore stale and costs a user the newer wheel. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the pathology is the stale advice 'run Kratos under /usr/bin/python3', and the antidote is to obey it — the mutation re-execs this same file under /usr/bin/python3 before Kratos is imported, so the child interpreter performs every probe itself (a T2_MUTATE_REEXEC guard stops it re-execing again). Kratos 10.4 loads there: kratos_imports=True and kratos_call_works=True still print from a real KM.Model() on Python 3.8, so the mutant is a correct measurement, not a crash. These expect_in_output strings disappear: interpreter_is_system_python3=False, python_major_minor=3.12, running_in_venv=True — the mutant prints True, 3.8 and False, env_claim_mismatches=2, and trips the forbidden token FAIL:. Proof environment: KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (28 applications; the repo-venv Kratos wheel does not load on this glibc and /usr/bin/python3 cannot import this repo). Proved KILLED 2026-08-07.",
+  "backend": "kratos",
+  "physics": "curved_mms",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_imports=True",
+    "interpreter_is_system_python3=False",
+    "python_major_minor=3.12",
+    "running_in_venv=True",
+    "kratos_call_works=True",
+    "env_claim_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 180,
+  "_mutation": {
+    "note": "The pathology is the stale operational advice 'run Kratos under /usr/bin/python3', and the way to remove it from this fixture is to OBEY it: the mutation re-execs this same file under /usr/bin/python3 before Kratos is imported, so the prescribed interpreter performs every probe itself. Kratos 10.4 loads there, so the mutant is a correct measurement rather than a crash — it simply stops being able to falsify anything.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
+}

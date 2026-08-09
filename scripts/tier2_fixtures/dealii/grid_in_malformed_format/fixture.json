@@ -1,11 +1,15 @@
 {
-  "_comment": "Tier-2: GridIn::read with malformed input raises ExcInOutCondTrue / similar parser exception. Reads a deliberately-truncated mesh file; verifies the exception class and 'GridIn' string appear.",
+  "_comment": "Tier-2: GridIn::read with malformed input raises ExcInOutCondTrue / similar parser exception. Reads a deliberately-truncated mesh file; verifies the exception class and 'GridIn' string appear.MUTATION CONTROL (2026-08-07): MUTATION APPLIED AND IT DOES NOT DISCRIMINATE. The T2_MUTATE=1 hook is left in source.cpp so the negative result stays re-runnable, but NO _mutation recipe is declared: a declared recipe that survives reads as a defect rather than as the finding it is (same treatment as dune/point_indicator_selects_no_facet and febio/static_activation_ramp_shape_does_not_matter). Re-run by hand from the fixture directory after any harness run has built it: `T2_MUTATE=1 ./_build/prog`. The hook feeds the same GridIn a COMPLETE one-quad Gmsh mesh instead of the truncated header, so there is nothing malformed left to raise on. Measured 2026-08-07: the read succeeds and the program prints \"ERROR: GridIn accepted truncated mesh\" and exits 2 — and the fixture STILL PASSES, because its single expectation is \"GridIn\" and the fixture writes that word itself in BOTH branches (\"GridIn raised: ...\" on the exception path, \"ERROR: GridIn accepted ...\" on the success path). Nothing in expect_in_output comes from deal.II; the fixture would pass unchanged if the library printed nothing at all. The fix would be an expectation naming the measured value; it is deliberately NOT made here, because tuning a fixture until its mutation goes red is how a mutation control stops being evidence. FIXED 2026-08-08 (expectations changed). The single expectation was the bare word 'GridIn', which the fixture writes on BOTH paths -- 'GridIn raised:' when the parser rejects the truncated header and 'ERROR: GridIn accepted truncated mesh' when it does not. Executed under T2_MUTATE=1 (a well-formed .msh): the accept path prints and the old needle is still there, so the fixture passed on the run where the parser swallowed the input. It now asserts the outcome (gridin_read_raised=1, gridin_cells_read=0) and deal.II's own parser words, 'is not recognized at the present position of', and forbids the accept banner. Measured 2026-08-08 through the runner: unmutated PASSED; T2_MUTATE=1 FAILED on all three expectations plus the forbidden token.",
   "backend": "dealii",
   "physics": "linear_elasticity",
   "pitfall_index": 92,
   "mode": "compile_and_run",
   "expect_in_output": [
-    "GridIn"
+    "gridin_read_raised=1",
+    "gridin_cells_read=0",
+    "is not recognized at the present position of"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "ERROR: GridIn accepted"
+  ]
 }

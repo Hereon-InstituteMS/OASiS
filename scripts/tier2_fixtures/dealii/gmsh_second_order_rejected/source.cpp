@@ -11,6 +11,7 @@
 #include <deal.II/grid/grid_in.h>
 #include <deal.II/grid/tria.h>
 
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -18,6 +19,31 @@
 using namespace dealii;
 
 namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology from
+// the input: the same reader is handed a LINEAR quad (Gmsh element type 3),
+// which is one of the topologies deal.II does support, so nothing is rejected.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+
+const char *const QUAD4_MSH =
+    "$MeshFormat\n"
+    "2.2 0 8\n"
+    "$EndMeshFormat\n"
+    "$Nodes\n"
+    "4\n"
+    "1 0 0 0\n"
+    "2 1 0 0\n"
+    "3 1 1 0\n"
+    "4 0 1 0\n"
+    "$EndNodes\n"
+    "$Elements\n"
+    "1\n"
+    "1 3 2 1 1 1 2 3 4\n"
+    "$EndElements\n";
+
 const char *const QUAD9_MSH =
     "$MeshFormat\n"
     "2.2 0 8\n"
@@ -43,7 +69,7 @@ const char *const QUAD9_MSH =
 int main()
 {
   const std::string path = "/tmp/_tier2_quad9.msh";
-  { std::ofstream out(path); out << QUAD9_MSH; }
+  { std::ofstream out(path); out << (mutate() ? QUAD4_MSH : QUAD9_MSH); }
 
   Triangulation<2> tria;
   GridIn<2> gi;

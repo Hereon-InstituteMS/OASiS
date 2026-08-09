@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for NGSolve stokes#1: For a compound FESpace([V, Q]), X.TnT() returns a 2-tuple of lists of ProxyFunctions. The catalog-recommended unpack pattern '(u, p), (v, q) = X.TnT()' works because Python destructures lists by length. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for NGSolve stokes#1: For a compound FESpace([V, Q]), X.TnT() returns a 2-tuple of lists of ProxyFunctions. The catalog-recommended unpack pattern '(u, p), (v, q) = X.TnT()' works because Python destructures lists by length. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable, INVERTED POLARITY): the fixture only ever demonstrates the correct unpack, so the control commits the documented mistake instead -- T2_MUTATE=1 unpacks the compound TnT() with the single-space idiom 'u, v = X.TnT()' rather than '(u, p), (v, q) = X.TnT()', binding u to the whole trial list. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 4 expect_in_output strings; T2_MUTATE=1 removes 'u_type=ProxyFunction' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "ngsolve",
   "physics": "stokes",
   "pitfall_index": 1,

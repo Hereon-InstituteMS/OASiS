@@ -1,0 +1,20 @@
+#!/bin/bash
+# Tier-2 for dealii wave#2 — probe "explicit_newmark_cfl" of the shared wave
+# translation unit _shared/wave_family.cc, compiled once and cached so six
+# fixtures share one build.
+#
+# Explicit Newmark (beta=0, gamma=0.5) at dt = 4*h/c: the amplitude leaves the
+# bounded range within a handful of steps and the discrete energy
+# 0.5 v^T M v + 0.5 c^2 u^T K u grows by more than a factor of ten per step.
+# The same dt with beta=0.25 is run in the same process and stays bounded.
+#
+# The entry's rule of thumb dt < h/c is MEASURED, not assumed: the probe scans
+# dt for the true limit of this consistent-mass FE_Q(1) discretisation and then
+# runs one case at dt = 0.8*h/c, which satisfies the rule and diverges anyway.
+#
+# Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant
+# (dt = h/(8c), below the measured limit), and the fixture then fails its own
+# expectations.
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+exec bash "$HERE/../_shared/run.sh" wave_family release explicit_newmark_cfl

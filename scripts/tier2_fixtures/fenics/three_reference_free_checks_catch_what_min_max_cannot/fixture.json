@@ -1,0 +1,22 @@
+{
+  "_comment": "CLAIM time_dependent_heat::10: [Physics] Useful reference-free checks for this physics, all of which are in the minimal_working_example: (1) the discrete maximum principle - with no volumetric source, T must stay inside the range spanned by the initial condition and the Dirichlet data; (2) the Galerkin residual assembled at the \u2026 WHAT THIS RUNS: the three reference-free checks that belong in every transient heat run - (1) the discrete maximum principle, (2) the Galerkin residual at the solution over the UNCONSTRAINED dofs, (3) the nodal reactions summed over each Dirichlet wall, whose imbalance must shrink as steady state is approached - and the fact that printing only min/max of T detects none of the failures. 32x32 unit square, T = 1 on the left wall, T = 0 on the right, insulated top and bottom, T = 0 initially, backward Euler dt = 0.01, manual assemble-once loop run to t = 0.5. All three checks pass on the correct run: T stays in [0.000000, 1.000000], the free-dof residual is at machine zero, and the wall reactions come out equal and opposite to within a few percent with an imbalance that shrinks further by t = 1.0, because the imbalance is the rate of energy storage and the run stops before steady state. The same loop with apply_lifting omitted prints the IDENTICAL min/max history - so check (1) is blind to it - while the Galerkin residual over the free dofs jumps to order one. Mutation control: T2_MUTATE=1 restores apply_lifting in the second run, so the residual check no longer has anything to catch. OBSERVED, copied from the run: discrete_maximum_principle_holds=True; galerkin_residual_at_free_dofs_is_machine_zero=True; wall_reactions_are_equal_and_opposite=True; reaction_imbalance_shrinks_towards_steady_state=True; second_run_prints_the_identical_min_max_history=True; residual_check_catches_the_second_run=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "discrete_maximum_principle_holds=True",
+    "galerkin_residual_at_free_dofs_is_machine_zero=True",
+    "wall_reactions_are_equal_and_opposite=True",
+    "reaction_imbalance_shrinks_towards_steady_state=True",
+    "second_run_prints_the_identical_min_max_history=True",
+    "residual_check_catches_the_second_run=True",
+    "min_max_check_catches_the_second_run=False",
+    "VERDICT=the_three_checks_hold_and_the_residual_catches_what_min_max_cannot"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=checks_did_not_discriminate"
+  ],
+  "timeout_seconds": 300
+}

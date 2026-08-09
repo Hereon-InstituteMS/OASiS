@@ -1,13 +1,19 @@
 {
-  "_comment": "Tier-2 for 4C input format: 4C 2026.3.0-dev only accepts .yaml/.yml/.json input files. The legacy .dat format is rejected with 'Cannot infer format of input file ... Only .yaml, .yml, and .json are supported.' from core/io/src/4C_io_input_file.cpp:428. The bulk of the existing 4C catalog references dat-format section names (TIMEINTEGR, DESIGN SURF NEUMANN, MAT_scatra) — those names are still valid as YAML keys but the OVERALL FILE FORMAT must be YAML/JSON not dat. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for 4C input format: 4C 2026.3.0-dev only accepts .yaml/.yml/.json input files. The legacy .dat format is rejected with 'Cannot infer format of input file ... Only .yaml, .yml, and .json are supported.' from core/io/src/4C_io_input_file.cpp:428. The bulk of the existing 4C catalog references dat-format section names (TIMEINTEGR, DESIGN SURF NEUMANN, MAT_scatra) — those names are still valid as YAML keys but the OVERALL FILE FORMAT must be YAML/JSON not dat. Verified empirically 2026-06-01. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the probe is written as probe.yaml in YAML syntax instead of probe.dat in dat syntax. All three expectations - 'Cannot infer format of input file', 'Only .yaml, .yml, and .json are supported', '4C_io_input_file' - disappear because the file-read stage succeeds. Proved KILLED 2026-08-07.",
   "backend": "fourc",
-  "physics": "_input_format",
-  "pitfall_index": 0,
+  "physics": "input_format",
+  "pitfall_index": 5,
   "mode": "cmd",
   "expect_in_output": [
     "Cannot infer format of input file",
     "Only .yaml, .yml, and .json are supported",
     "4C_io_input_file"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "remove the pathology: offer the SAME content as a .yaml file in YAML syntax, i.e. a format the binary supports. 4C then infers the format, gets past the file-read stage, and 'Cannot infer format of input file' never appears - so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

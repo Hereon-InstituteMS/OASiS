@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for NGSolve phase_field#5: without a tension/compression split a compressive load nucleates exactly as much damage as tension, and the psi_plus shipped in phase_field_fracture_2d (a vol-dev split) does NOT reach the quoted max(d) < 1e-3. Verified on NGSolve 6.2.2604, unit_square maxh=0.15 (ne=96, VectorH1 order 1 ndof=126 with 94 free, H1 ndof=63), confined uniaxial loading dirichletx='left|right' dirichlety='bottom|top', |u_y|=0.03, E=1 nu=0.3 Gc=1e-3 l0=0.1 (2026-08-06): no split gives max(d)=1.080617e-01 in BOTH tension and compression, the shipped vol-dev split gives 1.304348e-01 / 4.411765e-02, and a spectral (principal-strain) split gives 1.080617e-01 / 3.909618e-32. Also pins that with the shipped elastic step (which wipes the Dirichlet entries) every energy reports max(d)=0 under compression, so the sanity test passes while measuring nothing. MUTATION CONTROL (re-runnable): T2_MUTATE=1 drives the no-split pair of runs with psi_spectral instead of psi_full -- the documented Miehe split applied where the spurious compressive damage is measured. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'nosplit_compression_dmax_gt_1em3=True', 'nosplit_compression_equals_tension=True' and 'voldev_reduces_compression_vs_nosplit=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "phase_field",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "vector_space_class=VectorH1",
+    "mesh_ne=96 ndof_u=126 nfree_u=94 ndof_d=63",
+    "shipped_elastic_step_passes_every_split_vacuously=True",
+    "nosplit_compression_dmax_gt_1em3=True",
+    "nosplit_compression_equals_tension=True",
+    "voldev_reduces_compression_vs_nosplit=True",
+    "voldev_compression_still_above_1em3=True",
+    "spectral_compression_dmax_lt_1em3=True",
+    "spectral_tension_dmax_gt_1em3=True",
+    "spectral_tension_equals_nosplit_tension=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

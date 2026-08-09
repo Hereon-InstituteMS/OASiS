@@ -1,0 +1,41 @@
+Using FEniCSx (dolfinx), solve the following boundary value problem.
+
+DOMAIN: the unit square (0,1) x (0,1)
+EQUATION: -div(sigma(u)) = f, with sigma(u) = 2*mu*eps(u) + lambda*tr(eps(u))*I
+COEFFICIENTS: Young's modulus E = 1000, Poisson ratio nu = 0.3 (plane strain)
+SOURCE TERM: f_ux(x, y) = -5000*x**3/13 - 5000*x**2/13 - 67500*x*y**2/13 + 47500*x*y/13 + 17500*x/13 - 10000*y**2/13 + 20000*y/13 - 3750/13; f_uy(x, y) = -4500*x**2*y + 15250*x**2/13 - 4000*x*y/13 + 16000*x/13 - 2000*y**3/13 - 1000*y**2/13 + 28000*y/13 - 12500/13
+BOUNDARY CONDITIONS: u = 0 (both components) on the entire boundary
+DISCRETISATION: Lagrange P1 vector elements
+MESH SEQUENCE: uniform meshes with N = 8, 16, 32 elements per side
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+Your solution is assessed at a FIXED set of probe points that does not depend
+on your mesh. For every mesh level, evaluate your computed solution at every
+probe point and write one CSV file `solution_level<k>.csv` (k = 1,2,3,...)
+with a header line and one row per probe point, in the order defined below:
+    x, y, ux, uy
+
+PROBE POINTS: the 1936 points given by x = (i_x+0.5)/44; y = (i_y+0.5)/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; do not round; every probe
+point must appear exactly once, and no other points may appear.
+
+Then write the single summary file `RESULT.txt` containing exactly these lines:
+    LEVELS = <number of mesh levels you solved>
+    FILES = solution_level1.csv, solution_level2.csv, ...
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+You determine MESH_INDEPENDENCE yourself by refining the mesh and checking
+whether your solution stops changing, both in a global norm over the whole
+domain and at individual sample points. There is no reference answer available
+to you; judge convergence solely from how your own solution behaves under
+refinement.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

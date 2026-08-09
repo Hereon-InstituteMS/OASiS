@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#4 — M_DAMP and K_DAMP are read only when DAMPING is set to 'Rayleigh'; its default is 'None'. On one single-HEX8 GenAlpha deck, adding M_DAMP: 5.0 and K_DAMP: 0.05 with DAMPING left at its default still passes the undamped result test pinned to 1e-9 (COEFFS_ONLY_RESULT_FAILURES=0) and 4C never mentions damping at all (COEFFS_ONLY_WARNINGS=0) — the coefficients are simply inert. Adding DAMPING: 'Rayleigh' with the same two numbers moves the answer to 1.53054041008010792e-02. The one loud case is DAMPING: 'Rayleigh' without coefficients: 'Rayleigh damping parameter K_DAMP not explicitly given.' from adapter/4C_adapter_str_structure_new.cpp, exit 1. So 4C refuses to invent a coefficient but will silently ignore one you supplied. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_UNDAMPED=0",
+    "EXIT_COEFFS_ONLY=0",
+    "EXIT_RAYLEIGH=1",
+    "EXIT_RAYLEIGH_NO_COEFFS=1",
+    "processor 0 finished normally",
+    "COEFFS_ONLY_RESULT_FAILURES=0",
+    "COEFFS_ONLY_WARNINGS=0",
+    "is WRONG --> actresult= 1.53054041008010792e-02",
+    "Rayleigh damping parameter K_DAMP not explicitly given.",
+    "4C_adapter_str_structure_new.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_UNDAMPED=1",
+    "EXIT_COEFFS_ONLY=1",
+    "EXIT_RAYLEIGH=0",
+    "EXIT_RAYLEIGH_NO_COEFFS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the COEFFS_ONLY arm the DAMPING switch it was missing. Its answer then moves off the undamped one, COEFFS_ONLY_RESULT_FAILURES stops being 0 and EXIT_COEFFS_ONLY becomes 1, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  M_DAMP: 5.0\\n  K_DAMP: 0.05'                              \"$TMP/coeffs.4C.yaml\"",
+      "to": "deck $'\\n  DAMPING: \"Rayleigh\"\\n  M_DAMP: 5.0\\n  K_DAMP: 0.05'                              \"$TMP/coeffs.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: give the last arm its coefficients. The missing-K_DAMP abort vanishes and EXIT_RAYLEIGH_NO_COEFFS becomes 1->0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  DAMPING: \"Rayleigh\"'                                      \"$TMP/nocoeffs.4C.yaml\"",
+      "to": "deck $'\\n  DAMPING: \"Rayleigh\"\\n  M_DAMP: 5.0\\n  K_DAMP: 0.05'                                      \"$TMP/nocoeffs.4C.yaml\""
+    }
+  ]
+}

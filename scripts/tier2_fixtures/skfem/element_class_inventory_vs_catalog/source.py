@@ -16,12 +16,23 @@ ElementTriRaviartThomas in some future major), the fixture
 flips signs and the test fails until either:
   * the catalog catches up, or
   * the alias is restored upstream.
+
+Mutation control: with T2_MUTATE=1 the phantom entry is
+replaced by the real class name it should have been
+(ElementTriRaviartThomas → ElementTriRT0), i.e. the documented
+fix applied at the pathology site.  The phantom probe then
+finds the name present, so
+'catalog_phantom_present=[]' is no longer printed and the
+fixture goes red.  Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import skfem
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 # Catalog names skfem genuinely ships under (must all be
@@ -51,7 +62,9 @@ CATALOG_REAL = (
 # Catalog comments call these phantom (must NOT be added
 # upstream OR catalog must be updated when they are).
 CATALOG_PHANTOM = (
-    "ElementTriRaviartThomas",
+    "ElementTriRaviartThomas" if not MUTATE
+    # the documented fix: the class really ships as ElementTriRT0
+    else "ElementTriRT0",
 )
 
 # Real classes skfem ships that the catalog generators do

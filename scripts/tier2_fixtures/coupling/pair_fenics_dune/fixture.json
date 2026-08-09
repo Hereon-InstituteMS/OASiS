@@ -1,0 +1,43 @@
+{
+  "_comment": "COUPLING tier-2. DUNE-fem's sides-table row: unstarred yes in both columns, 'coupled to FEniCSx and deal.II, both roles ... and all converged.' Two arrangements against FEniCSx, checked against the closed form. DUNE is the backend whose payload makes a claim about the RUN and not only the answer: the participant is a fresh process every coupling iteration and DUNE-fem JIT-compiles each distinct UFL form on first use, so a script that puts imported data into the form TEXT pays a minute-plus compile every iteration and the coupling appears to hang. Finishing inside a bounded wall-clock budget is the observable form of that claim. The payload also states the exported flux carries small solver noise because the default galerkin(..., solver='cg') projection runs at a loose linear tolerance \u2014 a claim about the SIZE of an error, which is why the flux tolerance here is the loosest in the set and the measured error is printed.",
+  "_mutation": {
+    "note": "Configure both participants with a conductivity 25% away from the one the closed form is computed from. The coupling stays SELF-CONSISTENT: it converges, the two sides still agree at the interface, and the flux balance is untouched because both subdomains moved together \u2014 the interface temperature does not even change, since the conductance RATIO is preserved. Only the interface FLUX moves, by the same 25%. So this is a converged, balanced, internally unimpeachable coupling of the wrong problem, which is the exact silent-wrong shape these fixtures exist to catch, and the q_err check is the only thing that sees it. Run by hand against the subject rather than the setup, the equivalent was flipping the sign of `normal_fluxes` in data/coupling_participants/participant_skfem.py (not stageable, so not declarable here): that produced a run which converged in 62 iterations and balanced to 3.9e-08 while landing 22 K from the exact interface temperature.",
+    "file": "../_lib/couplinglib.py",
+    "from": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{k}\", \"F_SRC\": \"0.0\",",
+    "to": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{1.25 * k}\", \"F_SRC\": \"0.0\","
+  },
+  "backend": "coupling",
+  "physics": "pair_fenics_dune",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "dune_D_fenics_N_converged=True",
+    "dune_D_fenics_N_meshes_nonmatching=True",
+    "dune_D_fenics_N_interface_T_matches_reference=True",
+    "dune_D_fenics_N_interface_q_matches_reference=True",
+    "dune_D_fenics_N_flux_signs_are_opposite=True",
+    "dune_D_fenics_N_flux_balanced=True",
+    "dune_D_fenics_N_validation_empty=True",
+    "dune_D_fenics_N_matches_monolithic=True",
+    "fenics_D_dune_N_converged=True",
+    "fenics_D_dune_N_interface_q_matches_reference=True",
+    "fenics_D_dune_N_matches_monolithic=True",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "_meshes_nonmatching=False",
+    "_interface_T_matches_reference=False",
+    "_interface_q_matches_reference=False",
+    "_flux_signs_are_opposite=False",
+    "_flux_balanced=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "failures_count=1"
+  ]
+}

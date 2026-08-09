@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii stokes#5. Tier-2 for dealii stokes#5 -- probe \"hdiv_divergence\" of the shared translation unit _shared/stokes_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Every run prints all three numbers the claim compares: the RT_1/DGQ_1 mixed saddle point, the same mixed form with Q2/Q1, and a genuine Taylor-Hood Q2/Q1 STOKES solve, all for the same manufactured, exactly divergence-free velocity. Only the space under test drives the verdict. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "stokes",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "expect_in_output": [
+    "space_under_test=FE_RaviartThomas_1_FE_DGQ_1",
+    "divergence_at_machine_epsilon=true",
+    "VERDICT=hdiv_pair_is_pointwise_divergence_free"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=divergence_is_only_weakly_zero"
+  ],
+  "timeout_seconds": 900
+}

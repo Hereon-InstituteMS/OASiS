@@ -1,0 +1,59 @@
+{
+  "_comment": "Tier-2 for fourc::contact#10 — STRATEGY: \"Nitsche\" needs three things the mortar Penalty strategy does not, and the fixture reaches each wall in turn. Eight runs of one two-block deck (-0.3 over ten steps), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Control: STRATEGY Penalty with PENALTYPARAM 1e4 and a St-Venant-Kirchhoff material exits 0 over all ten steps, so every later failure is caused by the Nitsche switch alone. (a) Nitsche without an ALGORITHM key aborts with 'Unrecognized strategy: \"CONTACT::SolvingStrategy::nitsche\"' from contact/4C_contact_strategy_factory.cpp line 1668, and ALGORITHM NTS, LTS and Mortar give the identical message (ALGORITHMS_REJECTING_NITSCHE=4 of the four non-GPTS spellings tried), so GPTS is the only value that gets past the factory. (b) With GPTS the St-Venant-Kirchhoff material is the next wall: 'evaluate_cauchy_n_dir_and_derivatives not implemented for material of type m_stvenant' from mat/4C_mat_so3_material.cpp line 32; MAT_ElastHyper with ELAST_CoupNeoHooke gets past it. (c) With both of those right the penalty value still has to shrink, and nothing says so: PENALTYPARAM 1e4 — the value the mortar Penalty control is perfectly happy with — stalls after three steps with 'The nonlinear solver did not converge!' and never mentions PENALTYPARAM (NITSCHE_1E4_MENTIONS_PENALTYPARAM=0), while 1e1 completes all ten and exits 0.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_PENALTY_CONTROL=0",
+    "EXIT_NITSCHE_NO_ALG=1",
+    "EXIT_NITSCHE_NTS=1",
+    "EXIT_NITSCHE_LTS=1",
+    "EXIT_NITSCHE_MORTAR=1",
+    "EXIT_NITSCHE_GPTS_STVK=1",
+    "EXIT_NITSCHE_GPTS_PEN_1E4=1",
+    "EXIT_NITSCHE_GPTS_PEN_1E1=0",
+    "STEPS_PENALTY_CONTROL=10",
+    "STEPS_NITSCHE_GPTS_PEN_1E4=3",
+    "STEPS_NITSCHE_GPTS_PEN_1E1=10",
+    "processor 0 finished normally",
+    "Unrecognized strategy: \"CONTACT::SolvingStrategy::nitsche\"",
+    "4C_contact_strategy_factory.cpp",
+    "ALGORITHMS_REJECTING_NITSCHE=4",
+    "evaluate_cauchy_n_dir_and_derivatives not implemented for material of type m_stvenant",
+    "4C_mat_so3_material.cpp",
+    "The nonlinear solver did not converge!",
+    "NITSCHE_1E4_MENTIONS_PENALTYPARAM=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_PENALTY_CONTROL=1",
+    "EXIT_NITSCHE_NO_ALG=0",
+    "EXIT_NITSCHE_GPTS_STVK=0",
+    "EXIT_NITSCHE_GPTS_PEN_1E1=1",
+    "ALGORITHMS_REJECTING_NITSCHE=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from arm (a): give the Nitsche deck its GPTS algorithm. The strategy factory accepts it and EXIT_NITSCHE_NO_ALG stops being the no-ALGORITHM case, dropping ALGORITHMS_REJECTING_NITSCHE below 4, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck Nitsche \"\"    \"$STVK\"  1.0e4 \"$TMP/nit_noalg.yaml\"",
+      "to": "deck Nitsche \"$GPTS\" \"$STVK\"  1.0e4 \"$TMP/nit_noalg.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm (b): hand the GPTS deck a hyperelastic material. The evaluate_cauchy_n_dir_and_derivatives abort disappears and EXIT_NITSCHE_GPTS_STVK becomes 1 only through convergence failure, so the material message goes missing and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck Nitsche \"$GPTS\" \"$STVK\"  1.0e4 \"$TMP/nit_gpts_stvk.yaml\"",
+      "to": "deck Nitsche \"$GPTS\" \"$HYPER\" 1.0e4 \"$TMP/nit_gpts_stvk.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm (c): give the Nitsche deck the small penalty. It then completes all ten steps, STEPS_NITSCHE_GPTS_PEN_1E4=3 disappears and EXIT_NITSCHE_GPTS_PEN_1E4 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck Nitsche \"$GPTS\" \"$HYPER\" 1.0e4 \"$TMP/nit_gpts_big.yaml\"",
+      "to": "deck Nitsche \"$GPTS\" \"$HYPER\" 1.0e1 \"$TMP/nit_gpts_big.yaml\""
+    }
+  ]
+}

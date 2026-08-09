@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#1. Tier-2 for fenics mixed_poisson#1: a direct solve of this saddle point can fail while the script still exits 0. Nothing is printed, the return code is zero, the Function is populated \u2014 and ksp.getConvergedReason() is negative and the vector is full of inf. Always test getConvergedReason() > 0, and note that a converged reason is still not proof of a correct answer here. Wrong variant: solve, then read the solution without looking at the reason. Right variant: check the reason, and set ksp.setErrorIfNotConverged(True) so the underlying cause is raised instead of hidden. RT1 x DG0 on an 8x8 unit square with the flux prescribed on the whole boundary, factorised by PETSc's own LU (pc_factor_mat_solver_type=petsc). Observed on dolfinx 0.10.0 / PETSc 3.24.5: getConvergedReason() returns -11 (KSP_DIVERGED_PC_FAILED), all 128 pressure dofs are inf, and the script would have exited 0 with that in hand. With setErrorIfNotConverged(True) the same solve raises and the chained petsc4py error carries the real cause, \"Zero pivot in LU factorization\" and \"Zero pivot row 0 value 0. tolerance 2.22045e-14\", through PCSetUp_LU and MatLUFactorNumeric_SeqAIJ. Note this is factoriser-dependent: MUMPS on this identical matrix does not fail, it returns reason 4 and a pressure of order 1e15, which is the previous pitfall. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "quiet_solve_raised_nothing=True",
+    "converged_reason_is_diverged_pcsetup_failed_minus_eleven=True",
+    "solution_vector_is_entirely_inf=True",
+    "set_error_if_not_converged_surfaces_the_cause=True",
+    "Zero pivot in LU factorization",
+    "Zero pivot row 0 value 0. tolerance 2.22045e-14",
+    "VERDICT=direct_solve_failed_silently_and_the_script_would_exit_zero"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=direct_solve_did_not_fail_silently"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem navier_stokes#3, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. The entry as previously written told the agent to catch the enclosed-flow pressure nullspace with warnings.catch_warnings(record=True) for MatrixRankWarning('Matrix is exactly singular') plus an np.isfinite assertion, and said the solve gives an all-NaN vector or an offset pressure. Ran: lid-driven cavity (velocity on the whole boundary) with Taylor-Hood ElementVector(P2)/P1 at refined(2), (3) and (4) -- blocks 187, 659 and 2467 -- executing EXACTLY the prescribed guard; then two solves pinning different pressure DOFs at different values; then the same guard on a structurally rank-deficient matrix. Printed: the nullity is exactly 1 at every level, and BOTH PRESCRIBED CHECKS ARE BLIND -- the catch_warnings record is EMPTY at every refinement and np.isfinite passes at every refinement, with no all-NaN branch anywhere. An agent following the entry writes two guards, both pass, and reports success on a solution whose pressure level is arbitrary. The velocity is not merely finite but correct: it matches the pinned solution to 5.534e-14. The observable that IS present is checked instead -- two pins give velocities agreeing to 7.035e-14 while the pressures differ by an exact constant (spread 1.063e-11, non-zero offset). For contrast the same guard on a structurally rank-deficient matrix does warn AND does go non-finite, which is the case isfinite was the right partner for. MUTATION CONTROL (re-runnable): T2_MUTATE=1 adds one pinned pressure DOF to the Dirichlet set of the enclosed-flow solve at each refinement -- the remedy this entry exists to motivate. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 drops the measured nullity from 1 to 0 at every level and removes 'r2_nullspace_is_one_dimensional=True', 'r3_nullspace_is_one_dimensional=True' and 'r4_nullspace_is_one_dimensional=True' so the fixture goes red. The two blind-guard lines survive by design: their whole point is that they do NOT move when the pathology does. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "navier_stokes", "pitfall_index": 3, "mode": "python",
+  "expect_in_output": [
+    "r2_nullspace_is_one_dimensional=True",
+    "r3_nullspace_is_one_dimensional=True",
+    "r4_nullspace_is_one_dimensional=True",
+    "r3_warnings=[]",
+    "r4_catch_warnings_record_is_empty=True",
+    "r4_isfinite_passes=True",
+    "r4_all_nan=False",
+    "warning_absent_at_every_refinement=True",
+    "isfinite_passes_at_every_refinement=True",
+    "both_prescribed_guards_are_blind=True",
+    "velocity_is_identical_across_pins=True",
+    "unpinned_velocity_is_also_correct=True",
+    "pressure_differs_by_a_constant=True",
+    "nullspace_observable_via_two_pins=True",
+    "guard_works_on_a_genuinely_rank_deficient_matrix=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for fourc::solid_mechanics#0 \u2014 one slender inline HEX8 cantilever, MAT_ElastHyper + ELAST_CoupNeoHooke, tip traction ramped over 8 static steps. KINEM: nonlinear gives tip dispz -5.75473889952457363e+00 and exits 0 against the deck's own result test; flipping the single token to KINEM: linear and changing nothing else gives -8.68233111826721071e+00, 50.9% larger, and 4C prints no warning of any kind (KINEM_WARNINGS=0, and the string 'kinem' never appears in the log). The silence is the dangerous half: nothing in the output tells you the kinematics assumption does not match the material. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "linear_elasticity",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NONLINEAR=0",
+    "EXIT_LINEAR=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=-8.68233111826721071e+00",
+    "KINEM_WARNINGS=0",
+    "KINEM_MENTIONED_IN_LOG=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NONLINEAR=1",
+    "EXIT_LINEAR=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the second arm with the CORRECT kinematics. Both arms then match the pinned nonlinear answer, EXIT_LINEAR becomes 0 and the wrong-answer line disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"linear\"    \"$TMP/linear.4C.yaml\"",
+    "to": "deck \"nonlinear\"    \"$TMP/linear.4C.yaml\""
+  }
+}

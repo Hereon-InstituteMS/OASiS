@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for kratos.mpm::9: MPM constitutive-law names are the fully qualified registered strings and the short family label is rejected. Executed 2026-08-07 on Kratos 10.4.3 with MPMApplication. Measured: KratosGlobals.HasConstitutiveLaw is True for LinearElasticIsotropicPlaneStrain2DLaw and False for LinearElasticPlaneStrain2DLaw; ReadMaterialsUtility accepts the first and raises RuntimeError 'Error: Kratos components missing \\\"LinearElasticPlaneStrain2DLaw\\\"' from kratos/utilities/read_materials_utility.cpp:209 on the second. ALSO MEASURED and worth having: KratosGlobals.GetConstitutiveLaw does not raise on the unregistered name -- it returns None -- so it is not usable as an existence check, which is how a bad law name survives hand-rolled validation and only fails at materials-reading time. INTERPRETER: needs a Kratos build carrying MPMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no MPMApplication, so pointing this anywhere else SKIPS rather than passes; the fixture imports MPMApplication at module scope, so an absent Kratos exits non-zero and is recorded as a failure, never a pass. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the registered and short names are SWAPPED, so every probe is fed the other string while the calls and assertions are untouched. Verified: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1) and mpm_constitutive_law_name_check=ok disappears. Re-verify: cd scripts/tier2_fixtures/kratos/mpm_constitutive_law_names_are_fully_qualified && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "mpm",
+  "pitfall_index": 9,
+  "covers": [
+    "mpm::9"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[registered_name_is_known]=True_expected=True",
+    "probe[short_name_is_not_known]=False_expected=False",
+    "probe[GetConstitutiveLaw_returns_None_instead_of_raising]=True_expected=True",
+    "probe[registered_name_reads_materials]=False_expected=False",
+    "probe[short_name_fails_the_materials_read]=True_expected=True",
+    "probe[message_says_components_missing]=True_expected=True",
+    "probe_mismatches=0",
+    "mpm_constitutive_law_name_check=ok"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}

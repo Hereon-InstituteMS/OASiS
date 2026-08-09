@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: compute thermal/grid reads far too cold when cells hold few particles, and a fix ave/grid puts it back. Three decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), identical argon boxes at 273.15 K differing only in grid resolution so the occupancy falls from 50 to 2 to 0.5 particles per cell while the physics does not change. In the SAME run, the global 'compute temp' stays put across all three while the instantaneous cell-average from 'compute reduce ave c_tg[1]' falls to about a third of it at two particles per cell and to a twentieth below one per cell — because thermal/grid subtracts the per-cell SAMPLE mean and SPARTA writes exactly 0 K into any cell holding one particle or none, and the reduce then averages those hard zeros in. Routing the same compute through 'fix ave/grid' recovers it to within ten percent of the global value at every resolution. All three exit 0 with no error and no warning. Nothing is asserted against a stored temperature: every assertion is a ratio against the global estimator in the same run, or the ordering of three such ratios. COVERS: rarefied_flow:6. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 reads the per-cell temperature from the TIME-AVERAGED fix ave/grid column instead of the instantaneous compute thermal/grid one, at the identical resolutions -- it removes the single-snapshot estimator that is the pathology, not the low occupancy. At 2 particles/cell the reading goes from far under half the true temperature to 271.7 K against a true 273.1 K, and at 0.5 particles/cell to 268 K against 273.5 K. CAVEAT recorded from the mutated run: `the_instantaneous_cell_average_falls_with_occupancy` stays True under mutation, because the time-averaged reading still drifts down by ~2 percent across the occupancy sweep. That assertion is a bare monotonic ordering with no magnitude and therefore carries almost no information on its own; the two magnitude assertions are what discriminate. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: at_a_couple_per_cell_it_reads_under_half_the_true_temperature=True, under_one_per_cell_it_collapses_further=True. Re-verify: cd scripts/tier2_fixtures/sparta/thermal_grid_is_biased_low_at_few_particles && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 6,
+  "covers": [
+    "rarefied_flow:6"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_run_exits_zero_with_no_error_and_no_warning=True",
+    "particles_per_cell_fall_as_the_grid_refines=True",
+    "the_global_compute_temp_does_not_move=True",
+    "the_instantaneous_cell_average_falls_with_occupancy=True",
+    "at_tens_of_particles_per_cell_it_is_nearly_right=True",
+    "at_a_couple_per_cell_it_reads_under_half_the_true_temperature=True",
+    "under_one_per_cell_it_collapses_further=True",
+    "routing_through_fix_ave_grid_recovers_it_at_every_resolution=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

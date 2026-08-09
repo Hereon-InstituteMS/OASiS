@@ -1,2 +1,10 @@
 **/_build/
 **/CMakeLists.txt
+
+# Run byproducts of the python-mode fixtures (the runner uses the
+# fixture directory as CWD): ALUGrid DGF chatter, VTK output, and
+# the results files the numeric gates write.
+**/dgfparser.log
+**/*.vtu
+**/*.pvd
+**/results_summary.json

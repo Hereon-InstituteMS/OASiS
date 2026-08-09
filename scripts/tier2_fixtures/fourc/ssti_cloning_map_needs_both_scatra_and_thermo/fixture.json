@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::ssti#0 and the execution that FALSIFIED its Signal. Deleting one scatra->thermo pairing from the CLONING MATERIAL MAP of upstream ssti_mono_3D_3hex8_elch_s2i_butlervolmerthermo_growthlaw.4C.yaml aborts with 'no matching material ID (1) in map' from core/fem/src/general/utils/4C_fem_general_utils_createdis.hpp, exit 1. The quoted 'cannot clone material for <field>' does not exist (CLAIMED_CANNOT_CLONE_TEXT=0), and the real diagnostic names only the source material ID — never the field that is missing (DIAGNOSTIC_NAMES_THERMO=0). The entry's claim that the map holds 'exactly two SRC/TAR entries' is also wrong: the upstream deck has six, two hops for each of three material groups (UPSTREAM_CLONING_ENTRIES=6). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssti",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BOTH=0",
+    "EXIT_THERMOGONE=1",
+    "processor 0 finished normally",
+    "no matching material ID (1) in map",
+    "4C_fem_general_utils_createdis.hpp",
+    "DIAGNOSTIC_NAMES_THERMO=0",
+    "CLAIMED_CANNOT_CLONE_TEXT=0",
+    "UPSTREAM_CLONING_ENTRIES=6"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BOTH=1",
+    "EXIT_THERMOGONE=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the scatra->thermo hop in the second arm. Both clones succeed, EXIT_THERMOGONE becomes 0 and the diagnostic vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(hop, \"\", 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

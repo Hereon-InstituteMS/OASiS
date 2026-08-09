@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#16. A 4x4x4 HEX8 cantilever (64 elements, 125 nodes) is run three ways. Invoked plainly, 4C's startup banner says 'Total number of MPI ranks: 1' and 'Number of procs used for redistribution: 1' — you do not need a stopwatch to see that you forgot mpirun, the binary announces it. Under 'mpirun -np 2 --oversubscribe' the same two lines read 2, and both runs exit 0 with their result test CORRECT and an identical abs(diff) against the pinned dispy 6.40632246176932405e-03 at TOLERANCE 1e-12 (DECOMPOSITION_CHANGED_THE_ANSWER=no), so the decomposition is a placement decision and not a physics one. OMP_NUM_THREADS=4 is the orthogonal knob: libgomp is linked (OPENMP_RUNTIME_LINKED=1) but the rank count stays 1 and the answer is unchanged, so threads never substitute for ranks. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C with Open MPI's mpirun.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 16,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SERIAL=0",
+    "EXIT_PAR=0",
+    "EXIT_OMP=0",
+    "Total number of MPI ranks: 1",
+    "Total number of MPI ranks: 2",
+    "Number of procs used for redistribution: 1",
+    "Number of procs used for redistribution: 2",
+    "processor 0 finished normally",
+    "SERIAL_CORRECT=1",
+    "PAR_CORRECT=1",
+    "DECOMPOSITION_CHANGED_THE_ANSWER=no",
+    "OMP_CHANGED_THE_ANSWER=no",
+    "OPENMP_RUNTIME_LINKED=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_mpirun",
+    "EXIT_SERIAL=1",
+    "EXIT_PAR=1",
+    "DECOMPOSITION_CHANGED_THE_ANSWER=yes",
+    "OMP_CHANGED_THE_ANSWER=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology the entry warns about by removing the fix: run the parallel arm without mpirun, the way somebody who forgot it would. The banner then says 1 rank in both arms, 'Total number of MPI ranks: 2' never appears, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "stdbuf -oL -eL mpirun -np 2 --oversubscribe \"$BIN\" \"$DECK\" \"$TMP/o_par\" > \"$TMP/PAR.log\" 2>&1",
+      "to": "stdbuf -oL -eL \"$BIN\" \"$DECK\" \"$TMP/o_par\" > \"$TMP/PAR.log\" 2>&1"
+    },
+    {
+      "note": "substitute threads for ranks, the mistake the entry describes: set OMP_NUM_THREADS on the parallel arm instead of using mpirun. It stays on one rank, so the 2-rank banner lines never appear and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "stdbuf -oL -eL mpirun -np 2 --oversubscribe \"$BIN\"",
+      "to": "OMP_NUM_THREADS=2 stdbuf -oL -eL \"$BIN\""
+    }
+  ]
+}

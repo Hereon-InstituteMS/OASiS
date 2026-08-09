@@ -65,8 +65,12 @@ BARE_SYSTEM = (
     "produce the requested RESULT lines in the result file.\n\n"
     "Tools available: run_bash, read_file, write_file, web_search, "
     "spawn_subagent.\n\n"
-    + _CRITIC_BLOCK
 )
+# NOTE: the mandatory-critic instruction is deliberately NOT part of the
+# baseline. The critic is one of the things OASiS provides, so giving it to the
+# unequipped arm hands the control group an OASiS method and understates the
+# measured difference. The two arms are: host tools only (BARE) vs the OASiS
+# tool layer, which includes the mandatory critic (MCP).
 
 MCP_SYSTEM = (
     "You are connected to the OASiS MCP server with its full toolset "

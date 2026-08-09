@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for dune::poisson_mms#3. Measured 2026-08-06, wall time 1 s \u2014 the point of the claim is that the guard is a CHEAP detector for a condition whose runtime symptom (a stalling linear solve) is expensive, so the fixture checks the guard, not the stall. The corner formula k0 + min(0,kx) + min(0,ky) + min(0,kz) was checked against a brute-force minimum over a 13^3 sample of the cube for four parameter sets and agreed every time (1.0, 0.5, -0.2, -0.5). For k0=1, kx=-1.5 the minimum is -0.5 and validate_parameters returns 'diffusion coefficient must stay positive on the cube: ... = -0.5 <= 0 \u2014 the operator loses ellipticity and the CG solve is not well-posed', and the generator itself raises ValueError rather than emitting a script. The control is a positive field, which is accepted and does emit a complete runnable template. The fixture imports dune.fem at module scope, so it cannot pass on a host without the backend. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 feeds the guard a POSITIVE kappa where the base run feeds it an indefinite one, which is what makes the rejection attributable to kmin <= 0 rather than to the guard firing on everything. Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'indefinite_kappa_min=-0.500000', 'indefinite_rejected=True', 'message_names_ellipticity=True', 'generator_refused=ValueError', 'dune_kappa_positivity_guard_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "poisson_mms",
+  "pitfall_index": 3,
+  "covers": [
+    "poisson_mms:3"
+  ],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "case0_formula=1.000000 sampled=1.000000 agree=True",
+    "case3_formula=-0.500000 sampled=-0.500000 agree=True",
+    "indefinite_kappa_min=-0.500000",
+    "indefinite_rejected=True",
+    "message_names_ellipticity=True",
+    "generator_refused=ValueError",
+    "valid_accepted=True",
+    "valid_script_is_runnable=True",
+    "dune_kappa_positivity_guard_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

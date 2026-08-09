@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics biharmonic#2: interior penalty needs interior-facet (dS) integrals, every facet is visited from both sides, and the matrix assembly is much more expensive than the equivalent second-order problem on the same space. The mixed (u, sigma) formulation avoids dS at the cost of doubling the dof count. Measured here on a 32x32 unit square, P2, best of five assemblies each, so the comparison is between three forms on identical meshes and identical elements. Wrong assumption: that a C0-IP biharmonic matrix costs about what a Poisson matrix costs. Right variant, and the mutation: the mixed formulation (sigma, u) in P2 x P2, whose bilinear form has no dS term at all. Observed on dolfinx 0.10.0: the C0-IP assembly takes 0.0349 s against Poisson's 0.0028 s on the same 4225-dof P2 space, a factor of 12.5 \u2014 above the 5-10x the claim quotes, so treat 5-10x as a lower bound rather than a range. The mixed form assembles in 0.0116 s and has exactly 8450 dofs, twice the C0-IP space, which is the trade the claim describes; normalised per dof it costs 2.1x Poisson against the C0-IP form's 12.5x, so the gap really is the facet integrals and not the problem size. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "biharmonic",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_assembly_costs_more_than_5x_poisson_per_dof=True",
+    "interior_penalty_costs_more_than_the_ds_free_mixed_form=True",
+    "mixed_formulation_doubles_the_dof_count=True",
+    "VERDICT=interior_facet_integrals_dominate_biharmonic_assembly"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=interior_penalty_assembly_was_not_more_expensive"
+  ],
+  "timeout_seconds": 600
+}

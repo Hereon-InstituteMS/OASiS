@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#6: in the mixed form the ESSENTIAL condition is the normal flux sigma.n; the pressure is NATURAL and enters through the facet term -u_D * dot(tau, n) * ds(tag) in the linear form. Putting a dolfinx dirichletbc on the pressure subspace instead constrains the discontinuous pressure dofs directly and the answer is nonsense. Problem: unit square, K = 1, no source, sigma.n = 0 on the top and bottom walls (essential, on the RT subspace), pressure 1 at x=0 and 0 at x=1. The exact solution is p = 1 - x, sigma = (1, 0), so the flux leaving through x=1 is exactly 1 and the global balance of sigma.n over the whole boundary is 0. Wrong variant (the default run): drop the facet term and instead apply fem.dirichletbc on W.sub(1) with value 1 in the cells touching x=0 and 0 in the cells touching x=1. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "facet_lookup_on_dg0_pressure_is_empty=True",
+    "natural_pressure_term_gives_the_analytic_outflow=True",
+    "natural_pressure_term_conserves_boundary_mass=True",
+    "pressure_dirichletbc_outflow_is_wrong=True",
+    "pressure_dirichletbc_breaks_boundary_mass_balance=True",
+    "pressure_dirichletbc_pins_the_wall_cells_exactly=True",
+    "pressure_dirichletbc_profile_error_is_over_3x_worse=True",
+    "VERDICT=pressure_must_be_natural_flux_must_be_essential"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=pressure_dirichletbc_worked"
+  ],
+  "timeout_seconds": 300
+}

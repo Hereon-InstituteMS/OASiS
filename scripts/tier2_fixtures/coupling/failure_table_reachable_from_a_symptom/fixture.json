@@ -1,0 +1,43 @@
+{
+  "_comment": "COUPLING tier-2. The coupling failure table's left-hand column IS a set of signals, but coupling_knowledge.py had no pitfall list, no `Signal:` shape and no search, so knowledge(signal=...) could never route a coupling failure to the rows that name it. The rows now live in one list from which BOTH the markdown table and a searchable pitfall list are generated, and knowledge(topic='coupling', signal=...) ranks them against free text. The forty queries here are NOT the entry author's phrasings: a hostile third party was given the search and no sight of the entries, wrote a hundred queries from its own idea of how a partitioned coupling goes wrong, and only then read the table to judge each result. It measured the first version of the router at ~62% recall and ~52% top-1 \u2014 it divided by query length, so `nan` hit and `solver crashed with nan after the third coupling step` missed; it weighted every token alike, so `interface` and `step` decided rankings; and its entries spoke thermal while half the queries spoke mechanics, so every force/load/traction/mapping phrasing missed. These are that party's queries, typos included, kept as a REGRESSION set. Twelve further queries about meshing, installation, licences and linear solvers must be REFUSED, because a matcher that answers everything has routed nothing. The fixture drives the REGISTERED knowledge tool, checks no row exists in one surface and not the other, and checks each marker identifies exactly one entry so a query cannot pass against the wrong row. A SECOND hostile party was then run blind against the improved router and measured 60% recall / 53% top-1 \u2014 most of the first gain had been fitted to the first party's vocabulary. It found two more structural faults, both fixed: an unrecognised word was scored at the MAXIMUM weight in the coverage denominator, so long queries were punished after all; and the synonym table was keyed on stems the stemmer never produces. Its queries for the classes that still missed are in the set here. Whole failure families remain absent from the TABLE \u2014 staggering lag, subcycling, checkpoint/restart, mapping quality, a discontinuity in the transferred VALUE \u2014 and a query about one of those still gets a wrong neighbour rather than a refusal. That is a content gap and it is not fixed here.",
+  "_mutation": [
+    {
+      "note": "Move one refusal control onto a real coupling symptom. The matcher answers it, unrelated_query_was_answered fires and every_unrelated_query_is_refused goes False. Without this control the forty routing assertions would pass equally well against a matcher that returned every entry for every query, which is the failure mode a search of this kind actually has \u2014 and the first version of this router did exactly that for a linear-solver question.",
+      "file": "source.py",
+      "from": "    \"added mass\",",
+      "to": "    \"it converged but the answer is wrong\","
+    },
+    {
+      "note": "Replace one observation with words that describe nothing. It routes nowhere, symptom_did_not_route fires and queries_routed drops below the total \u2014 proving the pass depends on routing actually happening rather than on the harness printing a constant.",
+      "file": "source.py",
+      "from": "    (\"nan\", [M_NONFINITE]),",
+      "to": "    (\"purple monday bicycle\", [M_NONFINITE]),"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "failure_routing",
+  "pitfall_index": 31,
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_row_is_in_both_surfaces=True",
+    "rows_missing_from_the_served_table=0",
+    "markers_identify_one_entry_each=True",
+    "queries_routed=52/52",
+    "every_observation_reached_its_entry=True",
+    "unrelated_queries_refused=14/14",
+    "every_unrelated_query_is_refused=True",
+    "routed_answer_is_shorter_than_the_full_payload=True",
+    "claims_checked=6",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1",
+    "every_observation_reached_its_entry=False",
+    "every_unrelated_query_is_refused=False",
+    "markers_identify_one_entry_each=False"
+  ]
+}

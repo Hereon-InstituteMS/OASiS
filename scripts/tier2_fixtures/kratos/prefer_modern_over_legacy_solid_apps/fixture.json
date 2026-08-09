@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2: for new analyses prefer StructuralMechanicsApplication and ContactStructuralMechanicsApplication over the older SolidMechanicsApplication / ContactMechanicsApplication. Pitfall (kratos._auxiliary_overview #2). NOTE ON THE WRITTEN SIGNAL: this claim carries one of the five shared boilerplate Signal suffixes used across the Kratos catalog, which does not describe what actually happens. The real signal is recorded below and in the fixture output. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). The advice is enforced by availability, not by convergence: both legacy applications raise ModuleNotFoundError (no wheel at any version) while both modern ones import. On a pip stack the older path is not merely discouraged, it is unreachable. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS every claimed availability flag in CASES -- it asserts the opposite of what this install actually provides, leaving the importlib.import_module probe itself untouched. All 4 importable[...] lines then disagree with themselves and app_import_mismatches goes from 0 to 4. This is the control the fixture needs: it proves the printed booleans come from a real import attempt on this build and that a wrong availability claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 4 importable[<app>]=<got>_expected=<must> lines, app_import_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/prefer_modern_over_legacy_solid_apps && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "_auxiliary_overview",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "importable[StructuralMechanicsApplication]=True_expected=True",
+    "importable[ContactStructuralMechanicsApplication]=True_expected=True",
+    "importable[SolidMechanicsApplication]=False_expected=False",
+    "importable[ContactMechanicsApplication]=False_expected=False",
+    "app_import_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240,
+  "covers": [
+    "auxiliary_overview::2"
+  ],
+  "_key_correction": "The fixture's physics field says '_auxiliary_overview', with a leading underscore; the registry key that get_knowledge() answers to is 'auxiliary_overview' without one. The fallback key '_auxiliary_overview::2' therefore named no claim and this fixture credited nothing, while the claim it verifies sat uncovered. Adding an explicit covers list fixes the link without touching the physics field that the runner groups by. Index confirmed against the claim text."
+}

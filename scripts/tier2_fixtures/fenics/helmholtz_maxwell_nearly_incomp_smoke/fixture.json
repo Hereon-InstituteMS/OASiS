@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for fenics helmholtz#: regression armor for the 3 phantom-physics closures (helmholtz + maxwell + nearly_incompressible_elasticity). The fenics catalog declared these in supported_physics() with rich deep_knowledge but had no generator dispatch — generate_input() raised ValueError. Generators landed in commit c5d184a (helmholtz + maxwell) and the same commit family for nearly_incomp. This fixture pins: (a) all 3 produce >=800 char templates, (b) helmholtz uses basix.ufl + dirichletbc + a direct/lu solver, (c) maxwell uses basix.ElementFamily.N1E (Nédélec H(curl), NOT Lagrange) + ufl.curl, (d) nearly_incomp uses basix.ufl.mixed_element + the (1/lambda) saddle-point stabilization + Taylor-Hood P2-vector P1-scalar pair (shape=(gdim,)), (e) NONE of the templates re-introduce the removed ufl.{FiniteElement, VectorElement, MixedElement, TensorElement} classes. Verified empirically against dolfinx 0.10.0 / basix 0.10.0 / ufl 2025.2.1 on 2026-06-01.",
+  "_comment": "Tier-2 SYNTHETIC (helmholtz::99, an index no pitfall occupies): a shape check over the helmholtz / maxwell / nearly_incompressible / fracture / stokes_darcy templates — do they use basix.ufl, N1curl, mixed_element, and none of the removed ufl element classes. RE-KEYED 2026-08-06 off helmholtz::0, which is a claim about k*h and mesh resolution that this fixture does not measure at all. A generator-shape check is worth having; it is not evidence for a numerical claim, and it must not occupy that claim's slot. MUTATION CONTROL (T2_MUTATE=1, re-runnable): substituting the `poisson` generator for the `maxwell` one makes 'maxwell_chars=' vanish (the line printed is 'poisson_chars=1650') and turns maxwell_uses_N1E, maxwell_uses_basix_family and maxwell_has_curl to False, so four expectations go missing and 'FAIL: phantom-closure regression' trips the forbid list — which is what proves those booleans are read out of generated text and not printed as literals. The repo-root lookup was made search-based at the same time: parents[4] is correct in place and resolves to '/' in a staged copy, which would have made the staged arm vacuous rather than informative; $OASIS_REPO_ROOT overrides it and a failed search now aborts with FIXTURE_ABORT instead of a bare ImportError. Proved KILLED 2026-08-07 with OASIS_REPO_ROOT=<checkout>. FIXED 2026-08-08: nearly_incomp_has_taylor_hood_p2_p1 was has('nearly_incompressible_elasticity', 'shape=(gdim,)') -- a needle with NO degree in it. Any vector-valued Lagrange declaration of any order produces that string, so a regression from P2/P1 to P1/P1 would have left the check True under a name that says p2_p1. It now requires both degrees: element(\"Lagrange\", domain.basix_cell(), 2, + shape=(gdim,) for the displacement and element(\"Lagrange\", domain.basix_cell(), 1) for the pressure. CONTROL, executed 2026-08-08: take the real generator text, change the 2 to a 1 (the P1/P1 regression), and re-evaluate both needles -- old needle True, new needle False. Found by a random-sample read of fixtures the static screen did NOT flag; the screen is blind to this whole family because the 'measurement' is a substring grep over generated source text and nothing is solved, assembled or run.",
   "backend": "fenics",
   "physics": "helmholtz",
-  "pitfall_index": 0,
+  "pitfall_index": 99,
   "mode": "python",
   "expect_in_output": [
     "helmholtz_chars=",
@@ -35,5 +35,12 @@
     "Traceback",
     "FAIL:",
     "GEN_ERR"
-  ]
+  ],
+  "covers": [],
+  "_mutation": {
+    "note": "Antidote: ask the catalog for `poisson` where it should ask for `maxwell`. A real 1650-char template comes back, so nothing crashes, but it carries no N1curl — the maxwell greps then read text that genuinely lacks what they look for. Requires OASIS_REPO_ROOT to be set when the fixture is run from a STAGED copy (it imports the catalog out of the checkout's src/); an in-place run finds the checkout by path.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

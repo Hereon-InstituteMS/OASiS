@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::particles#7, confirmed and made concrete. Upstream particle_sph_2d_pdbody_gravity.4C.yaml has 444 boundaryphase wall particles and 162 pdphase body particles under PHASE_TO_MATERIAL_ID 'boundaryphase 1 pdphase 2'. Exchanging just the two TYPE labels makes the wall the peridynamic body — the bond list grows from 1512 to 3588 pairs — while the former body becomes a boundary phase and stops moving entirely: after 3000 steps its probe particle sits at posx 6.50000000000000000e+00 with velx and vely exactly 0.00000000000000000e+00, which is the entry's 'sticks to it, no rebound' in numbers. The only complaint 4C makes is \"state 'pd_damage_phi' not found in container!\" from particle/src/algorithm/4C_particle_algorithm_result_test.cpp line 194, because the probed particle no longer carries peridynamic states. That message names a state and never a phase, a TYPE or PHASE_TO_MATERIAL_ID, so it sends an agent hunting for a broken output request instead of a swapped label. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "PD_PARTICLES_ASIS=162",
+    "PD_PARTICLES_SWAP=444",
+    "EXIT_ASIS=0",
+    "EXIT_SWAP=1",
+    "processor 0 finished normally",
+    "ASIS_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "Number of initialized peridynamic bonds on this proc: 3588",
+    "is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 2.31537930774811720e+01",
+    "is WRONG --> actresult= 6.50000000000000000e+00",
+    "SWAP_FAILURES=4",
+    "state 'pd_damage_phi' not found in container!",
+    "4C_particle_algorithm_result_test.cpp, line 194",
+    "SWAP_DIAGNOSTIC_NAMES_A_PHASE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ASIS=1",
+    "EXIT_SWAP=0",
+    "PD_PARTICLES_SWAP=162",
+    "SWAP_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: write the deck back with its original TYPE labels instead of exchanging them. The second arm then reproduces the baseline, PD_PARTICLES_SWAP falls back to 162, the 3588-bond line and the pd_damage_phi complaint disappear and EXIT_SWAP becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(s)",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

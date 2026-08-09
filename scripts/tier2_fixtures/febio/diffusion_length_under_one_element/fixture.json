@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::heat#5 \u2014 the dangerous silent case. A DYNAMIC thermo-fluid run whose thermal diffusion length is a tenth of the element size terminates normally, completes every step, exits 0, prints no WARNING and no ERROR, and returns a temperature field whose coldest node lies BELOW the coldest prescribed temperature. The same deck at ratio 3 comes back with nothing below it. The fixture computes t_end from L_diff = sqrt(K t_end / (rho cp_phys)) to hit each ratio, and FLATTENS the load controller before measuring \u2014 the shipped deck ramps the prescribed temperature over t in [0,1], and at a matched ratio t_end falls below 1 s, so an unflattened run measures the unfinished ramp instead of the artefact (that confound is what an earlier version of this pitfall reported). The undershoot is computed by the fixture, not quoted in the catalogue. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 runs the under-resolved case at ratio 3.0 as well, so the diffusion length is no longer shorter than one element. The generic swap/drop neutralisation is not enough here: the resolution is set by a template parameter, not by a deck edit. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'diffusion_length_undershoot=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "heat",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "diffusion_length_undershoot=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

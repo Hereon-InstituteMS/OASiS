@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM matrix_free::2: [Numerical] The AffineConstraints object MUST be passed to MatrixFree::reinit. The matrix-free operator has no rows to eliminate, so constraints are applied inside read_dof_values / distribute_local_to_global; hand reinit an empty AffineConstraints and the Dirichlet conditions simply do not exist. \u2026 WHAT THIS RUNS: -- probe \"mf_missing_constraints\" of the shared MatrixFree translation unit _shared/matrixfree_family.cc, compiled once and cached so four fixture directories share ONE C++ build. A 3D FE_Q(2) Laplace problem with 386 real Dirichlet constraints, with ONLY the AffineConstraints object handed to MatrixFree::reinit changed. Handed an empty one, reinit returns normally and raises nothing, and MatrixFree::get_constrained_dofs().size() comes back 0 -- the cheap check the entry recommends, read straight after reinit. The downstream consequence is measured in the same run: CG on the matrix-free operator runs to its 300-iteration limit with the residual blown up to 1.6e+16, and the \"solution\" reaches 7.4e+30 on a boundary where it should be zero. Mutation control: T2_MUTATE=1 hands reinit the real constraints, get_constrained_dofs().size() is nonzero, CG converges to a solution that is zero on the boundary, and the fixture fails its own expectations. OBSERVED, copied from the run: constraints_handed_to_reinit=an_empty_object; matrixfree_knows_about_constrained_dofs=false; cg_converged=false; solution_is_zero_on_the_dirichlet_boundary=false; nothing_was_raised_by_reinit=true; VERDICT=empty_constraints_leave_the_dirichlet_data_out_silently. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "matrix_free",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "constraints_handed_to_reinit=an_empty_object",
+    "matrixfree_knows_about_constrained_dofs=false",
+    "cg_converged=false",
+    "solution_is_zero_on_the_dirichlet_boundary=false",
+    "nothing_was_raised_by_reinit=true",
+    "VERDICT=empty_constraints_leave_the_dirichlet_data_out_silently"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=constraints_reached_the_matrix_free_operator"
+  ],
+  "timeout_seconds": 900
+}

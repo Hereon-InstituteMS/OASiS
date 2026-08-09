@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM cahn_hilliard::2: [API] Wrap the concentration in ufl.variable() before differentiating the double well with ufl.diff -- cv = ufl.variable(c); f = 100*cv**2*(1-cv)**2; dfdc = ufl.diff(f, cv). ufl.diff returns exactly the analytic derivative: compared against a hand-coded 200*c*(1-c)*(1-2*c), the L2 norm of the \u2026 WHAT THIS RUNS: wrap the concentration in ufl.variable() and let ufl.diff produce dfdc. ufl.diff is exact -- it agrees with a hand-coded 200*c*(1-c)*(1-2*c) at round-off. The danger of hand-coding is NOT a loss of Newton convergence, because dolfinx builds the Jacobian from whatever residual you wrote: you silently solve a different physical problem and the solver output looks BETTER than the correct one. Wrong variant: the frequently repeated 12*c*(c-1)*(2*c-1), which is the derivative of 6*c^2*(1-c)^2, i.e. exactly 0.06 times too small. Observed on dolfinx 0.10.0 (unit square 24x24, P1 x P1 mixed, lmbda = 1e-2, M = 1, theta = 0.5, dt = 5e-6, 30 steps): the corrupted run converges in exactly 2 Newton iterations on every step with zero failures, while the correct run needs about 17; and the corrupted concentration never leaves the immediate neighbourhood of its initial mean while the correct one separates out past [0, 1]. Low, flat Newton counts in the separation phase are a warning sign. OBSERVED, copied from the run: ufl_diff_matches_the_hand_coded_derivative=True; the_quoted_12c_expression_is_0p06_times_the_correct_one=True; corrupted_run_converged_every_step=True; corrupted_run_needed_fewer_newton_iterations=True; corrupted_run_never_separated=True; correct_run_separated=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "cahn_hilliard",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": [
+    "cahn_hilliard::2"
+  ],
+  "expect_in_output": [
+    "ufl_diff_matches_the_hand_coded_derivative=True",
+    "the_quoted_12c_expression_is_0p06_times_the_correct_one=True",
+    "corrupted_run_converged_every_step=True",
+    "corrupted_run_needed_fewer_newton_iterations=True",
+    "corrupted_run_never_separated=True",
+    "correct_run_separated=True",
+    "VERDICT=flat_low_newton_counts_are_a_warning_not_a_success"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=corrupted_derivative_was_caught_by_the_solver"
+  ]
+}

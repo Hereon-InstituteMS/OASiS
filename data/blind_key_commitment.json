@@ -1,0 +1,150 @@
+{
+  "schema": "oasis-blind-key-commitment/1",
+  "campaign": "campaign3_blind",
+  "generated_utc": "2026-08-07T17:05:35Z",
+  "keys_dir": "/home/alexander/Schreibtisch/qwen_uplift_test/campaign3_blind/keys",
+  "algorithm": "SHA-256 over the key file as stored",
+  "encryption": "AES-256-GCM, scrypt(n=32768,r=8,p=1)",
+  "note": "Commitment published before any evaluation run. The solutions themselves are never published; these hashes prove they were fixed in advance. Verify with: scripts/blind_keys.py verify --manifest <this file> --keys <key dir>",
+  "entries": [
+    {
+      "path": "B1/key.json.enc",
+      "bytes": 671,
+      "sha256": "c1f8a19605d6ed0afe8a59f039212a01a45c42cc639abd45c01148033c34ad37",
+      "encrypted": true
+    },
+    {
+      "path": "B2/key.json.enc",
+      "bytes": 804,
+      "sha256": "066c3d66980c1aad80b91701f117ecb95ff8e29488eeaaf807fe18df94ff3b20",
+      "encrypted": true
+    },
+    {
+      "path": "B3/key.json.enc",
+      "bytes": 1175,
+      "sha256": "fa938baa4c5fe252efee051be37621c5402d04bef7fd3d9a907a4113be36ca1d",
+      "encrypted": true
+    },
+    {
+      "path": "B4/key.json.enc",
+      "bytes": 2127,
+      "sha256": "d81ebb77fe88da4850b30fd0e43798a44841cbd8d48f01be64416da461ecc32c",
+      "encrypted": true
+    },
+    {
+      "path": "B5/key.json.enc",
+      "bytes": 808,
+      "sha256": "a8b7a8cfab3f7e9bea1e897933423e26994369a7ea144192f378c6574d6bf6e1",
+      "encrypted": true
+    },
+    {
+      "path": "B6/key.json.enc",
+      "bytes": 1698,
+      "sha256": "279c270c4ab79cbfcc5ecc99f7d5695e5df4618202236e6371cbe247f0068200",
+      "encrypted": true
+    },
+    {
+      "path": "B7/key.json.enc",
+      "bytes": 1369,
+      "sha256": "5b1b6c8a35a8e179661b608b41d746e3e68e65edabdd69c8f2aa995d34fcf777",
+      "encrypted": true
+    },
+    {
+      "path": "D1/key.json",
+      "bytes": 1953,
+      "sha256": "6c5076bc1db4b7508f96597c548891767db47ecebe434f0959c5af50aa82fcfd",
+      "encrypted": false
+    },
+    {
+      "path": "D1/key.json.enc",
+      "bytes": 1975,
+      "sha256": "5a6c740cfaec506c0727bbb105235644254c6380de603b17f01599806beb9a4a",
+      "encrypted": true
+    },
+    {
+      "path": "D2/key.json",
+      "bytes": 3324,
+      "sha256": "86b48c26154799657bd5a3dcd5d7b3f69061a54731ea71c823e98f6b06d0d3ed",
+      "encrypted": false
+    },
+    {
+      "path": "D2/key.json.enc",
+      "bytes": 3307,
+      "sha256": "60be5f91668ab2986e5ace49cd8af4c642b438748a40f77972ffee65559bd7ff",
+      "encrypted": true
+    },
+    {
+      "path": "D3/key.json",
+      "bytes": 1886,
+      "sha256": "0993eecb1a3fe905a25970901cb7ce91280136dddf9fa11d2cf72337c692990c",
+      "encrypted": false
+    },
+    {
+      "path": "D3/key.json.enc",
+      "bytes": 1973,
+      "sha256": "7ba3eb55c6a88ad0d524504c4b3375a62759018d2ee4baeb57a95c40111d4d63",
+      "encrypted": true
+    },
+    {
+      "path": "D4/key.json",
+      "bytes": 3166,
+      "sha256": "32459dd82808b0347289ccdf64b37f714af060e4e43a5cc05595579a672cd6ab",
+      "encrypted": false
+    },
+    {
+      "path": "D4/key.json.enc",
+      "bytes": 3238,
+      "sha256": "9a95991441fddce62713fd54155a3c4f90d347a6413091ecf415c1b753daf8f6",
+      "encrypted": true
+    },
+    {
+      "path": "D5/key.json",
+      "bytes": 4301,
+      "sha256": "c3c4138d1c7be19da329ee31c8435cf8c5f3f4c63d1e2b75ccad46096811769e",
+      "encrypted": false
+    },
+    {
+      "path": "D5/key.json.enc",
+      "bytes": 4220,
+      "sha256": "793820a5fb36280029005fe5c81837e50c5e9265c31986eafcc99c9d267015cb",
+      "encrypted": true
+    },
+    {
+      "path": "D6/key.json",
+      "bytes": 2191,
+      "sha256": "95eec9fda05bc66f4658a1f1f3ec872cfddcc7d5352277797a3d954ca586fc64",
+      "encrypted": false
+    },
+    {
+      "path": "D6/key.json.enc",
+      "bytes": 2258,
+      "sha256": "8f53fefd627664c379c40c678b4c9d95f3d64344f65a64de1221977f6a258bd2",
+      "encrypted": true
+    },
+    {
+      "path": "D7/key.json",
+      "bytes": 1961,
+      "sha256": "9535513515b876d5f9f80a6fd2a97a139affc9cd90fa3af2daf905f81a023403",
+      "encrypted": false
+    },
+    {
+      "path": "D7/key.json.enc",
+      "bytes": 1962,
+      "sha256": "b683345b341996864b98287e03153707bf74881267f567966d8414b95a8f1669",
+      "encrypted": true
+    },
+    {
+      "path": "D8/key.json",
+      "bytes": 2679,
+      "sha256": "b0a911cdcc06eb015b99a0f8a9dceb9ce15a6f3e58dd4ba93ae65265a8548ba7",
+      "encrypted": false
+    },
+    {
+      "path": "D8/key.json.enc",
+      "bytes": 2727,
+      "sha256": "331c6a0a88b30c30347fe50383fbbc92b1150de946936245df492f5e98b33091",
+      "encrypted": true
+    }
+  ],
+  "manifest_sha256": "7c003ead3e0c67c267e28f111d7ca131729cfd2a4f16961b1a3e644e7b69d4c9"
+}

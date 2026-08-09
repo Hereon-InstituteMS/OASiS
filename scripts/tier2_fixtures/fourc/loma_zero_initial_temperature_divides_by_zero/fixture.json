@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#3 and a FALSIFICATION of its Signal. The rule (give the fluid and the scalar consistent initial fields) holds; the described symptom does not occur. On the upstream deck loma_2d_heated_chan_30x100, switching both INITIALFIELD entries from field_by_function to zero_field starts the temperature at zero, and MAT_sutherland evaluates density through the ideal gas law p/(R*T). The process terminates with SIGFPE: the log carries 'Signal: Floating point exception (8)' and 'Signal code: Floating point divide-by-zero (3)', there is no PROC 0 ERROR block, no residual table and no result test. An agent expecting 'a very large first-step residual' would be waiting for output that is never produced. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 3,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CONSISTENT=0",
+    "processor 0 finished normally",
+    "CONSISTENT_RESULT_FAILURES=0",
+    "ZEROFIELD_INITIALFIELDS_SWITCHED=2",
+    "Signal: Floating point exception (8)",
+    "Floating point divide-by-zero (3)",
+    "ZEROFIELD_FOURC_THROW=0",
+    "ZEROFIELD_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the consistent initial fields in the second arm. The SIGFPE vanishes and ZEROFIELD_INITIALFIELDS_SWITCHED drops to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  INITIALFIELD: \"field_by_function\"/  INITIALFIELD: \"zero_field\"/' \"$BASE\" > \"$TMP/zerofield.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/zerofield.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CONSISTENT=1",
+    "EXIT_ZEROFIELD=0",
+    "ZEROFIELD_INITIALFIELDS_SWITCHED=0",
+    "ZEROFIELD_REACHED_RESULT_TEST=1"
+  ]
+}

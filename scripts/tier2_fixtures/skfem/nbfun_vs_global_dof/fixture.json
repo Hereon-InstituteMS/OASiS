@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem stokes#4: ib.Nbfun returns per-ELEMENT DOF count, NOT global DOF count. P1 tri Nbfun=3, P2 tri Nbfun=6 regardless of mesh refinement; ib.N is the global count. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for skfem stokes#4: ib.Nbfun returns per-ELEMENT DOF count, NOT global DOF count. P1 tri Nbfun=3, P2 tri Nbfun=6 regardless of mesh refinement; ib.N is the global count. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site, so the two per-element reads p1.Nbfun / p2.Nbfun become the global counts p1.N / p2.N. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 3 expect_in_output strings; T2_MUTATE=1 prints P1_Nbfun=25 / P2_Nbfun=81 and the N != N guard fails, removing 'P1_Nbfun=3', 'P2_Nbfun=6' and 'global_differs' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "stokes",
   "pitfall_index": 4,

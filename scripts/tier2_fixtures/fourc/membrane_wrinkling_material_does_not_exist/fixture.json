@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::membrane#2, and a FALSIFICATION of it. The entry told the reader to 'enable wrinkling model in material definition (e.g. MAT_MembraneWrinkling)'. That material does not exist on this build: substituting it into the upstream membrane_cyl_new_struc deck is rejected with 'Could not match this input' and the MAT_MembraneWrinkling line echoed, zero steps run. The membrane material catalogue is MAT_Membrane_ElastHyper and MAT_Membrane_ActiveStrain only; neither relaxes compressive stress, so there is no tension-field model to switch on and a compressive membrane state has to be detected by the user. The third arm pins the mistake an agent actually makes: swapping the membrane wrapper for the ordinary MAT_ElastHyper parses fine and is then refused by the element with 'The material does not support the evaluation of membranes'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "membrane",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_WRINKLING=1",
+    "EXIT_PLAIN_HYPER=1",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "MAT_MembraneWrinkling",
+    "The material does not support the evaluation of membranes",
+    "WRINKLING_STEPS=0",
+    "PLAIN_HYPER_STEPS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_WRINKLING=0",
+    "EXIT_PLAIN_HYPER=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: keep the real membrane material in the second arm. The unknown-material parse error vanishes and EXIT_WRINKLING becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/MAT_Membrane_ElastHyper:/MAT_MembraneWrinkling:/' \"$BASE\" > \"$TMP/wrink.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/wrink.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: keep the membrane-specific wrapper in the third arm. The element's refusal message vanishes and EXIT_PLAIN_HYPER becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/MAT_Membrane_ElastHyper:/MAT_ElastHyper:/'        \"$BASE\" > \"$TMP/plain.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/plain.4C.yaml\""
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#3: the physics is confirmed, the promised diagnostic does not exist. Translating only the nine beam node coordinates of upstream beam3r_herm2line3_static_beam_to_solid_volume_meshtying_beam_in_solid_column_segmentation.4C.yaml by +1.0 in x lifts the beam out of the hex8 column while leaving it inside the binning box. The beam-to-solid runtime VTK output then falls from 26 segmentation points (13 coupled segments) and 78 coupling integration points to zero, on every one of the writes; the solid stops moving entirely, its probed node reporting displacement exactly 0.00000000000000000e+00 against the coupled reference 2.12196301048432762e-01; and 4 of the 6 result tests fail through core/utils/src/result_test/4C_utils_result_test.cpp line 181. But nothing in the log matches 'segments coupled' and there is no line reporting how many pairs were found or lost, so the quoted 'BeamToSolidMeshtying diagnostic prints 0 of N beam segments coupled' cannot be grepped for; the coupled count is only obtainable from the VTK output, which the deck has to have switched on. Build note: this checkout is FOUR_C_WITH_ARBORX=OFF, which only rules out SEARCH_STRATEGY bounding_volume_hierarchy — the default bruteforce_with_binning path used here needs no ArborX and runs in seconds. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "BEAM_NODES_MOVED=9",
+    "EXIT_INSIDE=0",
+    "EXIT_OUTSIDE=1",
+    "processor 0 finished normally",
+    "INSIDE_FAILURES=0",
+    "OUTSIDE_FAILURES=4",
+    "MAX_SEGMENT_POINTS_INSIDE=26",
+    "MAX_COUPLED_SEGMENTS_INSIDE=13",
+    "MAX_INTEGRATION_POINTS_INSIDE=78",
+    "MAX_SEGMENT_POINTS_OUTSIDE=0",
+    "MAX_COUPLED_SEGMENTS_OUTSIDE=0",
+    "MAX_INTEGRATION_POINTS_OUTSIDE=0",
+    "SEGMENTATION_WRITES_WITH_COUPLING_OUTSIDE=0",
+    "is WRONG --> actresult= 0.00000000000000000e+00, givenresult= 2.12196301048432762e-01",
+    "CLAIMED_SEGMENTS_COUPLED_TEXT=0",
+    "OUTSIDE_COUPLING_WARNINGS=0",
+    "4C_utils_result_test.cpp, line 181"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INSIDE=1",
+    "EXIT_OUTSIDE=0",
+    "MAX_COUPLED_SEGMENTS_INSIDE=0",
+    "MAX_COUPLED_SEGMENTS_OUTSIDE=13",
+    "OUTSIDE_FAILURES=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the beam node coordinates where upstream put them, inside the solid column. The second arm then reproduces the baseline, its segmentation output climbs back to 26 points and 13 coupled segments, the solid moves again, OUTSIDE_FAILURES becomes 0 and EXIT_OUTSIDE becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "        out.append('%s%s%s%.10e %s %s\"' % (m.group(1), m.group(2), m.group(3),\n                                           float(m.group(4)) + 1.0, m.group(5), m.group(6)))",
+    "to": "        out.append(l)"
+  }
+}

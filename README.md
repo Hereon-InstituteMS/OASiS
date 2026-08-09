@@ -119,17 +119,35 @@ claude "Solve the Poisson equation -Δu = 1 on a unit square with u=0 on the bou
 ### Backend examples
 
 ```bash
-# pip-installable (any combination)
-pip install ngsolve scikit-fem
-pip install KratosMultiphysics KratosStructuralMechanicsApplication
+# pip-installable (any combination), into the SAME interpreter that runs OASiS
+pip install ngsolve scikit-fem meshio
 
-# FEniCSx and DUNE-fem (conda-forge is the supported path)
+# Kratos: use the metapackage. Installing KratosMultiphysics alone lets pip
+# take the newest wheel, and the 10.4.x wheels are tagged manylinux_2_28 while
+# actually requiring GLIBC_2.32 — they install fine and then fail to import.
+# Check your host with `ldd --version | head -1`.
+pip install KratosMultiphysics-all
+
+# DUNE-fem: PyPI, NOT conda-forge — conda-forge has no dune-fem package.
+# mpi4py is an undeclared dependency; without it the first import stops with
+# "Please run pip install mpi4py before rerunning your Dune script."
+pip install dune-fem mpi4py
+
+# FEniCSx (conda-forge is the supported path). Real and complex scalars are
+# SEPARATE environments, not a runtime flag.
 conda create -n fenics -c conda-forge fenics-dolfinx
-conda create -n ofa-dune -c conda-forge dune-fem
 
-# deal.II (Ubuntu/Debian)
+# deal.II (Ubuntu/Debian). Note 20.04 ships 9.1.1, which is old enough to
+# miss many current APIs; check with
+#   grep DEAL_II_PACKAGE_VERSION /usr/include/deal.II/base/config.h
+# Build from source with -DCMAKE_BUILD_TYPE=DebugRelease if you want
+# assertion messages — Release compiles every Assert out.
 sudo apt install libdeal.ii-dev
 ```
+
+For the install route per backend, the exact first-run error messages, and
+which claims depend on how the backend was compiled, ask the server itself:
+`knowledge(topic='install')`, optionally with `solver=...`.
 
 On macOS, install deal.II from the official `deal.II.app` bundle and point
 `DEAL_II_DIR` at its `Contents/Resources/Libraries`. If a deal.II build then
@@ -186,6 +204,7 @@ FEniCSx     deal.II      4C   NGSolve   skfem   Kratos    DUNE    FEBio
 | `prepare_simulation` | Knowledge + real examples + template in one call — always the first step |
 | `run_simulation` | Execute Python-based solvers (FEniCSx, NGSolve, scikit-fem, DUNE-fem) |
 | `run_with_generator` | Generate input + run compiled solvers (4C, deal.II, Kratos) |
+| `verify_mesh_independence` | Heuristic mesh-refinement study for problems without an exact solution: re-runs at refined resolutions, compares global norms + probe values, converged/not-converged verdict |
 | `knowledge` | Physics knowledge, pitfalls, materials, coupling docs, cross-backend collation |
 | `examples` | Real test files from the solvers' own test suites |
 | `couple` | General partitioned coupling for any physics (contract + Aitken relaxation) |

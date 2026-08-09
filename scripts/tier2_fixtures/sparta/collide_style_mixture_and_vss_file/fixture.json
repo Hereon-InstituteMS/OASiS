@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for collision_relaxation:0, :1 and :3. Nine decks on the installed binary; every quoted message matched verbatim with its (file:line): collide_vss.cpp:47, collide_vss.cpp:924 ('ERROR on proc 0: Species Ar did not appear in VSS parameter file' — the sprintf %s resolved to the real species name), collide.cpp:159, collide.cpp:155, collide.cpp:1727, input.cpp:1425, fix_vibmode.cpp:50 and react_tce.cpp:40. The half of collision_relaxation:1 worth having is verified by OMISSION: the subset-mixture deck aborts at the first run, and the byte-identical deck with the 'run' line deleted exits 0 and reports nothing, so a validation-only pass never sees it. collision_relaxation:3's claim that the collide_modify message does not name the offending keyword is checked by looking for 'vibrat' in the message and not finding it. Verified by execution 2026-08-06 with SPARTA (24 Sep 2025). MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 puts the FULL mixture on the collide line of the two subset decks — 'collide vss both air.vss' instead of 'collide vss sub air.vss', where 'both' holds every declared species and 'sub' holds one of the two — and changes nothing else, so the pair stays byte-identical apart from the 'run' line. The with-run deck then completes at rc=0 with an empty error list instead of aborting at collide.cpp:159. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: every_quoted_collide_message_is_verbatim=True, subset_mixture_is_rejected_at_the_first_run=True; the run also prints 'UNEXPECTED: collide_mixture_is_a_subset_with_a_run printed [] not ...collide.cpp:159...', which trips forbid_in_output as well. same_deck_without_a_run_reports_nothing_and_exits_zero stays True, correctly: that deck exits 0 either way. SCOPE: the hook covers only the collision_relaxation:1 subset rule. The other seven quoted messages are not mutation-controlled — each is a verbatim string carrying its own (file:line), which no edit of these decks can counterfeit. Re-verify: cd scripts/tier2_fixtures/sparta/collide_style_mixture_and_vss_file && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "collision_relaxation",
+  "pitfall_index": 0,
+  "covers": [
+    "collision_relaxation:0",
+    "collision_relaxation:1",
+    "collision_relaxation:3"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "every_quoted_collide_message_is_verbatim=True",
+    "subset_mixture_is_rejected_at_the_first_run=True",
+    "same_deck_without_a_run_reports_nothing_and_exits_zero=True",
+    "collide_modify_typo_message_does_not_name_the_keyword=True",
+    "all_three_no_collide_hard_error_forms_abort=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::arterial_network#4, and the execution that FALSIFIED it. 4C's own CFL abort prints sqrt(3)*|lambda|_max*dt/dx, which is dominated by the pulse wave speed, and it comes out IDENTICAL to the last digit -- 2.0848661028149182 -- for blood viscosity 0.04 and for water 0.01 on upstream one_d_3_artery_network. The wave-speed error from using water is 0%, not the claimed ~20%, because c = sqrt(sqrt(pi)*E*th/(1-nu^2)*sqrt(A)/(2*A0*rho)) in art_net/4C_art_net_artery_ele_calc_lin_exp.cpp contains no viscosity at all. What viscosity does change is the friction: at a stable step the distal flowrate moves 0.928575 -> 0.936481, +0.85%. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "arterial_network",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BLOOD=1",
+    "EXIT_WATER=1",
+    "EXIT_BLOOD_CFL=1",
+    "EXIT_WATER_CFL=1",
+    "CFL number at element 0 is 2.0848661028149182",
+    "VERDICT: VISCOSITY_CHANGES_THE_WAVE_SPEED=no",
+    "is WRONG --> actresult= 9.36480687399747991e-01",
+    "VISCOSITY_FLOW_CHANGE_PERCENT=0.85",
+    "VISCOSITY_CHANGES_THE_FLOW=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "VERDICT: VISCOSITY_CHANGES_THE_WAVE_SPEED=yes",
+    "VISCOSITY_CHANGES_THE_FLOW=no",
+    "VISCOSITY_FLOW_CHANGE_PERCENT=0.00"
+  ],
+  "_mutation": {
+    "note": "remove the viscosity contrast: give the 'water' arm the same blood viscosity. The flow no longer moves, VISCOSITY_CHANGES_THE_FLOW becomes no and the 0.85% figure disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "WATER_VISCOSITY=0.01",
+    "to": "WATER_VISCOSITY=0.04"
+  }
+}

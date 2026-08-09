@@ -1,13 +1,22 @@
 {
-  "_comment": "Tier-2 for fourc contact/structural: catalog uses 'WALL QUAD4 ... THICK ... STRESS_STRAIN ...' in templates served by prepare_simulation. In 4C 2026.3 the eletype 'WALL' is unknown (parobjectfactory.cpp:153 'Unknown type WALL of finite element'). The real 2D structural element is 'SOLID QUAD4 ... THICKNESS ... PLANE_ASSUMPTION ...' — verified in tests/input_files/contact2D_initfield.4C.yaml from the 4C source tree. Verified empirically 2026-06-01 (4C 2026.3.0-dev).",
+  "_comment": "Tier-2 for fourc::linear_elasticity#4 / fourc::structural_mechanics#7 — which eletype owns 2D structural cells is VERSION-DEPENDENT, and the two spellings share no keywords: 4C <= 2026.2 uses 'WALL QUAD4 ... MAT m KINEM k EAS e THICK t STRESS_STRAIN s GP a b' (the SOLID factory registers 3D cell types only), while 4C >= 2026.3 folds 2D into 'SOLID QUAD4 ... THICKNESS t PLANE_ASSUMPTION p' and 'WALL' becomes an unknown eletype. HISTORY: the original 2026-06-01 fixture asserted the SOLID-era outcome verbatim (expected \"Unknown type 'WALL' of finite element\" from 4C_comm_parobjectfactory). Re-running it 2026-08-03 against the deployed 4C 2026.2.0-dev (git 89519cf, /home/alexander/4C/build/4C) FALSIFIED that expectation on this host: SOLID rejects quad4 with \"Element 'SOLID' does not seem to know cell type 'quad4'\" and the full WALL line reaches fill_complete. In this 4C tree 109 of the 1974 tests/input_files decks use WALL against 3 that use SOLID QUAD4, and those 3 do not run. Rather than delete the claim (still true upstream) or invert it (would then be false upstream), the fixture now probes BOTH spellings and asserts the era-agnostic invariant EXACTLY_ONE_2D_FACTORY=yes, printing a VERDICT line naming the winner on the host it ran on. Verified by execution 2026-08-03: VERDICT: 2D_ELEMENT=WALL. MUTATION CONTROL (T2_MUTATE=1, re-runnable) - a POSITIVE control, because the fixture asserts an era-agnostic invariant rather than reproducing an injected fault. The SOLID probe is given the WALL element line, so both probes accept; 'EXACTLY_ONE_2D_FACTORY=yes' disappears and the forbidden 'EXACTLY_ONE_2D_FACTORY=no' appears. Proved KILLED 2026-08-07.",
   "backend": "fourc",
   "physics": "linear_elasticity",
   "pitfall_index": 4,
   "mode": "cmd",
+  "timeout_seconds": 180,
   "expect_in_output": [
-    "Unknown type 'WALL' of finite element",
-    "4C_comm_parobjectfactory",
-    "fill_complete() on discretization structure"
+    "EXACTLY_ONE_2D_FACTORY=yes",
+    "VERDICT: 2D_ELEMENT="
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "EXACTLY_ONE_2D_FACTORY=no",
+    "VERDICT: 2D_ELEMENT=UNRESOLVED"
+  ],
+  "_mutation": {
+    "note": "POSITIVE control: the claim is an INVARIANT over whatever 4C is installed (exactly one of the two factories accepts quad4), not an injected pathology that could be taken back out. The mutation gives the second probe the SAME element line as the first, so both arms necessarily agree, EXACTLY_ONE_2D_FACTORY flips to 'no' - a forbidden token - and the expectation disappears. It rules out a verdict printed rather than derived from two independent 4C runs.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

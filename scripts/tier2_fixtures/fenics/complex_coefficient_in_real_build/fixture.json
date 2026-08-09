@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics poisson#1: where a complex value actually fails in a REAL PETSc build. The claim: use dolfinx.default_scalar_type so dtypes match the PETSc build, and the failure from getting it wrong surfaces at form compilation / array assignment, NOT at fem.Constant construction. The fixture checks all three statements on the real (float64) build: * fem.Constant(msh, 1+2j) constructs without raising; * fem.form of a form carrying that constant raises; * writing a complex number into a real Function array raises. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "default_scalar_type=float64",
+    "constant_construction_raised=False",
+    "form_raised=True",
+    "array_assign_raised=True",
+    "VERDICT=complex_rejected_at_form_and_array_not_at_constant"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ]
+}

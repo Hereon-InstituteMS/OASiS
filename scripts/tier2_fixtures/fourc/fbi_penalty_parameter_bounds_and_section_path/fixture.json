@@ -1,0 +1,55 @@
+{
+  "_comment": "Tier-2 for fourc::fbi#1. The rule (the FBI penalty parameter must be tuned) holds at both ends, but the entry names a SECTION THAT DOES NOT EXIST and quotes two diagnostics 4C never prints. 'BEAM INTERACTION/BEAM TO FLUID MESHTYING' is rejected outright — \"Section 'BEAM INTERACTION/BEAM TO FLUID MESHTYING' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp line 546 — the real path is FLUID BEAM INTERACTION/BEAM TO FLUID MESHTYING. On upstream fbi_mortar_solidcoupling.4C.yaml, PENALTY_PARAMETER 1e+14 gives 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp line 165 with no mention of cond(K), and 1e-10 converges silently while 2 of the 6 result tests move — no 'slip through', no warning at all. The small-penalty arm is the dangerous one. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fbi",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TUNED=0",
+    "EXIT_HUGE=1",
+    "EXIT_TINY=1",
+    "EXIT_CLAIMEDSEC=1",
+    "OK (6)",
+    "processor 0 finished normally",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "Result check failed with 2 errors out of 6 tests",
+    "Section 'BEAM INTERACTION/BEAM TO FLUID MESHTYING' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "CLAIMED_CONDITION_NUMBER_TEXT=0",
+    "CLAIMED_SLIP_THROUGH_TEXT=0",
+    "TINY_PENALTY_NONCONVERGENCE=0",
+    "TINY_PENALTY_WARNINGS=0",
+    "TINY_PENALTY_FAILED_TESTS=2",
+    "TUNED_FAILED_TESTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TUNED=1",
+    "EXIT_HUGE=0",
+    "EXIT_TINY=0",
+    "EXIT_CLAIMEDSEC=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the too-large pathology: keep the tuned penalty in the HUGE arm. The NOX non-convergence abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "HUGE_PENALTY=1e+14",
+      "to": "HUGE_PENALTY=0.1"
+    },
+    {
+      "note": "remove the too-small pathology: keep the tuned penalty in the TINY arm. TINY_PENALTY_FAILED_TESTS drops to 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "TINY_PENALTY=1e-10",
+      "to": "TINY_PENALTY=0.1"
+    },
+    {
+      "note": "remove the wrong-section pathology: write the real section path. The 'is not a valid section name' abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "CLAIMED_SECTION='BEAM INTERACTION/BEAM TO FLUID MESHTYING:'",
+      "to": "CLAIMED_SECTION='FLUID BEAM INTERACTION/BEAM TO FLUID MESHTYING:'"
+    }
+  ]
+}

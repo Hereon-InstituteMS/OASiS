@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics linear_elasticity#4: the rigid-body near-nullspace is an iteration-count win for CG+GAMG, and its ABSENCE does not make the solve fail. Wrong variant: CG + GAMG on 3D elasticity with no A.setNearNullSpace(). The claim's own correction is the part worth pinning: this still CONVERGES, so \"MUST\" is wrong and an unchecked script sees nothing amiss; what changes is the iteration count. The fixture solves the same tetrahedral cantilever twice per mesh, once without and once with the 6 rigid-body modes, and checks (a) both converge, (b) the no-nullspace run needs strictly more iterations. Counts are compared in-process, so no measured iteration number is pinned. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "linear_elasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "without_nullspace_still_converged=True",
+    "nullspace_reduces_iterations=True",
+    "VERDICT=near_nullspace_is_iteration_win_not_correctness_gate"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_iteration_difference"
+  ],
+  "timeout_seconds": 600
+}

@@ -1,0 +1,50 @@
+{
+  "_comment": "COUPLING tier-2. A SECOND cross-code pair for two-way TSI, so the capability belongs to the coupling path rather than to one pairing that happened to work: NGSolve thermal with FEniCSx structural, and scikit-fem thermal with NGSolve structural. NGSolve is the hard participant on purpose \u2014 netgen gives it an UNSTRUCTURED mesh while dolfinx and scikit-fem both use a tensor-product triangulation here, so every exchange in these arrangements maps between a regular grid and an irregular cloud, in both directions, and no node can coincide with a partner node by accident. It is also a different structural discretisation: VectorH1 order 2 with per-component Dirichlet boundaries (dirichletx= / dirichlety=), where a plain dirichlet= would clamp both components and silently turn transverse rollers into a built-in edge. Same battery as the other pair fixtures: convergence, monolithic agreement, interface sensitivity per participant, and the reverse-direction control checked both for size and against the monolithic two-way-minus-one-way difference. A THIRD MUTATION WAS TRIED AND DOES NOT DISCRIMINATE, and it is recorded here rather than dropped: shrinking the STRUCTURAL participant's body to 75% of the thermal one's, so every exchange beyond that point is an extrapolation. It changes nothing measurable. Two reasons, both worth knowing. (a) In uniaxial strain tr(eps) = beta*theta/(lam+2mu) POINTWISE, so the exported strain does not depend on where the body ends and shortening it barely moves the field. (b) `couple`'s interface-identity check is a DISJOINTNESS test \u2014 it fires when the two point clouds do not overlap at all, not when one is contained in the other \u2014 so a participant solving on a smaller body than its partner is not detected. That is a real gap in the checks and not a defect of this fixture; it is recorded in the coupling pitfall corpus.",
+  "_mutation": [
+    {
+      "note": "Kill the reverse direction. Both arrangements converge faster and every iteration-level check passes; the monolithic comparison and `reverse_direction_is_active` are what fail.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(0.0 * float(coupling)),"
+    },
+    {
+      "note": "Flip the SIGN of the mechanical -> thermal term, so expanding the body heats it instead of cooling it. At a real metal's coupling strength this converges cleanly onto a temperature field wrong by twice the coupling effect \u2014 the silent-wrong shape \u2014 and only the monolithic comparison sees it. RUN AND CONFIRMED to kill.",
+      "file": "../_lib/tsilib.py",
+      "from": "\"COUPLING\": repr(float(coupling)),",
+      "to": "\"COUPLING\": repr(-float(coupling)),"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "tsi_twoway_ngsolve_fenics",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 7200,
+  "expect_in_output": [
+    "ngsolve_T_fenics_M_2way_converged=True",
+    "ngsolve_T_fenics_M_2way_validation_empty=True",
+    "ngsolve_T_fenics_M_meshes_nonmatching=True",
+    "ngsolve_T_fenics_M_2way_matches_monolithic=True",
+    "ngsolve_T_fenics_M_1way_tool_reported_one_way=True",
+    "ngsolve_T_fenics_M_both_directions_active=True",
+    "skfem_T_ngsolve_M_2way_converged=True",
+    "skfem_T_ngsolve_M_2way_validation_empty=True",
+    "skfem_T_ngsolve_M_meshes_nonmatching=True",
+    "skfem_T_ngsolve_M_2way_matches_monolithic=True",
+    "skfem_T_ngsolve_M_1way_tool_reported_one_way=True",
+    "skfem_T_ngsolve_M_both_directions_active=True",
+    "pairs_run=2",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "_converged=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "_both_directions_active=False",
+    "_meshes_nonmatching=False",
+    "_tool_reported_one_way=False",
+    "failures_count=1"
+  ]
+}

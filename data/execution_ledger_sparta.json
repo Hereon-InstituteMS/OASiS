@@ -1,0 +1,1369 @@
+{
+  "commit": "30ec83105f8c",
+  "tree_dirty": true,
+  "rows": [
+    {
+      "backend": "sparta",
+      "fixture": "a_region_is_a_selector_not_geometry",
+      "claim": "particle_emission:6",
+      "claim_text_sha": "3ffb7fa4e8dd9de1",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:50:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.0,
+        "missing": [
+          "the_two_runs_are_identical_row_for_row=True",
+          "no_surface_collision_is_ever_tallied=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "adapt_grid_unfed_fix_is_not_a_noop",
+      "claim": "adaptive_grid:0,adaptive_grid:1",
+      "claim_text_sha": "0a7ab122fbd02988",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:50:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "unfed_fix_prints_no_adaptation_line=True",
+          "coarsen_on_unfed_fix_is_not_a_noop=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "adapting_on_particle_count_targets_the_wrong_cells",
+      "claim": "adaptive_grid:4,hypersonic_flow:3",
+      "claim_text_sha": "bb27d5a29caab298",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:50:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 69.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 73.7,
+        "missing": [
+          "refining_on_particle_count_does_NOT_improve_the_knudsen_minimum=True",
+          "the_particle_count_criterion_is_self_limiting_not_several_fold=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "ambipolar_setup_errors_and_the_electron_column",
+      "claim": "ambipolar_plasma:0,ambipolar_plasma:1,ambipolar_plasma:2,ambipolar_plasma:3",
+      "claim_text_sha": "57e2c785b2281d22",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:53:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 22.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 25.0,
+        "missing": [
+          "deleting_collide_modify_MAKES_the_electron_column_nonzero=True",
+          "the_published_diagnostic_is_inverted=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "ave_time_window_rules_and_stats_compatibility",
+      "claim": "hypersonic_flow:7,hypersonic_flow:8,hypersonic_flow:9",
+      "claim_text_sha": "7bbfb16eaf21456b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:54:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "both_window_violations_share_one_message=True",
+          "the_message_names_neither_constraint=True",
+          "stats_must_be_a_multiple_of_nfreq=True",
+          "the_reduce_path_objects_too=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "axisymmetric_boundary_letter_forms",
+      "claim": "axisymmetric:0,axisymmetric:1,axisymmetric:2,axisymmetric:3",
+      "claim_text_sha": "732c2c7005fb2cd3",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:54:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "all_expected_errors_matched=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "axisymmetric_radial_weighting_and_its_scale_trap",
+      "claim": "axisymmetric:4",
+      "claim_text_sha": "d72a6b846ebe1490",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:54:06+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "uniform_weighting_grades_occupancy_by_more_than_10x=True",
+          "radial_weighting_removes_the_gradient=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "axisymmetric_weight_radius_and_bad_moves",
+      "claim": "axisymmetric:5",
+      "claim_text_sha": "d9233d5f0a2aa2e8",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:54:07+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 31.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 94.2,
+        "missing": [
+          "both_quoted_weight_radius_messages_are_verbatim=True",
+          "FORBIDDEN:FAIL:",
+          "FORBIDDEN:UNEXPECTED:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "boundary_compute_takes_a_mixture_not_a_group",
+      "claim": "hypersonic_flow:6",
+      "claim_text_sha": "39feb7a1e050048b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.1,
+        "missing": [
+          "the_first_two_rows_are_the_periodic_x_faces=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "collide_style_mixture_and_vss_file",
+      "claim": "collision_relaxation:0,collision_relaxation:1,collision_relaxation:3",
+      "claim_text_sha": "a2ffeaf835f7d771",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "every_quoted_collide_message_is_verbatim=True",
+          "subset_mixture_is_rejected_at_the_first_run=True",
+          "FORBIDDEN:FAIL:",
+          "FORBIDDEN:UNEXPECTED:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "compute_surf_array_and_mixture_groups",
+      "claim": "surface_interaction:5",
+      "claim_text_sha": "8f98a2073c29da30",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "default_mixture_has_one_group=True",
+          "named_group_is_still_one_group=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "compute_temp_includes_streaming_velocity",
+      "claim": "rarefied_flow:4",
+      "claim_text_sha": "0b9430dcbbbf1427",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "offset_matches_m_v2_over_3kB=True",
+          "slow_flow_offset_is_negligible=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "create_particles_and_mixture_nrho_overrides",
+      "claim": "rarefied_flow:12,rarefied_flow:13,universal:1,universal:2",
+      "claim_text_sha": "4d73edbe63497525",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "n_nonzero_overrides_nrho=True",
+          "mixture_nrho_overrides_global=True",
+          "global_after_create_particles_gives_zero=True",
+          "region_scales_the_requested_count=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "docpage_names_are_not_commands",
+      "claim": "rarefied_flow:20,universal:9",
+      "claim_text_sha": "c73ea0e7ef76b0dd",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:16+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "validate_rejects_docpage_form=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "dsmc_silent_wrong_answers",
+      "claim": "rarefied_flow:91",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:17+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.7,
+        "missing": [
+          "A_missing_nrho_fnum_is_silently_wrong=True",
+          "B_mixture_fraction_deficit_is_silently_wrong=True",
+          "C_undeclared_products_drop_all_chemistry_silently=True",
+          "D_empty_cells_return_the_sentinel_silently=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "dt_reset_rewrites_the_timestep",
+      "claim": "collision_relaxation:8",
+      "claim_text_sha": "be7026ed871b5347",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "resetflag_one_rewrites_the_global_timestep=True",
+          "the_new_dt_is_the_fixes_own_recommendation=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "dump_order_halt_and_deferred_print",
+      "claim": "universal:10,universal:11",
+      "claim_text_sha": "23abacf8204308da",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:18+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 1.8,
+        "missing": [
+          "a_soft_halt_exits_zero=True",
+          "an_undefined_variable_survives_setup=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "emit_face_periodic_and_n_override",
+      "claim": "hypersonic_flow:0,particle_emission:0,particle_emission:4,particle_emission:5",
+      "claim_text_sha": "0904b66e4c6ae416",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:22+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 4.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.2,
+        "missing": [
+          "emit_face_on_a_periodic_face_message=ERROR: Cannot use fix emit/face on periodic boundary (../fix_emit_face.cpp:182)",
+          "emit_face_n_with_default_perspecies_message=ERROR: Cannot use fix emit/face n > 0 with perspecies yes (../fix_emit_face.cpp:100)",
+          "emit_surf_group_name_does_not_exist_message=ERROR: Fix emit/surf group ID does not exist (../fix_emit_surf.cpp:61)",
+          "every_quoted_emit_message_is_verbatim=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "emit_mixture_nrho_and_reading_nreact",
+      "claim": "chemistry:3,particle_emission:1",
+      "claim_text_sha": "e87172ad2d36fec6",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:56:32+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 43.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 12.1,
+        "missing": [
+          "an_nrho_on_the_mixture_sets_the_steady_count=True",
+          "but_its_Nreact_column_stays_orders_of_magnitude_smaller=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "external_field_needs_the_global_line",
+      "claim": "ambipolar_plasma:5",
+      "claim_text_sha": "2bb3a7c4c8ebf6cb",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "a_field_fix_without_the_global_line_is_a_no_op=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "fix_adapt_and_readers_at_incompatible_times",
+      "claim": "adaptive_grid:3,hypersonic_flow:4",
+      "claim_text_sha": "280318e0df41b7ff",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:28+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "adapt_nevery_not_a_multiple_of_the_fix_nfreq_message=ERROR: Fix for adapt not computed at compatible time (../adapt_grid.cpp:502)",
+          "compute_reduce_reads_the_fix_at_an_incompatible_time_message=ERROR: Fix used in compute reduce not computed at compatible time (../compute_reduce.cpp:805)",
+          "stats_prints_a_global_fix_at_an_incompatible_time_message=ERROR: Stats and fix not computed at compatible times (../stats.cpp:203)",
+          "stats_prints_a_per_grid_fix_message=ERROR: Stats fix does not compute scalar (../stats.cpp:705)"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "fix_surf_temp_order_brackets_emissivity",
+      "claim": "conjugate_heat_transfer:0,conjugate_heat_transfer:1,conjugate_heat_transfer:2",
+      "claim_text_sha": "598f5611748b0618",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:29+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.6,
+        "missing": [
+          "every_quoted_fix_surf_temp_message_is_verbatim=True",
+          "doc_page_bare_compute_form_does_not_work=True",
+          "emissivity_zero_is_rejected_not_read_as_no_radiation=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "generators_execute_on_installed_build",
+      "claim": "rarefied_flow:900",
+      "claim_text_sha": "",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:33+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 6.7,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 6.7,
+        "missing": [
+          "knowledge_has_no_host_paths=True",
+          "all_pitfalls_carry_a_signal=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "global_nrho_before_create_particles",
+      "claim": "rarefied_flow:11,universal:0",
+      "claim_text_sha": "f03b88c427509d70",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "created_line_reads_exactly_zero_both_ways=True",
+          "np_is_zero_on_every_stats_line=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "grid_levels_and_the_checks_that_do_not_fire",
+      "claim": "adaptive_grid:6,adaptive_grid:7,adaptive_grid:8,adaptive_grid:9",
+      "claim_text_sha": "34e8ab52507d8281",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:57:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 35.9,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 34.0,
+        "missing": [
+          "there_is_no_level_keyword=True",
+          "every_declared_level_must_be_set=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "mixture_fraction_deficit_absorbed_silently",
+      "claim": "chemistry:2",
+      "claim_text_sha": "8a0900b1144ae3cd",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:58:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "quoted_exceed_one_message_is_verbatim=True",
+          "with_every_fraction_set_the_last_species_absorbs_the_deficit=True",
+          "with_an_unset_species_present_the_unset_one_absorbs_it=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "no_collide_is_free_molecular",
+      "claim": "rarefied_flow:15,universal:4",
+      "claim_text_sha": "4401d079c50b867e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:58:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.8,
+        "missing": [
+          "ncoll_identically_zero_without_collide=True",
+          "flux_overestimated_by_more_than_5x=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "no_native_flux_bc_and_the_pid_route",
+      "claim": "conjugate_heat_transfer:10,conjugate_heat_transfer:7,conjugate_heat_transfer:8,conjugate_heat_transfer:9",
+      "claim_text_sha": "4af01cc8d506fe18",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T16:59:03+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 65.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 64.2,
+        "missing": [
+          "the_loop_diverges_monotonically=True",
+          "divergence_returns_success=True",
+          "the_fixes_p_i_d_vector_tracks_the_control=True",
+          "it_behaves_as_the_single_index_form=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "no_timestep_hangs_and_per_step_counters",
+      "claim": "rarefied_flow:16,rarefied_flow:17,rarefied_flow:18,rarefied_flow:19,universal:5,universal:6,universal:7,universal:8",
+      "claim_text_sha": "846549eae295bb84",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:01:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 27.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.5,
+        "missing": [
+          "omitting_timestep_never_returns=True",
+          "omitting_timestep_prints_nothing_at_all=True",
+          "no_timestep_reached_a_stats_line=False",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "one_emit_face_plateaus_below_freestream",
+      "claim": "hypersonic_flow:1,particle_emission:2,particle_emission:3",
+      "claim_text_sha": "76f47dc90b7222d5",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:01:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 13.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 19.6,
+        "missing": [
+          "the_flattening_is_not_just_slow_decay=True",
+          "one_face_plateau_is_far_below_the_seeded_density=True",
+          "vstream_zero_plateau_is_several_times_lower=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "per_cell_diagnostics_sentinel_and_resolution",
+      "claim": "rarefied_flow:0,rarefied_flow:1,rarefied_flow:2,rarefied_flow:3,rarefied_flow:7",
+      "claim_text_sha": "01fc75a1ed0a0db2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:02:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 17.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 15.4,
+        "missing": [
+          "the_sentinel_persists_on_a_refined_grid=True",
+          "the_refined_grid_has_empty_cells=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "per_grid_shapes_and_the_reduce_bridge",
+      "claim": "rarefied_flow:10,rarefied_flow:9",
+      "claim_text_sha": "6eef138ddd9704de",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:02:47+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "one_attribute_is_a_vector=True",
+          "bracketing_a_one_attribute_property_grid_fails=True",
+          "the_two_shape_mistakes_have_opposite_messages=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "per_surf_shapes_watertight_and_data_circle_collision",
+      "claim": "conjugate_heat_transfer:3,conjugate_heat_transfer:6,surface_interaction:4,surface_interaction:7,surface_interaction:8",
+      "claim_text_sha": "c25fdc7af254c23e",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:02:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.3,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.3,
+        "missing": [
+          "an_open_curve_in_the_interior_fails_watertight=True",
+          "adding_clip_does_NOT_rescue_an_interior_open_curve=True",
+          "clip_is_not_what_makes_the_open_curve_legal=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "raw_compute_surf_in_a_dump_is_a_one_step_tally",
+      "claim": "surface_interaction:6",
+      "claim_text_sha": "e07070ba4b55decc",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:02:48+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 56.0,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 55.3,
+        "missing": [
+          "a_4x_dump_interval_change_leaves_the_field_IDENTICAL=True",
+          "so_magnitude_does_NOT_scale_with_the_dump_interval=True",
+          "the_raw_field_has_a_large_fraction_of_exact_zeros=True",
+          "routing_through_fix_ave_surf_removes_them=True"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "react_file_is_parsed_in_pairs",
+      "claim": "chemistry:0,chemistry:1",
+      "claim_text_sha": "02d2b1c3f8e53e5c",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "odd_line_file_loads_silently_with_zero_reactions=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "refinement_is_unbounded_without_maxlevel",
+      "claim": "adaptive_grid:2,hypersonic_flow:5",
+      "claim_text_sha": "62234088040270bd",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "uncapped_ngrid_climbs_every_stats_line=True",
+          "uncapped_maxlevel_exceeds_the_cap=True",
+          "uncapped_ends_with_more_cells_than_capped=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "rotational_and_vibrational_modes_are_not_symmetric",
+      "claim": "collision_relaxation:2,collision_relaxation:4,collision_relaxation:5",
+      "claim_text_sha": "606326e381abfdb5",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:40+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.8,
+        "missing": [
+          "with_collide_but_no_collide_modify_only_rotation_relaxes=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "staging_balance_and_reaction_file_setup_traps",
+      "claim": "adaptive_grid:5,ambipolar_plasma:4,conjugate_heat_transfer:5",
+      "claim_text_sha": "0f0df56a67d7ef5d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "species_file_not_staged_message=ERROR on proc 0: Cannot open species file ar.species (../particle.cpp:711)",
+          "every_quoted_setup_message_is_verbatim=True",
+          "the_same_deck_runs_when_the_species_file_is_staged=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "surf_collide_arg_order_and_specular_wall",
+      "claim": "surface_interaction:0,surface_interaction:1",
+      "claim_text_sha": "7e6763883223bb9a",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:42+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 5.8,
+        "missing": [
+          "specular_wall_energy_is_round_off_vs_diffuse=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "surf_collide_styles_beyond_diffuse",
+      "claim": "surface_interaction:10,surface_interaction:11,surface_interaction:12",
+      "claim_text_sha": "5df74ab103068d1b",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 2.1,
+        "missing": [
+          "adiabatic_transfers_no_energy=True",
+          "adiabatic_and_specular_agree=True",
+          "a_transparent_model_on_solid_elements_dies_in_the_collider=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "surf_tally_etot_on_a_deleting_wall",
+      "claim": "particle_emission:7",
+      "claim_text_sha": "804965eefd26f071",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:04:57+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 7.3,
+        "missing": [
+          "etot_on_a_vanish_wall_dies_on_a_signal=True",
+          "it_dies_with_no_error_line_at_all=True",
+          "RESULT=pass",
+          "FORBIDDEN:UNEXPECTED:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "surface_command_dependency_chain",
+      "claim": "surface_interaction:2,surface_interaction:3,surface_interaction:9",
+      "claim_text_sha": "c2f827b41114eee2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:05:10+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.1,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "every_wrong_ordering_aborts_nonzero=True",
+          "every_quoted_message_is_verbatim=True",
+          "partial_binding_reports_the_unbound_count_not_the_total=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "surface_flux_needs_steady_state_not_the_first_block",
+      "claim": "hypersonic_flow:2",
+      "claim_text_sha": "d9f986d1b14baa5d",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:05:11+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 72.8,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 149.8,
+        "missing": [
+          "the_FIRST_window_is_more_than_10x_the_floor=True",
+          "but_it_is_a_fraction_off_NOT_a_large_factor=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "tally_computes_are_one_step_event_lists",
+      "claim": "chemistry:6",
+      "claim_text_sha": "827c4878c130d531",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:08:53+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.9,
+        "missing": [
+          "dump_surf_rejects_a_tally_compute=True",
+          "fix_ave_surf_refuses_a_tally_compute=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "tce_qk_is_not_tce_plus_qk",
+      "claim": "chemistry:4,chemistry:5",
+      "claim_text_sha": "92dfb4194c491fee",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:08:54+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.2,
+        "missing": [
+          "tce_qk_fires_no_reaction_at_all=True",
+          "tce_qk_leaves_the_particle_count_untouched=True",
+          "the_three_styles_do_not_agree=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "thermal_grid_across_an_unresolved_shear",
+      "claim": "rarefied_flow:5",
+      "claim_text_sha": "fd2eb54283f9b3f2",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:08:55+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 5.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 4.7,
+        "missing": [
+          "refining_lowers_the_reading_on_every_seed_pairing=True",
+          "the_effect_is_resolvable_above_the_seed_spread=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "thermal_grid_is_biased_low_at_few_particles",
+      "claim": "rarefied_flow:6",
+      "claim_text_sha": "08dd7bd07dc8bfa5",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:09:05+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 3.4,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 3.5,
+        "missing": [
+          "at_a_couple_per_cell_it_reads_under_half_the_true_temperature=True",
+          "under_one_per_cell_it_collapses_further=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "thermostat_ramps_and_histogram_range",
+      "claim": "collision_relaxation:6,collision_relaxation:7",
+      "claim_text_sha": "dc96c277019231ad",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:09:12+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 0.6,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.7,
+        "missing": [
+          "values_outside_the_range_are_dropped_silently=True",
+          "narrowing_the_range_moves_counts_into_the_dropped_column=True",
+          "RESULT=pass"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "units_cgs_silently_rescales_si_data",
+      "claim": "rarefied_flow:14,universal:3",
+      "claim_text_sha": "fc974d86e1a2d5db",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:09:13+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 1.5,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 0.1,
+        "missing": [
+          "cgs_collision_rate_is_far_higher=True",
+          "cell_touches_tell_present=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    },
+    {
+      "backend": "sparta",
+      "fixture": "wall_flux_balance_is_the_convergence_test",
+      "claim": "rarefied_flow:8",
+      "claim_text_sha": "02fb88da01074c36",
+      "commit": "30ec83105f8c",
+      "tree_dirty": true,
+      "recorded": "2026-08-07T17:09:15+00:00",
+      "unmutated": {
+        "status": "PASS",
+        "rc": 0,
+        "seconds": 2.2,
+        "missing": []
+      },
+      "control": "env",
+      "mutated": {
+        "status": "FAIL",
+        "rc": 1,
+        "seconds": 4.8,
+        "missing": [
+          "the_FIRST_window_is_more_than_10x_the_floor=True",
+          "the_imbalance_decays_through_the_transient=True",
+          "FORBIDDEN:FAIL:"
+        ]
+      },
+      "discriminates": true
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#13 — MAT_ElastHyper with KINEM linear is accepted by both the parser and the element factory and then fails in two different ways depending on how far the structure deforms. Six arms of one HEX8 unit cube (MAT_ElastHyper = ELAST_CoupNeoHooke YOUNG 1000 NUE 0.3 + ELAST_VolSussmanBathe KAPPA 1000, surface Neumann in y, tip dispy at node 6), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Each linear arm carries the RESULT DESCRIPTION of its nonlinear twin pinned at 1e-12, so 4C itself reports the gap. Quiet branch: the three nonlinear runs exit 0 with no result failures, while the linear runs finish just as happily and land LINEAR_ERROR_PERCENT_AT_LOAD_50=-1.8 and _AT_LOAD_100=-2.9 — too stiff, and growing with the load (LINEAR_ERROR_GROWS_WITH_LOAD=yes) — with the added result test the only error block in either log (LOAD_*_ONLY_ERROR_IS_THE_RESULT_TEST=yes), i.e. nothing at all in a deck without one. Loud branch: at load 300 the linear variant is killed with shell status 136, 'Signal: Floating point exception (8)' / 'Signal code: Invalid floating point operation (7)', LIN_300_FOURC_ERROR_BLOCKS=0 and a stack that names Mat::ElastHyper and DisplacementBasedLinearKinematicsFormulation, while its nonlinear twin finishes normally. Neither failure names KINEM: LIN_300_MENTIONS_KINEM=0.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 13,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NL_50=0",
+    "EXIT_LIN_50=1",
+    "EXIT_NL_100=0",
+    "EXIT_LIN_100=1",
+    "EXIT_NL_300=0",
+    "EXIT_LIN_300=136",
+    "processor 0 finished normally",
+    "RESULT_FAILURES_NL_50=0",
+    "RESULT_FAILURES_NL_100=0",
+    "RESULT_FAILURES_NL_300=0",
+    "LINEAR_ERROR_PERCENT_AT_LOAD_50=-1.8",
+    "LINEAR_ERROR_PERCENT_AT_LOAD_100=-2.9",
+    "LOAD_50_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "LOAD_100_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "LINEAR_ERROR_GROWS_WITH_LOAD=yes",
+    "LINEAR_IS_TOO_SOFT_OR_TOO_STIFF=too_stiff",
+    "Signal: Floating point exception (8)",
+    "Signal code: Invalid floating point operation (7)",
+    "LIN_300_FOURC_ERROR_BLOCKS=0",
+    "LIN_300_STACK_NAMES_ELASTHYPER=1",
+    "LIN_300_STACK_NAMES_LINEAR_KINEMATICS=1",
+    "LIN_300_MENTIONS_KINEM=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_NL_50=1",
+    "EXIT_NL_300=1",
+    "EXIT_LIN_300=0",
+    "LINEAR_ERROR_GROWS_WITH_LOAD=no",
+    "LIN_300_FOURC_ERROR_BLOCKS=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the load-300 arm: give the hyperelastic material the nonlinear kinematics it needs. The SIGFPE disappears and EXIT_LIN_300 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    300.0 \"$REF300\" \"$TMP/l300.yaml\"",
+      "to": "deck nonlinear 300.0 \"$REF300\" \"$TMP/l300.yaml\""
+    },
+    {
+      "note": "remove the pathology from the load-50 arm. It then matches its twin to 1e-12, no percentage is printed and EXIT_LIN_50 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    50.0  \"$REF50\"  \"$TMP/l50.yaml\"",
+      "to": "deck nonlinear 50.0  \"$REF50\"  \"$TMP/l50.yaml\""
+    },
+    {
+      "note": "remove the pathology from the load-100 arm. LINEAR_ERROR_PERCENT_AT_LOAD_100 disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    100.0 \"$REF100\" \"$TMP/l100.yaml\"",
+      "to": "deck nonlinear 100.0 \"$REF100\" \"$TMP/l100.yaml\""
+    }
+  ]
+}

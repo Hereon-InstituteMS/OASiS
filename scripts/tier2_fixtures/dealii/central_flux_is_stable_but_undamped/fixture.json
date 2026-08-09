@@ -1,0 +1,21 @@
+{
+  "_comment": "CLAIM dg_advection_reaction::0: [Numerical] Upwind flux for stability. Signal: a DG advection discretisation with a CENTRAL numerical flux (0.5 * (u^+ + u^-)) on a pure-advection problem is unstable \u2014 the solution amplitude grows like ~exp(t) regardless of mesh size. Use upwind: u_hat = u^- (downstream cell takes upstream \u2026 WHAT THIS RUNS: -- probe \"central_flux\" of the shared DG-transport translation unit _shared/dgtransport_family.cc, compiled once and cached so eleven fixture directories share ONE C++ build. The central flux 0.5*(u^+ + u^-) against upwind on the same DG transport operator. The growth rate of du/dt = -M^{-1} A u is the largest real part of an eigenvalue of that operator, so it is computed with LAPACK at two mesh sizes, alongside an RK4 integration of a pulse that the field carries out of the box before t = 1. The entry is WRONG about the direction: the central-flux operator has NO eigenvalue with positive real part and the amplitude does not grow. What is true is that its damping vanishes under refinement -- the rightmost real part halves from one level to the next, while upwind's grows -- so the pulse leaves a residue in the box more than ten times the upwind one. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: largest_real_part_under_test_is_positive=false; amplitude_under_test_grew_at_either_mesh_size=false; damping_of_the_rightmost_mode_under_test_halves_under_refinement=true; residue_under_test_is_more_than_ten_times_the_upwind_residue=true; VERDICT=flux_under_test_is_stable_but_leaves_a_residue_upwind_removes. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "dg_advection_reaction",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "largest_real_part_under_test_is_positive=false",
+    "amplitude_under_test_grew_at_either_mesh_size=false",
+    "damping_of_the_rightmost_mode_under_test_halves_under_refinement=true",
+    "residue_under_test_is_more_than_ten_times_the_upwind_residue=true",
+    "VERDICT=flux_under_test_is_stable_but_leaves_a_residue_upwind_removes"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=flux_under_test_behaves_like_upwind",
+    "VERDICT=flux_under_test_has_growing_modes"
+  ],
+  "timeout_seconds": 1800
+}

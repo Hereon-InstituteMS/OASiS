@@ -34,13 +34,20 @@ Expected result (linear P1 shape functions, constant source):
 This conclusively shows: LaplacianElement DOES assemble the
 HEAT_FLUX volumetric source term. The 'does NOT' claims in the
 catalog are wrong and must be removed.
+
+Mutation control: T2_MUTATE=1 doubles the nodal HEAT_FLUX to 20 while leaving the expected per-node value the gate compares against at the documented 10 * A / 3 = 1.666667. If the printed RHS numbers really come from the element's assembly of the nodal source they must move and the comparison must fail; that is exactly what happens, which is what makes this gate evidence rather than a restatement of its own constant.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ConvectionDiffusionApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=nodal_source_doubled_while_the_expected_value_is_left_at_the_documented_one")
 
 
 def main() -> int:
@@ -86,7 +93,7 @@ def main() -> int:
 
     # Source = 10 on every node
     for node in mp.Nodes:
-        node.SetSolutionStepValue(KM.HEAT_FLUX, 0, 10.0)
+        node.SetSolutionStepValue(KM.HEAT_FLUX, 0, 20.0 if MUTATE else 10.0)
     rhs_10 = KM.Vector(3)
     element.CalculateRightHandSide(rhs_10, mp.ProcessInfo)
     print(f"rhs10_node0={rhs_10[0]:.6f}")

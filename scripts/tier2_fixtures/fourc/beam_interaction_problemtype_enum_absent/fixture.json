@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#7. The rule is right — there is no PROBLEMTYPE 'BeamInteraction' — but the Signal was fabricated: 4C emits no 'unknown problem type'. It emits 'Could not match this input' and prints the whole allowed enum, and the fixture reads membership straight out of it: BeamInteraction absent, Polymer_Network and Fluid_Beam_Interaction present. 'BEAM INTERACTION' appears 25 times in the binary's own --parameters schema, so the section is real and belongs under a Structure run. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_BAD=1",
+    "Could not match this input",
+    "has wrong value, possible values:",
+    "CLAIMED_UNKNOWN_PROBLEM_TYPE_TEXT=0",
+    "ENUM_HAS_BEAMINTERACTION=0",
+    "ENUM_HAS_POLYMER_NETWORK=1",
+    "ENUM_HAS_FLUID_BEAM_INTERACTION=1",
+    "BEAM_INTERACTION_SECTION_IN_SCHEMA=25"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BAD=0",
+    "ENUM_HAS_BEAMINTERACTION=1",
+    "ENUM_HAS_POLYMER_NETWORK=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: ask for Polymer_Network, which the enum does contain. The match succeeds, nothing is printed, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "  PROBLEMTYPE: \"BeamInteraction\"",
+    "to": "  PROBLEMTYPE: \"Polymer_Network\""
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#5: BDM(k)+DG(k-1) is the alternative H(div) pair. It is inf-sup stable like RT(k)+DG(k-1) but uses the FULL polynomial space, so at k=1 in 2D it costs twice the flux dofs, and the order it buys is in the FLUX, not in the pressure. The pitfall is the measurement, not the element: someone swaps RT for BDM, measures only the pressure error, sees the same rate, and concludes BDM is useless -- or worse, keeps paying for it without knowing what it bought. This fixture runs the manufactured solution p = sin(pi x) sin(pi y) on 8x8 and 16x16 unit squares with both pairs and reports the observed convergence rate of the quantity it is looking at. The default (pathological) run looks only at the pressure; T2_MUTATE=1 looks at the flux instead, which is where the difference is. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "bdm_flux_dofs_are_exactly_double_rt=True",
+    "both_pairs_are_first_order_in_the_pressure=True",
+    "bdm_pressure_rate_matches_rt=True",
+    "VERDICT=bdm_doubles_the_flux_dofs_and_the_pressure_rate_is_unchanged"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=bdm_changed_the_pressure_rate"
+  ],
+  "timeout_seconds": 600
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for kratos.mpm pitfall #10: material points that leave the background grid are ERASED and the mass they carry leaves the simulation. Executed 2026-08-07 on Kratos 10.4.3 Release with MPMApplication, using a self-written two-mdpa deck (no data files): a grid spanning y in [0,2], a single MPMUpdatedLagrangian2D4N body element in y in [1,2], gravity on, no constraints, 2 s of free fall. Measured: the material-point count goes 1 -> 0, logged as 'MPMSearchElementUtility: WARNING: Search Element for Material Point: <id> is failed. Geometry is cleared.' followed by '[WARNING] MaterialPointEraseProcess: 1 particle elements have been erased.', and the run then stops with RuntimeError 'Error: No degrees of freedom in model part: MPM_Material' from block_build_dof_array_utility.h:161. WHY THIS IS THE DANGEROUS ONE: neither log line is an error, and deletion is enabled by default (element_search_settings.remove_entities_not_found defaults to true), so a PARTIALLY escaped body loses mass silently and finishes 'successfully' -- total mass and momentum are simply not conserved and nothing says so. The hard stop only arrives once the last point is gone, and its message does not mention material points at all, so it reads as an unrelated setup error. INTERPRETER: needs a Kratos build carrying MPMApplication; set KRATOS_PYTHON. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the mutation EXTENDS the grid downward to y=-400 so the body stays inside for the whole fall, leaving the body, the gravity process, the time stepping and the assertions untouched -- it changes only how far the grid reaches. That is the cleanest available control because it targets exactly the claimed cause. Verified: unmutated PASSES (rc=0) with surviving_material_points=0 and material_points_were_erased=True; with T2_MUTATE=1 it FAILS (rc=1), surviving_material_points=1, the erased flag flips to False and mpm_grid_escape_check=ok disappears. Re-verify: cd scripts/tier2_fixtures/kratos/mpm_points_leaving_the_grid_are_erased && $KRATOS_PYTHON source.py (passes), then T2_MUTATE=1 $KRATOS_PYTHON source.py (fails).",
+  "backend": "kratos",
+  "physics": "mpm",
+  "pitfall_index": 10,
+  "mode": "python",
+  "expect_in_output": [
+    "initial_material_points=1",
+    "surviving_material_points=0",
+    "material_points_were_erased=True_expected=True",
+    "particle elements have been erased",
+    "No degrees of freedom in model part: MPM_Material",
+    "mpm_grid_escape_check=ok"
+  ],
+  "forbid_in_output": [
+    "MISMATCH"
+  ]
+}

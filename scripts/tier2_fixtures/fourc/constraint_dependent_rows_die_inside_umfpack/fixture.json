@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::constraint#0, and a FALSIFICATION of its Signal. The rule holds — duplicate a multi-point constraint on upstream constr2D_MPC_dist and the run dies — but 'zero pivot in Schur complement' is in neither 4C nor Trilinos and is asserted absent. What happens instead is that the singular saddle-point system reaches UMFPACK through Constraints::ConstraintSolver::solve_direct (called from Solid::TimIntImpl::uzawa_linear_newton_full) and the back-substitution raises SIGFPE inside umfdi_usolve: exit status 136, DEPENDENT_4C_DIAGNOSTICS=0, and not one mention of rank or singularity. So the detectable symptom is a killed process with an otherwise clean log, not a solver message — which is why the linear independence has to be checked before the run, not diagnosed after it. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "backend": "fourc",
+  "physics": "constraint",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_INDEPENDENT=0",
+    "EXIT_DEPENDENT=136",
+    "processor 0 finished normally",
+    "INDEPENDENT_RESULT_FAILURES=0",
+    "Signal: Floating point exception (8)",
+    "umfdi_usolve",
+    "ConstraintSolver",
+    "uzawa_linear_newton_full",
+    "DEPENDENT_4C_DIAGNOSTICS=0",
+    "CLAIMED_ZERO_PIVOT_TEXT=0",
+    "DEPENDENT_MENTIONS_RANK_OR_SINGULAR=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INDEPENDENT=1",
+    "EXIT_DEPENDENT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the single, independent constraint in place. The saddle-point system is then regular, the second arm runs to completion and exits 0, and the SIGFPE evidence disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(one, twice, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

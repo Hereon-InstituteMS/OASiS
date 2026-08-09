@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#1 and a FALSIFICATION of its Signal. The rule (VELOCITYFIELD must be Navier_Stokes) holds; the quoted warning 'VELOCITYFIELD=zero with PHYSICAL_TYPE=Loma is inconsistent' does not exist in 4C. FourC::loma_dyn switches on VELOCITYFIELD: Navier_Stokes takes the coupled branch that clones the scatra discretisation from the fluid, while zero and function both take a scatra-only branch that requires a hand-written TRANSPORT ELEMENTS section and throws 'No elements in input section ---TRANSPORT ELEMENTS!' from 4C_loma_dyn.cpp when it is absent. On the upstream deck loma_2d_heated_chan_30x100 the fluid field is simply never built, so the 'temperature evolves as in a stagnant medium' symptom cannot be observed either. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 1,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NS=0",
+    "EXIT_ZERO=1",
+    "EXIT_FUNC=1",
+    "processor 0 finished normally",
+    "NS_RESULT_FAILURES=0",
+    "No elements in input section ---TRANSPORT ELEMENTS!",
+    "4C_loma_dyn.cpp",
+    "FUNC_SAME_ABORT=1",
+    "CLAIMED_INCONSISTENT_TEXT=0",
+    "ZERO_REACHED_RESULT_TEST=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep VELOCITYFIELD at Navier_Stokes in the zero arm. The TRANSPORT ELEMENTS abort vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  VELOCITYFIELD: \"Navier_Stokes\"/  VELOCITYFIELD: \"zero\"/'     \"$BASE\" > \"$TMP/zero.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/zero.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NS=1",
+    "EXIT_ZERO=0",
+    "ZERO_REACHED_RESULT_TEST=1"
+  ]
+}

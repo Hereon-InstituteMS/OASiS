@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics convection_diffusion#2: \"DG methods are a cleaner alternative for pure advection (no diffusion); for vanishing kappa the SUPG solution oscillates between elements, an upwind DG element produces a smooth Function with no parameter tuning.\" Half of that is true and half is not, and the fixture measures both halves on ONE mesh and ONE problem: unit square, b = (1, 0.3), kappa = 1e-9, inflow data u = 1 for y <= 0.5 and u = 0 above on x = 0 (plus u = 1 on y = 0), 16x16 triangles. The exact solution is that step transported along the characteristics, so every value must lie in [0, 1] and anything outside it is oscillation. Wrong variant: continuous P1 with the SUPG streamline term. Right variant: the LOWEST-ORDER upwind DG space. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "convection_diffusion",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "primary_violates_the_zero_one_range=True",
+    "upwind_dg_degree1_also_violates_the_range=True",
+    "upwind_dg_degree1_oscillates_more_than_supg=True",
+    "upwind_dg_degree0_is_range_preserving=True",
+    "VERDICT=upwind_dg_is_oscillation_free_only_at_lowest_order"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=upwind_dg_was_smooth_at_every_degree"
+  ],
+  "timeout_seconds": 300
+}

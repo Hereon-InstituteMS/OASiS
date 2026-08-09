@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for kratos geomechanics#: catalog listed 7 CL names; 5 of them ('LinearElastic2DPlaneStrain', 'LinearElastic3DLaw', 'ModifiedCamClay', 'MohrCoulomb', 'DruckerPrager') do NOT exist in the registered GeoMechanicsApplication binary. The real registered names are Geo-prefixed (GeoLinearElasticPlaneStrain2DLaw, GeoIncrementalLinearElastic3DLaw, GeoMohrCoulombWithTensionCutOff{2,3}D, ...). ModifiedCamClay and DruckerPrager have ZERO variants — those CL families are not part of GeoMechanicsApplication 10.4.2 at all. Verified via binary-string scan of libKratosGeoMechanicsCore.so.",
+  "_comment": "Tier-2 for kratos geomechanics#: catalog listed 7 CL names; 5 of them ('LinearElastic2DPlaneStrain', 'LinearElastic3DLaw', 'ModifiedCamClay', 'MohrCoulomb', 'DruckerPrager') do NOT exist in the registered GeoMechanicsApplication binary. The real registered names are Geo-prefixed (GeoLinearElasticPlaneStrain2DLaw, GeoIncrementalLinearElastic3DLaw, GeoMohrCoulombWithTensionCutOff{2,3}D, ...). ModifiedCamClay and DruckerPrager have ZERO variants — those CL families are not part of GeoMechanicsApplication 10.4.2 at all. Verified via binary-string scan of libKratosGeoMechanicsCore.so. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the pathology is the catalog's five wrong CL names, so the antidote is to audit the CORRECTED catalog — the mutation replaces the audited list with the Geo-prefixed names GeoMechanicsApplication really registers (GeoLinearElasticPlaneStrain2DLaw, GeoIncrementalLinearElastic3DLaw, GeoMohrCoulombWithTensionCutOff2D/3D and the two SmallStrainUDSM laws) and re-runs the same whole-word `strings` scan of the same libKratosGeoMechanicsCore.so. All six are found, so the mutant prints catalog_present_count=6/6 and all_5_wrong_catalog_names_missing=False and these expect_in_output strings disappear: catalog_present_count=2/7, all_5_wrong_catalog_names_missing=True. REPAIRED in the same pass: the binary was addressed by an absolute path into ~/Schreibtisch/Open-FEM-agent/.venv, a checkout that no longer exists under that name, so the fixture aborted with 'not found' and measured nothing; it now scans the .libs of the Kratos install it has just imported. KratosMultiphysics and GeoMechanicsApplication are now imported at module scope, so with Kratos absent the fixture dies rather than reporting a pass. Proof environment: KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (28 applications; the repo-venv Kratos wheel does not load on this glibc and /usr/bin/python3 cannot import this repo). Proved KILLED 2026-08-07.",
   "backend": "kratos",
   "physics": "geomechanics",
   "pitfall_index": 0,
@@ -14,5 +14,11 @@
   ],
   "forbid_in_output": [
     "Traceback"
-  ]
+  ],
+  "_mutation": {
+    "note": "The pathology is the CATALOG's five wrong constitutive-law names. Removing it means auditing the CORRECTED catalog, so the mutation replaces the audited list with the Geo-prefixed names GeoMechanicsApplication really registers and re-runs the same whole-word `strings` scan of the same binary.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

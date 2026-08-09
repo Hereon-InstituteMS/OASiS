@@ -15,16 +15,34 @@ This fixture asserts:
   * The real submodule paths resolve.
   * NewtonSolver kwarg name `a` (not `bf` or `bilinear`)
     is the contract.
+
+Mutation control: this fixture carries no pathology of its own --
+its source already applies the fix (submodule imports), so the
+control reinstates the pitfall instead of removing it. T2_MUTATE=1
+resolves the three inventories against the top-level `ngsolve`
+module -- the naive import location the pitfall warns against --
+rather than against ngsolve.fem / ngsolve.krylovspace /
+ngsolve.solvers. The names genuinely are not there, so the
+inventories come back non-empty and the fixture goes red. Re-run
+with `T2_MUTATE=1 python source.py`.
 """
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 
 import ngsolve as ngs
 import ngsolve.fem as fem
 import ngsolve.krylovspace as kry
 import ngsolve.solvers as sol
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+# Where the inventories are looked up. Under mutation every lookup
+# goes to the top-level module the pitfall says NOT to import from.
+LOOK_FEM = ngs if MUTATE else fem
+LOOK_KRY = ngs if MUTATE else kry
+LOOK_SOL = ngs if MUTATE else sol
 
 
 PHANTOM_AT_TOPLEVEL = (
@@ -50,11 +68,11 @@ def main() -> int:
     print(f"phantom_at_toplevel={phantom_present}")
 
     fem_missing = [n for n in REQUIRED_FEM
-                   if not hasattr(fem, n)]
+                   if not hasattr(LOOK_FEM, n)]
     krylov_missing = [n for n in REQUIRED_KRYLOV
-                      if not hasattr(kry, n)]
+                      if not hasattr(LOOK_KRY, n)]
     solvers_missing = [n for n in REQUIRED_SOLVERS
-                       if not hasattr(sol, n)]
+                       if not hasattr(LOOK_SOL, n)]
     print(f"fem_missing={fem_missing}")
     print(f"krylov_missing={krylov_missing}")
     print(f"solvers_missing={solvers_missing}")

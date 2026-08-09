@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: the flagship DSMC 'clean run, meaningless physics' pitfall. Deleting the single line 'collide vss air ar.vss' from a 2d argon Fourier-channel deck leaves rc=0, a healthy stats table and no warning, but Ncoll is identically 0 and the cold-wall energy flux is several times too large with the mid-gas temperature far off. The SIZE of the error scales with the Knudsen number and is not a transferable constant, so the assertion is a direction plus an order of magnitude, not a fixed ratio. Skips cleanly (exit 0, 'SKIP:') when no SPARTA binary is present. POSITIONAL ALIASES added 2026-08-06: this fixture's universal claims are also listed at their slots in the rarefied_flow row. The identity key 'universal:<n>' counts each shared claim once, which is correct; but an external counter walking rarefied_flow's 19 positional slots cannot see it and reports the claim as uncovered. Listing both makes the coverage visible under either convention; the gate collapses the alias onto the identity key so it is still counted once. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 restores the one deleted line `collide vss air ar.vss` to the deck that is supposed to be missing it, so both runs are collisional; max_ncoll then reads 1816 in BOTH runs instead of 1816 vs 0, and the wall-flux ratio collapses from >5 to 1.000. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: ncoll_identically_zero_without_collide=True, flux_overestimated_by_more_than_5x=True. Re-verify: cd scripts/tier2_fixtures/sparta/no_collide_is_free_molecular && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line. POSITIONAL ALIAS REPOINTED 2026-08-07: eight new rarefied_flow claims were inserted ahead of the shared universal block, moving it from slots 9-18 to 17-26. This fixture's rarefied_flow:<n> entries are the positional spelling of the universal:<n> claims it already names by identity, so only the alias number changed; the evidence, the decks and the mutation control are untouched. The runner key moved with it: pitfall_index 13 -> 21, so this fixture still writes its own row in tier2_results.json.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 15,
+  "covers": [
+    "universal:4",
+    "rarefied_flow:15"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "both_runs_exit_zero=True",
+    "ncoll_identically_zero_without_collide=True",
+    "flux_overestimated_by_more_than_5x=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "SKIP:"
+  ],
+  "_vacuity_fix": "The no-binary path prints 'SKIP: no SPARTA binary found' and exits 0, and SKIP: was not forbidden \u2014 so on a machine without SPARTA this fixture PASSED having verified nothing. 'SKIP:' added to forbid_in_output so an absent binary records a failure instead of a false pass. Same defect knowledge/kratos-sparta fixed in generators_execute_on_installed_build; the gate found eight more."
+}

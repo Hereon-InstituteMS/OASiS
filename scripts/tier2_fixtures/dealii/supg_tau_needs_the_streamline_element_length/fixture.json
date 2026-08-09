@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for dealii navier_stokes#5. Skew advection at 45 degrees on a 24x24 unit square, diffusion 1e-4, unit source, zero Dirichlet data, Q1 with SUPG. With |a| = 1 and f = 1 the exact interior solution is the arclength from the inflow boundary, u = sqrt(2) min(x,y), so the exact interior maximum is sqrt(2) and anything above it is an overshoot measured against an analytic number rather than a reference run. Four tau choices are run every time. FINDING: the claim has the sqrt(2) the wrong way round. The multi-dimensional element length is the one the flow actually crosses, h_s = 2|a| / sum_i |a . grad N_i|, which for a square cell at 45 degrees is h*sqrt(2), so the correct multi-D tau is LARGER than the isotropic one by sqrt(2), not smaller. Measured overshoot fractions: no stabilisation 6.85, the claim's h/(2 sqrt(2) |a|) 0.75, the isotropic h/(2|a|) 0.41, the streamline length 0.10. Dividing tau by sqrt(2) as the claim prescribes makes the outflow overshoot worse, not better, and the ratio between the streamline tau and the isotropic tau is measured at exactly 1.4142. The claim is right that SUPG leaves visible oscillations within a few cells of the wall -- the peak sits one cell from the outflow wall in every stabilised variant -- but its prescribed cure is a factor of two in the wrong direction. The fixture pins the claim's own tau as the pathology; T2_MUTATE=1 runs the streamline-length tau. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "navier_stokes",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "expect_in_output": [
+    "tau_under_test=h_over_2_sqrt2_a_as_the_claim_prescribes",
+    "overshoot_exceeds_half_the_exact_maximum=true",
+    "overshoot_peak_within_three_cells_of_the_outflow_wall=true",
+    "dividing_tau_by_sqrt2_reduces_the_overshoot=false",
+    "streamline_tau_is_larger_than_the_isotropic_one=true",
+    "VERDICT=the_claims_2d_tau_leaves_a_large_outflow_overshoot"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=tau_under_test_controls_the_outflow_overshoot"
+  ],
+  "timeout_seconds": 900
+}

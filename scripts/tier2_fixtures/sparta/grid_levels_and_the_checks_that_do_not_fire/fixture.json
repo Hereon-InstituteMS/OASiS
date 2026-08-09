@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for sparta adaptive_grid:6, :7, :8 and :9, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial). adaptive_grid:6 — 'create_grid 10 10 1 levels 2 region 2 inner 2 2 1' and the 'subset' form both build a hierarchy (Maxlevel 2, and 3 with a third level); 'levels 2' alone gives 'ERROR: Create_grid level was not set (../create_grid.cpp:208)'; the singular 'level' keyword an earlier catalog entry published gives 'ERROR: Illegal create_grid command (../create_grid.cpp:188)' and does not parse at all; cz != 1 inside a level gives 'ERROR: Create_grid cz value must be 1 for a 2d simulation (../create_grid.cpp:210)'. adaptive_grid:7 — the NEGATIVE claim, stated the only way a negative can be: the same circle-flow deck at a sane timestep and at a timestep 500 times larger both complete, the large one is identified as physically absurd BY ITS OWN TABLE (per-step surface collisions exceed the particle count, which cannot happen for a small embedded body) while the reference deck is on the other side of that line, and 'fix grid/check 1 warn outside yes' reports f_ID identically 0 on both with no 'particles in wrong cells on timestep' warning anywhere. So the counter is an internal-consistency assertion, not a resolution or timestep check. The mode word is validated ('ERROR: Illegal fix grid/check command (../fix_grid_check.cpp:44)'). adaptive_grid:8 — 'fix balance' reports f_ID exactly 1 on every row of a serial run. adaptive_grid:9 — two surface groups slid gently complete; slid hard they abort inside cut2d with 'WB: Point appears last in more than one CLINE (../cut2d.cpp:289)' preceded by a 'Cut2d failed on proc 0 in cell ID' block, the message names neither move/surf nor the step size, and grid/check does not catch it. No count, temperature or ratio is stored anywhere. COVERS: adaptive_grid:6, adaptive_grid:7, adaptive_grid:8, adaptive_grid:9. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the 'level' keyword becomes 'levels' with a proper region clause, and the deck that declared a level without setting it gets one — the two edits that remove the two parse pathologies, with box, region, species, density, seed and run length untouched. Both then parse. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: there_is_no_level_keyword=True, every_declared_level_must_be_set=True. LIMIT OF THE HOOK, stated plainly: adaptive_grid:7 and :8 cannot be mutation-controlled from a deck, because their claim is that a counter stays at zero (or at one) no matter what the deck does — no edit removes that, only a change to SPARTA would. grid_check_stays_at_zero_on_both and fix_balance_reports_exactly_one_on_a_serial_build stay True under T2_MUTATE=1 and are NOT evidenced by this hook; what backs them is that the deck they are measured on is shown, from its own stats table, to be nonsense. adaptive_grid:9 rests on a verbatim cut2d message carrying its own (file:line), contrasted against a gentler slide of the same geometry that completes. Re-verify: cd scripts/tier2_fixtures/sparta/grid_levels_and_the_checks_that_do_not_fire && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary and examples/circle: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure.",
+  "backend": "sparta",
+  "physics": "adaptive_grid",
+  "pitfall_index": 6,
+  "covers": [
+    "adaptive_grid:6",
+    "adaptive_grid:7",
+    "adaptive_grid:8",
+    "adaptive_grid:9"
+  ],
+  "mode": "python",
+  "timeout_seconds": 3600,
+  "expect_in_output": [
+    "levels_plus_region_builds_a_hierarchy=True",
+    "levels_plus_subset_builds_a_hierarchy=True",
+    "a_third_level_is_reachable=True",
+    "there_is_no_level_keyword=True",
+    "every_declared_level_must_be_set=True",
+    "the_2d_cz_rule_applies_inside_a_level=True",
+    "both_flow_decks_complete=True",
+    "the_large_timestep_deck_is_physically_absurd=True",
+    "the_reference_deck_is_not=True",
+    "grid_check_stays_at_zero_on_both=True",
+    "and_prints_no_wrong_cell_warning=True",
+    "fix_balance_reports_exactly_one_on_a_serial_build=True",
+    "the_mode_word_is_checked=True",
+    "a_gentle_slide_completes=True",
+    "an_aggressive_slide_fails_inside_the_cutter=True",
+    "the_message_names_neither_the_fix_nor_the_step_size=True",
+    "a_cut2d_failed_block_precedes_it=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

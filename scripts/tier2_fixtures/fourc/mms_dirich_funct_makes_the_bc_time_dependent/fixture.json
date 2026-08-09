@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#3, and a FALSIFICATION of one detail of its Signal. A plain 'DESIGN LINE DIRICH CONDITIONS' with VAL [1.0] and FUNCT [1] applies VAL*f(x,t) re-evaluated at the node coordinates and the current time: two boundary nodes match the analytic u*(x,0.4) to 1e-12 (TRACKING_TESTS_CORRECT=2, exit 0). With FUNCT [0] they do not — but NOT in the way the entry claimed. It said the frozen boundary equals 'the t=0 trace'; measured, both nodes sit at exactly 1.00000000000000000e+00, i.e. at VAL alone, while their t=0 traces are 1.25 and 1.5 (FROZEN_AT_VAL=2, FROZEN_AT_T0_TRACE=0). An agent checking for the t=0 trace would have concluded the boundary condition was wired correctly. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_WITH_FUNCT=0",
+    "EXIT_NO_FUNCT=1",
+    "TRACKING_TESTS_CORRECT=2",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 1.00000000000000000e+00",
+    "FROZEN_AT_VAL=2",
+    "FROZEN_AT_T0_TRACE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITH_FUNCT=1",
+    "EXIT_NO_FUNCT=0",
+    "FROZEN_AT_VAL=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm its FUNCT back. The boundary then tracks u*(x,t), EXIT_NO_FUNCT becomes 0, the frozen-at-1.0 reading disappears and FROZEN_AT_VAL drops to 0 — so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "\\\"dirich_funct\\\":0,",
+    "to": ""
+  }
+}

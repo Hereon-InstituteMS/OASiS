@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#3. The rule (verify the setup with alpha = 0, then ramp) holds and the window is measured here on upstream ehl_bearing_barus.4C.yaml, whose MAT_lubrication_law_barus PreVisCoeff is 0.0112: alpha = 0 and alpha = 3x both complete both time steps and reach the result-test manager, while alpha = 10x is killed by SIGFPE with no 4C error line and no 'Checking results of' section at all (DEAD_REACHED_RESULT_TEST=0). The entry's phrase 'Newton diverges in step 1' is not reportable \u2014 the process dies inside the element evaluation after two Newton rows, so MPI_Abort never runs and 4C says nothing. The alpha = 0 arm's result tests report WRONG because the deck's references belong to the piezoviscous law, which is what an alpha = 0 sanity run is for. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "COLD_ARM_PreVisCoeff:0.0",
+    "DEAD_ARM_PreVisCoeff:0.112",
+    "EXIT_ALPHA0=1",
+    "EXIT_RAMP=1",
+    "EXIT_DEAD=136",
+    "Checking results of 4 tests:",
+    "is WRONG --> actresult=",
+    "Result check failed with 4 errors out of 4 tests",
+    "Signal: Floating point exception (8)",
+    "ALPHA0_TIME_STEPS_RUN=2",
+    "RAMP_TIME_STEPS_RUN=2",
+    "ALPHA0_REACHED_RESULT_TEST=1",
+    "RAMP_REACHED_RESULT_TEST=1",
+    "DEAD_REACHED_RESULT_TEST=0",
+    "DEAD_4C_ERROR_LINES=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DEAD=0",
+    "DEAD_REACHED_RESULT_TEST=1",
+    "ALPHA0_REACHED_RESULT_TEST=0",
+    "DEAD_ARM_PreVisCoeff:0.0112"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the dead arm: give it the upstream alpha. It then completes, EXIT_DEAD stops being 136, DEAD_REACHED_RESULT_TEST becomes 1 (a forbidden token) and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DEAD_ALPHA=0.112",
+      "to": "DEAD_ALPHA=0.0112"
+    },
+    {
+      "note": "break the cold-start half: give the alpha = 0 sanity arm the killing alpha instead. ALPHA0_REACHED_RESULT_TEST drops to 0 (a forbidden token), so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "COLD_START_ALPHA=0.0",
+      "to": "COLD_START_ALPHA=0.112"
+    }
+  ]
+}

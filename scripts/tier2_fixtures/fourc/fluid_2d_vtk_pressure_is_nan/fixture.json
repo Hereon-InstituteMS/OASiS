@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#8, with the mechanism nailed down. Upstream f2_stokes_residualbased.4C.yaml (2D) and f3_stokes_residualbased_rotboxgeom.4C.yaml (3D) each get the same IO/RUNTIME VTK OUTPUT + IO/RUNTIME VTK OUTPUT/FLUID sections. Both exit 0; the 2D run passes all 5 of its own result tests, reports none WRONG, and never prints the word nan (SOLVER_COMPLAINED_ABOUT_NAN=0) — the simulation is fine. Its .vtu, however, has all 64 pressure values nan while the velocity array has none. Matching vtu points back to input nodes by coordinate shows where the pressure went: the THIRD component of the 3-vector called 'velocity' equals the deck's own pinned pressures at nodes 1, 19 and 25 (-0.5, 0.25, 0.5) in 3 cases out of 3. In 2D a node carries three DOFs (vx, vy, p), the writer copies all three into 'velocity' and then reads a fourth DOF for 'pressure' that does not exist. The 3D run's 1000 pressures contain zero nan, so this is a 2D-only output artefact and not divergence. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_2D=0",
+    "EXIT_3D=0",
+    "processor 0 finished normally",
+    "TESTS_CORRECT_2D=5",
+    "TESTS_WRONG_2D=0",
+    "SOLVER_COMPLAINED_ABOUT_NAN=0",
+    "VTU_2D_PRESSURE_POINTS=64",
+    "VTU_2D_PRESSURE_ALL_NAN=yes",
+    "VTU_2D_VELOCITY_HAS_NAN=no",
+    "VTU_3D_PRESSURE_POINTS=1000",
+    "VTU_3D_PRESSURE_NAN_COUNT=0",
+    "VTU_2D_VELOCITY_Z_HOLDS_THE_PRESSURE=3/3"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_upstream_decks",
+    "no_vtu_written",
+    "EXIT_2D=1",
+    "EXIT_3D=1",
+    "TESTS_WRONG_2D=1",
+    "VTU_2D_PRESSURE_ALL_NAN=no",
+    "VTU_2D_VELOCITY_Z_HOLDS_THE_PRESSURE=0/3"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology by removing the 2D case: run the 3D deck in both arms. The nan pressure array and the smuggled third velocity component both disappear, and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "{ printf '%s' \"$VTK\"; cat \"$BASE2D\"; } > \"$TMP/d2/in.4C.yaml\"",
+      "to": "{ printf '%s' \"$VTK\"; cat \"$BASE3D\"; } > \"$TMP/d2/in.4C.yaml\""
+    },
+    {
+      "note": "drop the 3D control arm, which is what shows the artefact is dimension-specific rather than a broken deck. VTU_3D_PRESSURE_POINTS stops being 1000 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "{ printf '%s' \"$VTK\"; cat \"$BASE3D\"; } > \"$TMP/d3/in.4C.yaml\"",
+      "to": "{ printf '%s' \"$VTK\"; cat \"$BASE2D\"; } > \"$TMP/d3/in.4C.yaml\""
+    }
+  ]
+}

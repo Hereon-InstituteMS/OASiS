@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem hydraulic_resistance#0, verified 2026-08-06 on skfem 12.0.1. The entry attributed the gap between the FE resistance and R = 12 mu L / H^3 to entrance effects, quoting its own run of the shipped template (Q = 4.100936e-05, R_fe = 2.438468e+04, relative error 1.60e-02 at L/H = 20, ~50% at L/H = 2, and 'refinement doesn't help because the gap is physical'). Ran: the shipped discretisation exactly (41x7 tensor grid, ElementVector(TriP2)/TriP1, intorder=4, 2106 velocity and 287 pressure DOFs, inlet pressure traction, outlet pressure pinned) with the template's stress form 2*mu*(sym_grad u : sym_grad v) AND with the vector Laplacian mu*(grad u : grad v), at L/H = 20, 10 and 2, each on three successively refined grids. Printed: THE ENTRY'S NUMBERS REPRODUCE EXACTLY -- same DOF counts, Q = 4.100936e-05, R_fe = 2.438468e+04, relative error 1.6028e-02 -- so the original measurement was honest. ITS ATTRIBUTION IS WRONG: the vector-Laplacian form on the identical geometry, mesh, BCs and flux computation reproduces R_exact to a worst case of 9.970e-13 at EVERY aspect ratio including L/H = 2, while the stress form deviates up to 4.977e-02. A real entrance effect is a property of the geometry and would appear in both forms. The cause is the natural BC each form implies at a traction boundary. Three further corrections, all measured: at L/H = 2 the stress form gives a resistance LOWER than exact (2.294240e+03 vs 2.400000e+03), not higher; the deviation there is 4.4e-02, not ~50%; and under refinement the gap MOVES, shrinking from 1.603e-02 to 2.101e-03 at L/H = 20 while growing from 3.960e-03 to 8.482e-03 at L/H = 10, which no fixed physical offset would do. MUTATION CONTROL (re-runnable): T2_MUTATE=1 switches TEMPLATE_FORM from stress_form to laplacian_form, i.e. the template's viscous term 2*mu*(sym_grad u : sym_grad v) is replaced by the vector Laplacian mu*(grad u : grad v) everywhere the template's own form is assembled. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 14 expect_in_output strings; T2_MUTATE=1 removes 'template_Q=4.100936e-05', 'template_R_fe=2.438468e+04', 'stress_deviates=True' and 'gap_is_a_formulation_artifact_not_geometry=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "hydraulic_resistance", "pitfall_index": 0, "mode": "python",
+  "expect_in_output": [
+    "template_velocity_dofs=2106 pressure_dofs=287",
+    "template_Q=4.100936e-05",
+    "template_R_fe=2.438468e+04",
+    "reproduces_entry_dof_counts=True",
+    "reproduces_entry_relative_error=True",
+    "laplacian_matches_poiseuille_everywhere=True",
+    "stress_deviates=True",
+    "gap_is_a_formulation_artifact_not_geometry=True",
+    "LoH2_R_fe_is_higher_than_exact=False",
+    "LoH2_R_fe_is_lower_than_exact=True",
+    "LoH2_magnitude_is_about_50_percent=False",
+    "LoH20_gap_shrinks_under_refinement=True",
+    "LoH10_gap_grows_under_refinement=True",
+    "gap_is_not_a_fixed_physical_offset=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}

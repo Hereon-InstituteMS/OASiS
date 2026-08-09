@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 cross-backend audit (filed under kratos for runner routing only — semantically backend-agnostic): walks every PhysicsCapability across all 7 backends and asserts generate_input() neither (a) raises NameError (catches f-string variable-typo class bugs found in ngsolve plasticity/nonlinear_elasticity/phase_field on 2026-06-01) nor (b) exceeds a 22-failure ceiling for other exception classes (missing template entries — PR work tracked by tasks #25-29). Generalizes FEBio falsifications #29 + #30 across all 7 backends. Catches the falsification class 'catalog advertises physics that has no working generator'. Floor decreases automatically as template stubs are filled.",
+  "_comment": "Tier-2 cross-backend audit (filed under kratos for runner routing only — semantically backend-agnostic): walks every PhysicsCapability across all 7 backends and asserts generate_input() neither (a) raises NameError (catches f-string variable-typo class bugs found in ngsolve plasticity/nonlinear_elasticity/phase_field on 2026-06-01) nor (b) exceeds a 22-failure ceiling for other exception classes (missing template entries — PR work tracked by tasks #25-29). Generalizes FEBio falsifications #29 + #30 across all 7 backends. Catches the falsification class 'catalog advertises physics that has no working generator'. Floor decreases automatically as template stubs are filled. MUTATION CONTROL (T2_MUTATE=1, re-runnable) - a POSITIVE control, because the fixture asserts a clean sweep and has no injected fault to remove. One extra participant is added whose generator has the exact ngsolve f-string bug this gate guards against; generate_input_nameerrors=0 disappears and the forbidden 'NameError-bug:' and 'FAIL:' appear. Proved KILLED 2026-08-07 (unmutated: 8 backends, 234 successes, 0 nameerrors; mutated: nameerrors=1).",
   "backend": "kratos",
   "physics": "auxiliary_overview",
   "pitfall_index": 99,
@@ -13,5 +13,11 @@
     "Traceback",
     "FAIL:",
     "NameError-bug:"
-  ]
+  ],
+  "_mutation": {
+    "note": "POSITIVE control: this is a green-state regression gate - it asserts that NO generator raises - so it holds no pathology that could be removed. The mutation adds ONE participant to the sweep, a stand-in generator carrying exactly the bug class the gate exists to catch: an f-string naming a variable the function never binds, which is the ngsolve n_load_steps/n_steps defect reproduced in shape. generate_input_nameerrors goes 0 -> 1, so that expectation disappears, and the forbidden 'NameError-bug:' and 'FAIL:' both appear. If the gate could not see a NameError none of that would happen.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

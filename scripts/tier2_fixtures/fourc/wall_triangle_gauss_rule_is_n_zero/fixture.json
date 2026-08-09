@@ -1,0 +1,56 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#1 — the WALL element's GP pair is read differently on triangles and on quadrilaterals, and neither spelling is a safe default. Eight arms of one self-contained 2D deck (inline nodes, unit square, left edge clamped, right edge line-Neumann), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: WALL TRI3 and TRI6 with 'GP 3 0' run to 'processor 0 finished normally'; the same two elements with 'GP 3 3' abort with 'Unknown number of Gauss points for tri element' from w1/4C_w1_input.cpp line 223. The mirror image also holds and is the part that makes a single default impossible: WALL QUAD4 with 'GP 3 3' runs, while WALL QUAD4 with 'GP 3 0' aborts with a DIFFERENT message, 'Insufficient number of Gauss points' — TRI_AND_QUAD_SHARE_A_MESSAGE=no, so an agent cannot grep for one string and cover both. EAS is the second triangle restriction and is 4-node-only; 'EAS full' names the cell type it was handed, so TRI3 gives 'eas-technology not implemented for tri3 elements' and TRI6 gives '... tri6 elements' (the entry quotes only the tri3 wording, which is right for TRI3 and not for TRI6).",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TRI3_GP30=0",
+    "EXIT_TRI3_GP33=1",
+    "EXIT_TRI3_EAS=1",
+    "EXIT_TRI6_GP30=0",
+    "EXIT_TRI6_GP33=1",
+    "EXIT_TRI6_EAS=1",
+    "EXIT_QUAD4_GP33=0",
+    "EXIT_QUAD4_GP30=1",
+    "processor 0 finished normally",
+    "Unknown number of Gauss points for tri element",
+    "4C_w1_input.cpp",
+    "Insufficient number of Gauss points",
+    "eas-technology not implemented for tri3 elements",
+    "eas-technology not implemented for tri6 elements",
+    "TRI_AND_QUAD_SHARE_A_MESSAGE=no",
+    "QUAD_MESSAGE_IN_TRI_LOG=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_TRI3_GP30=1",
+    "EXIT_TRI3_GP33=0",
+    "EXIT_TRI6_GP33=0",
+    "EXIT_QUAD4_GP30=0",
+    "TRI_AND_QUAD_SHARE_A_MESSAGE=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the TRI3 arm: give the triangle its legal '<n> 0' rule back. That arm then runs, the tri Gauss-point abort disappears and EXIT_TRI3_GP33 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm TRI3_GP33  \"$TRI3_BAD\"",
+      "to": "arm TRI3_GP33  \"$TRI3\""
+    },
+    {
+      "note": "remove the pathology from the QUAD4 arm: give the quad its legal '<n> <n>' rule back. 'Insufficient number of Gauss points' then never appears and EXIT_QUAD4_GP30 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm QUAD4_GP30 \"$QUAD_N0\"",
+      "to": "arm QUAD4_GP30 \"$QUAD_NN\""
+    },
+    {
+      "note": "remove the pathology from the TRI3 EAS arm: switch EAS off. The eas-technology throw disappears and EXIT_TRI3_EAS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm TRI3_EAS   \"$TRI3_EAS\"",
+      "to": "arm TRI3_EAS   \"$TRI3\""
+    }
+  ]
+}

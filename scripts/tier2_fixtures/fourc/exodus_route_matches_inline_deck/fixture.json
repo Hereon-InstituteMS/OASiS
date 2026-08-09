@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#12. The guidance survives, its stated number does not. The same 12x12x12 cantilever (2197 nodes, 1728 HEX8) is written both ways: inline it is 4306 lines of YAML, via ExodusII it is 388 lines plus one meshio-written .e (eb_prop1 patched to 1). Both exit 0, both pass the same pinned dispy 1.38646642128815859e-04 at TOLERANCE 1e-12, and 4C confirms it read the file mesh ('cell-block 1 (): 1728 cells of type hex8'), so the two routes are interchangeable and the reason to prefer the mesh file is that the deck shrinks by more than a factor of ten. The claim that a >1000-line inline deck 'takes 30+ seconds to parse' did not reproduce: on this run 4C's own INPUT phase was 1.180e-01 s inline against 1.080e-01 s for the ExodusII route — same order, both far under a second. Those figures are printed for the reader and deliberately NOT asserted, because elapsed time is a property of the machine; the verdict rests on the deck sizes, the exit codes and the agreement of the two answers. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "MESH_NODES=2197",
+    "MESH_ELEMENTS=1728",
+    "INLINE_DECK_LINES=4306",
+    "EXODUS_DECK_LINES=388",
+    "INLINE_OVER_1000_LINES=yes",
+    "DECK_LINE_RATIO_OVER_5=yes",
+    "EXIT_INLINE=0",
+    "EXIT_EXODUS=0",
+    "processor 0 finished normally",
+    "INLINE_CORRECT=1",
+    "EXODUS_CORRECT=1",
+    "EXODUS_READ_THE_MESH=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_meshio_or_netcdf4",
+    "EXIT_INLINE=1",
+    "EXIT_EXODUS=1",
+    "INLINE_OVER_1000_LINES=no",
+    "DECK_LINE_RATIO_OVER_5=no",
+    "INLINE_CORRECT=0",
+    "EXODUS_CORRECT=0"
+  ],
+  "_mutation": [
+    {
+      "note": "shrink the mesh out of the regime the claim is about: a 2x2x2 cantilever is no longer a >1000-line inline deck and no longer reproduces the pinned answer, so INLINE_DECK_LINES / MESH_NODES / INLINE_OVER_1000_LINES all change and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "N = 12                       # 1728 HEX8, 2197 nodes",
+      "to": "N = 2                       # far below the regime the claim describes"
+    },
+    {
+      "note": "break the equivalence of the two routes: point the ExodusII deck at the block id meshio wrote rather than the patched one, so the file-mesh arm no longer reproduces the inline answer and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    - ID: 1\n      SOLID:",
+      "to": "    - ID: 0\n      SOLID:"
+    }
+  ]
+}

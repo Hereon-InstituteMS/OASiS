@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM nonlinear_pde::5: [Integration] SNES converged reasons on this install: positive means converged (2 = CONVERGED_FNORM_ABS, 3 = CONVERGED_FNORM_RELATIVE, 4 = CONVERGED_SNORM_RELATIVE, 5 = CONVERGED_ITS), negative means diverged (-1 DIVERGED_FUNCTION_DOMAIN, -3 DIVERGED_LINEAR_SOLVE, -4 DIVERGED_FNORM_NAN, -5 \u2026 WHAT THIS RUNS: on this install SNES converged reason 2 is CONVERGED_FNORM_ABS, not CONVERGED_FNORM_RELATIVE. A wrapper whose table is shifted by one reports a plausible-looking name for every solve, so any logic built on the NAME is unreliable. Test only the SIGN. The fixture reads the value->name table out of PETSc.SNES.ConvergedReason, checks the whole list the knowledge text quotes, then runs three real solves on the Bratu problem (unit square 16x16, P1, homogeneous Dirichlet): one with a deliberately loose snes_atol so that SNES stops at iteration 0 with reason 2, one at lambda = 1 which converges normally, and one at lambda = 20 which diverges. The wrong variant -- a naive off-by-one name table -- is applied to each and compared with PETSc's own name. Observed on dolfinx 0.10.0 / PETSc 3.24.5: 2 = CONVERGED_FNORM_ABS, 3 = CONVERGED_FNORM_RELATIVE, 4 = CONVERGED_SNORM_RELATIVE, 5 = CONVERGED_ITS, -1 DIVERGED_FUNCTION_DOMAIN, -3 DIVERGED_LINEAR_SOLVE, -4 DIVERGED_FNORM_NAN, -5 DIVERGED_MAX_IT, -6 DIVERGED_LINE_SEARCH, -8 DIVERGED_LOCAL_MIN. The naive table mislabels the real solves while the sign test is right every time. OBSERVED, copied from the run: petsc_reason_2_name=CONVERGED_FNORM_ABS; reason_2_is_converged_fnorm_abs=True; reason_3_is_converged_fnorm_relative=True; claimed_reason_table_matches_this_install=True; naive_wrapper_mislabelled_a_real_solve=True; sign_test_agreed_with_petsc_in_every_case=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "nonlinear_pde",
+  "pitfall_index": 5,
+  "mode": "python",
+  "covers": [
+    "nonlinear_pde::5"
+  ],
+  "expect_in_output": [
+    "petsc_reason_2_name=CONVERGED_FNORM_ABS",
+    "reason_2_is_converged_fnorm_abs=True",
+    "reason_3_is_converged_fnorm_relative=True",
+    "claimed_reason_table_matches_this_install=True",
+    "naive_wrapper_mislabelled_a_real_solve=True",
+    "sign_test_agreed_with_petsc_in_every_case=True",
+    "VERDICT=test_only_the_sign_the_names_are_easy_to_shift"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=the_name_table_was_trustworthy"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM advection_dg::3: [Performance] Streamline ordering of DOFs can help GMRES convergence. Signal: default DoF renumbering (Cuthill-McKee) gives GMRES convergence in ~50-100 iters for advection-dominated flow; switching to DoFRenumbering::downstream(b) cuts it to ~10-20 iters because the upwind sweep matches the \u2026 WHAT THIS RUNS: -- probe \"renumbering_and_gmres\" of the shared DG-transport translation unit _shared/dgtransport_family.cc, compiled once and cached so eleven fixture directories share ONE C++ build. GMRES on the same DG operator under three dof orderings -- deal.II default, DoFRenumbering::Cuthill_McKee and DoFRenumbering::downstream(beta) -- with and without PreconditionBlockSSOR. UNPRECONDITIONED, the three counts come out IDENTICAL, which they must: a symmetric permutation of A and b permutes the whole Krylov space and cannot change an iteration count. The entry attributes the speed-up to the ordering alone (\"~50-100 iters\" down to \"~10-20\"); what the ordering actually changes is the PRECONDITIONER, whose sweep follows the numbering. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: unpreconditioned_gmres_count_is_the_same_under_every_ordering=true; block_preconditioned_count_depends_on_the_ordering=true; ordering_under_test_needs_more_block_ssor_steps=true; VERDICT=ordering_changes_nothing_without_a_preconditioner. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "expect_in_output": [
+    "unpreconditioned_gmres_count_is_the_same_under_every_ordering=true",
+    "block_preconditioned_count_depends_on_the_ordering=true",
+    "ordering_under_test_needs_more_block_ssor_steps=true",
+    "VERDICT=ordering_changes_nothing_without_a_preconditioner"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "ordering_under_test_needs_more_block_ssor_steps=false"
+  ],
+  "timeout_seconds": 1200
+}

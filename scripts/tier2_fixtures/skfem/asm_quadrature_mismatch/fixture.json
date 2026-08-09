@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem stokes#6: asm() with two bases of different intorder raises ValueError 'Quadrature mismatch: trial and test functions should have same number of integration points.'. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for skfem stokes#6: asm() with two bases of different intorder raises ValueError 'Quadrature mismatch: trial and test functions should have same number of integration points.'. Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): T2_MUTATE=1 builds the P1 basis with intorder=2, the same value as the P2 basis, which is the documented fix; asm() then returns a matrix instead of raising. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 3 expect_in_output strings, and T2_MUTATE=1 removes all three -- 'ValueError', 'Quadrature mismatch' and 'same number of integration points' -- so the fixture goes red. Command: cd scripts/tier2_fixtures/skfem/asm_quadrature_mismatch && T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "stokes",
   "pitfall_index": 6,

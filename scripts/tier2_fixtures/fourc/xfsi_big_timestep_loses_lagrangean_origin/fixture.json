@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#4. The rule (limit dt so the interface does not traverse more than one fluid element per step) holds and now has a 4C-side observable. On the upstream monolithic deck xfsi_3D_boxes, three steps at the upstream TIMESTEP 0.05 reach 'Checking results of 7 tests' with no complaint; the same three steps at TIMESTEP 5.0 abort in the semi-Lagrangean recovery of newly uncovered nodes with '<<< WARNING! Initial point for node 89 for finding the Lagrangean origin not in domain! >>>' from 4C_xfem_xfluid_timeInt_std_SemiLagrange.cpp. The 'WARNING!' wording is misleading: it is thrown, exit is 1, and the result test is never reached. The two mutant arms differ only in TIMESTEP, so dt is isolated. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 4,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CLEAN=0",
+    "EXIT_BIGDT=1",
+    "processor 0 finished normally",
+    "CLEAN_RESULT_FAILURES=0",
+    "SMALLDT_REACHED_RESULT_TEST=1",
+    "SMALLDT_LAGRANGEAN_ABORT=0",
+    "BIGDT_REACHED_RESULT_TEST=0",
+    "BIGDT_LAGRANGEAN_ABORT=1",
+    "for finding the Lagrangean origin not in domain!",
+    "4C_xfem_xfluid_timeInt_std_SemiLagrange.cpp"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: run the third arm at the upstream time step, so both mutant arms are identical. The semi-Lagrangean abort vanishes and BIGDT_LAGRANGEAN_ABORT drops to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed -e 's/  NUMSTEP: 1/  NUMSTEP: 3/' -e 's/  TIMESTEP: 0.05/  TIMESTEP: 5.0/' \"$BASE\" > \"$TMP/bigdt.yaml\"",
+    "to": "sed -e 's/  NUMSTEP: 1/  NUMSTEP: 3/' \"$BASE\" > \"$TMP/bigdt.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLEAN=1",
+    "EXIT_BIGDT=0",
+    "BIGDT_LAGRANGEAN_ABORT=0",
+    "SMALLDT_LAGRANGEAN_ABORT=1"
+  ]
+}

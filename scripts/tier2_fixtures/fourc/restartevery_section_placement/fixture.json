@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#9 — RESTARTEVERY is declared in BOTH the IO section (src/inpar/4C_inpar_io.cpp, default -1) and STRUCTURAL DYNAMIC (src/inpar/4C_inpar_structure.cpp), but the structural integrator reads only the STRUCTURAL DYNAMIC one (src/structure_new/src/4C_structure_new_timint_basedataio.cpp:81). Under IO the run parses, exits 0 and writes ZERO out.result.structure.s* records; the later --restart=2 then fails with \"No restart entry for discretization 'structure' step 2 in control file\". Under STRUCTURAL DYNAMIC one record is written and --restart=2 resumes ('Restart of the structural simulation from step 2') and exits 0. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): the io_section arm is built with the sdyn placement. 'io_section: WRITE_EXIT=0 RESTART_RECORDS=0', 'io_section: RESTART_EXIT=1' and \"No restart entry for discretization 'structure' step 2\" all disappear, and the forbidden 'io_section: WRITE_EXIT=0 RESTART_RECORDS=1' appears. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "io_section: WRITE_EXIT=0 RESTART_RECORDS=0",
+    "io_section: RESTART_EXIT=1",
+    "No restart entry for discretization 'structure' step 2",
+    "sdyn_section: WRITE_EXIT=0 RESTART_RECORDS=1",
+    "sdyn_section: RESTART_EXIT=0",
+    "Restart of the structural simulation from step 2"
+  ],
+  "forbid_in_output": [
+    "io_section: WRITE_EXIT=0 RESTART_RECORDS=1",
+    "sdyn_section: RESTART_EXIT=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the arm LABELLED io_section with RESTARTEVERY in STRUCTURAL DYNAMIC, the placement that actually works. It then writes a restart record and restarts cleanly, so 'io_section: RESTART_EXIT=1' and the 'No restart entry' diagnostic disappear and the forbidden 'io_section: WRITE_EXIT=0 RESTART_RECORDS=1' appears - the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

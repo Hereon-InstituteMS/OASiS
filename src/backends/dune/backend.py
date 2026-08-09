@@ -121,7 +121,7 @@ def _find_dune_python() -> Optional[str]:
     for python in ordered:
         try:
             result = subprocess.run(
-                [python, "-c", "import dune.fem; print('OK')"],
+                [python, "-c", "import dune.fem; print('OK')"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=30,
             )
             if result.returncode == 0:
@@ -148,7 +148,7 @@ def _interpreter_prefix(python: str) -> str:
     import subprocess
     try:
         out = subprocess.run(
-            [python, "-c", "import sys; print(sys.prefix)"],
+            [python, "-c", "import sys; print(sys.prefix)"], stdin=subprocess.DEVNULL,
             capture_output=True, text=True, timeout=15,
         )
         if out.returncode == 0 and out.stdout.strip():
@@ -250,6 +250,19 @@ class DuneBackend(SolverBackend):
                 spatial_dims=[2, 3],
                 element_types=["Lagrange-P1", "Lagrange-P2"],
                 template_variants=["2d"],
+            ),
+            PhysicsCapability(
+                name="poisson_mms",
+                description=(
+                    "3D variable-coefficient Poisson manufactured-solution "
+                    "(MMS) convergence family — -div(kappa grad u) = f on "
+                    "[0,L]^3, affine kappa, exact Dirichlet data, uniform "
+                    "refinement with per-level L2/H1 error lines; "
+                    "theoretical L2 order k+1 / H1 order k"),
+                spatial_dims=[3],
+                element_types=["Lagrange-P1", "Lagrange-P2",
+                               "Lagrange-P3", "Lagrange-P4"],
+                template_variants=["3d_varcoeff"],
             ),
             PhysicsCapability(
                 name="heat",

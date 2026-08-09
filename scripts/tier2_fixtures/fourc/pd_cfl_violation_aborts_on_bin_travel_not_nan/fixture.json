@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#6, and a falsification of its Signal. The rule holds (the explicit PD step is CFL-bound) but you never see the NaN: raising TIMESTEP from 8e-6 to 1.6e-4 on upstream particle_sph_2d_pdbody_gravity.4C.yaml aborts after 8 steps with \"a particle of phase 'pdphase' traveled more than one bin on this processor!\" from particle/src/algorithm/4C_particle_algorithm.cpp line 790. The message names the phase, not the particle, prints no velocity and no step index, and never mentions time step, CFL or stability. There is no 'non-finite velocity at particle X' string and no NaN anywhere in the log, so grepping for either finds nothing. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STABLEDT=0",
+    "EXIT_TOOLARGE=1",
+    "processor 0 finished normally",
+    "STABLEDT_FAILURES=0",
+    "a particle of phase 'pdphase' traveled more than one bin on this processor!",
+    "4C_particle_algorithm.cpp, line 790",
+    "CLAIMED_NONFINITE_VELOCITY_TEXT=0",
+    "NAN_IN_LOG=0",
+    "DIAGNOSTIC_MENTIONS_TIMESTEP=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_STABLEDT=1",
+    "EXIT_TOOLARGE=0",
+    "DIAGNOSTIC_MENTIONS_TIMESTEP=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: run the second arm at the upstream stable step. The bin-travel abort vanishes, the deck passes its own result tests and EXIT_TOOLARGE becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's|TIMESTEP: 8.0e-6|TIMESTEP: 1.6e-4|' \"$BASE\" > \"$TMP/toolarge.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/toolarge.yaml\""
+  }
+}

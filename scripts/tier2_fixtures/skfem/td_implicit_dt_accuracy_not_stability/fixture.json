@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for skfem time_dependent#4, verified 2026-08-06 on skfem 12.0.1. Claim: no CFL is needed for backward Euler but dt still governs ACCURACY -- a too-large dt gives the correct steady state while smearing the transient, with L2 error O(dt) against a fine-dt reference. Ran: heat equation on a 24x24 MeshTri.init_tensor with ElementTriP1 (625 DOFs), cold interior, wall switched to 1 at t=0; lambda_max = 1.4738e+04 from scipy.linalg.eigh so the explicit limit is 1.3571e-04; a run at 1000x that dt to T=5, a 400-step run to the same time, and 8/16/32/64-step runs to T=0.01 against a 2048-step reference. Printed: at 1000x the explicit limit the solution is finite, bounded in [0,1], and emits no warning; the coarse and fine steady states agree to 7.5e-15, which is exactly the trap because the final answer looks right; the transient error falls at rates 0.989/1.003/1.019, confirming O(dt); and a 2-step run puts 1.395e-02 at the domain centre where the reference has 7.505e-04, i.e. more than an order of magnitude too much heat has been smeared inward. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets coarse_steps to 512 instead of 2, so the smeared transient run picks dt by accuracy rather than by stability. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes 'coarse_dt_smears_the_front=True' (and emits 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "time_dependent", "pitfall_index": 4, "mode": "python",
+  "expect_in_output": [
+    "dofs_N=625",
+    "huge_dt_solution_finite=True",
+    "huge_dt_stays_bounded=True",
+    "huge_dt_warnings=[]",
+    "steady_state_is_dt_independent=True",
+    "transient_error_is_first_order_in_dt=True",
+    "coarse_dt_smears_the_front=True",
+    "coarse_dt_transient_is_finite=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

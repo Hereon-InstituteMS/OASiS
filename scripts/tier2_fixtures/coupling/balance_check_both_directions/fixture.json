@@ -1,0 +1,32 @@
+{
+  "_comment": "COUPLING tier-2. Exercises check_interface_balance in BOTH directions on hand-built exports \u2014 no solver, so a slow backend cannot hide a regression in the validator. Quiet direction: a correct frictionless contact interface (normal tractions cancelling exactly, tangential at roundoff on both sides) and a symmetric flux profile whose net is float noise must produce NO warning; a per-component comparison without a magnitude floor reports the frictionless case as ~92% unbalanced on a physically perfect interface. Loud direction: half the flux arriving is caught; a same-sign export is caught AND named as a SIGN-CONVENTION error rather than left as a bare imbalance; a missing normal_fluxes array reports 'NOT CHECKED' rather than passing silently. Sixth case is the guard on the guard \u2014 a wrong normal component under the same frictionless shape must still be caught, so the two quiet cases cannot be satisfied by a check that never fires.",
+  "_mutation": {
+    "note": "Shrink the normal traction to below the tangential roundoff, so the interface carries essentially nothing and a relative comparison has no magnitude to normalise against. The frictionless case then reports ~67% imbalance and frictionless_interface_reported_unbalanced fires, while the four pathological cases still fire correctly \u2014 so the mutant discriminates rather than simply going red. That regime is exactly what the magnitude floor in check_interface_balance exists for. The by-hand mutation against the subject (replacing the vector-norm comparison in src/core/quality_checks.py with a per-component one and no floor, not stageable) reported a physically perfect frictionless interface 66.7% unbalanced.",
+    "file": "source.py",
+    "from": "    p = 1.0e5\n",
+    "to": "    p = 1.0e-18\n"
+  },
+  "backend": "coupling",
+  "physics": "silent_wrong",
+  "pitfall_index": 14,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "frictionless_warnings=0",
+    "symmetric_profile_warnings=0",
+    "half_flux_warnings=1",
+    "half_flux_says_not_balanced=True",
+    "same_sign_warnings=1",
+    "same_sign_names_the_convention=True",
+    "missing_flux_warnings=1",
+    "frictionless_but_wrong_warnings=1",
+    "balance_cases_checked=6",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

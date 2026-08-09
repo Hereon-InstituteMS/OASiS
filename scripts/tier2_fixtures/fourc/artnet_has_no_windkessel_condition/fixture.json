@@ -1,0 +1,39 @@
+{
+  "_comment": "Tier-2 for fourc::arterial_network#2, and the execution that FALSIFIED it. 4C's ArterialNetwork has no Windkessel outlet: writing a 'DESIGN NODE 1D ARTERY WINDKESSEL CONDITIONS' section is rejected by core/io/src/4C_io_input_file.cpp line 546 with 'is not a valid section name.', so there is no R, C or R_d to tune. (An ArtWkCond name survives in the element evaluator, but art_net/4C_art_net_input.cpp registers only JUNCTION, PRESCRIBED, REFLECTIVE, IN_OUTLET and the coupling conditions, so no input can ever create it.) The terminal knob that exists is DESIGN NODE 1D ARTERY REFLECTIVE CONDITIONS with a single reflection coefficient: raising it 0 -> 0.9 at both outlets of upstream one_d_3_artery_network moves the distal flowrate 0.928575 -> 1.232764, +32.8%. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "arterial_network",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=1",
+    "EXIT_WINDKESSEL=1",
+    "EXIT_REFLECT=1",
+    "Section 'DESIGN NODE 1D ARTERY WINDKESSEL CONDITIONS' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "WINDKESSEL_REACHED_RESULT_TEST=0",
+    "is WRONG --> actresult= 1.23276381639823218e+00",
+    "REFLECTION_COEFF_FLOW_CHANGE_PERCENT=32.8"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WINDKESSEL=0",
+    "WINDKESSEL_REACHED_RESULT_TEST=1",
+    "REFLECTION_COEFF_FLOW_CHANGE_PERCENT=0.0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the invented-section probe: do not add the Windkessel block. The 'not a valid section name' diagnostic disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "WK_SECTION = 'DESIGN NODE 1D ARTERY WINDKESSEL CONDITIONS:\\n  - E: 4\\n    R_p: 1.0\\n    C: 1.0\\n    R_d: 1.0\\n'",
+      "to": "WK_SECTION = ''"
+    },
+    {
+      "note": "remove the reflection change: leave the coefficient at the upstream 0. The distal flow does not move and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open('reflect.yaml', 'w').write(t.replace(refl, refl.replace('VAL: [0]', 'VAL: [0.9]')))",
+      "to": "open('reflect.yaml', 'w').write(t)"
+    }
+  ]
+}

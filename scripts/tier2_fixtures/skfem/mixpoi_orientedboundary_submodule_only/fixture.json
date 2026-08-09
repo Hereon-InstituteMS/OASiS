@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for skfem mixed_poisson#5: OrientedBoundary is not on the top-level namespace (AttributeError: module 'skfem' has no attribute 'OrientedBoundary') but imports from skfem.generic_utils; it is an ndarray subclass carrying an `ori` attribute, and FacetBasis branches on isinstance(self.find, OrientedBoundary), so a plain ndarray silently disables orientation handling. Verified on 12.0.1. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site, replacing the top-level probe skfem.OrientedBoundary with the prescribed 'from skfem.generic_utils import OrientedBoundary'. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 6 expect_in_output strings; T2_MUTATE=1 raises no AttributeError, removing \"no attribute 'OrientedBoundary'\" (and raising the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "mixed_poisson",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "no attribute 'OrientedBoundary'",
+    "toplevel_has_orientedboundary=False",
+    "generic_utils_import_succeeds=True",
+    "is_ndarray_subclass=True",
+    "carries_ori_attribute=True",
+    "facetbasis_isinstance_check_present=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::tsi#2. One HEX8 SOLIDSCATRA cube in free thermal expansion, THEXPANS = 1.2e-05 in all three arms (THEXPANS_RESCALED_BETWEEN_ARMS=1 — one distinct THEXPANS line across the three decks). All-Kelvin (INITTEMP 293, T 393) and all-Celsius (INITTEMP 19.85, T 119.85) describe the same physical state and give the same dispx = 1.2e-03 with the same alpha, both CORRECT and exit 0. That falsifies 'THEXPANS UNITS must match the temperature units': a linear expansion coefficient in 1/K and in 1/degC is the same number, there is nothing to rescale. Mixing the scales (INITTEMP 19.85 with T 393) gives actresult= 4.47779999999999880e-03, off by abs(diff)= 3.27779999999999912e-03, which equals alpha*273.15*L to machine precision (OFFSET_IS_ALPHA_TIMES_273_15=True). The offset the claim measured is real; its cause is the temperature SCALE of INITTEMP versus the thermal field, not THEXPANS. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "tsi",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ALL_KELVIN=0",
+    "EXIT_ALL_CELSIUS=0",
+    "EXIT_MIXED=1",
+    "dispx    at node   2\t is CORRECT",
+    "THEXPANS_RESCALED_BETWEEN_ARMS=1",
+    "is WRONG --> actresult= 4.47779999999999880e-03, givenresult= 1.19999999999999989e-03, abs(diff)= 3.27779999999999912e-03",
+    "OFFSET_IS_ALPHA_TIMES_273_15=True"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ALL_KELVIN=1",
+    "EXIT_ALL_CELSIUS=1",
+    "EXIT_MIXED=0",
+    "OFFSET_IS_ALPHA_TIMES_273_15=False"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: put the mixed arm's temperature field back on the same scale as its INITTEMP. The 273.15 offset disappears, dispx returns to 1.2e-03, EXIT_MIXED becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck 19.85 393.0   0.0012 > \"$TMP/mixed.yaml\"",
+    "to": "deck 19.85 119.85  0.0012 > \"$TMP/mixed.yaml\""
+  }
+}

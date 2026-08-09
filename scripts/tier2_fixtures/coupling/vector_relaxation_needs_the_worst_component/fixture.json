@@ -1,0 +1,40 @@
+{
+  "_comment": "COUPLING tier-2, VECTOR relaxation. The driver applies ONE theta to the whole interface state. For a scalar interface the served rule is theta = 1/(1+rho); a VECTOR interface has a rho per component, and unless the two subdomains share a Poisson ratio those two numbers differ, because M/mu = 2(1-nu)/(1-2nu) depends on nu alone. The driver's iteration is Jacobi, so its per-component amplification is sqrt((1-theta)^2 + rho_c theta^2), below one only while theta < 2/(1+rho_c) — so 1/(1+rho_max) is not a cautious choice but the only one that converges, and whenever rho_max > 1 + 2 rho_min the smaller-rho theta DIVERGES on the other component while the first settles. This fixture picks two Poisson ratios that split the ratios apart (0.48 and 0.15, giving rho_x/rho_y above 10), PREDICTS both amplifications before running anything, and then asserts both outcomes: the smaller-rho theta must not converge and must run away in the stiff component specifically while the compliant one behaves, and the larger-rho theta must converge and land on the closed form and the monolithic solve. Asserting only the good case would pass with the rule inverted.",
+  "_mutation": {
+    "note": "Invert the rule: take the theta from the SMALLER of the two components' conductance ratios instead of the larger — one word in VectorProblem.theta_opt, which is where the served rule is implemented. The arrangement that has to converge then runs with the theta the first half of this fixture has just demonstrated diverges, and the run fails on theta_from_larger_rho_did_not_converge. Nothing else in the fixture changes: the same problem, the same participants, the same tolerances.",
+    "file": "../_lib/couplinglib.py",
+    "from": "        return 1.0 / (1.0 + max(self.rho(dirichlet_side)))",
+    "to": "        return 1.0 / (1.0 + min(self.rho(dirichlet_side)))"
+  },
+  "backend": "coupling",
+  "physics": "vector_relaxation_needs_the_worst_component",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "rho_components_differ_by=",
+    "predicted_amp_bad=",
+    "predicted_amp_good=",
+    "smaller_rho_converged=False",
+    "smaller_rho_only_one_component_ran_away=True",
+    "theta_from_larger_rho_converged=True",
+    "theta_from_larger_rho_vector_exchange=True",
+    "theta_from_larger_rho_displacement_continuous=True",
+    "theta_from_larger_rho_interface_matches_closed_form=True",
+    "theta_from_larger_rho_matches_monolithic=True",
+    "relaxation_rule_established=True",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "smaller_rho_converged=True",
+    "smaller_rho_only_one_component_ran_away=False",
+    "theta_from_larger_rho_did_not_converge",
+    "_interface_matches_closed_form=False",
+    "_matches_monolithic=False",
+    "_displacement_continuous=False",
+    "failures_count=1"
+  ]
+}

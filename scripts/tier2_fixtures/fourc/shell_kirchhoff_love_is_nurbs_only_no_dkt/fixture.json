@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::shell#0. The rule (Kirchhoff-Love needs C1, hence NURBS) holds; the names in the entry did not. On the upstream shell_kl_nurbs deck, which runs as shipped: 'SHELL_KL_NURBS' — the spelling the entry recommended — raises \"Unknown type 'SHELL_KL_NURBS' of finite element\" from core/comm/src/4C_comm_parobjectfactory.cpp; there is no DKT element at all (\"Unknown type 'DKT' of finite element\"); the literal 'SHELL KIRCHHOFF QUAD4' spelling is read as element type SHELL with cell type KIRCHHOFF and dies on 'Unknown celltype KIRCHHOFF'; and pairing the CORRECT type name with QUAD4 makes the element type itself unknown rather than reporting a cell-type mismatch, with the offending cell type never echoed (QUAD4_DIAGNOSTIC_NAMES_THE_CELL=0) — which sends a reader looking for a misspelt element name when the element name was right. The working combination is SHELL_KIRCHHOFF_LOVE_NURBS on NURBS9 with MAT_Kirchhoff_Love_shell. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "shell",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_GOOD=0",
+    "EXIT_SHORTNAME=1",
+    "EXIT_QUAD4=1",
+    "EXIT_DKT=1",
+    "EXIT_SPELLED=1",
+    "processor 0 finished normally",
+    "Unknown type 'SHELL_KL_NURBS' of finite element",
+    "Unknown type 'SHELL_KIRCHHOFF_LOVE_NURBS' of finite element",
+    "Unknown type 'DKT' of finite element",
+    "Unknown celltype KIRCHHOFF",
+    "4C_comm_parobjectfactory.cpp",
+    "QUAD4_DIAGNOSTIC_NAMES_THE_CELL=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_GOOD=1",
+    "EXIT_SHORTNAME=0",
+    "EXIT_DKT=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: write the element's real name in the shortname arm. Its 'Unknown type' line vanishes and EXIT_SHORTNAME becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/SHELL_KIRCHHOFF_LOVE_NURBS NURBS9/SHELL_KL_NURBS NURBS9/'             \"$BASE\" > \"$TMP/shortname.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/shortname.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: stop asking for a DKT element that does not exist. Its 'Unknown type' line vanishes and EXIT_DKT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/SHELL_KIRCHHOFF_LOVE_NURBS NURBS9/DKT TRI3/'                          \"$BASE\" > \"$TMP/dkt.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/dkt.4C.yaml\""
+    },
+    {
+      "note": "remove the third pathology: keep the correct cell type. The 'Unknown type SHELL_KIRCHHOFF_LOVE_NURBS' line vanishes and EXIT_QUAD4 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/SHELL_KIRCHHOFF_LOVE_NURBS NURBS9/SHELL_KIRCHHOFF_LOVE_NURBS QUAD4/'  \"$BASE\" > \"$TMP/quad4.4C.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/quad4.4C.yaml\""
+    }
+  ]
+}

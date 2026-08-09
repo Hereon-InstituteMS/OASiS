@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for kratos.dem::10: every sub model part that carries entities needs a row in material_assignation_table, the wall included, and omitting it is a hard error raised inside the solver rather than at materials-reading time. Executed 2026-08-07 on Kratos 10.4.3. Measured: RuntimeError 'Error: PROPERTIES_ID is not set for SubModelPart DEM-FEM-Wall_floor . Make sure the Materials file contains material assignation for this SubModelPart' from ExplicitSolverStrategy::InitializeFEMElements. THIS RUN CORRECTED THE CLAIM: the previous text asserted the message 'names the sub model part by its numeric id, not by name'; on this build it names it by name, and the claim text was amended to match the measurement rather than the fixture tuned to match the claim. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no DEMApplication, so pointing this anywhere else SKIPS rather than passes. Every deck is written into a fresh TemporaryDirectory and driven through DEMAnalysisStage in a CHILD process: Kratos logs from C++ and buffers it, so an in-process capture would miss every DEM line, and a Finalize()d DEM stage cannot be probed from python without segfaulting. MUTATION CONTROL (T2_MUTATE=1, re-runnable): see the module docstring -- the mutation changes the INPUT only, never an assertion, so every deck is still really executed against Kratos. Verified 2026-08-07: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1), the named probe lines flip and the trailing =ok line disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_every_entity_submodelpart_needs_an_assignation_row && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 10,
+  "covers": [
+    "dem::10"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[raises]=RuntimeError_expected=RuntimeError",
+    "probe[names_properties_id]=True_expected=True",
+    "probe[names_the_wall_part_by_name]=True_expected=True",
+    "probe[advises_the_materials_file]=True_expected=True",
+    "probe[never_reached_finalize]=False_expected=False",
+    "dem_assignation_table_check=ok",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#26 — CORRECTION fixture from the 2026-08-03 adversarial re-audit. The sibling fixture runtime_vtk_output_needs_both_sections is correct but proves a stronger configuration than the pitfall prose described: its sub-section already carries DISPLACEMENT: true, while the prose said only 'IO/RUNTIME VTK OUTPUT/STRUCTURE with OUTPUT_STRUCTURE: true'. Following the prose literally does not give '3 structure-*.vtu files' — it exits 1 with 'No data was written or writer was already in final phase.' from 4C_io_vtk_writer_base (stack: VtkWriterBase::write_vtk_footers <- VisualizationWriterVtuPerRank::finalize_time_step), because OUTPUT_STRUCTURE is only the master switch and all 12 field flags beside it default to false. This fixture pins all three arms so the prose cannot drift back: the working form, the crash form, and the silent form where a field flag is set but the master switch is not. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): the output_structure_only and displacement_only arms are both given OUTPUT_STRUCTURE and DISPLACEMENT. Their two expectations disappear and the forbidden 'output_structure_only: EXIT=0 VTU=3' appears. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 27,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "with_displacement: EXIT=0 VTU=3 NO_DATA_THROW=no",
+    "output_structure_only: EXIT=1 VTU=1 NO_DATA_THROW=yes",
+    "displacement_only: EXIT=0 VTU=0 NO_DATA_THROW=no"
+  ],
+  "forbid_in_output": [
+    "4C binary not found",
+    "with_displacement: EXIT=0 VTU=0",
+    "output_structure_only: EXIT=0 VTU=3"
+  ],
+  "_mutation": {
+    "note": "remove the pathology from both deficient arms: each gets BOTH field flags. The output_structure_only arm then completes with 3 .vtu files and no 'No data was written' throw, so its EXIT=1 VTU=1 NO_DATA_THROW=yes line disappears and the forbidden 'output_structure_only: EXIT=0 VTU=3' appears; the displacement_only arm writes its files too, so its VTU=0 line disappears. Red on both halves.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

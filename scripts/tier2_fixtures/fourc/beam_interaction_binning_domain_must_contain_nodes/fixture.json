@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#0, which was wrong in both directions. It claimed a misconfigured search grid shows up as 'zero pairs found' or a warning 'bin size smaller than max element size, search may miss pairs'; neither string exists in 4C. What actually happens on the upstream twobeamstwisting deck: a DOMAINBOUNDINGBOX that does not contain the mesh is a HARD abort from core/binstrategy/4C_binstrategy.cpp ('Node 1 in your discretization resides outside the binning domain, this does not work at this point'), while raising BIN_SIZE_LOWER_BOUND from 1 to 1000 — far beyond any element — is accepted silently and leaves the contact answer unchanged, all three result tests still passing. So the bounding box is the thing to get right and the bin lower bound is forgiving, which is the opposite emphasis from the original entry. The deck needs its NOX status-test XML alongside it, hence the .xml copy. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_TINYBOX=1",
+    "EXIT_BIGBIN=0",
+    "BASE_TESTS_CORRECT=3",
+    "BIGBIN_TESTS_CORRECT=3",
+    "BIGBIN_TESTS_WRONG=0",
+    "Node 1 in your discretization resides outside the binning",
+    "4C_binstrategy.cpp",
+    "CLAIMED_ZERO_PAIRS_TEXT=0",
+    "CLAIMED_BIN_SIZE_WARNING_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_TINYBOX=0",
+    "EXIT_BIGBIN=1",
+    "BIGBIN_TESTS_WRONG=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the tinybox arm the deck's own bounding box, which does contain the mesh. The binstrategy abort then vanishes and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/DOMAINBOUNDINGBOX: \"-0.5 -0.5 -0.5 5.5 5.5 5.5\"/DOMAINBOUNDINGBOX: \"0.0 0.0 0.0 0.1 0.1 0.1\"/' base.yaml > tinybox.yaml",
+    "to": "cp base.yaml tinybox.yaml"
+  }
+}

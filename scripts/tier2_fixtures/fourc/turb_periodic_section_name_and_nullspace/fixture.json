@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#3 and a FALSIFICATION of both halves of its Signal. 'DESIGN PERIODIC CONDITIONS' is not a 4C section: it is rejected with \"Section 'DESIGN PERIODIC CONDITIONS' is not a valid section name.\" from 4C_io_input_file.cpp. The real sections are DESIGN LINE PERIODIC BOUNDARY CONDITIONS and DESIGN SURF PERIODIC BOUNDARY CONDITIONS, whose entries pair Master and Slave through a shared ID with PLANE/LAYER/ANGLE. And deleting the real block from the upstream channel deck f3_cha_8x8x8_recongradl2 does not produce 'blockage and incorrect mean flow' -- it aborts with 'Nullspace check for sysmat_ failed' from 4C_fluid_implicit_integration.cpp, because a streamwise-periodic channel has no Dirichlet data in that direction and the pressure nullspace stops matching the Krylov-space projection the deck declares. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 3,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_BADNAME=1",
+    "EXIT_NOPERIODIC=1",
+    "Section 'DESIGN PERIODIC CONDITIONS' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "Nullspace check for sysmat_ failed",
+    "4C_fluid_implicit_integration.cpp",
+    "NOPERIODIC_REACHED_RESULT_TEST=0",
+    "CLAIMED_BLOCKAGE_TEXT=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the naming arm: do not inject the invalid section. The invalid-section-name abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's|^DESIGN SURF PERIODIC BOUNDARY CONDITIONS:|DESIGN PERIODIC CONDITIONS: []\\nDESIGN SURF PERIODIC BOUNDARY CONDITIONS:|' \"$BASE\" > \"$TMP/badname.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/badname.yaml\""
+    },
+    {
+      "note": "remove the pathology from the deletion arm: keep the periodic block. The nullspace abort vanishes and the arm reaches its result test, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(sys.argv[2], \"w\").write(t[:i] + t[j:])",
+      "to": "open(sys.argv[2], \"w\").write(t)"
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_BADNAME=0",
+    "EXIT_NOPERIODIC=0",
+    "NOPERIODIC_REACHED_RESULT_TEST=1"
+  ]
+}

@@ -36,14 +36,24 @@ This is Layer C in the catalog-validation framework:
   Layer C — generator output is NUMERICALLY CORRECT
             (this fixture)
   Layer E — MCP tool wrapper surfaces work
+
+Mutation control: T2_MUTATE=1 halves the manufactured source term
+(f = π²·u_ex instead of the consistent 2π²·u_ex), so the load no
+longer matches -Δu_ex. Everything still runs and still prints real
+L2 errors, but the discrete solution converges to u_ex/2: the errors
+stop shrinking with h, the EOC collapses to ~0, and every tolerance
+line goes red.
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_poisson(nx: int, order: int) -> float:
@@ -73,7 +83,8 @@ def run_poisson(nx: int, order: int) -> float:
 
     x = ufl.SpatialCoordinate(domain)
     u_ex = ufl.sin(ufl.pi * x[0]) * ufl.sin(ufl.pi * x[1])
-    f = 2.0 * ufl.pi ** 2 * u_ex
+    # MUTATE: source inconsistent with the manufactured solution.
+    f = (1.0 if MUTATE else 2.0) * ufl.pi ** 2 * u_ex
 
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)

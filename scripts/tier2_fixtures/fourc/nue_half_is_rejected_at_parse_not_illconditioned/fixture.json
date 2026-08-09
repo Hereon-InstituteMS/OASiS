@@ -1,0 +1,55 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#12 — NUE is validated against the half-open interval [-1, 0.5), so the incompressible limit NUE: 0.5 is REFUSED at parse rather than merely ill-conditioned. Six arms of one Statics HEX8 deck, KINEM linear, the material the only change, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: NUE 0.3 and NUE 0.4999 both exit 0 with 'processor 0 finished normally', so near-incompressible behaviour is reachable by backing off the limit; NUE 0.5 and NUE 0.6 both exit 1 with \"Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)\" inside the \"Failed to match specification in section 'MATERIALS'\" report from global_data/4C_global_data_read.cpp, and nothing is assembled (NUE_0_5_REACHED_FILL_COMPLETE=0). The two ends of the interval are asserted separately because that is what 'half-open' means in practice: NUE -1.000001 is rejected the same way, while NUE -1.0 is ACCEPTED by the validator (NUE_MINUS_1_VALIDATION_COMPLAINTS=0, NUE_MINUS_1_REACHED_FILL_COMPLETE=2) and is then killed by SIGFPE with shell status 136 — passing validation is not the same as being a usable material.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_NUE_0_3=0",
+    "EXIT_NUE_0_4999=0",
+    "EXIT_NUE_0_5=1",
+    "EXIT_NUE_0_6=1",
+    "EXIT_NUE_MINUS_1=136",
+    "EXIT_NUE_BELOW_MINUS_1=1",
+    "processor 0 finished normally",
+    "Candidate parameter 'NUE' does not pass validation: in_range[-1,0.5)",
+    "Failed to match specification in section 'MATERIALS'",
+    "4C_global_data_read.cpp",
+    "NUE_0_5_REACHED_FILL_COMPLETE=0",
+    "NUE_MINUS_1_REACHED_FILL_COMPLETE=2",
+    "NUE_MINUS_1_VALIDATION_COMPLAINTS=0",
+    "Signal: Floating point exception (8)"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_NUE_0_3=1",
+    "EXIT_NUE_0_4999=1",
+    "EXIT_NUE_0_5=0",
+    "EXIT_NUE_0_6=0",
+    "EXIT_NUE_BELOW_MINUS_1=0",
+    "NUE_MINUS_1_VALIDATION_COMPLAINTS=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: back the incompressible arm off the limit. The validation rejection disappears and EXIT_NUE_0_5 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.5        \"$TMP/c.yaml\"",
+      "to": "deck 0.4999     \"$TMP/c.yaml\""
+    },
+    {
+      "note": "remove the pathology from the out-of-range arm too. EXIT_NUE_0_6 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 0.6        \"$TMP/d.yaml\"",
+      "to": "deck 0.3        \"$TMP/d.yaml\""
+    },
+    {
+      "note": "remove the pathology from the lower-end arm: move it inside the interval. The SIGFPE disappears and EXIT_NUE_MINUS_1 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck -1.0       \"$TMP/e.yaml\"",
+      "to": "deck 0.3        \"$TMP/e.yaml\""
+    }
+  ]
+}

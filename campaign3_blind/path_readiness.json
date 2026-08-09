@@ -1,0 +1,239 @@
+{
+ "schema": "oasis-blind-path-readiness/2",
+ "why": "A coupled task whose intended execution path has never run measures the path, not the agent, and a tool bug in it reads as agent failure and is charged to the arm under test. Each instance must have had a throwaway, non-blind run through the path it names, with the result discarded, before it may be graded.",
+ "measured_2026_08_07": {
+  "note": "Superseded by the vector participants landed on feature/vector-coupling. Kept for the record of what the gap was.",
+  "shipped_coupling_participants": 10,
+  "with_a_vector_interface": 1,
+  "coupling_fixtures": 29,
+  "fixtures_with_any_vector_construct": 2
+ },
+ "arrangement_solvable": {
+  "note": "Established earlier with the harness's own partitioned solver: the ARRANGEMENT each task describes is solvable by exactly the scheme the task prescribes. This does NOT establish that OASiS's shipped participants can serve it, which is what the walks below are for.",
+  "D1": "partitioned DN, order 1.890/1.901, flux jump 5.6e-15",
+  "D3": "partitioned DN, order 1.940/1.955, flux jump 4.8e-15",
+  "D4": "partitioned DN with a VECTOR interface, order 1.838, traction jump 5.2e-15, 24 iterations",
+  "D5": "monolithic on the notched domain, order 1.875/1.935",
+  "D6": "partitioned DN at contrast 1:1000, order 1.958/1.976",
+  "D7": "partitioned DN with different operators either side, order 1.929/1.944"
+ },
+ "path_verified": {
+  "B1": true,
+  "B2": true,
+  "B3": true,
+  "B4": true,
+  "B5": true,
+  "B6": true,
+  "B7": true,
+  "D1": true,
+  "D2": true,
+  "D3": true,
+  "D4": true,
+  "D5": true,
+  "D6": true,
+  "D7": true,
+  "D8": true
+ },
+ "blocking": "No instance is blocked. All fifteen execution paths were walked non-blind and the results discarded. The two non-path blockers recorded below were REPAIRED after this walk: the B1-B7 task texts were brought to the grader's PROBE_M at 28d29eec, and the grader was taught to honour a non-rectangular subdomain's probe exclusion at 93bede18. Both repairs are gated by tests/test_blind_task_grid_matches_grader.py, which fails if the task text and the grader ever disagree again.",
+ "walk_2026_08_09": {
+  "what_this_is": "One throwaway, NON-BLIND run per instance through the path that instance names. Nothing here is a result: every field was compared against an independent un-split reference solve and then discarded. No key was opened; every problem statement used is the PUBLIC task.txt and spec_public.json the agent under test also sees.",
+  "how_the_coupled_ones_were_driven": "Through the REGISTERED `couple` tool, reached the same way src/server.py reaches it (FastMCP tool manager over tools.consolidated), with `probe: true` and with the tool's own `monolithic` cross-check pointed at an independent un-split solve of the same public problem. The un-split reference is a separate script that never reads anything the participants wrote.",
+  "interpreters_resolved": {
+   "fenics": "/home/alexander/miniconda3/envs/fenics/bin/python (dolfinx 0.10.0)",
+   "ngsolve": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python (NGSolve 6.2.2604)",
+   "skfem": "/home/alexander/Schreibtisch/open-fem-agent/.venv/bin/python (scikit-fem 12.0.1)",
+   "kratos": "/usr/bin/python3 (KratosMultiphysics + ConvectionDiffusionApplication); /mnt/kratos-tier2/kv/bin/python also imports it",
+   "dealii": "C++ built by cmake against DEAL_II_DIR=/home/alexander/dealii/build (9.8.0-pre, Release, SERIAL: no MPI, no PETSc/Trilinos/p4est, UMFPACK on)"
+  },
+  "coupled": {
+   "D1": {
+    "path": "FEniCSx (Dirichlet role) <-> NGSolve (Neumann role), 2-D, anisotropic tensor K either side, straight interface x = 5/8",
+    "ran": "3 levels (h = 1/8, 1/16, 1/32), converged at every level to tol 1e-8 in 29/32/33 iterations, 59-69 s per level",
+    "checked_against": "un-split FEniCSx P2 solve on a 4x-finer mesh, through the tool's own `monolithic` argument"
+   },
+   "D2": {
+    "path": "FEniCSx (Dirichlet) <-> deal.II (Neumann), 3-D, contrast 1:6, interface plane x = 5/8",
+    "ran": "2 levels (h = 1/8, 1/16), converged in 24 iterations at both, 101 s and 140 s",
+    "note": "THIS IS THE ONE THAT HAD NEVER RUN. It runs. A 3-D deal.II subdomain solver was written for it (there is no 3-D one in data/coupling_participants; the shipped heat_iface_dealii.cc is hard-coded Point<2>/Triangulation<2>), and the FEniCSx side needed scattered (y,z) interpolation on the interface plane, which 1-D np.interp does not provide.",
+    "bug_found_and_fixed_in_the_walk": "The first 3-D run died with SIGSEGV inside SparseDirectUMFPACK::factorize. Cause, from a gdb backtrace: the flux post-processing assembled an UNCONSTRAINED mass matrix into the sparsity pattern built for the constrained system (make_sparsity_pattern with constraints and keep_constrained_dofs=false). Those rows have no entries, so in Release the adds corrupt the heap. It is silent in 2-D and fatal in 3-D. This was a defect in the participant written for the walk, not in OASiS, but it is exactly the shape of failure the walk exists to find before it is charged to an agent."
+   },
+   "D3": {
+    "path": "FEniCSx (Dirichlet) <-> Kratos Multiphysics (Neumann), 2-D, contrast 1:4",
+    "ran": "3 levels, converged in 27/28/28 iterations, 40-50 s per level",
+    "note": "Needed a Kratos NEUMANN participant, which does not ship: data/coupling_participants/participant_kratos.py is Dirichlet-only. Written here with ThermalFace2D2N conditions carrying FACE_HEAT_FLUX; the condition is registered in this Kratos build and the arrangement works."
+   },
+   "D4": {
+    "path": "FEniCSx <-> deal.II VECTOR exchange, 2-D elasticity",
+    "ran": "verified 2026-08-08 through the same registered `couple` tool, both arrangements, non-matching interface meshes; not re-run here"
+   },
+   "D5": {
+    "path": "FEniCSx on the NOTCHED non-rectangular subdomain (Dirichlet) <-> scikit-fem on the rectangle (Neumann), BENT interface: leg 1 at x = 1/2, leg 2 at y = 1/2, two outward normals, two contrasts",
+    "ran": "2 levels, with CONSTANT relaxation theta = 0.2. Level 0 (h = 1/8) and level 1 (h = 1/16) both converged to tol 1e-8 in 130 iterations, 164 s at level 0. Interface error against the un-split notched reference 5.7025e-02 -> 1.7958e-02 (order 1.67); field error at the task's own 1331 + 1936 probe points 1.2097e-01 -> 3.2178e-02 (order 1.91).",
+    "first_attempt_diverged": "theta = 0.5 with Aitken blew up to 1e36 and hit max_iter = 300. The reason is a real property of this instance, not a tool fault: the two legs have OPPOSITE conductance ratios. Measured from the geometry, with Dirichlet on A: leg 1 rho = 0.4, leg 2 rho = 2.0, and rho = 4.0 where the notch thins the k = 5 block above leg 2 to a quarter-width. A single global theta must satisfy theta < 2/(1 + rho_max), so theta < 0.4 here; the driver applies ONE theta to the whole interface and has no per-leg option.",
+    "geometry_note": "Subdomain A's mesh had to be built by hand (a structured grid of the unit square with subdomain B and the notch removed, assembled through dolfinx.mesh.create_mesh) because no shipped generator makes a non-rectangular subdomain. Interface data is exchanged as a function of ARCLENGTH along the polyline, which both sides compute from the coordinates the driver moves; the corner where the legs meet then needs no special case.",
+    "flux_note": "The interface flux on the bent side was recovered VARIATIONALLY from the discrete residual. That is not a refinement, it is what makes the bend tractable at all: no outward normal is needed anywhere, so the leg-to-leg normal flip and the corner cost nothing."
+   },
+   "D6": {
+    "path": "NGSolve (Dirichlet) <-> Kratos (Neumann), 2-D, contrast 1:1000",
+    "ran": "3 levels, converged in 9 iterations at every level, 18-24 s per level",
+    "role_assignment_is_forced_and_was_measured": "With the roles swapped (Kratos as the Dirichlet side, which is the only role its shipped participant supports) the conductance ratio is rho = 714 and the run does NOT converge: executed here, 60 iterations at the theoretically optimal theta = 0.0014, residual stuck at 0.988. So D6 cannot be served by the shipped Kratos participant at all; it needs the Neumann-side one written for D3."
+   },
+   "D7": {
+    "path": "FEniCSx (Dirichlet, pure diffusion) <-> NGSolve (Neumann, diffusion + reaction c = 12), 2-D",
+    "ran": "3 levels, converged in 27/30/31 iterations, 52-59 s per level",
+    "note": "The two sides genuinely assemble different operators; the reaction term enters neither transmission condition and the exchange is unaffected."
+   },
+   "D8": {
+    "path": "FEniCSx (Dirichlet) <-> deal.II (Neumann), TRANSIENT, Crank-Nicolson to t_end = 1/4",
+    "ran": "2 levels. Level 0 (h = 1/8, dt = 1/32, 8 steps) converged in 34 iterations, 47 s, and the tool returned ZERO findings. Level 1 (h = 1/16, dt = 1/64, 16 steps) converged in 32 iterations. Interface error against the un-split transient reference 1.3408e-02 -> 2.8914e-03, order 2.21.",
+    "how_a_steady_driver_ran_a_transient_coupling": "Dirichlet-Neumann WAVEFORM relaxation. Each participant integrates the WHOLE time window per iteration and the exchanged object is the entire space-time interface trace: n interface points with nsteps components each, which the driver moves and relaxes unchanged because it treats values as opaque numbers on coordinates. The alternative \u2014 calling `couple` once per time step \u2014 would need the participants to carry state across driver invocations and was not used. A transient deal.II participant was written for this; none ships."
+   }
+  },
+  "single_code": {
+   "note": "path_readiness/1 did not cover B1-B7 at all. All seven were walked here. Every one RUNS: the named backend, in the named interpreter, solves the named problem at every mesh level the task lists, evaluates at the task's off-node probe points, writes the required CSVs and RESULT.txt, and self-converges under refinement.",
+   "B1": "NGSolve, 2-D anisotropic Poisson, P1, h = 1/8..1/64. All 4 levels, 0.79 s total. Off-node evaluation exact to 8.9e-16 on a P1-reproducible field.",
+   "B2": "deal.II C++, 2-D variable-coefficient Poisson, Q1, N = 8..64. Builds in 14.5 s with zero warnings and zero deprecations against 9.8.0-pre; all 4 levels, 0.71 s total; 1024 probes per level through VectorTools::point_value with no evaluation failures. ||u_h|| ratios 4.07, 4.02.",
+   "B3": "FEniCSx, 2-D nonlinear a(u) = 1 + u^2/2, Newton, N = 8..64. All 4 levels; Newton genuinely converges (3 iterations per level, quadratic residual drop 1.4e-2 -> 1.9e-5 -> 8.3e-11 -> 6e-16), it is not returning the initial guess.",
+   "B4": "FEniCSx, 3-D variable-coefficient Poisson, P1 tets, N = 4, 8, 16. All 3 levels, 4.3 s total, 4096 probes per level.",
+   "B5": "FEniCSx, 2-D plane-strain elasticity, vector P1, N = 8, 16, 32. All 3 levels, 2.2 s total; rms change ratio 4.05.",
+   "B6": "deal.II C++, 3-D elasticity, vector Q1, N = 4, 8, 16. Builds in 21.6 s, zero warnings; all 3 levels; 12288 vector point evaluations with zero failures; SSOR-CG cross-checked against UMFPACK to 1e-13.",
+   "B7": "FEniCSx, nearly incompressible nu = 0.49999, Taylor-Hood P2/P1 mixed. Runs, and the walk established WHICH solution it delivers rather than assuming: three independent discretisations (P3/P2 Taylor-Hood, P4 displacement-only, P2 displacement-only) land on it to ~2e-5, while a displacement-only P1 control locks and is off by 98.7% with its successive changes GROWING under refinement."
+  },
+  "what_was_not_done": [
+   "D4 was not re-run; its 2026-08-08 walk stands.",
+   "D2 was run at 2 of its 3 levels (h = 1/8, 1/16), not the finest. The path is proven; the finest 3-D level was not timed.",
+   "D5 and D8 were walked at their two coarsest levels, not the finest. Two levels give an order; the finest was not needed to prove the path.",
+   "No arrangement was run with the roles swapped except D6, where the swap was run deliberately to show the shipped Kratos participant cannot serve that instance.",
+   "The exact solutions were never opened. Correctness was judged against independent un-split reference solves of the same PUBLIC problem, which is weaker than the sealed key and is enough to answer whether the machinery works."
+  ]
+ },
+ "interface_flux_recovery_decides_the_graded_order": {
+  "why_this_is_a_path_finding": "The coupled instances are graded on the observed convergence order of the FIELD at fixed probe points, PASS being |order - 2| <= 0.4. The order a partitioned run achieves is set by how accurately the Dirichlet side recovers the interface flux it hands to the Neumann side, and the recovery the shipped participant templates use lands on the wrong side of that band's edge.",
+  "measured_here_on_D1_same_meshes_same_driver_same_tolerance": {
+   "L2_projection_of_-K_grad_u_dot_n_over_the_volume": {
+    "note": "This is what data/coupling_participants/participant_fenics.py and participant_ngsolve.py do.",
+    "interface_trace_relative_error": [
+     "3.1632e-02",
+     "1.2544e-02",
+     "5.8023e-03"
+    ],
+    "interface_trace_order": [
+     1.334,
+     1.112
+    ],
+    "field_error_at_the_grader_probe_grid": [
+     "4.3882e-02",
+     "1.2336e-02",
+     "3.8959e-03"
+    ],
+    "field_order": [
+     1.831,
+     1.663
+    ],
+    "reading": "mean field order 1.75, inside the [1.6, 2.4] band but drifting DOWN with refinement and within 0.15 of being graded CONFIDENTLY_WRONG on a slightly rougher instance"
+   },
+   "variationally_consistent_flux_from_the_discrete_residual": {
+    "note": "int_Gamma qn phi_i ds = -(a(u_h, phi_i) - (f, phi_i)), divided by int_Gamma phi_i ds to give a density the partner can sample.",
+    "interface_trace_relative_error": [
+     "7.4528e-03",
+     "1.1256e-03",
+     "2.4037e-04"
+    ],
+    "interface_trace_order": [
+     2.727,
+     2.227
+    ],
+    "field_error_at_the_grader_probe_grid": [
+     "3.6641e-02",
+     "8.8470e-03",
+     "2.0609e-03"
+    ],
+    "field_order": [
+     2.05,
+     2.102
+    ],
+    "reading": "mean field order 2.08, comfortably CORRECT, and the interface trace is 24x more accurate at the finest level"
+   },
+   "cost": "32/33/34 iterations against 29/32/33 \u2014 the accurate recovery costs nothing in the coupling."
+  },
+  "the_other_instances_show_the_same_shape": {
+   "D3": "interface-trace order 1.196, 1.122 with the L2 recovery",
+   "D7": "interface-trace order 1.119, 1.037 with the L2 recovery",
+   "D6": "interface-trace order 1.647, 1.497 with the L2 recovery",
+   "D2": "interface-trace order 1.774 with the consistent recovery on the FEniCSx side"
+  },
+  "not_established": "Whether the drift takes the FIELD order below 1.6 on any specific held-out instance. It was measured on D1 only, at three levels, against a fine P2 reference rather than the sealed exact solution."
+ },
+ "grader_probe_grid_mismatch": {
+  "status": "REPAIRED. B1-B7 task texts moved to PROBE_M = {2:44, 3:21} at 28d29eec; probe_grid() gained an `exclude` argument and grade_run() now passes D5's probe_a_exclude, read from the PUBLIC spec so no sealed key is reopened, at 93bede18. Verified by building the point set each task text describes and passing it to the grader's own matches_probe_grid: all fifteen now agree, D5 subdomain A at exactly 1331.",
+  "what": "grade_blind.py builds the expected probe grid from a module constant PROBE_M = {2: 44, 3: 21} and compares it against the submitted points with matches_probe_grid(). scripts/blind_grade.py calls the same two functions. Neither reads a probe count from the key or the spec.",
+  "executed_check": "For each problems/<id>/task.txt, the probe count the task PRESCRIBES against the count grade_blind.probe_grid() BUILDS:",
+  "per_task": {
+   "B1": "task 1024, grader 1936 - MISMATCH",
+   "B2": "task 1024, grader 1936 - MISMATCH",
+   "B3": "task 1024, grader 1936 - MISMATCH",
+   "B4": "task 4096, grader 9261 - MISMATCH",
+   "B5": "task 1024, grader 1936 - MISMATCH",
+   "B6": "task 4096, grader 9261 - MISMATCH",
+   "B7": "task 1024, grader 1936 - MISMATCH",
+   "D1": "task 1936, grader 1936 - match",
+   "D2": "task 9261, grader 9261 - match",
+   "D3": "task 1936, grader 1936 - match",
+   "D4": "task 1936, grader 1936 - match",
+   "D5": "subdomain A: task 1331 (the 44x44 grid MINUS subdomain B and MINUS the notch, as the task text spells out), grader 1936 (probe_grid ignores the spec's own probe_a_exclude) - MISMATCH; subdomain B matches",
+   "D6": "task 1936, grader 1936 - match",
+   "D7": "task 1936, grader 1936 - match",
+   "D8": "task 1936, grader 1936 - match"
+  },
+  "consequence": "A submission that follows its task text exactly is rejected at the probe-grid check with INVALID_SUBMISSION, before any comparison against truth, for B1-B7 and for D5. Eight of the fifteen. The B task texts appear to predate the coupled redesign that moved PROBE_M to 44/21; D5's exclusion was added to the task text and never to the grader.",
+  "related_dead_guard": "grade_blind.assert_probe_grid_incommensurate() exists and is never called from anywhere in grade_blind.py (checked by counting call sites in the module source: zero). It would not have caught this in any case, because it checks PROBE_M against the mesh levels, not the task text against PROBE_M."
+ },
+ "probe_grid_aliases_the_finest_mesh_on_the_single_code_tasks": {
+  "what": "The coupled instances use a 44-point (2-D) / 21-point (3-D) probe grid precisely because a probe count commensurate with a mesh level biases the observed order DOWN \u2014 the reasoning is written out in grade_blind.py's own comment, with 1.71 measured against a true 1.97. The single-code tasks use 32 (2-D) and 16 (3-D) against mesh levels 8/16/32/64 and 4/8/16, so their probe grid has exactly the mesh spacing at the finest level and every probe sits on a mesh node or a cell-box centre.",
+  "measured_in_the_walks": {
+   "B1": "successive-difference ratios 5.14 then 1.85 on the required sequence; extending to h = 1/128, 1/256 gives 4.00 / 4.00",
+   "B3": "5.58 then 1.93 on the required sequence; 4.00 / 4.00 when extended",
+   "B2": "1.85 on the required last pair; a probe set offset by 1/pi, which cannot align with any level, gives 4.43 / 4.04, matching the L2 norm's 4.07 / 4.02",
+   "B6": "the required probes land on cell centres at N = 16, inflating the single available ratio to 6.88 against 4.18 off-grid"
+  },
+  "consequence": "An agent that judges MESH_INDEPENDENCE by 'does the change shrink 4x per refinement' sees ~1.9 at the last step of a perfectly converged solve. If MESH_INDEPENDENCE or an inferred order is scored, correct work is penalised, and the penalty is charged to the arm under test.",
+  "not_repaired": "Same reason as above: this is task-text and grading design, not an execution path.",
+  "status": "RESOLVED as a side effect of 28d29eec. The alias came from probing at (2i+1)/64 against a mesh reaching N=64. The tasks now probe at (i+0.5)/44 (2D) and (i+0.5)/21 (3D), the counts chosen against the measured bias table above PROBE_M in grade_blind.py."
+ },
+ "participants_that_do_not_ship_and_had_to_be_written": {
+  "note": "Absence of a participant is not inability, but it IS work the agent under test has to do, and none of these existed to be adapted.",
+  "kratos_neumann_side": "participant_kratos.py is Dirichlet-only. D3 and D6 both need the Neumann role, and D6 CANNOT converge without it (measured: 60 iterations, residual 0.988).",
+  "dealii_3d_scalar": "heat_iface_dealii.cc is hard-coded to 2-D. D2 needs 3-D.",
+  "dealii_transient": "no time-dependent participant of any kind ships. D8 needs one.",
+  "fenics_transient": "likewise.",
+  "non_rectangular_subdomain": "every shipped participant meshes a rectangle from an extent. D5's subdomain A is the unit square minus two blocks.",
+  "bent_interface_exchange": "every shipped participant samples the partner by y along a straight interface at x = const. D5 needs an arclength parametrisation along a polyline.",
+  "vector_participants": {
+   "exist_for": [
+    "fenics",
+    "skfem",
+    "ngsolve",
+    "dealii",
+    "febio"
+   ],
+   "absent_for": [
+    "4C",
+    "dune",
+    "kratos",
+    "sparta"
+   ],
+   "absence_of_evidence_not_inability": true
+  }
+ },
+ "path_verified_detail": {
+  "D2": "SUPERSEDES the 2026-08-08 entry, which read: 'NO 3-D COUPLED SOLVER RUN EXISTS ... its path remains unproven.' A 3-D scalar coupled solve now exists and has run: FEniCSx <-> deal.II through the registered `couple` tool, two mesh levels, converged in 24 iterations both times, cross-checked against an independent un-split 3-D solve.",
+  "D4": "FEniCSx <-> deal.II vector exchange through `couple`, executed 2026-08-08 and passed, both arrangements. Unchanged.",
+  "scalar_instances": "D1, D3, D5, D6, D7 were the pre-existing conduction exchange with fixtures but no throwaway run recorded against these instances. Each now has one."
+ },
+ "d4_measured_here": {
+  "rho_normal": 0.6532,
+  "rho_shear": 0.4667,
+  "spread": "1.40x",
+  "note": "D4's own component spread is mild, so the worst-component theta coincides with the normal-component one and the instance is not in the regime the relaxation fixture warns about. Recorded as a measurement, not a reassurance."
+ }
+}

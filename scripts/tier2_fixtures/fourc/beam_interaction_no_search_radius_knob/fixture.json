@@ -1,0 +1,31 @@
+{
+  "_comment": "Tier-2 for fourc::beam_interaction#2 — a FALSIFICATION. The entry told an agent to tune SEARCH_RADIUS to 2-3 times the beam diameter for beam-to-beam contact. There is no such knob in that framework: SEARCH_RADIUS occurs exactly once in the binary's --parameters schema and it belongs to FLUID BEAM INTERACTION, declared in src/fbi/src/4C_fbi_input.cpp. Writing it into BEAM INTERACTION/BEAM TO BEAM CONTACT or into BINNING STRATEGY is rejected with 'Could not match this input' and 'The following data remains unused'. What governs the search on a beam-contact run is DOMAINBOUNDINGBOX and BIN_SIZE_LOWER_BOUND plus the segmentation angles. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "beam_interaction",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_BTB=1",
+    "EXIT_BIN=1",
+    "BASE_TESTS_CORRECT=3",
+    "Could not match this input",
+    "The following data remains unused",
+    "SEARCH_RADIUS_IN_SCHEMA=1",
+    "FBI_SECTION_IN_SCHEMA=3"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_BTB=0",
+    "EXIT_BIN=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: stop injecting SEARCH_RADIUS into either section. Both arms then parse and run, so the rejection diagnostics vanish and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(anchor, anchor + \"  SEARCH_RADIUS: 0.05\\n\", 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

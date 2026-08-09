@@ -1,0 +1,38 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#12 -- the rule holds, the Signal is FALSIFIED. Upstream fsi_fp_mono_fs_ga_ga.4C.yaml keeps the fluid interface on nodes 13-16 and the structure interface on nodes 17-20 at identical coordinates (SEPARATE_NODES_IN_BOTH_FIELDS=0). Re-pointing the structure element and its DNODE/DSURF/DVOL 2 topology rows at 13-16 makes four nodes belong to both fields (SHARED_NODES_IN_BOTH_FIELDS=4). 4C does not report 'no FSI interface nodes found' (SHARED_CLAIMED_TEXT=0), prints no interface warning at all, and does not run uncoupled: it clones the ale field, integrates 7 of 10 time steps and aborts with 'Nonlinear solver did not converge in 20 iterations in time step 7.' from fsi/src/monolithic/4C_fsi_monolithic.cpp line 740 in FSI::Monolithic::non_lin_error_check(). Reproduced identically on two consecutive runs. Both arms drive the structure from its free end (DNODE 3) rather than the interface so the shared node does not also trip the slave-Dirichlet check, and both have RESULT DESCRIPTION removed because the drive moved; the separate-node arm is the control at exit 0 with 10 steps and no non-convergence. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 12,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "SHARED_NODES_IN_BOTH_FIELDS=4",
+    "SEPARATE_NODES_IN_BOTH_FIELDS=0",
+    "EXIT_SEPARATE=0",
+    "EXIT_SHARED=1",
+    "processor 0 finished normally",
+    "SEPARATE_TIME_STEPS_RUN=10",
+    "SEPARATE_NONCONVERGENCE=0",
+    "Created discretization ale as a clone of discretization fluid",
+    "Nonlinear solver did not converge in 20 iterations in time step 7.",
+    "4C_fsi_monolithic.cpp",
+    "non_lin_error_check",
+    "SHARED_TIME_STEPS_RUN=7",
+    "SHARED_CLAIMED_TEXT=0",
+    "SHARED_ANY_INTERFACE_WARNING=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SEPARATE=1",
+    "EXIT_SHARED=0",
+    "SHARED_NODES_IN_BOTH_FIELDS=0",
+    "SEPARATE_NONCONVERGENCE=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the structure element on its own interface nodes 17-20. The two arms become identical, SHARED_NODES_IN_BOTH_FIELDS drops to 0 (forbidden), the Newton stall disappears and EXIT_SHARED becomes 0 (forbidden), so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "STRUCT_INTERFACE_NODES=\"13 14 15 16\"",
+    "to": "STRUCT_INTERFACE_NODES=\"17 18 19 20\""
+  }
+}

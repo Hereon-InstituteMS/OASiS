@@ -1,0 +1,57 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#4. A 2-step HEX8 run with only the IO section (STRUCT_DISP/OUTPUT_BIN) exits 0 and leaves exactly res.control, res.mesh.structure.s0 and res.result.structure.s0 — and zero .vtu and zero .pvd. The claim that the native files are HDF5 is checked from their magic bytes rather than assumed: both the .mesh and the .result start with the HDF signature while the .control is plain text beginning 'metadata'. Both escapes are then exercised. Adding IO/RUNTIME VTK OUTPUT (INTERVAL_STEPS 1) plus IO/RUNTIME VTK OUTPUT/STRUCTURE (OUTPUT_STRUCTURE + DISPLACEMENT) to the same deck yields 3 .vtu and 1 .pvd during the run. Running the build's post_vtu --file=res on the native output afterwards exits 0 and produces the same 3 .vtu / 1 .pvd from files that had none. post_vtu prints 'You are using the post processing functionality of 4C which is deprecated' and, without --postprocessor_deprecation_warning_off, waits on Enter, so its stdin must be closed in a script. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_NATIVE=0",
+    "EXIT_RUNTIME=0",
+    "processor 0 finished normally",
+    "NATIVE_CONTROL=1",
+    "NATIVE_MESH=1",
+    "NATIVE_RESULT=1",
+    "NATIVE_VTU=0",
+    "NATIVE_PVD=0",
+    "MESH_MAGIC_IS_HDF5=1",
+    "RESULT_MAGIC_IS_HDF5=1",
+    "CONTROL_IS_TEXT=1",
+    "RUNTIME_VTU=3",
+    "RUNTIME_PVD=1",
+    "EXIT_POST_VTU=0",
+    "You are using the post processing functionality of 4C which is deprecated",
+    "AFTER_POST_VTU_VTU=3",
+    "AFTER_POST_VTU_PVD=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "no_post_vtu",
+    "EXIT_NATIVE=1",
+    "EXIT_RUNTIME=1",
+    "EXIT_POST_VTU=1",
+    "RUNTIME_VTU=0",
+    "AFTER_POST_VTU_VTU=0"
+  ],
+  "_mutation": [
+    {
+      "note": "give the plain run the runtime-VTK sections too, so it is no longer the native-only case. NATIVE_VTU stops being 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk ''              \"$TMP/native/in.4C.yaml\"",
+      "to": "mk \"$RUNTIME_VTK\"  \"$TMP/native/in.4C.yaml\""
+    },
+    {
+      "note": "remove the deck-side escape: drop the runtime-VTK sections from the arm that was supposed to demonstrate route (a). RUNTIME_VTU becomes 0 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"$RUNTIME_VTK\"  \"$TMP/runtime/in.4C.yaml\"",
+      "to": "mk ''  \"$TMP/runtime/in.4C.yaml\""
+    },
+    {
+      "note": "remove the post-processing escape: stop running post_vtu on the native files. AFTER_POST_VTU_VTU stops being 3 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "( cd \"$TMP/native\" && stdbuf -oL -eL \"$POST\" --file=res > post.log 2>&1 </dev/null )",
+      "to": "( cd \"$TMP/native\" && echo 'You are using the post processing functionality of 4C which is deprecated' > post.log )"
+    }
+  ]
+}

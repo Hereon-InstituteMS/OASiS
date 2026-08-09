@@ -352,147 +352,20 @@ def register_knowledge_tools(mcp: FastMCP):
         return "Validation errors:\n" + "\n".join(f"- {e}" for e in errors)
 
     @mcp.tool()
-    def get_coupling_knowledge() -> str:
-        """Get complete knowledge for cross-solver domain decomposition coupling.
+    def get_coupling_knowledge(solver: str = "", signal: str = "") -> str:
+        """Complete knowledge for partitioned multi-code coupling via `couple`.
 
-        Returns theory, implementation patterns, pitfalls, and best practices
-        for Dirichlet-Neumann domain decomposition across independent FEM codes.
-        This is essential reading before using coupled_solve or transfer_field.
+        With no solver: the participant contract, the InterfaceData shapes, how
+        the driver iterates and relaxes, the interface-flux sign convention,
+        which side each backend can take, and the failure modes.
+        With a solver name: a COMPLETE runnable participant script for that
+        backend plus the traps specific to it.
+        With a signal: only the failure entries matching that symptom. Describe
+        what you SAW, in your own words, with no mechanism in it — "it converged
+        but the answer is wrong", "the residual stops falling and stays there".
         """
-        return '''\
-# Cross-Solver Coupling via Dirichlet-Neumann Domain Decomposition
-
-## Theory
-
-Dirichlet-Neumann (DN) domain decomposition splits a PDE domain at an interface.
-Two independent solvers handle the subdomains, exchanging boundary data iteratively:
-
-```
-Initialize: guess T_interface (e.g. linear interpolation of BCs)
-
-for iteration in range(max_iter):
-    1. Solve subdomain A (Dirichlet at interface): u_A = solve(BC: T_interface)
-    2. Extract flux: q = -k * du_A/dn at interface
-    3. Solve subdomain B (Neumann at interface): u_B = solve(BC: flux = q)
-    4. Extract temperature: T_new = u_B at interface
-    5. Update: T_interface = θ * T_new + (1-θ) * T_interface
-    6. Check convergence: |T_new - T_old| / |T_new| < tolerance
-```
-
-## Relaxation Parameter θ
-
-- **θ = 1.0**: No relaxation. Works for linear problems WITHOUT source terms
-  (e.g. steady heat conduction T=100→0). Converges in 1 iteration.
-- **θ = 0.5**: Required for problems WITH source terms (e.g. Poisson -Δu=f).
-  Without relaxation, DN oscillates and never converges!
-- **θ = 0.7**: Good default for nonlinear problems (elasticity, coupled physics).
-- **Rule of thumb**: If DN oscillates (residual doesn't decrease), reduce θ.
-
-## Neumann BC Sign Convention
-
-At the interface between subdomains A and B:
-- Domain A solves with Dirichlet BC at interface
-- The flux from A is: q = -k * ∂u_A/∂n_A (outward normal from A)
-- Domain B receives this flux as its Neumann BC
-- In 4C: DESIGN LINE NEUMANN VAL receives the flux value directly
-  (4C convention: the Neumann value is k * ∂u/∂n on the boundary)
-- The outward normal at B's interface boundary points AWAY from B (toward A)
-- Therefore: q_4C = q_FEniCS (same sign — the physical flux is continuous)
-
-## Solver-Specific Details
-
-### FEniCS (Dirichlet subdomain — typically Domain A)
-- Use `mesh.create_rectangle()` for subdomain mesh
-- Apply interface Dirichlet via per-DOF interpolation from coupled values
-- Compute flux via finite difference from neighboring interior nodes
-- Write interface data to `interface_data.json` for transfer
-
-### 4C (Neumann subdomain — typically Domain B)
-- Use TRANSP QUAD4 elements for scalar transport (heat/Poisson)
-- DESIGN LINE NEUMANN CONDITIONS for interface flux
-- Node coordinates must be offset to match subdomain position
-- No IO/RUNTIME VTK OUTPUT section for scatra — use post_vtu conversion
-- Field name in VTU output is `phi_1` (not `temperature`)
-- Always use the LAST VTU file (scatra-00001-0.vtu), not the initial condition
-
-### Field Transfer Between Solvers
-- 4C uses duplicate nodes per element (QUAD4 = 4 nodes per cell → more points)
-- FEniCS uses shared nodes → fewer points
-- Use `extract_interface_from_vtu()` to get interface values from either
-- Use `interpolate_to_points()` for non-matching mesh interpolation
-- Sort interface nodes by tangential coordinate for consistent ordering
-
-## Verified Results (All Solver Combinations)
-
-### Heat DD (T=100 left, T=0 right, no source)
-- Exact solution: T(x) = 100*(1-x), linear
-
-| Solver A | Solver B | Iterations | Final Residual | T(0.5) Error |
-|----------|----------|------------|----------------|--------------|
-| FEniCS   | 4C       | 1          | 3.4e-16        | 0.0          |
-| FEniCS   | FEniCS   | 1          | 4.3e-15        | 4.3e-15      |
-
-### Poisson DD (-Δu=1, u=0 on boundary, θ=0.5)
-- Reference: single-domain FEniCS solve
-
-| Solver A | Solver B | Iterations | Final Residual |
-|----------|----------|------------|----------------|
-| FEniCS   | 4C       | 2          | 1.2e-16        |
-| FEniCS   | FEniCS   | 7          | 9.7e-05        |
-
-- Without relaxation (θ=1.0): oscillates indefinitely!
-
-### Supported Backend Combinations
-- FEniCS (Dirichlet) ↔ 4C (Neumann): fully tested, production ready
-- FEniCS (Dirichlet) ↔ FEniCS (Neumann): fully tested, proves solver-agnosticism
-- Any combination works if `_generate_domain_b_input()` supports the backend
-
-## Common Pitfalls
-
-1. **Missing relaxation**: DN with source oscillates without θ<1. Always test.
-2. **Wrong VTU timestep**: 4C writes initial condition + solution. Use LAST file.
-3. **Field name mismatch**: 4C=phi_1, FEniCS=temperature. Handle in extraction.
-4. **Node duplication**: 4C VTU has 4× more nodes than expected. Still works with
-   extract_interface but interpolation target must match.
-5. **IO/RUNTIME VTK OUTPUT/SCATRA**: May crash 4C. Omit — use post_vtu instead.
-6. **Neumann sign**: Easy to get wrong. Test with linear solution first where
-   exact answer is known.
-
-## Extending to New Problems
-
-The same DN pattern works for:
-- **Elasticity**: Replace temperature with displacement, flux with traction
-- **Coupled thermal-structural**: One-way coupling (heat→stress)
-- **Different physics per subdomain**: e.g. fluid (FEniCS) + structure (4C)
-
-Key changes needed for new physics:
-1. New subdomain script generator (analogous to `_fenics_heat_subdomain_script`)
-2. New 4C input generator (analogous to `_fourc_heat_subdomain_input`)
-3. Appropriate relaxation parameter
-4. Correct field names and transfer format
-
-## Available Coupling Problem Types
-
-| Problem | Description | Solvers |
-|---------|-------------|---------|
-| `heat_dd` | Heat conduction, DN domain decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `poisson_dd` | Poisson with source, DN decomposition | FEniCS↔4C, FEniCS↔FEniCS |
-| `one_way` | FEniCS thermal → 4C structural (TSI) | FEniCS + 4C |
-| `tsi_dd` | Two-way iterative TSI coupling | FEniCS + 4C |
-| `poisson_dd_study` | Relaxation parameter comparison | Any backend pair |
-| `l_bracket_tsi` | L-bracket thermal stress concentration | FEniCS + 4C |
-| `heat_dd_precice` | Our DN vs preCICE comparison | Any + preCICE config |
-
-## Relaxation Parameter Selection Guide
-
-| Scenario | Recommended θ | Reason |
-|----------|--------------|--------|
-| Linear, no source | 1.0 | Exact in 1 iteration |
-| Linear, with source | 0.5 | DN oscillates without relaxation |
-| Nonlinear | 0.7 | Good starting point |
-| Unknown / complex | Aitken | Automatic acceleration |
-| Failing to converge | Reduce θ | Try 0.3, then 0.1 |
-'''
+        from tools.coupling_knowledge import coupling_knowledge
+        return coupling_knowledge(solver, signal)
 
     @mcp.tool()
     def get_tsi_knowledge() -> str:
@@ -576,163 +449,223 @@ FUNCT1:
     SYMBOLIC_FUNCTION_OF_SPACE_TIME: "100.0 * (1.0 - x)"
 ```
 
-### Cross-Solver TSI Workflow
+## TWO-WAY TSI ACROSS TWO CODES, through `couple`
 
-1. FEniCS solves heat equation → temperature field
-2. 4C TSI receives same thermal BCs → solves coupled problem
-3. Compare displacements → cross-validation
-4. Verify against analytical: ΔL = α · T_avg · L (for 1D, ν=0)
+This is a FIELD coupling, not a domain decomposition, and that changes
+everything about how it is set up and checked. Both participants own the WHOLE
+body. There is no interface, no outward normal, and no flux to balance — so
+`couple`'s conservation checks report themselves as NOT RUN, and the only things
+that can catch a wrong answer are the `monolithic=` comparison and the direction
+controls below.
+
+### The two equations, and which term is which direction
+
+Mechanical (quasi-static), THE THERMAL -> MECHANICAL DIRECTION:
+
+    div(sigma) = 0,  sigma = 2 mu eps(u) + lam tr(eps(u)) I - beta (T - T_ref) I
+
+Energy (one implicit step), THE MECHANICAL -> THERMAL DIRECTION is the LAST term:
+
+    rho_c (T - T_old)/dt - div(k grad T) + T_ref*beta*(tr eps(u) - tr eps(u_old))/dt = 0
+
+with `beta = (3 lam + 2 mu) * alpha` the thermal stress modulus. Drop that last
+term and you have a ONE-WAY coupling — a different and much weaker capability.
+Most published "TSI couplings" are one-way and do not say so.
+
+### What each participant exchanges
+
+  thermal  imports the volumetric strain `e = tr(eps(u))`, exports the
+           temperature CHANGE `theta = T - T_ref` at its own nodes;
+  mech     imports `theta`, exports `e` at its own nodes.
+
+EXPORT THE TEMPERATURE CHANGE, NOT THE ABSOLUTE TEMPERATURE. The driver's
+convergence test is a RELATIVE norm, so a quantity carrying a large constant
+offset makes that norm small for free — the same coupling exchanging T in
+kelvin and in celsius reports residuals a factor of ~20 apart. Worse, the offset
+makes the temperature block dominate the global norm, so the STRAIN block hides
+behind it and the run stops while the strain is still moving. Measured on a
+converged pair: exporting absolute T, the global residual read 6e-11 while the
+strain block was still changing by 3e-09 per iteration.
+
+EXPORT THE STRAIN, NOT THE DISPLACEMENT. The energy equation couples to
+d/dt tr(eps), not to u. Exporting u makes the thermal side differentiate a field
+it interpolated off a foreign mesh — the derivative of an interpolant, one order
+of accuracy down. Use a QUADRATIC displacement space with a LINEAR temperature
+space, so tr(eps(u)) lands in the same space the temperature lives in; with
+linear displacement the strain is piecewise constant, one order below the
+temperature, and the coupled answer settles on a different fixed point for that
+reason alone.
+
+### How strong the coupling is, and what theta to use
+
+    delta = T_ref * beta^2 / (rho_c * (lam + 2 mu))
+
+is the classical thermoelastic coupling parameter and it IS the size of the
+reverse direction: in uniaxial strain the reverse coupling multiplies the
+effective heat capacity by (1 + delta). For a real metal delta ~ 1e-2 — small,
+but not zero, and four orders of magnitude above a coupling tolerance of 1e-12.
+
+delta plays exactly the role rho plays for a Dirichlet-Neumann split, so the
+same theta rule applies: the relaxed iteration's amplification is
+sqrt((1-theta)^2 + delta*theta^2), minimised at `theta = 1/(1+delta)`. At
+delta > 1 the UN-RELAXED iteration diverges (amplification sqrt(delta) > 1), so
+relaxation is not optional there.
+
+USE `accelerator="constant"` FOR A STRONGLY COUPLED TSI. This contradicts the
+default and the measurement is the reason. On the same pair at delta ~ 1.25:
+
+    theta=1.0 (un-relaxed)   did NOT converge in 300 iterations; the residual
+                             oscillates rather than falling, which is what the
+                             amplification formula predicts at 1.117
+    theta=0.5                converged,  60 iterations
+    theta=1/(1+delta)        converged,  70 iterations
+    accelerator="aitken"     did NOT converge in 300 iterations, from either
+                             starting theta
+
+At delta ~ 0.012 Aitken converges in 14-15 iterations, so this is not a claim
+that Aitken is broken — it is that a two-way TSI's composite map has eigenvalues
++-i*sqrt(delta), PURELY IMAGINARY, so the residual turns by about a right angle
+each iteration instead of shrinking along a fixed direction. Aitken extrapolates
+along that direction and there is not one. When delta is small the iteration
+converges anyway because every admissible theta does; when delta exceeds one it
+does not, and the constant relaxation the theta rule gives is what works.
+
+### Convergence tolerance: watch the per-block check
+
+`couple` checks each exchanged block separately against tol*10, because a
+global relative norm is set by the largest-magnitude block. The strain block's
+worst ENTRY-WISE relative change runs several times the global residual and has
+its own roundoff floor. Measured on a converged pair: tol=1e-10 left the strain
+block at 1.4e-09 against a limit of 1e-09 (a finding); tol=1e-12 was clean;
+tol=1e-13 put the block on its own floor and produced a finding again. Choose
+tol so the BLOCKS clear, not so the global norm looks small.
+
+AND KEEP THE EXCHANGED FIELDS AWAY FROM ZERO. If the initial temperature equals
+the reference temperature, both exchanged fields are ~0 over most of the body
+after one step and the per-block check — an entry-wise relative change — reports
+blocks "still changing" at 1e-06 on a run whose global residual is 8e-13. Those
+entries carry no information. Offset the initial state instead of loosening the
+check.
+
+### Proving it is actually TWO-way — do not skip this
+
+A "two-way" coupling whose reverse direction changes nothing is one-way with
+extra steps, and nothing in the iteration can tell you which you have. Two
+controls, and the second is the real one:
+
+  1. SUPPRESS the reverse direction and check the answer MOVES. You do not need
+     to edit a participant: give the thermal participant `imports_from: []` and
+     it falls back to its initial strain, which makes the (e - e_old) source
+     term identically zero. `couple` will report ONE-WAY in `validation` — that
+     is the tool confirming the control did what you asked. Both runs use the
+     SAME meshes, so discretisation error is common mode and the only floor is
+     the coupling residual.
+  2. Check it moves BY THE RIGHT AMOUNT. A participant exchanging the wrong
+     quantity, sign or unit would also move when switched off, and would land
+     somewhere else. Run the monolithic reference twice, with and without the
+     reverse term, and compare the coupled two-way-minus-one-way difference
+     against the monolithic one. That is a difference of differences, so it is
+     insensitive to the discretisation error that limits a plain agreement
+     check.
+
+THE SIGN OF THE REVERSE TERM IS THE SILENT-WRONG. Compressing a body heats it
+and expanding it cools it, so the term enters with a PLUS as written above.
+Flipping it converges just as prettily onto a temperature field wrong by twice
+the coupling effect, and no convergence, balance, finiteness or responsiveness
+check can see it. Only a monolithic or native-TSI comparison can.
+
+### Ready-made participants
+
+`data/coupling_participants/participant_tsi_thermal_{skfem,fenics,ngsolve}.py`
+and `participant_tsi_mech_{skfem,fenics,ngsolve}.py`. Each is self-contained,
+has an EDIT THIS BLOCK of placeholders, and follows the standard participant
+contract (reads imports.json, writes exports.json last). Any thermal script
+pairs with any structural script.
+
+## 4C-NATIVE TSI: FOUR THINGS THAT COST A RUN
+
+Each of these was found by running, not by reading, and each produces an error
+whose message points somewhere other than the cause.
+
+1. **THE MESH MUST BE COARSER THAN 1e-3 IN ABSOLUTE UNITS.** 4C matches the
+   structure and thermo discretisations with a geometric octree whose default
+   tolerance is an ABSOLUTE 1e-3 (Coupling::Adapter::Coupling::match_nodes).
+   Below that spacing distinct nodes collapse into one match and the run aborts
+   with `Did not get 1:1 correspondence. masternodes.size()=324 (structure),
+   coupling.size()=320 (thermo)` — a message about node COUNTS whose cause is
+   geometric SCALE. It does not change when you fix the mesh, the conditions or
+   the physics. Pose the problem at metre scale, or coarsen.
+
+2. **TOLTEMP AND TOLDISP ARE ABSOLUTE INCREMENT NORMS.** On a temperature near
+   293 K the increment norm cannot go below ~1e-12, so `TOLTEMP: 1e-14` is under
+   its own roundoff floor. 4C's default `NORMCOMBI_RESFINC: Coupl_And_Single`
+   requires the coupled residual, the coupled increment AND every field's own
+   residual and increment at once, so one unreachable tolerance is enough: a
+   Newton fully converged at iteration 3 grinds to ITEMAX and aborts with
+   `Newton unconverged in 50 iterations`, which reads as a physics failure.
+
+3. **A `Statics` STRUCTURE SILENTLY KILLS THE REVERSE DIRECTION.** 4C's coupling
+   term is assembled from the structural VELOCITY. Run the structure as
+   `DYNAMICTYPE: Statics` and there is no velocity, so the mechanical -> thermal
+   direction vanishes with no message — the run succeeds and is one-way. Use
+   `OneStepTheta` with `THETA: 1.0`, which makes v_{n+1} exactly
+   (d_{n+1} - d_n)/dt, and set a tiny `DENS` if you want the mechanics
+   quasi-static anyway.
+
+4. **ONE LINEAR SOLVER IS ENOUGH for monolithic TSI**, contrary to what the
+   upstream decks suggest. They configure a second Belos/Teko block
+   preconditioner, but `TSI DYNAMIC/MONOLITHIC: MERGE_TSI_BLOCK_MATRIX: true`
+   with a single `SOLVER 1: {SOLVER: UMFPACK}` solves the merged system
+   directly. Verified on a 320-element TSI deck.
+
+### 4C's own reverse term, and how to identify it without reading its source
+
+4C assembles `- N^T . ctemp : (B_L . d') . N . T`, i.e. `+ beta * T * d/dt
+tr(eps)` with the CURRENT temperature where the classical linear theory uses
+T_ref. If you are comparing against a linear-theory implementation, keep the
+temperature EXCURSION small relative to T_ref — everything is linear in the
+excursion, so delta, the relaxation and the relative size of the reverse
+direction are unchanged, while the model difference shrinks with it.
+
+You can confirm 4C's reverse term BLACK BOX, with no source reading: in uniaxial
+strain, 4C's two-way solve at `CAPA` must equal its `tsi_oneway` solve at
+`CAPA*(1+delta)`. If it does, the term is the classical one with the same beta.
+
+### One-way on purpose
+
+`TSI DYNAMIC: COUPALGO: tsi_oneway` with
+`TSI DYNAMIC/PARTITIONED: COUPVARIABLE: Temperature` gives thermal -> structural
+with no feedback. `COUPVARIABLE: Displacement` (the DEFAULT) gives the other
+direction, which is not what "one-way TSI" usually means.
 
 ### Pitfalls
 
 1. **Must use SOLIDSCATRA elements** — standard SOLID or WALL elements cannot couple
 2. **CLONING MAP is mandatory** — without it, 4C crashes at initialization
-3. **Two LINEAR_SOLVERs needed** — one for thermal, one for structural
-4. **THEXPANS units** — must be consistent with temperature units (1/K or 1/°C)
-5. **INITTEMP** — the reference temperature for zero thermal strain
-6. **3D only** — no 2D TSI elements available in 4C
+3. **THEXPANS units** — must be consistent with temperature units (1/K or 1/°C)
+4. **INITTEMP** — the reference temperature for zero thermal strain
+5. **3D only** — no 2D TSI elements available in 4C
 '''
 
     @mcp.tool()
-    def get_precice_knowledge() -> str:
-        """Get knowledge about preCICE coupling and comparison with MCP approach.
+    def get_precice_knowledge(solver: str = "") -> str:
+        """Complete knowledge for preCICE coupling via `couple_precice`.
 
-        Returns preCICE XML config patterns, adapter ecosystem status, and
-        comparison between preCICE and our MCP-orchestrated coupling.
+        With no solver: when to use preCICE instead of `couple`, what you supply
+        versus what OASiS generates, the HARD LIMITS of the generated config,
+        the participant loop, and the launch traps.
+        With a solver name: whether that backend CAN be a preCICE participant on
+        this install, and its backend-specific traps.
+
+        `solver` must be accepted here. This function is reached through
+        `knowledge(topic='precice', solver=...)`, whose wrapper passes the
+        argument positionally; a zero-argument signature made every such call
+        return the string "⚠ `get_precice_knowledge()` raised: `TypeError: ...
+        takes 0 positional arguments but 1 was given`" instead of any payload —
+        the whole preCICE surface, core included, served as an error message.
         """
-        return '''\
-# preCICE Coupling Knowledge
-
-## What is preCICE?
-
-preCICE is an open-source coupling library for partitioned multi-physics.
-It provides mesh mapping, data communication, and coupling schemes between
-independent solvers via adapters.
-
-## preCICE vs MCP-Orchestrated Coupling
-
-| Aspect | preCICE | MCP Agent (ours) |
-|--------|---------|------------------|
-| Architecture | Library linked into each solver | External orchestrator (no code changes) |
-| Config | XML + adapter code per solver | Python (auto-generated) |
-| Mesh mapping | Built-in (RBF, nearest-neighbor) | scipy.griddata + numpy.interp |
-| Coupling schemes | Parallel/serial implicit, explicit | DN iteration (MCP-controlled) |
-| Performance | Optimized C++ | Python loop (sufficient for demos) |
-| 4C support | No adapter exists | Built-in (YAML generation) |
-| FEniCS support | fenicsprecice adapter | Built-in (script generation) |
-| deal.II support | No official adapter | Built-in (template generation) |
-| Setup complexity | Install C++ lib + adapters | pip install (pure Python) |
-| Novelty | Established (2016+) | First MCP-based coupling |
-
-## preCICE XML Configuration Pattern
-
-```xml
-<precice-configuration>
-  <data:scalar name="Temperature" />
-  <data:scalar name="Heat-Flux" />
-
-  <mesh name="Mesh-A" dimensions="2">
-    <use-data name="Temperature" />
-    <use-data name="Heat-Flux" />
-  </mesh>
-
-  <participant name="Dirichlet">
-    <provide-mesh name="Mesh-A" />
-    <write-data name="Temperature" mesh="Mesh-A" />
-    <read-data name="Heat-Flux" mesh="Mesh-A" />
-  </participant>
-
-  <coupling-scheme:serial-implicit>
-    <acceleration:aitken>
-      <initial-relaxation value="0.5" />
-    </acceleration:aitken>
-  </coupling-scheme:serial-implicit>
-</precice-configuration>
-```
-
-## Participant Adapter Pattern (generic — every coupled code follows this)
-
-Each participant is a small script wrapping ONE solver that exchanges the coupling
-fields every time window. Fill in the `<SOLVER>` specifics yourself:
-
-```python
-import precice, numpy as np
-p = precice.Participant("<PARTICIPANT_NAME>", "precice-config.xml", 0, 1)
-# coordinates of YOUR coupling-interface points (the surface/edge shared with the partner):
-coords = np.array([[x0, y0], ...])
-vid = p.set_mesh_vertices("<MESH_NAME>", coords)
-if p.requires_initial_data():
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, initial_outgoing)
-p.initialize()
-while p.is_coupling_ongoing():
-    # --- IMPLICIT coupling: save state at the start of a window so the window can be redone ---
-    if p.requires_writing_checkpoint():
-        saved_state = your_solver.save_state()        # deep-copy solver state (fields, time)
-    dt = p.get_max_time_step_size()
-    incoming = p.read_data("<MESH_NAME>", "<READ_FIELD>", vid, dt)   # field FROM the partner
-    # --- advance YOUR solver by dt, using `incoming` as a boundary condition ---
-    outgoing = ...                                                   # field YOUR solver produces
-    p.write_data("<MESH_NAME>", "<WRITE_FIELD>", vid, outgoing)
-    p.advance(dt)
-    # --- IMPLICIT coupling: if not yet converged, REDO the window from the checkpoint ---
-    if p.requires_reading_checkpoint():
-        your_solver.restore_state(saved_state)
-    # else: window converged -> commit and move to the next time window
-p.finalize()
-```
-
-CHECKPOINTS ARE MANDATORY FOR IMPLICIT SCHEMES. With `serial-implicit`/`parallel-implicit`
-(needed when explicit Dirichlet–Neumann diverges — values blow up to infinity), preCICE
-SUB-ITERATES each time window to convergence, so each participant MUST handle the checkpoint
-calls above: `requires_writing_checkpoint()` (save state) and `requires_reading_checkpoint()`
-(restore state and redo the window). If you ignore these, an implicit run never advances and
-preCICE reports the window unconverged. For `*-explicit` schemes these calls always return
-False, so the same loop works unchanged. Add convergence acceleration
-(`<acceleration:aitken>` or IQN) under the coupling-scheme to make implicit converge fast.
-
-CRITICAL LAUNCH: both participant scripts must run AT THE SAME TIME — they handshake through
-preCICE and each blocks at `initialize()` until the other connects. Start each as its own
-concurrent process (NOT one after the other, and NOT a single `mpirun` over both files), or
-let the `couple_precice` tool launch every participant for you. Set `LD_LIBRARY_PATH` to the
-preCICE lib and match the `pyprecice` version to `libprecice`.
-
-## Adapter Ecosystem
-
-| Solver | preCICE Adapter | Status |
-|--------|----------------|--------|
-| FEniCS | fenicsprecice | Official, maintained |
-| OpenFOAM | openfoam-adapter | Official, widely used |
-| deal.II | No official | Community experiments only |
-| 4C | None | No adapter available |
-| CalculiX | calculix-adapter | Official |
-| SU2 | su2-adapter | Official |
-
-## Key Advantage of MCP Approach
-
-Our coupling does NOT require solver-specific adapters. Any solver that
-produces VTU output can be coupled. The MCP agent handles:
-1. Input generation for each solver
-2. Running solvers independently
-3. Extracting results from VTU
-4. Transferring data between non-matching meshes
-5. Controlling the iteration loop
-6. Checking convergence
-
-This is fundamentally different from preCICE: we treat solvers as black
-boxes orchestrated by an intelligent agent, rather than requiring
-library-level integration.
-
-## Installation (if needed)
-
-```bash
-# Requires C++ library first
-sudo apt install libprecice-dev  # Ubuntu
-# Then Python bindings
-pip install pyprecice
-# FEniCS adapter
-pip install fenicsprecice
-```
-'''
+        from tools.coupling_knowledge import precice_knowledge
+        return precice_knowledge(solver)
 
     @mcp.tool()
     def list_physics(solver: str = "") -> str:

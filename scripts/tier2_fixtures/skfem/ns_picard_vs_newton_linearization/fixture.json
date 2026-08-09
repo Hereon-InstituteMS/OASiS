@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for skfem navier_stokes#5, verified 2026-08-06 on skfem 12.0.1. Claim: the convection linearisation is (u_prev.grad)du + (du.grad)u_prev, and dropping the SECOND term gives Picard, which converges linearly rather than quadratically. This is the neighbour of navier_stokes#1 and is deliberately kept distinct: #1 drops the convection block entirely (Stokes Jacobian), #5 keeps the transport term and drops only the reaction term. Ran: lid-driven cavity at Re=100, Taylor-Hood on MeshTri().refined(3), all THREE Jacobians side by side with the residual always taken from the full Navier-Stokes system. Printed: confirmed -- Newton is quadratic in 4 iterations, Picard converges at a constant ratio (0.3243/0.4195/0.3408/0.3896/... , spread 0.0952) and needs many more, reaching the same solution to 4.797e-12 relative, silently. NEW CAUTION the entry does not give: Picard is not simply 'Newton minus a bit'. Its mean ratio here is 0.3630 against the Stokes Jacobian's 0.1717, so keeping the transport term and dropping the reaction term converges SLOWER than dropping both. 'Closer to the true Jacobian' does not imply 'faster', and the two inexact variants cannot be ranked by inspection. MUTATION CONTROL (re-runnable): T2_MUTATE=1 adds the dropped reaction term C2 back to the 'picard' Jacobian in _harness.iterate(), giving J = A + C1 + C2, i.e. the full Newton linearisation. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 8 expect_in_output strings; under T2_MUTATE=1 the Picard column reproduces Newton's residual history exactly (4 iterations) and 'picard_needs_more_iterations_than_newton=True' and 'picard_rate_is_slower_than_stokes_jacobian=True' are removed, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "navier_stokes", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "newton_is_quadratic=True",
+    "picard_rate_is_constant_linear=True",
+    "picard_needs_more_iterations_than_newton=True",
+    "picard_converged=True",
+    "picard_reaches_the_same_solution=True",
+    "picard_and_stokes_rates_differ=True",
+    "picard_rate_is_slower_than_stokes_jacobian=True",
+    "three_distinct_iterations=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 300
+}

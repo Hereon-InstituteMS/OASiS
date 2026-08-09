@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for sparta rarefied_flow: the four ways a per-cell diagnostic lies while the run exits 0 with no error and no warning. Six decks were run on the installed binary (SPARTA 24 Sep 2025, spa_serial), all the same 1 mm 2d argon box, differing only in grid resolution, fix ave/grid sample count, or timestep. rarefied_flow:1 \u2014 at step 0 the fix ave/grid has produced nothing and compute lambda/grid returns the BIG sentinel; and with a single-sample fix on a refined grid the Kn MAXIMUM stays pinned at the sentinel on every stats line while the Kn minimum reads a perfectly ordinary few, so reducing with min alone never sees it. rarefied_flow:3 \u2014 the 200x200 grid has a per-cell particle minimum of exactly 0 and still reports a plausible collision count. rarefied_flow:0 \u2014 the 5x5 grid has a cell Knudsen minimum below 1 (cells larger than a mean free path) while holding twenty times MORE particles per cell than the resolved grid, so a particle-count check passes on the broken case. rarefied_flow:2 \u2014 compute dt/grid returns the same recommendation whether the deck sets a timestep a hundred times larger or a hundred times smaller, a 10000x span, and the too-large one exits 0. rarefied_flow:7 \u2014 and none of it shows up in the collision column, because a box at rest has no gradient for the errors to act on: Ncoll spans a factor of nearly nine thousand across those runs while the collision RATE (Ncoll divided by the timestep that produced it) spans 1.13, and the 16x cell-count change moves the rate by 2 %. So a dt or grid study on an equilibrium box measures nothing. Nothing is asserted against a stored value: the sentinel is identified by being fifteen orders of magnitude from the healthy value IN THE SAME RUN, the resolution claims are comparisons between two grids, and the dt/grid and equilibrium claims are ratios between runs in this script. COVERS: rarefied_flow:0, :1, :2, :3, :7. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 runs the two UNDER-RESOLVED decks (200x200 and 100x100, both single-sample) on the resolved 20x20 grid instead, removing the refined-past-one-particle-per-cell pathology and changing nothing else - same fix ave/grid sample count, same timestep, same seed. The per-cell particle minimum then goes from exactly 0 to 32 and the cell Knudsen MAXIMUM from 2e+25 (refined) and 1e+25 (one-sample) to 4.184 in both, i.e. the sentinel is gone. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: the_sentinel_persists_on_a_refined_grid=True, the_refined_grid_has_empty_cells=True. The coarse-grid, dt/grid and equilibrium-box claims run on decks this control does not touch, so it does not speak for them. Re-verify: cd scripts/tier2_fixtures/sparta/per_cell_diagnostics_sentinel_and_resolution && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line. 2026-08-07: this fixture's `< 0.2` spread assertion was decided by its pinned seed, not by the physics. rate() sampled r['ncoll'][-1] \u2014 ONE timestep of a Monte-Carlo code. Seed sweep on the single-sample version: 12345->0.116, 24680->0.152, 99991->0.232 FAIL, 31337->0.123, 5150->0.031, 8675309->0.086. It passed because 12345 was lucky. Fixed by averaging over the run rather than re-pinning a luckier seed; same six seeds now give 0.00896, 0.01077, 0.01184, 0.04758, 0.06324, 0.08331 \u2014 worst case 2.4x below the threshold. Measured 2026-08-07 by substituting the seed in a staged copy; note the substitution must not be line-anchored, since `seed 12345` shares a line with DECK = \"\"\", and a no-op sed silently reports six identical values.",
+  "backend": "sparta",
+  "physics": "rarefied_flow",
+  "pitfall_index": 1,
+  "covers": [
+    "rarefied_flow:0",
+    "rarefied_flow:1",
+    "rarefied_flow:2",
+    "rarefied_flow:3",
+    "rarefied_flow:7"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "every_run_exits_zero_with_no_error_and_no_warning=True",
+    "unfed_fix_returns_the_sentinel_at_step_0=True",
+    "the_sentinel_persists_on_a_refined_grid=True",
+    "while_the_minimum_still_looks_healthy=True",
+    "the_refined_grid_has_empty_cells=True",
+    "coarse_cells_are_larger_than_a_mean_free_path=True",
+    "the_resolved_grid_is_not=True",
+    "a_particle_count_check_does_NOT_catch_the_coarse_grid=True",
+    "dt_grid_recommends_the_same_dt_across_a_10000x_timestep_change=True",
+    "a_timestep_far_above_the_recommendation_still_exits_zero=True",
+    "the_raw_Ncoll_column_moves_far_more_than_the_rate=True",
+    "an_equilibrium_box_is_insensitive_to_both_errors=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

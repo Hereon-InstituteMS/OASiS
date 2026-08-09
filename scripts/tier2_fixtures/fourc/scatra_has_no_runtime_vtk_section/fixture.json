@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#2 — scalar transport has no runtime-VTK section and needs none; naming one is fatal, not merely ineffective. A deck carrying no output section at all (AUTO_DECK_HAS_IO_SECTION=0) exits 0 and still writes five scatra-*.vtu files plus <prefix>-scatra.pvd, with the nodal array named phi_1. Both section names an agent might invent are rejected before anything runs, by section-name validation in core/io/src/4C_io_input_file.cpp: \"Section 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' is not a valid section name.\" and \"Section 'IO/RUNTIME VTK OUTPUT/SCATRA' is not a valid section name.\" Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "AUTO_DECK_HAS_IO_SECTION=0",
+    "EXIT_AUTO=0",
+    "EXIT_SCATRA_SECTION=1",
+    "EXIT_IO_SECTION=1",
+    "processor 0 finished normally",
+    "Section 'SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT' is not a valid section name.",
+    "Section 'IO/RUNTIME VTK OUTPUT/SCATRA' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "AUTO_VTU_COUNT=5",
+    "AUTO_PVD=yes",
+    "AUTO_VTU_ARRAY_NAME=phi_1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_AUTO=1",
+    "EXIT_SCATRA_SECTION=0",
+    "EXIT_IO_SECTION=0",
+    "AUTO_VTU_COUNT=0",
+    "AUTO_PVD=no",
+    "AUTO_VTU_ARRAY_NAME=absent"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the first bad arm: drop the invented section. It becomes the baseline, EXIT_SCATRA_SECTION goes to 0 and its rejection message disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1,\\\"extra_sections\\\":\\\"SCALAR TRANSPORT DYNAMIC/RUNTIME VTK OUTPUT:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1}\" \\"
+    },
+    {
+      "note": "remove the pathology from the second bad arm the same way; its rejection message disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1,\\\"extra_sections\\\":\\\"IO/RUNTIME VTK OUTPUT/SCATRA:\\n  OUTPUT_SCATRA: true\\n\\\"}\" \\",
+      "to": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1}\" \\"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii wave#0. Tier-2 for dealii wave#0 \u2014 probe \"newmark_beta_stability\" of the shared wave translation unit _shared/wave_family.cc (Newmark in acceleration form on d^2u/dt^2 = c^2 laplacian(u), built-in SparseMatrix + CG/SSOR). Compiled once and cached; six fixtures share the one build. beta = 0.10 < gamma/2 = 0.25 at dt = 0.05: the amplitude leaves the bounded range within 20 steps. The SAME dt with the canonical (0.25, 0.5) pair is run in the same process as the contrast and stays at O(0.2). Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant (beta = 0.25), and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "wave",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "run_amplitude_diverged=true",
+    "beta_below_gamma_over_two=true",
+    "left_bounded_range_within_50_steps=true",
+    "canonical_pair_stayed_bounded=true",
+    "VERDICT=beta_below_gamma_over_two_diverges_at_this_dt"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=amplitude_stayed_bounded"
+  ],
+  "timeout_seconds": 900
+}

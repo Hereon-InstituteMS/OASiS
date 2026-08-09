@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#21 — PROBLEM SIZE is declared {.required = false} in src/global_legacy_module/4C_global_legacy_module_validparameters.cpp and its ELEMENTS / NODES / MATERIALS / NPATCHES / NUMDF counts are read into a parameter list and then never consumed (the 4C source comments them as unused, 'Misuse is possible'). The same 1-element HEX8 cantilever is run three ways — no PROBLEM SIZE section at all, correct counts, and absurd counts (999 elements / 7 nodes / 42 materials against a real 1-element 8-node 1-material mesh). All three exit 0, and each carries the SAME RESULT DESCRIPTION pinned to 4.47909266337460053e-03 at TOLERANCE 1e-12, so a passing exit code also proves the counts do not perturb the answer. This corrects the earlier catalogue claim that PROBLEM SIZE is a mandatory section. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable) - a POSITIVE control, and the fixture is in the class that needs one: its claim is that two decks behave identically, which two identical decks satisfy a fortiori, so removing the absurd counts cannot make it red. The mutation instead perturbs the absurd_counts arm's pinned dispy from 4.47909266337460053e-03 to 4.52388359000834654e-03 against TOLERANCE 1e-12; 'absurd_counts: EXIT=0' disappears and the forbidden 'absurd_counts: EXIT=1' appears, which proves the three EXIT probes are gated on the answer rather than constant. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 21,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "absent: EXIT=0",
+    "correct_counts: EXIT=0",
+    "absurd_counts: EXIT=0"
+  ],
+  "forbid_in_output": [
+    "absent: EXIT=1",
+    "absurd_counts: EXIT=1"
+  ],
+  "_mutation": {
+    "note": "POSITIVE control, because this fixture asserts an ABSENCE of effect and no removal of its pathology can make it red - correcting the absurd counts merely turns the third arm into a copy of the second, which passes a fortiori. Instead the mutation perturbs the pinned RESULT DESCRIPTION displacement in the absurd_counts arm by 1%, far outside its 1e-12 tolerance. 4C's own result test fails, the arm exits 1, 'absurd_counts: EXIT=0' disappears and the forbidden 'absurd_counts: EXIT=1' appears. What that rules out is the only thing that could make the fixture worthless: three arms whose exit codes are 0 whatever the solver did.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

@@ -34,14 +34,26 @@ Weak Stokes:
 Expected at h=1/32, P2/P1:
   ||u - u_exact||_L2 ≲ 5e-4   (P2 velocity, O(h^3))
   ||p - p_exact||_L2 ≲ 5e-3   (P1 pressure, O(h^2))
+
+Mutation control: T2_MUTATE=1 omits grad(p_ex) from the manufactured
+load (f = -ν Δu_ex only). The system still solves, still prints four
+real numbers, and the VELOCITY leg is untouched — (u_ex, 0) is the
+exact solution of the mutated system, so u still converges at ~3.
+The PRESSURE leg is the one that goes: p_h → 0 while p_ex is not 0,
+so ||p - p_ex||_L2 sticks at ||p_ex||_L2 = 0.5 and its EOC collapses
+to ~0. Isolating one leg is deliberate — it shows the pressure
+assertion is live and not carried by the velocity one.
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_stokes_mms(nx: int) -> tuple[float, float]:
@@ -74,7 +86,11 @@ def run_stokes_mms(nx: int) -> tuple[float, float]:
     ])
     p_ex = (ufl.sin(ufl.pi * x[0])
             * ufl.cos(ufl.pi * x[1]))
-    f = -nu * ufl.div(ufl.grad(u_ex)) + ufl.grad(p_ex)
+    # MUTATE: drop the pressure gradient from the manufactured load,
+    # so the load is inconsistent with p_ex.
+    f = -nu * ufl.div(ufl.grad(u_ex))
+    if not MUTATE:
+        f = f + ufl.grad(p_ex)
 
     (u, p) = ufl.TrialFunctions(W)
     (v, q) = ufl.TestFunctions(W)

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for dealii convection_diffusion#2. Tier-2 for dealii convection_diffusion#2 -- probe \"upwind_direction\" of the shared translation unit _shared/convdiff_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. The same DG transport with the numerical flux taking the DOWNSTREAM cell value. Two operators are run: pure advection, where the flipped flux gives a singular matrix, and the same transport with a reaction term sigma*u, which is non-singular for both flux choices so the question 'where does the inflow datum end up' has an answer. It does not end up at the outflow: it produces an O(1e3) oscillation instead. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "convection_diffusion",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "flux_takes=downstream_value",
+    "pure_advection_direct_solve=threw",
+    "UMFPACK reports that the matrix is singular",
+    "inflow_datum_is_carried_with_the_flow=false",
+    "VERDICT=flipped_flux_does_not_transport_the_inflow_datum"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=upwind_flux_transports_with_the_flow"
+  ],
+  "timeout_seconds": 900
+}

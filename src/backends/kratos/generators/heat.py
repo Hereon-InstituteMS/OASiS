@@ -188,15 +188,13 @@ KNOWLEDGE = {
             "forward_euler": "theta=0.0, conditionally stable (dt < h^2/(2*kappa))",
         },
         "pitfalls": [
-                        '[Numerical] Backward Euler: factor (M + dt*K) once and reuse each step '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Numerical] Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                        '[Physics] For varying BCs in time: update Dirichlet values each step '
-                        'Signal: the post-processed VtkOutput .post.bin shows the integrated_flux / max_displacement / PRESSURE channels disagreeing with analytic / textbook reference by 10-100%.',
-                        '[Numerical] Consistent mass matrix gives better accuracy than lumped '
-                        "Signal: solver reports 'Convergence is not achieved' / 'iteration count exceeded' / oscillating residual; reported quantity disagrees with analytic reference by an order-of-magnitude factor.",
-                    ],
+            "[Numerical] Backward Euler: factor (M + dt*K) once and reuse each step Signal: a loop that claims backward Euler but carries the Dirichlet columns on the old step only picks up a per-step increment that does NOT vanish as dt shrinks. For pure diffusion with no source the discrete maximum principle then breaks: the peak temperature rises above the largest prescribed boundary value, and refining the time step makes it worse instead of converging.",
+            "[Numerical] Crank-Nicolson: (M + 0.5*dt*K)*T_new = (M - 0.5*dt*K)*T_old Signal: implemented correctly the scheme is second order in time \u2014 halving dt cuts the error by about a factor of four. A first-order rate on the same mesh means the theta weighting or the Dirichlet elimination is wrong, not that the mesh is too coarse.",
+            "[Numerical] Consistent mass matrix gives better accuracy than lumped Signal: the consistent element mass carries non-zero off-diagonal entries while its row-sum lumping is exactly diagonal with identical row sums; swapping in the lumped form raises the time-discretisation error at fixed dt without changing the total heat capacity.",
+        ],
+        "guidance": [
+            "[Physics] For varying BCs in time: update Dirichlet values each step",
+        ]
     },
 }
 

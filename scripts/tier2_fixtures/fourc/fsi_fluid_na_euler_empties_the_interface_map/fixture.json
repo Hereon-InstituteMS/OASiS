@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#1 and a FALSIFICATION of both halves of its Signal. The entry claimed that FLUID elements left at NA: Euler either trigger 'fluid element type incompatible with ALE mesh motion' or run for ~10 steps with a non-moving mesh until Newton diverges. Neither happens. Rewriting the three 'FLUID HEX8 ... MAT 2 NA ALE' lines of upstream fsi_fp_mono_fs_ga_ga.4C.yaml to NA Euler aborts inside FSI::Monolithic::setup_system before time step 1 (EULER_TIME_STEPS_RUN=0, EULER_NEWTON_STEPS=0) with 'got 4 master nodes but 0 slave nodes for coupling' from coupling/src/adapter/4C_coupling_adapter.cpp line 69 -- the structure side of the FSI interface has its 4 nodes, the fluid side has none because a non-ALE fluid field carries no FSI interface map. The log names neither the element nor the NA keyword (EULER_MENTIONS_NA_KEYWORD=0) and never contains the claimed phrase (EULER_CLAIMED_TEXT=0). The unmodified deck is the control: exit 0, 'processor 0 finished normally', OK (6). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EULER_ARM_FLUID_ELEMENTS_WITH_NA_ALE=0",
+    "EULER_ARM_FLUID_ELEMENTS_WITH_NA_EULER=3",
+    "EXIT_ALE=0",
+    "EXIT_EULER=1",
+    "processor 0 finished normally",
+    "OK (6)",
+    "got 4 master nodes but 0 slave nodes for coupling",
+    "4C_coupling_adapter.cpp",
+    "FSI::Monolithic::setup_system",
+    "EULER_TIME_STEPS_RUN=0",
+    "EULER_NEWTON_STEPS=0",
+    "EULER_CLAIMED_TEXT=0",
+    "EULER_MENTIONS_NA_KEYWORD=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ALE=1",
+    "EXIT_EULER=0",
+    "EULER_ARM_FLUID_ELEMENTS_WITH_NA_EULER=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the fluid elements Eulerian in name only by substituting ALE back in. The bad arm becomes a copy of the working deck, EXIT_EULER drops to 0 (a forbidden token) and the coupling abort disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "FLUID_NA=Euler",
+    "to": "FLUID_NA=ALE"
+  }
+}

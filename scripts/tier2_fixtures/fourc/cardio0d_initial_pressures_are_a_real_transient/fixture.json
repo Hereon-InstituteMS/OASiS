@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::cardiovascular0d#3. Upstream cardiovascular0d_syspulcirculation_0d_heart seeds every 0D compartment with a p_*_0 pressure and passes all 24 result tests. Zeroing the left-heart and systemic-arterial seeds and running the identical 0.9 s cycle leaves 16 of 24 wrong: p_v_l ends at 0.319739 against 1.046055, i.e. 0.31 of the settled value after a full cardiac cycle, and p_ar_sys at 1.213995 against 5.267289; mitral inflow q_vin_l goes from -0.033332 to +2.6255e+04. Every step converges cleanly and WARMUP_DIAGNOSTICS=0 -- 4C has no 'still in warm-up' or periodicity check. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiovascular0d",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_ZEROED=1",
+    "BASE_TESTS_CORRECT=24",
+    "ZEROED_TESTS_WRONG=16",
+    "ZEROED_REACHED_RESULT_TEST=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 3.19738764868961745e-01",
+    "is WRONG --> actresult= 1.21399475818086588e+00",
+    "ZEROED_VENTRICULAR_PRESSURE_FRACTION_OF_SETTLED=0.31",
+    "WARMUP_DIAGNOSTICS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_ZEROED=0",
+    "ZEROED_TESTS_WRONG=0",
+    "ZEROED_REACHED_RESULT_TEST=0",
+    "ZEROED_VENTRICULAR_PRESSURE_FRACTION_OF_SETTLED=1.00"
+  ],
+  "_mutation": {
+    "note": "restore the systemic-arterial seed: the transient is much smaller, p_v_l and p_ar_sys move back towards their settled values and the asserted numbers change, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "ZEROED_P_AR_SYS_0=0.0",
+    "to": "ZEROED_P_AR_SYS_0=9.68378038166"
+  }
+}

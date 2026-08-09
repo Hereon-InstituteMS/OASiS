@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#6 — for a stationary Poisson problem DIRICH and NEUMANN both run and answer different questions, and nothing in the log tells you which one you asked. Same TRANSP TRI3 deck with TIMEINTEGR 'Stationary' and phi=1 held on the left edge, differing only in the right edge: DESIGN LINE DIRICH VAL 0 gives centre value 5.00000000000000111e-01, DESIGN LINE NEUMANN VAL 2 gives 1.99999999999999822e+00. Both exit 0, both emit zero 'PROC 0 ERROR in' lines, and nothing anywhere mentions the substitution (SWAP_WARNED=0). The third arm is the entry's own advice executed: the NEUMANN deck carrying the DIRICH deck's expected value fails loudly — 'is WRONG --> actresult= 1.99999999999999822e+00, givenresult= 5.00000000000000111e-01' from core/utils/src/result_test/4C_utils_result_test.cpp — and exits 1. Pinning the boundary value with a RESULT DESCRIPTION entry is what converts a silently different answer into a red run. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "DIRICH_DECK_HAS_NEUMANN_SECTION=0",
+    "NEUMANN_DECK_HAS_NEUMANN_SECTION=1",
+    "EXIT_DIRICH=0",
+    "EXIT_NEUMANN=0",
+    "EXIT_SWAPPED=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "DIRICH_DECK_EXPECTS=0.500000000000000111",
+    "NEUMANN_DECK_EXPECTS=1.99999999999999822",
+    "DIRICH_ERROR_LINES=0",
+    "NEUMANN_ERROR_LINES=0",
+    "SWAP_WARNED=0",
+    "is WRONG --> actresult= 1.99999999999999822e+00, givenresult= 5.00000000000000111e-01",
+    "4C_utils_result_test.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_DIRICH=1",
+    "EXIT_NEUMANN=1",
+    "EXIT_SWAPPED=0",
+    "NEUMANN_DECK_HAS_NEUMANN_SECTION=0",
+    "SWAP_WARNED=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the swapped arm: give it the value its own boundary condition produces. It stops failing, the 'is WRONG' line disappears and the fixture must go red — that line is the whole point of the entry.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"right_condition\\\":\\\"neumann\\\",\\\"right_val\\\":\\\"[2.0]\\\",\\\"results\\\":[[$NODE,$DIRICH_TRUE,1e-12]]}\" \\",
+      "to": "pois \"{\\\"right_condition\\\":\\\"neumann\\\",\\\"right_val\\\":\\\"[2.0]\\\",\\\"results\\\":[[$NODE,$NEUMANN_TRUE,1e-12]]}\" \\"
+    },
+    {
+      "note": "make the two arms ask the same question: give the NEUMANN arm a DIRICH right edge. NEUMANN_DECK_HAS_NEUMANN_SECTION becomes 0 and its result test fails, so the fixture must go red — the contrast only exists while the two conditions really differ.",
+      "file": "cmd.sh",
+      "from": "pois \"{\\\"right_condition\\\":\\\"neumann\\\",\\\"right_val\\\":\\\"[2.0]\\\",\\\"results\\\":[[$NODE,$NEUMANN_TRUE,1e-12]]}\" \\",
+      "to": "pois \"{\\\"right_condition\\\":\\\"dirich\\\",\\\"right_val\\\":\\\"[2.0]\\\",\\\"results\\\":[[$NODE,$NEUMANN_TRUE,1e-12]]}\" \\"
+    }
+  ]
+}

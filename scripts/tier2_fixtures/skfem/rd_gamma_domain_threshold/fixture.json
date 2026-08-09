@@ -1,0 +1,25 @@
+{
+  "_comment": "Verifies the qualitative half of reaction_diffusion pitfall 7 on scikit-fem 12.0.1 (2026-08-06) and falsifies the quoted inequality. 16x16 ElementQuad1 (289 DOFs), a=0.1 b=0.9 d_u=1 d_v=40, unit square, dt=0.1, 80 backward-Euler steps, same seed and 1e-2 perturbation: gamma = 8 -> 3.6e-14, gamma = 10 -> 4.2e-11, gamma = 12 -> 6.7e-07 (monotonically decaying), gamma = 20 -> 3.3e+00 (pattern). Too small a gamma does leave the homogeneous state stable on the domain, as claimed. But gamma = 10 and gamma = 12 both EXCEED the quoted threshold pi^2*(a+b)^2 = 9.8696 and still produce nothing: the correct criterion is that the smallest non-zero Neumann mode pi^2/L^2 must lie inside the unstable band gamma*[0.033726, 0.741274], giving gamma_crit = pi^2/0.741274 = 13.3144 on the unit square. The fixture also asserts lambda_max*dt < 2 for every gamma it runs, so backward Euler cannot be masking growth here - that keeps this fixture distinct from reaction_diffusion#0. MUTATION CONTROL (re-runnable): T2_MUTATE=1 raises GAMMA_WRONG from the sub-threshold 12.0 to GAMMA_RIGHT = 20.0, past the real domain threshold 13.31 -- the documented fix. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 makes the sub-threshold run pattern and removes 'gamma_12_spread_lt_1e_5=True', 'gamma_12_spread_monotonically_decaying=True', 'empirical_threshold_between_12_and_20=True' and 'quoted_inequality_falsified=True', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "n_dofs=289",
+    "n_elements=256",
+    "analytic_gamma_crit_between_13_and_14=True",
+    "claim_formula_below_analytic_threshold=True",
+    "dt_cannot_mask_growth=True",
+    "gamma_8_spread_lt_1e_10=True",
+    "gamma_10_above_claim_formula=True",
+    "gamma_10_spread_lt_1e_6=True",
+    "gamma_12_above_claim_formula=True",
+    "gamma_12_spread_lt_1e_5=True",
+    "gamma_12_spread_monotonically_decaying=True",
+    "gamma_20_spread_gt_1p0=True",
+    "empirical_threshold_between_12_and_20=True",
+    "quoted_inequality_falsified=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2: the yield-surface tags VonMises / Tresca / DruckerPrager / MohrCoulomb / ModifiedMohrCoulomb / Rankine / SimoJu are not constitutive laws on their own — they exist only as substrings inside a composite law name. Pitfall (kratos.constitutive_laws #7). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv). Kernel.HasConstitutiveLaw() is False for all seven bare tags and True for the composite SmallStrainIsotropicPlasticity3DVonMisesVonMises, so {\"constitutive_law\": {\"name\": \"VonMises\"}} in Materials.json cannot resolve. The fixture imports KratosMultiphysics for real; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 8 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 8. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 8 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/yield_surface_tags_are_not_laws && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "constitutive_laws",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[registered_VonMises]=False_expected=False",
+    "probe[registered_Tresca]=False_expected=False",
+    "probe[registered_DruckerPrager]=False_expected=False",
+    "probe[registered_MohrCoulomb]=False_expected=False",
+    "probe[registered_ModifiedMohrCoulomb]=False_expected=False",
+    "probe[registered_Rankine]=False_expected=False",
+    "probe[registered_SimoJu]=False_expected=False",
+    "probe[registered_composite]=True_expected=True",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

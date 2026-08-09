@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2: strategy.Check() called before strategy.Initialize() SEGFAULTS on a SlidingCableElement3D3N model — the element Check dereferences the constitutive-law pointer, which is only cloned in Initialize(). Pitfall (kratos.cable_net #0). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). REPRODUCED: a child process builds the strategy, prints REACHED_STRATEGY, then dies on strat.Check() with returncode -11 (SIGSEGV) and no Kratos exception and no Python traceback. The documented fix is asserted too — calling strat.Initialize() first and THEN Check() exits 0 and prints SURVIVED — so the fixture pins a crash that has a remedy rather than a crash alone. Run in a subprocess because a SIGSEGV cannot be caught in-process; the returncode is the observation. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 calls strat.Initialize() before strat.Check() in the run that is supposed to crash, using the documented order; that subprocess then exits 0 and survives instead of dying on SIGSEGV (rc -11 -> 0). Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: check_first_returncode=-11, check_first_survived=False, cable_check_order_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/cablenet_check_before_initialize_segfaults && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "check_first_reached_strategy=True",
+    "check_first_returncode=-11",
+    "check_first_survived=False",
+    "initialize_first_returncode=0",
+    "initialize_first_survived=True",
+    "cable_check_order_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 600
+}

@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for dune::helmholtz#0, dune::helmholtz#3 and dune::maxwell#1 \u2014 k^2 is a dune.ufl.Constant so sweeping k is free and only the direct-solver scheme is a second module; wall time 212 s on 2026-08-06, dune-fem 2.12.0.2. Manufactured solution u = sin(pi x) sin(pi y) of -Laplace(u) - k^2 u = (2 pi^2 - k^2) u on a 16x16 P1 grid. At k=2 (definite) CG gives L2 error 2.252561e-03; at k=10 (indefinite) it RAISES NOTHING, emits no warning, and reports converged=True with iterations=0 and linear_iterations=1 \u2014 the exact triple the catalog records. The sharpest evidence for 'you get NO diagnostic' is that the info dict is BYTE-IDENTICAL across the definite CG solve, the indefinite CG solve and the indefinite direct solve: (True, 0, 1) in all three cases, so the report cannot distinguish them. Here the indefinite CG answer happens to be FINE \u2014 1.095096e-03, the same discretisation error as the direct solve \u2014 which is the point: nothing in the run tells you whether you were lucky, so the manufactured solution is the only detector. Two further checks: the string 'matrix not positive definite' occurs 0 times across both dune namespace roots, so the retraction of that Signal stands; and helmholtz#3's 'vanilla ILU stalls' is FALSE \u2014 'ilu' and 'amg' are not in the preconditioner enumeration at all and are rejected with RuntimeError at scheme construction, so there is no ILU to stall. MUTATION CONTROL (2026-08-07): NOT MUTABLE, recorded deliberately -- this fixture carries no T2_MUTATE hook. Its claim is that dune-fem's report is UNINFORMATIVE: the info dict is byte-identical, (True, 0, 1), for a definite CG solve, an indefinite CG solve and an indefinite direct solve, and no warning and no exception is emitted. Removing that pathology would mean dune-fem EMITTING a diagnostic, which no change to this script can bring about; lowering k back into the definite range leaves the report identical, which is the very thing being asserted, so such a mutation would still pass and would be evidence of nothing. The subsidiary assertions here are falsifiable by construction and already written that way: 'matrix not positive definite' is COUNTED across both dune namespace roots (0 occurrences) and the ilu/amg rejection is an exception that is caught and inspected. What has no mutation is the headline -- an absence of output cannot be removed from the outside. ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "helmholtz",
+  "pitfall_index": 0,
+  "covers": [
+    "helmholtz:0",
+    "helmholtz:3",
+    "maxwell:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1500,
+  "expect_in_output": [
+    "k2_small_answer_is_right=True",
+    "k10_raised_nothing=True",
+    "k10_warnings=[]",
+    "k10_converged=True",
+    "k10_iterations=0",
+    "k10_linear_iterations=1",
+    "k10_reports_success=True",
+    "solver_reports={'definite_cg': (True, 0, 1), 'indefinite_cg': (True, 0, 1), 'indefinite_direct': (True, 0, 1)}",
+    "solver_report_is_identical_for_all_three=True",
+    "errors_are_discretisation_sized=True",
+    "only_the_answer_can_detect_it=True",
+    "matrix_not_positive_definite_occurrences=0",
+    "retracted_string_is_absent=True",
+    "preconditioner_ilu_rejected=RuntimeError",
+    "preconditioner_amg_rejected=RuntimeError",
+    "ilu_does_not_exist_so_it_cannot_stall=True",
+    "dune_indefinite_helmholtz_silence_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

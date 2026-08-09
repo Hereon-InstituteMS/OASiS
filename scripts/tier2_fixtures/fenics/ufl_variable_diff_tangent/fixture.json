@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for fenics hyperelasticity#3: ufl.variable(F) marks F as differentiation target; ufl.diff(W, F_var) returns a VariableDerivative usable in residual forms. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for fenics hyperelasticity#3: ufl.variable(F) marks F as differentiation target; ufl.diff(W, F_var) returns a VariableDerivative usable in residual forms. Verified empirically 2026-06-01. MUTATION CONTROL (T2_MUTATE=1, re-runnable): dropping the ufl.variable() wrapper makes the probe measure 'F_var_type=Sum' and 'P_type=refused_ValueError Expecting a Variable or SpatialCoordinate in diff.', so both expectations, 'F_var_type=Variable' and 'P_type=VariableDerivative', go missing. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "hyperelasticity",
   "pitfall_index": 3,
@@ -8,5 +8,11 @@
     "F_var_type=Variable",
     "P_type=VariableDerivative"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "Antidote: skip the ufl.variable() wrapper — the exact step the pitfall says not to forget — and differentiate with respect to the bare F. Both measurements change: F is a Sum, and ufl.diff refuses the target. The diff call is caught and printed rather than allowed to abort, so the kill is the flipped measurement and not a traceback.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

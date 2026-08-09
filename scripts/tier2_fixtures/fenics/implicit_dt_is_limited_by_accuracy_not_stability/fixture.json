@@ -1,0 +1,23 @@
+{
+  "_comment": "CLAIM time_dependent_heat::9: [Numerical] Backward Euler and Crank-Nicolson are implicit, so there is NO CFL condition and dt is limited only by accuracy: backward Euler is first-order in time, Crank-Nicolson second-order. Sizing dt from an explicit-stability formula such as dt < h^2/(2*alpha) just multiplies the number of \u2026 WHAT THIS RUNS: backward Euler is implicit, so there is NO CFL condition - dt is limited only by accuracy. Sizing dt from an explicit-stability formula such as dt < h^2/(2*alpha) just multiplies the number of steps for nothing, and conversely a dt so large that it smears the transient produces a perfectly stable, perfectly converged, physically useless answer. Only a probe history at two different dt values shows it. Unit square 32x32 (h = 1/32, alpha = 1, so the explicit limit is h^2/2 = 4.883e-04). T = 0 initially; the left wall is held at 1 for a pulse of duration 0.01 and at 0 afterwards; end time 0.05. A point two cells from the wall is probed every step with Function.eval against a bb_tree cell candidate, and the peak of that probe history is compared against a fine reference at dt_exp/4. Observed: every dt from dt_exp/4 up to 50*dt_exp is stable - finite, bounded by 1, KSP converged reason 4 at every step - so nothing enforces the explicit limit. dt_exp needs 102 steps for a probe peak 3.2% off the reference while 5*dt_exp needs 20 steps for 6.9%: the explicit-limit run buys accuracy that a five times cheaper run already had. At 25*dt_exp and 50*dt_exp the wall pulse falls entirely between two time levels, the field never leaves 0.000000 anywhere, the probe peak is exactly 0.0 - 100% wrong - and every solve still reports converged reason 4. Note also that the SMALLEST dt is the one that dips to -0.1290: small steps are not automatically safer on a P1 mass matrix. OBSERVED, copied from the run: no_dt_blew_up_every_run_reported_reason_4=True; explicit_limit_costs_five_times_the_steps_for_no_gain=True; huge_dt_misses_the_wall_pulse_entirely=True; selected_probe_peak_error_exceeds_fifty_percent=True; selected_converged_and_bounded=True; VERDICT=implicit_dt_is_limited_by_accuracy_not_by_stability. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 9,
+  "covers": [
+    "time_dependent_heat::9"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "no_dt_blew_up_every_run_reported_reason_4=True",
+    "explicit_limit_costs_five_times_the_steps_for_no_gain=True",
+    "huge_dt_misses_the_wall_pulse_entirely=True",
+    "selected_probe_peak_error_exceeds_fifty_percent=True",
+    "selected_converged_and_bounded=True",
+    "VERDICT=implicit_dt_is_limited_by_accuracy_not_by_stability"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=an_implicit_step_hit_a_stability_limit"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,45 @@
+{
+  "_comment": "Tier-2 for fourc::brownian_dynamics#2, confirmed by execution with the real failure modes at both walls. The stiffness knob is not on MAT_Crosslinker: it points at a beam material through MATNUM and that beam's YOUNG is k_xl (MAT 3 in upstream beam3r_line2_backweuler_browndyn_periodic_rve_dirich_crosslinking.4C.yaml, distinct from filament MAT 1 even though both carry the same numbers). At the shipped 1.3e+09 the deck runs and passes. Too soft (1.3e+03) the linker stretches past half the periodic box and 4C aborts in beaminteraction/src/crosslinking/4C_beaminteraction_crosslinking_submodel_evaluator.cpp line 818 with 'You are trying to set the binding spot positions of this crosslinker in at least one direction' — the 'deforms like a viscous fluid' end. Too stiff (1.3e+15) the network Newton stops converging and 4C aborts with 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp line 165 — the 'rigid, fluctuations locked out' end. Only MAT 3 moves; the filament material is asserted untouched in every arm. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "brownian_dynamics",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ASSHIPPED=0",
+    "EXIT_TOOSOFT=1",
+    "EXIT_TOOSTIFF=1",
+    "FILAMENT_MATERIAL_UNTOUCHED=yes",
+    "processor 0 finished normally",
+    "ASSHIPPED_FAILURES=0",
+    "Time step 0.01 form Structural Dynamic section used for crosslinking.",
+    "You are trying to set the binding spot positions of this crosslinker in at least one direction",
+    "4C_beaminteraction_crosslinking_submodel_evaluator.cpp, line 818",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp, line 165",
+    "VERDICT: CROSSLINK_STIFFNESS_IS_BRACKETED_BY_TWO_ABORTS=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_ASSHIPPED=1",
+    "EXIT_TOOSOFT=0",
+    "EXIT_TOOSTIFF=0",
+    "FILAMENT_MATERIAL_UNTOUCHED=no",
+    "VERDICT: CROSSLINK_STIFFNESS_IS_BRACKETED_BY_TWO_ABORTS=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the soft wall: give that arm the shipped stiffness. The binding-spot abort and its file/line vanish and EXIT_TOOSOFT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm 1.3e+03 TOOSOFT",
+      "to": "arm 1.3e+09 TOOSOFT"
+    },
+    {
+      "note": "remove the stiff wall: give that arm the shipped stiffness. The Newton non-convergence abort vanishes and EXIT_TOOSTIFF becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "arm 1.3e+15 TOOSTIFF",
+      "to": "arm 1.3e+09 TOOSTIFF"
+    }
+  ]
+}

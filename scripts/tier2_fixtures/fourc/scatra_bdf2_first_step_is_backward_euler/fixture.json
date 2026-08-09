@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#5 — BDF2 needs no hand-written start-up because 4C already takes one backward-Euler step, shown by an exact equality rather than an error table. The same deck under TIMEINTEGR 'BDF2' and under 'One_Step_Theta' with THETA 1.0: after ONE step the two agree to the last printed digit (-1.09579033878309936e-03 both), after two and after four steps they differ (2.06429074665608718e-02 vs 2.48230383072740556e-02). The later-step disagreement is what stops the first result being vacuous — if BDF2 never engaged, every step would agree. 4C announces none of this (STARTUP_ANNOUNCED=0); the switch is visible only in the numbers. Confirmed in source at src/scatra/4C_scatra_timint_bdf2.cpp, where set_old_part_of_righthandside uses theta=1.0 for step 1 and 2/3 thereafter. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "STEPS_1 BDF2=-1.09579033878309936e-03 BACKWARD_EULER=-1.09579033878309936e-03",
+    "STEPS_2 BDF2=2.06429074665608718e-02 BACKWARD_EULER=2.48230383072740556e-02",
+    "is WRONG --> actresult=",
+    "FIRST_STEP_IS_BACKWARD_EULER=yes",
+    "LATER_STEPS_DIFFER=yes",
+    "STARTUP_ANNOUNCED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "FIRST_STEP_IS_BACKWARD_EULER=no",
+    "LATER_STEPS_DIFFER=no",
+    "BDF2= BACKWARD_EULER="
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: run the 'BDF2' arm as One_Step_Theta as well. Every step then agrees, LATER_STEPS_DIFFER flips to no, and the fixture must go red — that assertion is what proves BDF2 really engages after step 1.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"timeintegr\\\":\\\"BDF2\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.01,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "sca \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.01,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    },
+    {
+      "note": "break the comparison the other way: make the control something that is NOT backward Euler by giving the One_Step_Theta arm a different scheme. The one-step equality fails and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"timeintegr\\\":\\\"One_Step_Theta\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.01,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\",
+      "to": "sca \"{\\\"timeintegr\\\":\\\"Stationary\\\",\\\"numstep\\\":$ns,\\\"dt\\\":0.01,\\\"results\\\":[[$NODE,0.0,1e-30]]}\" \\"
+    }
+  ]
+}

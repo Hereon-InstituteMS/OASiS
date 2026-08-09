@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii nonlinear#2. Tier-2 for dealii nonlinear#2 -- probe \"stale_linearisation\" of the shared translation unit _shared/nonlinear_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. The nonlinear coefficient is evaluated at the INITIAL guess for both the tangent and the residual and never updated -- the 'assemble_linearisation used a stale solution' mistake. A properly updated Newton run on the same mesh is computed in the same invocation and used as the reference, and the true nonlinear residual at the accepted answer is printed alongside the residual the frozen loop reports. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "nonlinear",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "linearisation_point=frozen_at_the_initial_guess",
+    "reports_convergence=true",
+    "answer_differs_from_the_reference=true",
+    "VERDICT=stale_linearisation_converges_to_the_wrong_problem"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=answer_matches_the_reference"
+  ],
+  "timeout_seconds": 900
+}

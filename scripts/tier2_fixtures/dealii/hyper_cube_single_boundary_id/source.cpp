@@ -8,15 +8,28 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <set>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the phenomenon
+// under test by colorizing the cube, so the four faces get four DIFFERENT
+// boundary_ids. The fixture STILL PASSES — see fixture.json.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
   Triangulation<2> tria;
-  GridGenerator::hyper_cube(tria, 0.0, 1.0);
+  GridGenerator::hyper_cube(tria, 0.0, 1.0, /*colorize=*/mutate());
 
   std::set<types::boundary_id> ids;
   for (auto cell = tria.begin_active(); cell != tria.end(); ++cell)
@@ -36,6 +49,21 @@ int main()
     std::cout << "  boundary_id = "
               << static_cast<unsigned>(id) << "\n";
   }
+  // The two expectations used to be the bare words "GridTools" and
+  // "boundary_id", both of which this fixture writes in the header above
+  // whatever the enumeration found -- so they matched with colorize=false (one
+  // id) and with colorize=true (four) alike.  These are the measured values.
+  std::cout << "unique_boundary_id_count=" << ids.size() << "\n";
+  std::cout << "boundary_id_set=[";
+  {
+    bool first = true;
+    for (auto id : ids) {
+      if (!first) std::cout << ",";
+      std::cout << static_cast<unsigned>(id);
+      first = false;
+    }
+  }
+  std::cout << "]\n";
 
   // Confirm the pitfall claim.
   if (ids.size() != 1 || *ids.begin() != 0) {

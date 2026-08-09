@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for skfem mixed_poisson#6: the reference-domain normal arrays are NOT unit length on slanted facets. Measured on skfem 12.0.1: RefTri norms [1, sqrt(2), 1], RefTet [1, 1, 1, sqrt(3)], RefWedge [1, sqrt(2), 1, 1, 1]; RefLine/RefQuad/RefHex all unit; and RefWedge.brefdom is None, uniquely among the 3-D refdoms. FINDING: the claim's stated workaround names 'FacetBasis.normal', which does not exist -- the attribute is FacetBasis.normalS, and that one IS unit length. The fixture pins the correct name. MUTATION CONTROL (re-runnable): the pathology here IS the non-unit scaling of the reference normal tables, so T2_MUTATE=1 removes it at source, rescaling RefTri.normals / RefTet.normals / RefWedge.normals to unit length before any probe runs -- the fix a user applies when indexing them for a flux integral, and the upstream change this fixture's own 'the claim is stale' branch anticipates. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 7 expect_in_output strings; T2_MUTATE=1 removes 'reftri_hypotenuse_norm_is_sqrt2=True', 'reftet_slanted_norm_is_sqrt3=True', 'refwedge_diagonal_norm_is_sqrt2=True' (and raises the forbidden 'FAIL:') so the fixture goes red, while the pathology-independent line_quad_hex_all_unit=True, refwedge_brefdom_is_none=True and facetbasis_normals_are_unit=True correctly survive. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "mixed_poisson",
+  "pitfall_index": 6,
+  "mode": "python",
+  "expect_in_output": [
+    "reftri_hypotenuse_norm_is_sqrt2=True",
+    "reftet_slanted_norm_is_sqrt3=True",
+    "refwedge_diagonal_norm_is_sqrt2=True",
+    "line_quad_hex_all_unit=True",
+    "refwedge_brefdom_is_none=True",
+    "facetbasis_has_normal_singular=False",
+    "facetbasis_normals_are_unit=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

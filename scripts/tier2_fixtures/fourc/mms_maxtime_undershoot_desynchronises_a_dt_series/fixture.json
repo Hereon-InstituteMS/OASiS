@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#6 — the thermal time loop stops at the last step that does not pass MAXTIME, so a TIMESTEP that does not divide MAXTIME UNDERSHOOTS it silently and the levels of a dt series then hold solutions at different final times. Two three-level series on the same 32x32 MMS mesh, NUMSTEP 1000 in every run so MAXTIME alone decides the stop. Aligned (dt 0.1/0.05/0.025, MAXTIME 0.4): all three end at 0.4 and the error against the exact solution at 0.4 falls monotonically. Ragged (dt 0.1/0.06/0.036): 4C's own 'Finalised:' lines report 'time 0.36' and 'time 0.396', the error sequence is no longer a convergence study, and the ratios swing over three orders of magnitude. Exit code is 1 in every arm only because the decks record nodal values via a deliberately unmeetable result test. The check the entry prescribes — read the echoed final time before grading — is exactly the line quoted here. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "Finalised: step 6 | nstep 1000 | time 0.36 | dt 0.06",
+    "Finalised: step 11 | nstep 1000 | time 0.396 | dt 0.036",
+    "ALIGNED_ALL_END_AT_THE_SAME_TIME=yes",
+    "RAGGED_ALL_END_AT_THE_SAME_TIME=no",
+    "ALIGNED_ERRORS_DECREASE_MONOTONICALLY=yes",
+    "RAGGED_ERRORS_DECREASE_MONOTONICALLY=no",
+    "RAGGED_FINAL_TIMES = 0.4 0.36 0.396"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "ALIGNED_ALL_END_AT_THE_SAME_TIME=no",
+    "RAGGED_ALL_END_AT_THE_SAME_TIME=yes",
+    "ALIGNED_ERRORS_DECREASE_MONOTONICALLY=no",
+    "RAGGED_ERRORS_DECREASE_MONOTONICALLY=yes",
+    "value= "
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the ragged series time steps that divide MAXTIME. Every level then ends at 0.4, the 'time 0.36' line disappears and RAGGED_ALL_END_AT_THE_SAME_TIME flips to yes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "for dt in 0.1 0.06 0.036; do\n  mms",
+      "to": "for dt in 0.1 0.05 0.025; do\n  mms"
+    },
+    {
+      "note": "break the control instead: make the ALIGNED series ragged too. Its final times diverge, ALIGNED_ALL_END_AT_THE_SAME_TIME flips to no and the fixture must go red — the contrast is what carries the claim.",
+      "file": "cmd.sh",
+      "from": "for dt in 0.1 0.05 0.025; do\n  mms",
+      "to": "for dt in 0.1 0.06 0.036; do\n  mms"
+    }
+  ]
+}

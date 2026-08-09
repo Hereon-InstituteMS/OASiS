@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#0, and a partial FALSIFICATION of its wording. The entry said a gap comparable to the lateral extent 'under-predicts pressure by factor ~2-10x'. On upstream lubrication_sb_2d.4C.yaml, scaling the height function by 1000 takes h/L from 1.5e-3 to ~1.5 and 4C emits ZERO warnings (THICK_FILM_WARNINGS=0), converges in the identical 11 Newton lines, and returns a finite pressure scaled by exactly 1e-6 = (1/1000)^2 — the Reynolds law p ~ mu*U*L/h^2 applied verbatim outside its regime, not a 2-10x discrepancy. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_THIN=0",
+    "EXIT_THICK=1",
+    "is CORRECT, abs(diff)=",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "THICK_FILM_WARNINGS=0",
+    "THICK_OVER_THIN_PRESSURE_RATIO=1.0000e-06",
+    "THICK_FILM_PRESSURE_IS_FINITE=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THIN=1",
+    "EXIT_THICK=0",
+    "THICK_FILM_PRESSURE_IS_FINITE=no",
+    "THICK_OVER_THIN_PRESSURE_RATIO=1.0000e+00"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the second arm the same valid thin film (h/L ~ 1.5e-3) as the first. The 1e-6 pressure ratio and the failing result test both vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BAD_HEIGHT='(45.0)-(x*0.5)'",
+    "to": "BAD_HEIGHT='(0.045)-(x*0.5e-3)'"
+  }
+}

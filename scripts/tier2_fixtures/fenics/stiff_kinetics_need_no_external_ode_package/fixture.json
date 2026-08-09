@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#8: an external stiff-ODE package is NOT required for high Damkohler numbers in dolfinx. The advice that \"for very stiff systems (Da > 1000) external SUNDIALS coupling is required\" is falsified twice over: plain backward Euler through NonlinearProblem handles it, and the packages that advice sends the user to are not installed in a standard conda-forge fenics environment. Two-species 2A <-> B on a 24x24 unit square, D = 0.01, dt = 0.05, 5 backward- Euler steps, forward rate constant swept over 1e2, 1e3, 1e4, 1e5, 1e6, 1e8, i.e. Damkohler = k*L^2/D from 1e4 to 1e10. The default run also tries the external route the advice recommends. Observed on dolfinx 0.10.0: every step at every rate returns a positive SNES converged reason, the field stays finite and below 1.0, and the stoichiometric invariant A + 2B is unchanged to round-off. import sundials / scikits.odes / assimulo / cvode all raise ModuleNotFoundError. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 8,
+  "mode": "python",
+  "expect_in_output": [
+    "ModuleNotFoundError: No module named 'sundials'",
+    "ModuleNotFoundError: No module named 'assimulo'",
+    "no_external_stiff_ode_package_is_importable=True",
+    "backward_euler_converged_at_every_rate_up_to_da_1e10=True",
+    "field_stayed_finite_and_bounded=True",
+    "invariant_held_to_roundoff_at_every_rate=True",
+    "VERDICT=high_damkohler_needs_no_external_ode_package"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=backward_euler_could_not_do_it"
+  ],
+  "timeout_seconds": 300
+}

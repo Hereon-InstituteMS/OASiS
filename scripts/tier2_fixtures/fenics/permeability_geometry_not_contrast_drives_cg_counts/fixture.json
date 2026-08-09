@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM stokes_darcy::7: [Performance] A large permeability CONTRAST is not by itself a preconditioner problem - the geometry of the permeability field is. Signal: for a Darcy pressure block with a single planar jump, taking the contrast from 1 to 1e-9 leaves CG iteration counts essentially flat for every preconditioner \u2026 WHAT THIS RUNS: a large permeability CONTRAST is not by itself a preconditioner problem -- the geometry of the permeability field is. Wrong variant: blaming the contrast number and, per the older knowledge text, expecting block-Jacobi to stall with a residual ratio of about 1 on a high-contrast Darcy pressure block. Right variant: look at where the high-permeability region sits, and use hypre boomeramg. Darcy pressure block -div(K grad p) = 0 on a 32x32 unit square, P1, p = 1 at x = 0 and p = 0 at x = 1, CG at rtol 1e-8 with six preconditioners (jacobi, bjacobi+ilu, icc, asm, gamg, hypre boomeramg). K is a DG0 field: the marked region has K = 1 and the background K = contrast, so the marked region is the high-permeability one. Three geometries: a single planar jump, a square high-permeability island that touches no Dirichlet boundary, and a random cell-by-cell field (seed 0, half the cells). OBSERVED, copied from the run: random_geometry_degrades_jacobi_by_over_three_times=True; disconnected_island_degrades_jacobi_by_over_two_and_a_half_times=True; planar_contrast_leaves_every_preconditioner_within_two_times=True; quoted_block_jacobi_stall_does_not_reproduce=True; hypre_boomeramg_stays_flat_and_under_a_dozen_iterations=True; every_preconditioner_converged_with_reason_two=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 7,
+  "mode": "python",
+  "covers": [
+    "stokes_darcy::7"
+  ],
+  "expect_in_output": [
+    "random_geometry_degrades_jacobi_by_over_three_times=True",
+    "disconnected_island_degrades_jacobi_by_over_two_and_a_half_times=True",
+    "planar_contrast_leaves_every_preconditioner_within_two_times=True",
+    "quoted_block_jacobi_stall_does_not_reproduce=True",
+    "hypre_boomeramg_stays_flat_and_under_a_dozen_iterations=True",
+    "every_preconditioner_converged_with_reason_two=True",
+    "geometry=planar   contrast=1e-09",
+    "VERDICT=permeability_geometry_not_contrast_drives_the_counts"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=contrast_alone_wrecked_the_preconditioners"
+  ],
+  "timeout_seconds": 300
+}

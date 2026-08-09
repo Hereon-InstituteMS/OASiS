@@ -1,8 +1,8 @@
 {
-  "_comment": "Tier-2 for fenics nonlinear_pde / magnetostatics: dolfinx FiniteElement.interpolation_points is a PROPERTY (returns ndarray of shape (n_points, gdim)), NOT a method. The dolfinx 0.10 _version_info banner correctly says so, but 5 generator templates in advanced.py called it as () — TypeError 'numpy.ndarray object is not callable' on every LLM-followed template. Fixed all 5 in same commit. Verified empirically 2026-06-01 (dolfinx 0.10.0).",
+  "_comment": "Tier-2 for fenics nonlinear_pde#8: V.element.interpolation_points is a PROPERTY holding a numpy array in dolfinx 0.10; older code calls it as a method and gets \"TypeError: 'numpy.ndarray' object is not callable\". RE-KEYED 2026-08-06: this fixture was committed against magnetostatics::0, a claim about checking |B| against the saturation flux density, which it does not touch. The key is the only link between evidence and claim, so a wrong one makes a real claim look defended by evidence about something else. Its true home is nonlinear_pde::8, which was uncovered.",
   "backend": "fenics",
-  "physics": "magnetostatics",
-  "pitfall_index": 0,
+  "physics": "nonlinear_pde",
+  "pitfall_index": 8,
   "mode": "python",
   "expect_in_output": [
     "has_interpolation_points=True",
@@ -14,5 +14,8 @@
   ],
   "forbid_in_output": [
     "Traceback"
+  ],
+  "covers": [
+    "nonlinear_pde::8"
   ]
 }

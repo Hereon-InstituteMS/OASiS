@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#25 — the TYPE of a DESIGN ... NEUMANN CONDITION is validated twice with two different vocabularies. The input parser's deprecated_selection accepts Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure, but the 3D SOLID element (src/solid_3D_ele/4C_solid_3D_ele_surface_evaluate.cpp) implements only Live, orthopressure and pseudo_orthopressure. Consequence: TYPE 'Dead' passes the parser and then aborts at the first element evaluation with 'Unknown type of SurfaceNeumann condition' — the input file looks perfectly valid, which is what makes it a trap. A value outside the parser enum fails earlier and helpfully prints the whole enum. Three runs: Live -> 'Finalised step 1 / 1', exit 0; Dead -> exit 1 at evaluate; Follower -> exit 1 at parse with the enum listing. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): the dead arm carries TYPE Live instead of Dead, and the bogus arm Live instead of Follower. 'dead: EXIT=1', 'Unknown type of SurfaceNeumann condition', 'bogus: EXIT=1' and the possible-values list all disappear, and the forbidden 'dead: EXIT=0' appears. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 25,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "live: EXIT=0",
+    "Finalised step 1 / 1",
+    "dead: EXIT=1",
+    "Unknown type of SurfaceNeumann condition",
+    "bogus: EXIT=1",
+    "possible values: Dead|Live|PressureGrad|orthopressure|pseudo_orthopressure"
+  ],
+  "forbid_in_output": [
+    "NEEDLE_MISSING",
+    "dead: EXIT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give both bad Neumann arms TYPE 'Live', which the parser accepts AND the 3D SOLID element implements. Both run to completion, 'dead: EXIT=1' becomes the forbidden 'dead: EXIT=0', and neither the element-evaluation abort nor the parser's possible-values list is printed - so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

@@ -40,7 +40,8 @@ _FLOORS: dict[str, int] = {
                       #              schrodinger, contact, hydraulic_resistance
     "kratos":   39,
     "dune":     15,
-    "fourc":    47,
+    "fourc":    49,   # +particle_dem (2026-08-07): 4C DEM had 29 upstream
+                      #   decks and zero knowledge before this.
     "febio":    16,
 }
 

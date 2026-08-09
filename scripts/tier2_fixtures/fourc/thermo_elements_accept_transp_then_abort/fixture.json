@@ -1,0 +1,51 @@
+{
+  "_comment": "Tier-2 for fourc::thermo#5, and the execution that FALSIFIED its wording. The entry claimed a wrong eletype in THERMO ELEMENTS 'triggers element-spec mismatch from core/io/src/4C_io_input_spec_builders.cpp' — i.e. that the section gates the element category. It does not. '1 TRANSP HEX8 ... MAT 1' is rejected only because a TRANSP-specific key is missing (\"Required value 'TYPE' not found in input line\"); add 'TYPE Std' and the scalar-transport element is ACCEPTED into the 'thermo' discretisation, survives fill_complete, and the run then dies with an uncaught Teuchos::Exceptions::InvalidParameterType naming FourC::ScaTra::Action — SIGABRT, exit 134, and zero 4C error blocks (TYPED_TRANSP_FOURC_ERROR_BLOCK=0). A genuinely bad celltype is caught, but by 4C_fem_general_cell_type_traits.hpp ('Unknown celltype HEX9'), not by the input-spec builder the entry named. ELEMENT_CATEGORY_COMPLAINT=0 pins that no arm ever says the element does not belong in this section. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_THERMO=0",
+    "EXIT_TRANSP_NO_TYPE=1",
+    "EXIT_TRANSP_TYPED=134",
+    "EXIT_BAD_CELLTYPE=1",
+    "processor 0 finished normally",
+    "Required value 'TYPE' not found in input line",
+    "Unknown celltype HEX9",
+    "4C_fem_general_cell_type_traits.hpp",
+    "fill_complete() on discretization thermo",
+    "Teuchos::Exceptions::InvalidParameterType",
+    "FourC::ScaTra::Action",
+    "TYPED_TRANSP_REACHED_THERMO_DISCRETISATION=yes",
+    "TYPED_TRANSP_FOURC_ERROR_BLOCK=0",
+    "ELEMENT_CATEGORY_COMPLAINT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THERMO=1",
+    "EXIT_TRANSP_TYPED=0",
+    "TYPED_TRANSP_REACHED_THERMO_DISCRETISATION=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the crashing arm: put a real THERMO element there. The uncaught Teuchos exception and the 134 exit both vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"1 TRANSP HEX8 1 2 3 4 5 6 7 8 MAT 1 TYPE Std\"  > \"$TMP/with_type.yaml\"",
+      "to": "deck \"1 THERMO HEX8 1 2 3 4 5 6 7 8 MAT 1\"  > \"$TMP/with_type.yaml\""
+    },
+    {
+      "note": "remove the pathology from the missing-key arm: supply the TYPE the TRANSP spec demands. The 'Required value TYPE not found' line disappears and that arm then crashes like the typed one, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"1 TRANSP HEX8 1 2 3 4 5 6 7 8 MAT 1\"           > \"$TMP/no_type.yaml\"",
+      "to": "deck \"1 TRANSP HEX8 1 2 3 4 5 6 7 8 MAT 1 TYPE Std\"           > \"$TMP/no_type.yaml\""
+    },
+    {
+      "note": "remove the pathology from the celltype arm: write a celltype the thermo element knows. 'Unknown celltype HEX9' disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"1 THERMO HEX9 1 2 3 4 5 6 7 8 MAT 1\"           > \"$TMP/bad_cell.yaml\"",
+      "to": "deck \"1 THERMO HEX8 1 2 3 4 5 6 7 8 MAT 1\"           > \"$TMP/bad_cell.yaml\""
+    }
+  ]
+}

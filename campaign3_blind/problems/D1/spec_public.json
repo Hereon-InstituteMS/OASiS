@@ -1,0 +1,73 @@
+{
+  "id": "D1",
+  "kind": "coupled",
+  "codes": [
+    "fenics",
+    "ngsolve"
+  ],
+  "dim": 2,
+  "coords": [
+    "x",
+    "y"
+  ],
+  "code_a_label": "FEniCSx (dolfinx)",
+  "code_b_label": "NGSolve",
+  "domain": "the rectangle (0, 3/2) x (0,1)",
+  "subdomain_a": "A = (0, 5/8) x (0,1), anisotropic conductivity K = [[1, 1/2], [1/2, 2]]",
+  "subdomain_b": "B = (5/8, 3/2) x (0,1), anisotropic conductivity K = [[3, 1/2], [1/2, 5]]",
+  "interface": "the line x = 5/8, where the two materials meet",
+  "equation": "-div(K grad u) = f in each subdomain",
+  "coefficients": "anisotropic conductivity K = [[1, 1/2], [1/2, 2]] in subdomain A; anisotropic conductivity K = [[3, 1/2], [1/2, 5]] in subdomain B",
+  "interface_condition": "the field and its normal flux",
+  "element": "Lagrange P1 elements in both codes",
+  "mesh_text": "uniform meshes, h halved per level: h = 1/8, 1/16, 1/32",
+  "bc_text": "u = 0 on the entire outer boundary",
+  "interface_tol": "1e-6 relative",
+  "iface_header": "x, y, u, qn",
+  "qn_name": "qn",
+  "qn_desc": "conductive flux qn = -(K grad u) . n_out",
+  "probe_iface": "the 44 points (x, y) = (5/8, 1/4 + (i+0.5)*1/2/44) for i = 0, 1, ..., 43. These cover the INTERIOR of the interface only: the two points where the interface meets the outer boundary are corners of the split problem and the recovered flux there does not converge, so they are not graded",
+  "mesh_N": [
+    8,
+    16,
+    32
+  ],
+  "theoretical_order": 2.0,
+  "tol": 0.4,
+  "band": [
+    0.8,
+    3.2
+  ],
+  "extent_a": [
+    [
+      0.0,
+      0.625
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "extent_b": [
+    [
+      0.625,
+      1.5
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_M": 44,
+  "iface_graded_band": [
+    0.25,
+    0.75
+  ],
+  "iface_clearance_reason": "the interface ends are Dirichlet-Neumann corners of the split problem; the recovered flux there does not converge under refinement, so grading them would fail a correct submission",
+  "material_contrast": "K11 1:3, K22 2:5",
+  "evidence_grade": 1,
+  "evidence_grade_reason": "exact manufactured solution: proves the answer is CORRECT",
+  "qoi": "convergence order of the coupled field, plus the two-sided interface flux jump",
+  "graded_against": "hidden manufactured solution (true error) AND reference-free mesh halving",
+  "physics": "two-material anisotropic diffusion, tensor jump"
+}

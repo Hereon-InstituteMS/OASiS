@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: FEniCSx UFL rejects curl() on a SCALAR function space. Raises ValueError('Invalid ranks 1 and 1 in product'). Dual to the NGSolve curl/grad mismatch fixtures — covers the same Maxwell-newbie confusion in FEniCSx.",
+  "_comment": "Tier-2: FEniCSx UFL rejects curl() on a SCALAR function space. Raises ValueError('Invalid ranks 1 and 1 in product'). Dual to the NGSolve curl/grad mismatch fixtures — covers the same Maxwell-newbie confusion in FEniCSx. MEASURED CORRECTION 2026-08-07 (dolfinx 0.10.0 / ufl 2025.2.1): UFL does NOT reject curl() on a scalar function space. curl() accepts the scalar argument and returns a legal rank-1 object — the probe now prints 'trial_shape=() curl_shape=(2,)' to show it — and the ValueError is raised one level later by the SCALAR PRODUCT of two rank-1 expressions ('Invalid ranks 1 and 1 in product'). So what this fixture reproduces is a product-rank error, not a rejection of curl on a scalar space; the sibling fixture curl_of_a_2d_scalar_is_a_vector_and_the_mixup_is_silent states the same thing from the other side. MUTATION CONTROL (T2_MUTATE=1, re-runnable): spell the contraction ufl.inner(curl(u), curl(v))*dx and the form builds on the unchanged scalar space ('form_built_on_scalar_space=True kind=Form'), so 'ValueError' and 'Invalid ranks' both go missing. Proved KILLED 2026-08-07.",
   "backend": "fenics",
   "physics": "maxwell",
   "pitfall_index": 92,
@@ -8,5 +8,11 @@
     "ValueError",
     "Invalid ranks"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "Antidote: contract the two rank-1 curls with ufl.inner() instead of the scalar product. The form then builds on the SAME scalar space and nothing raises. This also exhibits the correction below: it is the product that UFL rejects, not curl() on a scalar space.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
 }

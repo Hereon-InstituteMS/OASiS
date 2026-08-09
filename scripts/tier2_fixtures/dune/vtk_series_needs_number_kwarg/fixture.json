@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for _general.vtk_time_series_measured.Signal. Measured 2026-08-06 on dune-fem 2.12.0.2, wall time 2 s in a temp dir: ten calls to gridView.writeVTK('overwritten', pointdata=...) left exactly ONE file, ['overwritten.vtu'] \u2014 each call overwrites the last, which is the whole claim. The same ten steps with number=step produced ten files whose first three are series00000.vtu, series00001.vtu, series00002.vtu, i.e. a zero-padded five-digit suffix. No .pvd collection file was written, so ParaView has to open the sequence by pattern. dune.grid.OutputType exposes exactly appendedbase64, appendedraw, ascii, base64, and outputType=OutputType.ascii produced a .vtu whose head contains '<VTKFile'. The fixture has a synthetic physics key because the claim lives in the _general measured sections, not in a pitfalls list. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 passes number=step in the trap loop, so the ten calls leave ten files. Unmutated the fixture still PASSES; mutated it FAILS because the expectations \"same_name_file_list=['overwritten.vtu']\", 'same_name_leaves_one_frame=True', 'dune_vtk_time_series_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "_general",
+  "pitfall_index": 0,
+  "covers": [
+    "_general:vtk_time_series_measured.Signal"
+  ],
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "steps_written=10",
+    "same_name_files=1",
+    "same_name_file_list=['overwritten.vtu']",
+    "same_name_leaves_one_frame=True",
+    "numbered_files=10",
+    "numbered_first_three=['series00000.vtu', 'series00001.vtu', 'series00002.vtu']",
+    "number_kwarg_gives_one_file_per_step=True",
+    "no_pvd_collection_written=True",
+    "output_types=['appendedbase64', 'appendedraw', 'ascii', 'base64']",
+    "ascii_outputtype_wrote_readable_vtu=True",
+    "dune_vtk_time_series_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

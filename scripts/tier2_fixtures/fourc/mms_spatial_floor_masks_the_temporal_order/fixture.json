@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#4 — on a fixed mesh the error against the exact MMS solution saturates at the spatial Q1 floor, so a dt-halving table built from it stops measuring the time integrator; Richardson differences on the SAME mesh cancel the floor and recover the temporal order. Six dt levels on one 32x32 mesh at theta=0.5: the error-vs-exact sequence stops moving (ERROR_VS_EXACT_SATURATES=yes) and its apparent orders leave the neighbourhood of 2 entirely, going negative as the error starts to GROW with smaller dt (ERROR_VS_EXACT_ORDER_MISLEADING=yes), while every Richardson order sits in [1.9,2.1] (RICHARDSON_RECOVERS_ORDER_2=yes). A four-level backward-Euler series is the control: the same Richardson procedure returns ~1 there (RICHARDSON_SEPARATES_THE_SCHEMES=yes), so it is measuring the scheme and not returning 2 by construction. All nodal values are read out of 4C's own result-test lines (1089 per run, 'Checking results of 1089 tests:'), no post-processing library involved. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C; wall time ~110 s.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "SERIES th05 dt=0.003125 nodes_read=1089",
+    "SERIES th10 dt=0.003125 nodes_read=1089",
+    "Checking results of 1089 tests:",
+    "is WRONG --> actresult=",
+    "RICHARDSON_RECOVERS_ORDER_2=yes",
+    "RICHARDSON_SEPARATES_THE_SCHEMES=yes",
+    "ERROR_VS_EXACT_SATURATES=yes",
+    "ERROR_VS_EXACT_ORDER_MISLEADING=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "RICHARDSON_RECOVERS_ORDER_2=no",
+    "RICHARDSON_SEPARATES_THE_SCHEMES=no",
+    "ERROR_VS_EXACT_SATURATES=no",
+    "ERROR_VS_EXACT_ORDER_MISLEADING=no",
+    "nodes_read=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: stop pushing the dt series below the spatial floor. With only the three coarse levels the error-vs-exact table is still falling, ERROR_VS_EXACT_SATURATES flips to no and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "run_series 0.5 th05 0.1 0.05 0.025 0.0125 0.00625 0.003125",
+      "to": "run_series 0.5 th05 0.1 0.05 0.025"
+    },
+    {
+      "note": "make the control arm stop being a control: run it at theta=0.5 too. Richardson then returns ~2 for both, RICHARDSON_SEPARATES_THE_SCHEMES flips to no, and the fixture must go red — this is what proves the grader reads the scheme rather than the constant 2.",
+      "file": "cmd.sh",
+      "from": "run_series 1.0 th10 0.025 0.0125 0.00625 0.003125",
+      "to": "run_series 0.5 th10 0.025 0.0125 0.00625 0.003125"
+    }
+  ]
+}

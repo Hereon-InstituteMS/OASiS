@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import shutil
 import time
 import uuid
@@ -28,6 +29,11 @@ from core.backend import (
 )
 from core.registry import register_backend
 from .generators import GENERATORS, KNOWLEDGE
+
+# `import x`, `from x import y`, and their continuation-free one-liners. Used
+# by the honesty guard in validate_input to drop lines that merely NAME a
+# symbol before looking for evidence that one was CALLED.
+_IMPORT_LINE = re.compile(r"\s*(?:from\s+[\w.]+\s+)?import\s")
 
 logger = logging.getLogger("oasis.kratos")
 
@@ -49,7 +55,7 @@ class KratosBackend(SolverBackend):
             result = subprocess.run(
                 [python, "-c",
                  "import KratosMultiphysics as KM; "
-                 "print(KM.KratosGlobals.Kernel.Version())"],
+                 "print(KM.KratosGlobals.Kernel.Version())"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=15
             )
             if result.returncode == 0:
@@ -152,11 +158,23 @@ class KratosBackend(SolverBackend):
                 element_types=["SphericParticle3D", "CylinderParticle2D"],
                 template_variants=["2d"],
             ),
+            # element_types corrected 2026-08-07. The row advertised
+            # "UpdatedLagrangianPQ2D" and "UpdatedLagrangianAxisym"; neither is
+            # a registered element. CreateNewElement on either raises 'The
+            # Element "..." is not registered!' against MPMApplication 10.4.3,
+            # while the MPM-prefixed spellings below construct. This is the
+            # claim kratos.mpm::0 already made — the knowledge was corrected in
+            # the DEM/MPM pass and the catalog row was left behind.
+            #
+            # The template this row points at is NOT MPMApplication: it is a
+            # standalone numpy/scipy MPM that never imports KratosMultiphysics.
+            # See the module docstring of generators/mpm.py.
             PhysicsCapability(
                 name="mpm",
                 description="Material Point Method for large-deformation solid mechanics (MPMApplication)",
                 spatial_dims=[2, 3],
-                element_types=["UpdatedLagrangianPQ2D", "UpdatedLagrangianAxisym"],
+                element_types=["MPMUpdatedLagrangian2D3N",
+                               "MPMUpdatedLagrangianAxisymmetry2D3N"],
                 template_variants=["2d"],
             ),
             PhysicsCapability(
@@ -308,23 +326,46 @@ class KratosBackend(SolverBackend):
         # both Kratos-native strategies and the scipy/numpy assemble-and-solve
         # pattern used by the poisson / heat / elasticity / contact / dynamics
         # generators in this backend.
-        solve_markers = (
-            ".Run()",                 # AnalysisStage.Run()
+        #
+        # EVERY MARKER IS CALL-SHAPED, AND IMPORT LINES ARE STRIPPED FIRST.
+        # Measured 2026-08-07: the MPM generator emitted a standalone numpy
+        # material-point method that never touched Kratos, and this guard
+        # passed it on the strength of one line —
+        #
+        #     from scipy.sparse.linalg import spsolve
+        #
+        # spsolve was never called; neither was lil_matrix. The marker list
+        # held both the bare name `spsolve` and the module path
+        # `scipy.sparse.linalg`, so an unused import was enough to certify a
+        # solve. A guard satisfied by a symbol's PRESENCE rather than its USE
+        # is the same defect shape as an expectation satisfied by a word the
+        # fixture prints itself: it can only be passed, never failed, by the
+        # thing it is supposed to be checking.
+        #
+        # `AnalysisStage` and `SolvingStrategy` are gone for the same reason:
+        # naming a class is not running one. Both templates that used to be
+        # covered by them (dem, dem_structures_coupling) call `.Run()` or
+        # `.RunSolutionLoop(` and are still covered. Measured over all 21
+        # Kratos templates on the 28-application build: 20 contain at least one
+        # of the calls below, and mpm — before its rewrite — was the only one
+        # that contained none.
+        solve_calls = (
+            ".Run()",                          # AnalysisStage.Run()
             ".RunSolutionLoop(",
-            ".Solve()",               # strategy / solver .Solve()
+            ".Solve()",                        # strategy / solver .Solve()
             ".SolveSolutionStep(",
-            "AnalysisStage",
-            "SolvingStrategy",
-            "CreateSolver",
-            "ResidualBasedNewtonRaphsonStrategy",
-            "ResidualBasedLinearStrategy",
-            "spsolve",                # scipy sparse direct solve
-            "scipy.sparse.linalg",
-            "factorized(",            # scipy prefactored solve (dynamics)
-            "np.linalg.solve",
-            "numpy.linalg.solve",
+            "CreateSolver(",
+            "ResidualBasedNewtonRaphsonStrategy(",
+            "ResidualBasedLinearStrategy(",
+            "spsolve(",                        # scipy sparse direct solve
+            "factorized(",                     # scipy prefactored solve
+            "np.linalg.solve(",
+            "numpy.linalg.solve(",
         )
-        has_solve = any(m in content for m in solve_markers)
+        executable = "\n".join(
+            line for line in content.splitlines()
+            if not _IMPORT_LINE.match(line))
+        has_solve = any(m in executable for m in solve_calls)
 
         # A "note"-only summary is the tell-tale signature of the old probe
         # stubs ({"note": "... available"} / {"note": "not installed"}).

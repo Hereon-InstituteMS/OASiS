@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM fracture::3: [Numerical] The staggered iteration count is not roughly constant: it explodes in the one load step where the crack propagates. Signal: the number of staggered sweeps needed to reach a fixed tolerance on d sits in the single digits while the crack is dormant, then jumps by one to two orders of magnitude in the single step in which the integrated damage takes its big jump, then drops straight back to single digits afterwards. Set the staggered iteration cap generously - a cap of a few tens will silently truncate exactly the step that matters and leave a half-propagated crack. WHAT THIS RUNS: a staggered AT2 phase-field solve on a 20x20 unit square, P1 displacement and P1 damage, E=210, nu=0.3, Gc=2.7e-3, l0=2h=0.1, k_res=1e-6, pre-crack seeded as a large history value along y=0.5 for x<0.5, sixteen displacement-controlled steps to 8e-3, sweeps stopped at max|d-d_prev| < 1e-4; the same load path is run twice, once with max_sweeps=2000 and once with max_sweeps=30. WHAT WAS PRINTED: with the generous cap the sweep counts are [2, 3, 3, 3, 4, 5, 5, 7, 8, 11, 18, 63, 61, 7, 6, 5] - a median of 5 while the crack is dormant, 63 at step 12 (12.6x the dormant median), and back to 5 - and the per-step growth of the integrated damage peaks at exactly those steps (0.0237 and 0.0489 against 0.0006 afterwards). With the cap at 30 steps 12 and 13 stop at exactly 30 sweeps and nothing is raised. DISCREPANCY: the second half of the claim, that such a cap leaves a half-propagated crack, does NOT reproduce here - the truncated run's regularised surface energy is 0.9943 of the uncapped one at the truncated step, 0.9048 one step later and 1.0018 at the end of the ramp, so truncation delays propagation by about one load step rather than losing the crack; the fixture pins that too. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 gives the run under test the generous cap and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "fracture",
+  "pitfall_index": 3,
+  "mode": "python",
+  "covers": ["fracture::3"],
+  "expect_in_output": [
+    "a_cap_of_a_few_tens_truncates_exactly_that_step=True",
+    "propagation_step_needs_at_least_ten_times_the_dormant_count=True",
+    "dormant_steps_stay_in_single_digits=True",
+    "the_spike_is_the_step_of_largest_damage_growth=True",
+    "the_count_returns_to_single_digits_afterwards=True",
+    "the_truncated_run_raised_nothing=True",
+    "truncation_changed_the_crack_by_under_one_percent_at_that_step=True",
+    "the_truncated_run_catches_up_by_the_end_of_the_ramp=True",
+    "generous_cap=2000 sweeps_per_load_step=",
+    "VERDICT=sweep_count_explodes_in_the_propagation_step_and_a_small_cap_truncates_it"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=sweep_count_stayed_roughly_constant"
+  ],
+  "timeout_seconds": 400
+}

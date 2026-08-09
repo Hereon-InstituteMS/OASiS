@@ -1,12 +1,21 @@
 {
-  "_comment": "Tier-2 cheap fixture for hyperelasticity#9: subdivided_hyper_rectangle with colorize=false gives ALL boundaries id=0. Confirmed via direct enumeration (GridTools::get_boundary_ids was added in 9.4; we iterate manually for 9.1).",
+  "_comment": "Tier-2 for dealii hyperelasticity#9. GridGenerator::subdivided_hyper_rectangle called WITHOUT colorize gives every face boundary_id 0, so a clamp written for one face takes the whole boundary with it. Measured on an 8x8 unit square with a shear traction on the face the user meant to leave free: with colorize=false the distinct boundary ids are {0}, all 32 boundary faces carry id 0, interpolate_boundary_values on id 0 constrains all 64 boundary dofs, and the loaded solve returns a displacement whose infinity norm is exactly 0 -- the Newton loop reports convergence in 0 steps because there is nothing left to solve. That is the claim's 'DataOut shows displacement field zero everywhere', reproduced. With colorize=true the ids are {0,1,2,3}, only 8 faces carry id 0, 18 of the 64 boundary dofs are constrained, and the same load produces a displacement of 0.0268. This fixture replaces a legacy compile_and_run one that the evidence driver could not run at all (rc=99) and whose expectations were the bare substrings 'boundary_id' and 'GridGenerator', which any echo of the source would satisfy and which no mutation could lose. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
   "backend": "dealii",
   "physics": "hyperelasticity",
   "pitfall_index": 9,
-  "mode": "compile_and_run",
+  "mode": "cmd",
   "expect_in_output": [
-    "boundary_id",
-    "GridGenerator"
+    "colorize=false",
+    "distinct_boundary_ids={0}",
+    "every_face_carries_id_zero=true",
+    "the_whole_boundary_is_clamped=true",
+    "displacement_is_zero_everywhere=true",
+    "VERDICT=one_boundary_id_clamped_the_entire_boundary"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=only_the_intended_face_is_clamped"
+  ],
+  "timeout_seconds": 900
 }

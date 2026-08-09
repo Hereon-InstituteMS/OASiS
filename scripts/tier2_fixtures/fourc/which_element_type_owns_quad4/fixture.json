@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::input_format#10. On this build the binary's own schema says SOLID owns exactly nine 3D cell types — HEX8 HEX18 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 NURBS27 — and no 2D cell (SCHEMA_SOLID_OWNS_QUAD4=0), while WALL owns QUAD4 (SCHEMA_WALL_OWNS_QUAD4=1) with the keyword set MAT/KINEM/EAS/THICK/STRESS_STRAIN/GP. The same 4-node 2D deck is then run three ways: 'WALL QUAD4 ... KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2' exits 0 at dispy 4.33333333333345890e-03 (pinned at TOLERANCE 1e-12); 'SOLID QUAD4' exits 1 with \"Element 'SOLID' does not seem to know cell type 'quad4'.\" from core/fem/src/general/element/4C_fem_general_element_definition.cpp line 29, with the cell type echoed in lowercase; an unregistered name gives a DIFFERENT message from a different file, \"Unknown type 'BOGUSELE' of finite element\" from core/comm/src/4C_comm_parobjectfactory.cpp line 153, and the SOLID arm never produces it (SOLID_ARM_SAID_UNKNOWN_TYPE=0). Note the quotes in that template — an unquoted grep for it finds nothing. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "input_format",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WALL=0",
+    "EXIT_SOLID=1",
+    "EXIT_BOGUS=1",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "processor 0 finished normally",
+    "Element 'SOLID' does not seem to know cell type 'quad4'.",
+    "4C_fem_general_element_definition.cpp",
+    "Unknown type 'BOGUSELE' of finite element",
+    "4C_comm_parobjectfactory.cpp",
+    "SOLID_ARM_SAID_UNKNOWN_TYPE=0",
+    "SCHEMA_SOLID_CELLS=HEX8 HEX18 HEX20 HEX27 TET4 TET10 WEDGE6 PYRAMID5 NURBS27",
+    "SCHEMA_SOLID_OWNS_QUAD4=0",
+    "SCHEMA_WALL_OWNS_QUAD4=1",
+    "SCHEMA_SOLID_OWNS_HEX8=1",
+    "SCHEMA_HAS_BOGUSELE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WALL=1",
+    "EXIT_SOLID=0",
+    "EXIT_BOGUS=0",
+    "SCHEMA_SOLID_OWNS_QUAD4=1",
+    "SCHEMA_WALL_OWNS_QUAD4=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the SOLID arm: write the element type that owns QUAD4 on this build. The cell-type diagnostic vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"1 SOLID QUAD4 1 2 3 4 MAT 1 KINEM linear\" \"$TMP/solid.yaml\"",
+      "to": "mk \"1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2\" \"$TMP/solid.yaml\""
+    },
+    {
+      "note": "remove the pathology from the unregistered-type arm: name a type the factory knows. The unknown-type diagnostic vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "mk \"1 BOGUSELE QUAD4 1 2 3 4 MAT 1 KINEM linear\" \"$TMP/bogus.yaml\"",
+      "to": "mk \"1 WALL QUAD4 1 2 3 4 MAT 1 KINEM linear EAS none THICK 1.0 STRESS_STRAIN plane_strain GP 2 2\" \"$TMP/bogus.yaml\""
+    }
+  ]
+}

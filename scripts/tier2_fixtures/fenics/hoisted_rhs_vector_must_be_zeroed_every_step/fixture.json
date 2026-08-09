@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM time_dependent_heat::1: [Integration] If you hoist the right-hand-side vector out of the time loop to avoid reallocating it, you MUST zero it at the top of every step (`with b.localForm() as bl: bl.set(0.0)`), because `dolfinx.fem.petsc.assemble_vector(b, L)` ADDS into b. Signal: measured, the temperature reached max(T) \u2026 WHAT THIS RUNS: if you hoist the right-hand-side vector out of the time loop to avoid reallocating it, you MUST zero it at the top of every step, because `dolfinx.fem.petsc.assemble_vector(b, L)` ADDS into b. Unit square 16x16, T = 1 on the left wall, T = 0 on the right, T = 0 initially, dt = 0.01, 100 backward-Euler steps. Wrong variant: b is created once and never zeroed. Right variant: `with b.localForm() as bl: bl.set(0.0)` at the top of every step. Observed: the unzeroed run reaches max|T| = 7.69e+26 after 100 steps while every single KSP reports converged reason 4 - the field is finite, so a NaN check would not fire either. The opposite mistake is measured in the same run and is NOT a problem: allocating a fresh vector with `b = assemble_vector(L_form)` inside the loop leaves the resident set flat (0.0 MB growth over 200 steps and 0.0 MB over 1000 steps). OBSERVED, copied from the run: zeroed_reason_is_4_every_step=True; checked_ksp_reason_is_4_every_step=True; checked_field_is_finite=True; zeroed_stays_inside_the_data_range=True; checked_grew_past_1e10=True; fresh_vector_per_step_does_not_leak=True; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 1,
+  "covers": [
+    "time_dependent_heat::1"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "zeroed_reason_is_4_every_step=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "checked_field_is_finite=True",
+    "zeroed_stays_inside_the_data_range=True",
+    "checked_grew_past_1e10=True",
+    "fresh_vector_per_step_does_not_leak=True",
+    "VERDICT=unzeroed_hoisted_rhs_blows_up_while_every_ksp_reports_converged"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=zeroing_the_rhs_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

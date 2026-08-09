@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::biphasic#7. A confined-compression deck with a strain-dependent perm-Holmes-Mow permeability \u2014 chosen because the biphasic tangent really is unsymmetric there, so the workaround is tested where it could fail \u2014 run twice: symmetric + skyline default, and non-symmetric + bicgstab. Both complete every step and their final element sz agree to a tight relative tolerance, which is the claim that <symmetric_stiffness>symmetric</symmetric_stiffness> changes the Newton tangent and not the residual. The fixture computes the difference; no number is carried in the catalogue text. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 gives the second deck a 10% stiffer solid (E = 1100 instead of 1000). This fixture asserts an AGREEMENT rather than reproducing a pathology, so the control shows the 1e-9 comparison can fail and is not satisfied by any two runs of this deck. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'symmetric_workaround=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "biphasic",
+  "pitfall_index": 7,
+  "mode": "python",
+  "timeout_seconds": 1200,
+  "expect_in_output": [
+    "symmetric_workaround=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

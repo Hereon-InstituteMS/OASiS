@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for dealii wave#5. Tier-2 for dealii wave#5 \u2014 probe \"vtu_every_step_cost\" of the shared wave translation unit _shared/wave_family.cc, compiled once and cached so six fixtures share one build. The entry is explicit that the section LABEL is the author's, not deal.II's, so the probe creates the sections (\"assemble_system\", \"solve\", \"output_results\"), writes real .vtu files to a temporary directory, and reads the numbers back out of TimerOutput::get_summary_data after printing print_summary(). It also writes the .pvd the entry recommends via DataOutBase::write_pvd_record. \">50% of total\" is a RATIO, so what the output is compared against decides it. Both comparisons are run: with CG+SSOR per step the output section is well under half; with the one-shot factorisation the catalog recommends for a constant dt and mesh, the same output section is the top entry at over half. Mutation control: T2_MUTATE=1 makes the probe write every 20th step instead, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "wave",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "expect_in_output": [
+    "output_results",
+    "per_step_output_multiplies_the_wall_time=true",
+    "output_every_n_steps=1",
+    "output_section_is_over_half_the_wall_time_with_factorisation=true",
+    "output_section_is_the_top_entry_with_factorisation=true",
+    "write_pvd_record_produced_a_file=true",
+    "VERDICT=one_vtu_per_step_multiplies_the_wall_time"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=output_stride_made_no_measurable_difference"
+  ],
+  "timeout_seconds": 900
+}

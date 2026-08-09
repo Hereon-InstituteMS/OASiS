@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#9, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. The upwind-DG advection matrix is genuinely non-symmetric (max|A - A.T| = 6.25e-02) and its symmetric part is only positive SEMI-definite. PARTIAL FALSIFICATION: scipy's cg does NOT raise 'RuntimeError: matrix not positive definite' -- it raises nothing at all, returns info = 1000 (maxiter) and a vector whose relative residual is 1.3e+03, so an exception-only gate accepts garbage. gmres (info 0, res 9.3e-11) and splu (res 8.0e-16, max|u-1| = 1.8e-15) both succeed. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets solver = gmres instead of cg for the wrong-variant solve, same arguments -- the switch the claim itself prescribes. Re-verified by execution 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'cg_info_nonzero=True', 'cg_relative_residual_gt_1=True' and 'gmres_beats_cg_by_gt_1e8=True' (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py FIXED 2026-08-08 (assertion changed): cg_claimed_message_emitted was CLAIMED_MSG in raised, and `raised` is '' exactly when the co-asserted cg_raised_an_exception=False holds -- so the pair was one measurement and neither half looked at what scipy WROTE. The falsified claim is that cg EMITS 'matrix not positive definite', and a message can be emitted without an exception. The solve now runs inside an fd-level capture (os.dup2 on fd 1 and 2) and the flag is the union over three channels: exception text, warning list, captured stdout+stderr; cg_claimed_message_channels prints which ones fired. Measured unmutated on scipy 1.15.3: cg_solver_output_bytes=0, cg_claimed_message_channels=[], cg_claimed_message_emitted=False -- scipy really does print nothing. CONTROLS executed 2026-08-08: (1) INJECTION -- os.write(2, b'scipy: matrix not positive definite') during the solve without raising: cg_raised_an_exception stays False, cg_claimed_message_channels=['stdout_stderr'], the flag flips to True, so the expectation cg_claimed_message_emitted=False goes missing and the fixture goes red; (2) TAUTOLOGY CONTROL -- the same injected run with the line replaced by a literal print('cg_claimed_message_emitted=False'): the expectation survives, which is the state the fixture shipped in. T2_MUTATE=1 still turns the fixture red (cg_info_nonzero=False, cg_relative_residual_gt_1=False, gmres_beats_cg_by_gt_1e8=False, 'FAIL: cg converged on the non-symmetric DG matrix', rc=2).",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "n_dofs=384",
+    "matrix_is_nonsymmetric=True",
+    "symmetric_part_is_positive_definite=False",
+    "cg_raised_an_exception=False",
+    "cg_claimed_message_emitted=False",
+    "cg_info_nonzero=True",
+    "cg_relative_residual_gt_1=True",
+    "gmres_info_zero=True",
+    "gmres_relative_residual_lt_1e-8=True",
+    "lu_relative_residual_lt_1e-12=True",
+    "lu_reproduces_exact_constant=True",
+    "gmres_beats_cg_by_gt_1e8=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

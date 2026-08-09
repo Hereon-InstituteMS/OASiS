@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for dealii hp_adaptive#2. Tier-2 for dealii hp_adaptive#2 \u2014 probe \"single_quadrature_rule\" of the shared hp translation unit _shared/hp_family.cc, compiled once and cached so seven fixtures share one build. An hp mesh mixing FE_Q(1..4) with a variable coefficient, assembled three times in one process: with the matched hp::QCollection, with a single QGauss(4), and with a single QGauss(2). A collection of size 1 is BROADCAST to every element (the probe reproduces exactly what hp::FEValues does with a one-entry collection), which is the usual shape of this bug. The entry's two \"widespread myths\" are re-tested rather than repeated: symmetry \u2014 max|A_ij - A_ji| is printed for the matched and the coarse assembly; both stay at round-off, so symmetry is NOT the tell; the graded damage \u2014 QGauss(2) leaves the operator singular and SolverCG runs to its limit and throws SolverControl::NoConvergence with a residual that has grown by orders of magnitude, while QGauss(4) converges normally and only shifts a rule-independent functional (the integral of the solution, always evaluated with the matched collection). Mutation control: T2_MUTATE=1 makes the run under test use the matched collection, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "hp_adaptive",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "run_under_test_threw_noconvergence=true",
+    "run_under_test_residual_grew_above_the_initial_residual=true",
+    "run_under_test_rule=single_qgauss2",
+    "run_under_test_q_collection_matches_fe_collection=false",
+    "coarse_rule_broke_matrix_symmetry=false",
+    "moderate_rule_converged=true",
+    "moderate_rule_shifts_the_functional=true",
+    "VERDICT=a_single_coarse_rule_leaves_the_hp_operator_unsolvable"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=solver_converged"
+  ],
+  "timeout_seconds": 900
+}

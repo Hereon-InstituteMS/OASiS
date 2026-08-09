@@ -1,13 +1,20 @@
 {
-  "_comment": "Tier-2 for 4C structural_dynamics input validation: STRUCTURAL DYNAMIC.DYNAMICTYPE validates against an allowed enum set at YAML parse. A made-up value triggers 'Could not match this input' with the STRUCTURAL DYNAMIC block echoed — distinct from the PROBLEMTYPE-level validation since this is a SUB-key inside a section. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for 4C structural_dynamics input validation: STRUCTURAL DYNAMIC.DYNAMICTYPE validates against an allowed enum set at YAML parse. A made-up value triggers 'Could not match this input' with the STRUCTURAL DYNAMIC block echoed — distinct from the PROBLEMTYPE-level validation since this is a SUB-key inside a section. Verified empirically 2026-06-01. INDEX FIX 2026-08-03: pitfall_index was 7, but the structural_dynamics pitfall list had only 7 entries (0-6) and the DYNAMICTYPE-enum entry is index 6 — the fixture was pointing past the end of the list and its Tier-2 result was never attributed to any pitfall. Corrected to 6, re-run and still passing against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): DYNAMICTYPE is set to 'Statics' instead of 'TotallyMadeUpScheme'. 'Could not match this input' and the echoed STRUCTURAL DYNAMIC / DYNAMICTYPE block all disappear. Proved KILLED 2026-08-07.",
   "backend": "fourc",
   "physics": "structural_dynamics",
-  "pitfall_index": 7,
+  "pitfall_index": 6,
   "mode": "cmd",
   "expect_in_output": [
     "Could not match this input",
     "STRUCTURAL DYNAMIC",
     "DYNAMICTYPE"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_key_correction": "off-by-one drift: keyed 7 where the list ends at 6; the DYNAMICTYPE enum claim IS index 6",
+  "_mutation": {
+    "note": "remove the pathology: give DYNAMICTYPE a value that IS in the enum (Statics). The section matches its spec, nothing is echoed back, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
 }

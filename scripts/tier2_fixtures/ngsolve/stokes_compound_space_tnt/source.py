@@ -8,13 +8,25 @@ recommended unpack is '(u, p), (v, q) = X.TnT()'.
 Verifies the exact result types so a future NGSolve API change
 that swaps lists for tuples (or flattens the structure) is
 caught.
+
+Mutation control (INVERTED POLARITY): this fixture only ever
+demonstrates the correct unpack, so there is no pathology to
+remove -- the control commits the documented mistake instead.
+T2_MUTATE=1 unpacks the compound TnT() with the single-space
+idiom `u, v = X.TnT()` rather than `(u, p), (v, q) = X.TnT()`,
+so `u` binds the whole trial LIST instead of a proxy and the
+fixture loses u_type=ProxyFunction and goes red.
+Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
 from ngsolve import H1, FESpace, Mesh
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -26,7 +38,12 @@ def main() -> int:
     top_t = type(result).__name__
     inner_t = type(result[0]).__name__
     inner_len = len(result[0])
-    (u, p), (v, q) = result
+    # MUTATION SITE: the unpack idiom itself.  T2_MUTATE=1 commits the
+    # documented mistake -- the single-space unpack on a compound space.
+    if MUTATE:
+        u, v = result
+    else:
+        (u, p), (v, q) = result
     u_t = type(u).__name__
 
     print(f"top_type={top_t}")

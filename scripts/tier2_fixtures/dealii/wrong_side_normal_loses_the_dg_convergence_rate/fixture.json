@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM advection_dg::2: [Numerical] Face integrals require careful normal orientation handling via FEValues / FEInterfaceValues. Signal: FEFaceValues / FEInterfaceValues evaluated on the (-) side gives normal pointing FROM (-) TO (+); swapping +/- in the jump integral gives a SIGN ERROR \u2014 the assembled SparseMatrix is \u2026 WHAT THIS RUNS: -- probe \"flipped_face_sides\" of the shared DG-transport translation unit _shared/dgtransport_family.cc, compiled once and cached so eleven fixture directories share ONE C++ build. The interior-face term with the normal taken from the OTHER side while the jump [[v]] is left alone -- the sign error the entry describes -- against the correct assembly, at three refinement levels with a smooth manufactured solution. The entry says the result \"is the TRANSPOSE of what was intended\". It is not: the relative distance between the flipped matrix and the transpose of the correct one is printed and is O(1). And the consequence is worse than the claimed \"degrades to O(1)\": the L2 error GROWS under refinement, from ~2e4 to ~9e5, while the correct operator holds its second order. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: flipped_matrix_is_the_transpose_of_the_correct_one=false; correct_operator_shows_the_expected_order_two_rate=true; under_test_rate_is_not_even_half_an_order=true; under_test_error_grew_under_refinement=true; VERDICT=wrong_side_normal_loses_the_convergence_rate. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "advection_dg",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "expect_in_output": [
+    "flipped_matrix_is_the_transpose_of_the_correct_one=false",
+    "correct_operator_shows_the_expected_order_two_rate=true",
+    "under_test_rate_is_not_even_half_an_order=true",
+    "under_test_error_grew_under_refinement=true",
+    "VERDICT=wrong_side_normal_loses_the_convergence_rate"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=rate_preserved"
+  ],
+  "timeout_seconds": 1200
+}

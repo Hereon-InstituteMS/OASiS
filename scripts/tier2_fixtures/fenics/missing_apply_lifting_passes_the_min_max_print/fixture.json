@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for fenics time_dependent_heat::0 \u2014 omitting apply_lifting in an assemble-once time loop is a SILENT failure: set_bc still overwrites the Dirichlet rows, so the min/max print lands exactly on the prescribed values and KSP reports converged, while the interior is wrong by an order of magnitude. Run: unit square 32x32, T=1 on the left wall, T=0 on the right, T=0 initially, no source, dt=0.01, 20 backward-Euler steps; the wrong variant assembles b, ghost-updates and calls set_bc but never apply_lifting, the right variant is the same loop with it. Printed: BOTH variants emit the identical 'T in [0.0000, 1.0000]' at every step and KSP converged reason 4 at every step, yet the run without lifting stores 19.6x less heat (int T dx = 2.2409e-02 against 4.3840e-01) and its mid-height profile reads 0.0136, 0.0110, 0.0086 where the correct one ramps 0.8377, 0.6811, 0.5352 down to 0.0882. The observable that DOES see it is the assembled Galerkin residual over the unconstrained dofs: 3.9e-15 with lifting, 9.8e-01 without. Mutation control: T2_MUTATE=1 calls apply_lifting in the checked variant, the residual drops to machine zero and the stored-heat deficit disappears. COVERS TRIMMED 2026-08-06: it also named heat::10, which missing_apply_lifting_silently_wrong already owns \u2014 a claim may have only one owner or the coverage fraction double-counts it, so this fixture keeps time_dependent_heat::0, where the transient min/max blindness is stated.",
+  "backend": "fenics",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 0,
+  "covers": [
+    "time_dependent_heat::0"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "with_lifting_range_line_every_step=T in [0.0000, 1.0000]",
+    "checked_range_line_every_step=T in [0.0000, 1.0000]",
+    "checked_prints_the_same_reassuring_range_line_at_every_step=True",
+    "checked_ksp_reason_is_4_every_step=True",
+    "with_lifting_residual_at_machine_zero=True",
+    "checked_stored_heat_is_more_than_ten_times_too_small=True",
+    "checked_free_dof_residual_is_order_one=True",
+    "VERDICT=missing_apply_lifting_is_invisible_to_a_min_max_print"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=lifting_made_no_difference"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "ngsolve dg_methods#8 (no tanh in the CoefficientFunction namespace; build it from exp). Run 2026-08-06 on NGSolve 6.2.2604, unit_square maxh=0.4. tanh really is absent and an unqualified tanh(x) raises NameError \"name 'tanh' is not defined\", which is what the claim quotes. CORRECTION: the claim's parenthetical 'no tanh/sinh/cosh' is FALSE -- ngsolve.sinh and ngsolve.cosh both exist and both evaluate on a CoefficientFunction, matching math.sinh/math.cosh at three sample points; only tanh is missing. Every function the claim lists as present (exp/log/sin/cos/tan/atan/atan2) is present. Both the claim's exp identity and the sinh/cosh quotient reproduce math.tanh at those points. Mutation: pointing the presence probe at 'tan' instead of 'tanh' removes the NameError and the fixture fails on tanh_call_raises_nameerror. MUTATION CONTROL (re-runnable): T2_MUTATE=1 points the presence probe at 'tan' instead of 'tanh' (constant PROBE, used by getattr(ngsolve, PROBE) and by the eval of PROBE(x)), so the name resolves and no NameError is raised. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'tanh_call_raises_nameerror=True', 'tanh_nameerror_literal=True' and 'nameerror_names_tanh=True' so the fixture goes red. CAVEAT: despite the docstring, 'all_listed_present' is a hasattr check only -- exp/log/sin/cos/ tan/atan/atan2 are never evaluated on a CoefficientFunction, only sinh and cosh are; and 'nameerror_names_tanh' tests exc.name, the missing name, not the interpreter's 'Did you mean' suggestion. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "dg_methods",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "tanh_in_namespace=False",
+    "tanh_call_raises_nameerror=True",
+    "tanh_nameerror_literal=True",
+    "nameerror_names_tanh=True",
+    "all_listed_present=True",
+    "sinh_present=True",
+    "cosh_present=True",
+    "only_tanh_is_really_missing=True",
+    "sinh_evaluates_on_cf=True",
+    "cosh_evaluates_on_cf=True",
+    "exp_identity_reproduces_tanh=True",
+    "sinh_over_cosh_reproduces_tanh=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics reaction_diffusion#4: a nonlinear reaction term needs a true Newton solve. Lagging one factor of the nonlinearity (Picard: -0.01*lap(u_new) + 5*u_old*u_new = 1, re-solved with LinearProblem) is far worse than it looks. Steady problem: -0.01*lap(u) + 5*u^2 = 1 on a 24x24 unit square, u = 1 on the whole boundary, initial guess u = 1. The residual reported for both methods is the SAME quantity: the l2 norm of the true nonlinear residual with the Dirichlet rows zeroed. Observed on dolfinx 0.10.0: Newton through NonlinearProblem converges in 5 iterations with the history 1.597e-01, 2.879e-02, 2.766e-03, 4.657e-05, 1.657e-08, 2.460e-15 -- every step satisfies r_{k+1} < r_k**1.5 once r < 0.1. 200 lagged (Picard) iterations end at 2.968e-09, still six orders above the Newton answer after forty times the work, and both are converging on the same solution (max difference below 1e-3). NOTE on the ratio: measured on the true nonlinear residual with the Dirichlet rows zeroed, the Picard ratio is a STEADY 0.920 per iteration. Neither the \"steady ~0.5\" of the original claim nor the \"alternating 0.24 / 2.78\" of its correction reproduced here; only the 0.92 envelope did. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "newton_converged_in_under_10_iterations=True",
+    "newton_final_residual_below_1e-12=True",
+    "newton_residual_exponent_at_least_1p5_each_step=True",
+    "lagged_and_newton_head_for_the_same_solution=True",
+    "lagged_residual_after_200_iterations_still_above_1e-10=True",
+    "lagged_ratio_is_steady_not_alternating=True",
+    "lagged_envelope_shrinks_slower_than_0p98_per_iteration=True",
+    "VERDICT=lagging_the_reaction_stalls_where_newton_is_quadratic"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=lagging_the_reaction_was_as_good_as_newton"
+  ],
+  "timeout_seconds": 300
+}

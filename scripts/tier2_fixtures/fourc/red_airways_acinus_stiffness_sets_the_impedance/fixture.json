@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::reduced_airways#2. Half the Signal holds and half does not. On upstream red_airway_one_acinus_NeoHookean the terminal impedance is the MAT_0D_MAXWELL_ACINUS_* stiffness/viscosity, not a separate 'acinar condition'; dividing all four by 1e6 drops the inlet pressure from 521.378 to 5.2138e-04, i.e. onto the prescribed downstream pressure -- the 'no impedance' half, exact to six digits. The 'tidal volume diverges' half is FALSE: the acinar volume is 1.0236e+03 in both arms, agreeing to better than 1e-12 relative, because it is fixed by the prescribed inflow. 4C prints no acinus/compliance warning either way. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "reduced_airways",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=1",
+    "EXIT_SOFT=1",
+    "is WRONG --> actresult= 5.21378152753113836e-04",
+    "SOFT_INLET_PRESSURE_IS_MILLIONTH=1",
+    "|Pressure|_max:  5.214E-04",
+    "is WRONG --> actresult= 1.02360000000000650e+03",
+    "ACINUS_VOLUME_RELATIVE_CHANGE_UNDER_1E-12=yes",
+    "VERDICT: HYPERCOMPLIANT_ACINUS_DIVERGES_TIDAL_VOLUME=no",
+    "SOFT_ACINUS_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SOFT=0",
+    "SOFT_INLET_PRESSURE_IS_MILLIONTH=0",
+    "VERDICT: HYPERCOMPLIANT_ACINUS_DIVERGES_TIDAL_VOLUME=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the acinus at its calibrated stiffness in the SOFT arm. The inlet pressure stays at 521.378, the millionth-scale marker goes to 0 and the 5.2138e-04 line disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "    soft = soft.replace(a, b)",
+    "to": "    soft = soft"
+  }
+}

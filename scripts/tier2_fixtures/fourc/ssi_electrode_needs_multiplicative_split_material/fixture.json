@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::ssi#1 and the execution that FALSIFIED its Signal. Replacing MAT_MultiplicativeSplitDefgradElastHyper with a plain MAT_ElastHyper (same elastic summand, same density) on upstream ssi_mono_3D_1hex8_elch_polyiso_NMC-622_growthlaw.4C.yaml does not silently give zero swelling: 4C aborts with 'Your material does not allow to evaluate a monolithic ssi material!' from src/solid_scatra_3D_ele/4C_solid_scatra_3D_ele_calc.cpp, raised inside SolidScatraEleCalc::evaluate_d_stress_d_scalar — the element asks for the concentration derivative of the stress, which is the swelling coupling term, and a plain hyperelastic material cannot supply it. Exit 1, no result test reached. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssi",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_SPLIT=0",
+    "EXIT_PLAIN=1",
+    "processor 0 finished normally",
+    "Your material does not allow to evaluate a monolithic ssi material!",
+    "4C_solid_scatra_3D_ele_calc.cpp",
+    "FAILS_IN_DSTRESS_DSCALAR=1",
+    "PLAIN_RESULT_TESTS_PERFORMED=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SPLIT=1",
+    "EXIT_PLAIN=0",
+    "FAILS_IN_DSTRESS_DSCALAR=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the multiplicative-split material in the second arm. The element gets its dStress/dScalar, the abort vanishes and EXIT_PLAIN becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(old, new, 1))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

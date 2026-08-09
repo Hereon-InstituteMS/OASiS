@@ -1,0 +1,27 @@
+{
+  "_comment": "Tier-2 for sparta particle_emission:7, executed on the installed binary (SPARTA 24 Sep 2025, spa_serial) on the examples/circle geometry. Twelve compute surf keywords (n nwt nflux mflux press shx ke erot evib etot fx fy) are each run against a 'vanish' wall and against a 'diffuse' control wall — 24 decks, identical apart from the wall model and the keyword. Exactly ONE cell of that grid dies: etot on the vanish wall returns a NEGATIVE status (a signal, not an exit code SPARTA chose) with an EMPTY error list, so a driver grepping for the string 'ERROR' records it as clean. Every other keyword survives the same wall, etot survives every other wall, and the vanish wall with no surface tally at all runs perfectly — so it is the PAIRING, not the wall model. The documented workaround (ke erot evib in one compute) is executed on the same wall and completes. Nothing numeric is asserted; the assertion is a return code and the absence of a message, which is the only honest form for a crash. MECHANISM, read from the source and stated in the knowledge entry rather than pinned here: SurfCollideVanish::collide and SurfCollideTransparent::collide are the only two styles that leave the 'reaction' out-parameter unassigned (the argument is unnamed in their signatures) where every other style writes reaction = 0 first, and ComputeSurf::surf_tally's ETOT branch indexes surf->sr[isr] on that stale value with no reaction model loaded; under gdb the failing frame is SPARTA_NS::ComputeSurf::surf_tally called from SPARTA_NS::Update::move. COVERS: particle_emission:7. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the vanish wall becomes 'diffuse 300.0 1.0' — the same model and temperature the control arm already uses, the single edit that removes the deleting collision model — with the compute, the fix ave/surf, the geometry, the seed, the density, the inflow and the run length untouched. Nothing crashes. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: etot_on_a_vanish_wall_dies_on_a_signal=True, it_dies_with_no_error_line_at_all=True. The control-arm assertions describe the deck the hook turns everything into and correctly stay True. Re-verify: cd scripts/tier2_fixtures/sparta/surf_tally_etot_on_a_deleting_wall && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary and examples/circle: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line, which forbid_in_output turns into a failure. CLAIM KEYS REPOINTED 2026-08-07: a 25 kB per-physics payload ceiling (test_kratos_sparta_verified_2026_08) forced four cross-cutting claims into better-fitting rows, so the keys quoted above moved with them. The decks, the evidence and the mutation control are unchanged.",
+  "backend": "sparta",
+  "physics": "particle_emission",
+  "pitfall_index": 7,
+  "covers": [
+    "particle_emission:7"
+  ],
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "etot_on_a_vanish_wall_dies_on_a_signal=True",
+    "it_dies_with_no_error_line_at_all=True",
+    "every_other_keyword_survives_the_same_wall=True",
+    "etot_is_fine_on_an_ordinary_wall=True",
+    "the_whole_keyword_list_is_fine_on_an_ordinary_wall=True",
+    "ke_erot_evib_together_are_the_workaround=True",
+    "the_deleting_wall_alone_is_harmless=True",
+    "RESULT=pass"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:",
+    "SKIP:"
+  ]
+}

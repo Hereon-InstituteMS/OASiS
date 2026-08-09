@@ -1,12 +1,14 @@
 {
-  "_comment": "Tier-2 fixture for poisson pitfall #0: 'Must call triangulation.refine_global() before distributing DOFs. Calling distribute_dofs on a 1-cell triangulation runs but gives a useless 4-DoF system. Signal: SolverControl reports Convergence step 0 value... dof_handler.n_dofs() returns 4.' We verify the n_dofs() returns the small value as predicted.",
+  "_comment": "Tier-2 fixture for poisson pitfall #0: 'Must call triangulation.refine_global() before distributing DOFs. Calling distribute_dofs on a 1-cell triangulation runs but gives a useless 4-DoF system. Signal: SolverControl reports Convergence step 0 value... dof_handler.n_dofs() returns 4.' We verify the n_dofs() returns the small value as predicted.MUTATION CONTROL (2026-08-07): MUTATION APPLIED AND IT DOES NOT DISCRIMINATE. The T2_MUTATE=1 hook is left in source.cpp so the negative result stays re-runnable, but NO _mutation recipe is declared: a declared recipe that survives reads as a defect rather than as the finding it is (same treatment as dune/point_indicator_selects_no_facet and febio/static_activation_ramp_shape_does_not_matter). Re-run by hand from the fixture directory after any harness run has built it: `T2_MUTATE=1 ./_build/prog`. The hook calls tria.refine_global(3) — precisely the call this pitfall is about forgetting. Measured 2026-08-07: n_dofs goes from 4 to 81, the program prints \"FIXTURE WARNING: n_dofs is 81, not 4\" and exits 2, and the fixture STILL PASSES. The reason is structural: expect_in_output is [\"n_dofs\", \"DoFHandler\"] and both strings live in the line \"DoFHandler::n_dofs() = <value>\", which is printed whatever the value is. The number 4 — the entire content of the pitfall — is asserted only inside the C++, and mode compile_and_run ignores the exit code and greps stdout, so the harness never sees that assertion fail. The fix would be an expectation naming the measured value; it is deliberately NOT made here, because tuning a fixture until its mutation goes red is how a mutation control stops being evidence. FIXED 2026-08-08 (expectations changed). The two expectations were the bare words 'n_dofs' and 'DoFHandler', both of which the line 'DoFHandler::n_dofs() = <v>' writes whatever the count is. Executed under T2_MUTATE=1 (refine_global(3)): the line reads 'DoFHandler::n_dofs() = 81' -- both old needles still present, so the fixture passed at 81 DoFs while claiming 4. That the fixture 'STILL PASSES' under mutation was already written in its own source comment. It now asserts dof_handler_n_dofs=4 and triangulation_n_active_cells=1, and forbids the FIXTURE WARNING arm. Measured 2026-08-08 through the runner: unmutated PASSED; T2_MUTATE=1 FAILED (n_dofs=81, n_active_cells=64) on both expectations plus the forbidden token. STILL UNTESTED, stated rather than hidden: the Signal's other half, 'SolverControl reports Convergence step 0', is not exercised -- this fixture builds no solver.",
   "backend": "dealii",
   "physics": "poisson",
   "pitfall_index": 0,
   "mode": "compile_and_run",
   "expect_in_output": [
-    "n_dofs",
-    "DoFHandler"
+    "dof_handler_n_dofs=4",
+    "triangulation_n_active_cells=1"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "FIXTURE WARNING"
+  ]
 }

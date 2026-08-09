@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics linear_elasticity#7: XDMFFile.write_function rejects a Function whose degree does not match the mesh degree. Wrong variant: write a P2 Function on a P1 mesh. The claim also denies an older wording ('XDMF mesh must be P1'), so the fixture prints the message it actually received and checks that older text is absent. Mutation control: T2_MUTATE=1 interpolates into a P1 space first, which is the documented cure; the write succeeds. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "linear_elasticity",
+  "pitfall_index": 7,
+  "mode": "python",
+  "expect_in_output": [
+    "write_function_raised=True",
+    "Degree of output Function must be same as mesh degree",
+    "old_wording_present=False",
+    "VERDICT=xdmf_requires_matching_degree"
+  ],
+  "forbid_in_output": [
+    "Traceback"
+  ]
+}

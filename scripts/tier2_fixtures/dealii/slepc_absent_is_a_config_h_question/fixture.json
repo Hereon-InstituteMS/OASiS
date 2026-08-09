@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii eigenvalue#0. Tier-2 for dealii eigenvalue#0: how to tell whether SLEPc is available, and what the compiler actually says when it is not. The claim's point is that \"header not found\" is the WRONG availability test. On a SOURCE build configured without SLEPc \u2014 the case here \u2014 the header IS installed and includes cleanly, because the whole file body sits behind ifdef DEAL_II_WITH_SLEPC. The failure only surfaces when a class is named. The reliable test is config.h. Mutation control: T2_MUTATE=1 compiles the same file without naming any SLEPc class, so it builds and the diagnostic disappears. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "eigenvalue",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "expect_in_output": [
+    "slepc_enabled=false",
+    "header_present=true",
+    "header_includes_cleanly=true",
+    "names_a_slepc_class=true",
+    "compiles=false",
+    "has not been declared"
+  ],
+  "forbid_in_output": [
+    "No such file or directory"
+  ],
+  "timeout_seconds": 600
+}

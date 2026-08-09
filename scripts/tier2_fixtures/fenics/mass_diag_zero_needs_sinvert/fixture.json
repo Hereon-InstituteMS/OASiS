@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for fenics eigenvalue#4: the two corrections to the Dirichlet mass matrix recipe. (1) `diag=0.0` on B does NOT work with the default spectral transform. The default EPS transform is a plain shift, which factorises B itself, and the zeroed constrained rows are an exact zero pivot. Wrong variant: B assembled with bcs and diag=0.0 and no ST set. Right variant: the same matrices with eps.getST().setType(SLEPc.ST.Type.SINVERT). (2) Assembling B with `bcs=[]` is NOT a clean substitute. With a CONSISTENT mass matrix the boundary-to-interior blocks are non-zero, so it solves a different pencil. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "eigenvalue",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "Zero pivot in LU factorization",
+    "Zero pivot row 0 value 0. tolerance 2.22045e-14",
+    "returned a result with an exception set",
+    "primary_default_transform_hit_a_zero_pivot=True",
+    "primary_mass_matrix_wrong_in_second_significant_digit=True",
+    "primary_error_shrinks_tenfold_under_refinement=True",
+    "diag_zero_matches_reduced_problem_on_every_mesh=True",
+    "VERDICT=diag_zero_needs_sinvert_and_bcs_empty_is_a_different_pencil"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=default_transform_and_bcs_empty_were_both_fine"
+  ],
+  "timeout_seconds": 300
+}

@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#0. The rule holds (PARTICLE DYNAMIC/SPH is mandatory for a PD run) but both quoted Signals are fabricated. Deleting the sub-section from upstream particle_sph_2d_pdbody_gravity.4C.yaml aborts with 'negative initial particle spacing!' from particle/src/interaction/4C_particle_interaction_sph.cpp — INITIALPARTICLESPACING lives there and sets every particle's mass. There is no 'pd_neighbor_pairs = 0' string and no 'BOUNDARYPARTICLEFORMULATION not set'. 4C does print 'Number of pd_neighbor_pairs in peridynamic evaluation on this proc: N' every step, but that is the inter-body CONTACT pair count and it is 0 on essentially every step of the baseline run that passes all ten of its result tests, so reading 0 there as an error is a false-alarm generator. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITHSPH=0",
+    "EXIT_NOSPH=1",
+    "processor 0 finished normally",
+    "BASELINE_RESULT_TEST_FAILURES=0",
+    "negative initial particle spacing!",
+    "4C_particle_interaction_sph.cpp, line 249",
+    "CLAIMED_PD_NEIGHBOR_PAIRS_EQUALS_TEXT=0",
+    "CLAIMED_BOUNDARYPARTICLEFORMULATION_NOT_SET=0",
+    "Number of pd_neighbor_pairs in peridynamic evaluation on this proc: 0",
+    "ZERO_PD_NEIGHBOR_PAIRS_IS_NORMAL_IN_A_PASSING_RUN=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHSPH=1",
+    "EXIT_NOSPH=0",
+    "ZERO_PD_NEIGHBOR_PAIRS_IS_NORMAL_IN_A_PASSING_RUN=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the PARTICLE DYNAMIC/SPH sub-section in the second arm too. The abort and its diagnostic vanish and EXIT_NOSPH becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "to": "open(sys.argv[2], \"w\").write(t)",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(blk, \"\"))"
+  }
+}

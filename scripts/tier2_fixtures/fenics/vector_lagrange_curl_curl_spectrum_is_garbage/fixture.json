@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM magnetostatics::2: in 3D you MUST use H(curl) Nedelec elements for curl-curl; vector Lagrange does not fail loudly - it assembles an ordinary matrix and returns finite numbers - but the entire discrete spectrum is wrong. WHAT THIS RUNS: the 2D Maxwell cavity eigenproblem (curl E, curl v) = lambda (E, v) with a zero tangential trace on the unit square, exact lambda/pi^2 = 1, 1, 2, 4, 4, 5, 5. Both matrices are formed densely on the free dofs and the pencil is solved with LAPACK, so no iterative solver or spectral transform can be blamed; the exact gradient kernel is dropped at lambda/pi^2 < 1e-6. It also assembles the 3D curl-curl on a 4x4x4 cube for both elements to check the claim's correction that nothing about either matrix looks degenerate. OBSERVED, copied from the run: lagrange1 at 16x16 gives lambda/pi^2 = [0.00787, 0.028, 0.03188, 0.04822, 0.06511, 0.09215, 0.09379] and at 32x32 [0.00243, 0.00885, 0.01172, 0.02001, 0.02454, 0.0276, 0.03297], modes_within_5_percent_of_exact=0 of 7 at both levels; the N1curl reference at 32x32 gives [0.99952, 0.99995, 2.00053, 3.99572, 3.99572, 4.99564, 5.00382] with reference_max_relative_error=0.00107; degree-2 vector Lagrange at 16x16 interleaves 2 nearly-right modes with spurious ones; cube_4x4x4 lagrange1 dofs=375 nonzeros=8217 max_abs_entry=1.0000 all_zero_rows=0 and n1curl1 dofs=604 nonzeros=6364 max_abs_entry=26.6667 all_zero_rows=0, so both_3d_matrices_look_ordinary=True. FINDING against the claim text, measured twice by two independent agents: the claim says the spurious vector Lagrange values DRIFT UPWARD under refinement (0.108, 0.240, 0.444). They drift DOWNWARD - under_test_lowest_modes=[0.04021, 0.00787, 0.00243] at 8x8 / 16x16 / 32x32 - collapsing onto zero as h falls, which is the classic spurious-mode picture. The claim's qualitative point stands (no mode is near a true eigenvalue at any level) but the direction in the entry is wrong. COVERS TRIMMED 2026-08-06: this fixture also named maxwell::0, which vector_lagrange_cannot_carry_the_normal_jump owns. The two claims ask for different observables and each fixture measures its own: magnetostatics::2 is about the discrete curl-curl SPECTRUM being wrong, while maxwell::0 is about the post-processed B field carrying spurious normal jumps and the error refusing to fall below a few per cent. Crediting one claim to two fixtures counts it twice and leaves the other looking uncovered. Mutation control: T2_MUTATE=1 puts N1curl in the space under test, its modes sit on the exact spectrum and the garbage-spectrum signal disappears - checked, so the fixture cannot pass with the pathology absent. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars).",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 2,
+  "mode": "python",
+  "covers": [
+    "magnetostatics::2"
+  ],
+  "expect_in_output": [
+    "curl_curl_form_compiles_on_every_family=True",
+    "reference_n1curl_matches_exact_within_1_percent=True",
+    "under_test_has_no_mode_within_5_percent_of_the_exact_spectrum=True",
+    "under_test_spurious_modes_collapse_toward_zero=True",
+    "vector_lagrange_degree_2_interleaves_real_and_spurious=True",
+    "both_3d_matrices_look_ordinary=True",
+    "VERDICT=vector_lagrange_spectrum_is_wrong_while_n1curl_is_right"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=space_under_test_reproduced_the_exact_spectrum"
+  ],
+  "timeout_seconds": 300
+}

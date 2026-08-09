@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii stokes#1. Tier-2 for dealii stokes#1 -- probe \"block_renumbering\" of the shared translation unit _shared/stokes_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. Taylor-Hood Q2/Q1 on a 2-refinement hyper_cube. The probe prints the block SIZES before and after DoFRenumbering::component_wise -- they are identical, so the sizes are NOT the diagnostic -- and then assembles the BlockSparseMatrix and reports the (1,1) block's Frobenius norm, which is the diagnostic. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "stokes",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "counts_are_identical=true",
+    "pressure_pressure_block_is_nonzero=true",
+    "VERDICT=block_indexing_is_wrong_without_component_wise"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=block_indexing_is_correct"
+  ],
+  "timeout_seconds": 900
+}

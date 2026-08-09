@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 Layer-C: FEBio numerical-correctness gate \u2014 the first executed numeric assertion this backend has ever had. 2x2x2 hex8 patch test on [0,1]^3: u = (F-I).X prescribed on all 26 boundary nodes via the `prescribed deformation` BC, the single interior node left free. Asserts (a) the free node lands on the exact linear field to 1e-12, (b) the Cauchy stress in all 8 elements equals the closed-form St.Venant-Kirchhoff pushforward sigma = F(lam tr(E) I + 2 mu E)F^T/J to 1e-8, (c) the stress is uniform across the patch. Assertion (b) pins the constitutive law: FEBio's `isotropic elastic` is SVK on the Green-Lagrange strain, NOT small-strain linear elasticity \u2014 a fact that had been asserted in the catalog but never executed. Verified 2026-08-03 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF, skyline): interior-node error 1.39e-17, max stress error 3.46e-11, element spread 1.00e-13. NO-BINARY BEHAVIOUR (changed 2026-08-03): a missing febio4 is now a FAILURE, not a skip. The fixture prints 'FAIL:' and returns 1, expect_in_output pins the success TOKEN rather than the bare key prefix, and 'skipped_no_binary' is in forbid_in_output. Previously all five febio fixtures printed '<key>=skipped_no_binary', returned 0 and satisfied a bare '<key>=' prefix expectation, so on a host without FEBio the rows were green while verifying nothing and the tier-2 floor certified an unrun check. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 builds the expected Cauchy stress from SMALL-STRAIN linear elasticity instead of the St.Venant-Kirchhoff pushforward, i.e. it asserts the very constitutive law this fixture exists to rule out. This fixture is a numerical-correctness gate rather than a pitfall reproduction, so the control shows the gate can fail. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'febio_patch_test=passed' is no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 98,
+  "mode": "python",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "febio_patch_test=passed"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "skipped_no_binary"
+  ]
+}

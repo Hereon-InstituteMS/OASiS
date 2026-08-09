@@ -28,9 +28,17 @@ This fixture verifies both ends of the invariant:
   * Newton(maxit=20)  → no TypeError, returns (iters, conv).
   * Newton(maxits=20) → TypeError with the specific kwarg
                         error string.
+
+Mutation control: T2_MUTATE=1 applies the documented fix at the
+pathology site — the second Newton call passes maxit=20 instead
+of maxits=20. No TypeError is then raised, so
+`newton_maxits_raises_typeerror=True` and
+`newton_maxits_diag_has_maxits=True` both disappear from the
+output. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from netgen.geom2d import unit_square
@@ -42,6 +50,8 @@ from ngsolve import (
     Mesh,
     dx,
 )
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def main() -> int:
@@ -68,8 +78,11 @@ def main() -> int:
     gfu2 = GridFunction(fes)
     caught = False
     msg = ""
+    # The pathology: the plural spelling. T2_MUTATE=1 swaps in the
+    # documented fix (`maxit`) at exactly this call.
+    kw = {"maxit": 20} if MUTATE else {"maxits": 20}
     try:
-        solvers.Newton(a, gfu2, maxits=20, printing=False)
+        solvers.Newton(a, gfu2, printing=False, **kw)
     except TypeError as exc:
         msg = str(exc)
         caught = "unexpected keyword argument 'maxits'" in msg

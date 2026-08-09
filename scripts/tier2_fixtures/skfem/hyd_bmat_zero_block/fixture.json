@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem hydraulic_resistance#1, verified 2026-08-06 on skfem 12.0.1 / scipy 1.15.3. Claim: bmat([[A, B.T], [B, None]]) is the canonical Stokes block assembly and passing a scalar 0 instead of None 'raises TypeError', signalled by \"no supported conversion for types: (dtype('int64'),)\" or 'unsupported operand type for *'. Ran: bmat with a scalar int 0, a scalar float 0.0, None, and an explicit csr_matrix zero block. Printed: THE EXCEPTION TYPE AND THE MESSAGE ARE BOTH WRONG. A scalar zero raises ValueError, not TypeError, with the message 'scipy sparse array classes do not support instantiation from a scalar'; neither quoted phrase appears anywhere, so an `except TypeError` around the assembly does not catch it and a gate grepping for either phrase never matches. The float 0.0 fails identically, so the int64 dtype in the old quoted message was incidental too. The None form works as described: shape (9,9) with 42 non-zeros, byte-identical to an explicit csr_matrix((nP,nP)) zero block (difference has 0 stored entries), so the two really are interchangeable. MUTATION CONTROL (re-runnable): T2_MUTATE=1 passes None instead of the scalar zero into sp.bmat at the pathology site (the zero loop variable), which is the fix the entry prescribes. Re-verified by execution 2026-08-06 on skfem 12.0.1 / scipy 1.15.3: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'scalar_int_raises=True', 'scalar_float_raises=True', 'is_a_ValueError=True' and 'actual_message_mentions_instantiation_from_a_scalar=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "hydraulic_resistance", "pitfall_index": 1, "mode": "python",
+  "expect_in_output": [
+    "scalar_int_raises=True",
+    "scalar_float_raises=True",
+    "is_a_TypeError=False",
+    "is_a_ValueError=True",
+    "quoted_no_supported_conversion_present=False",
+    "quoted_unsupported_operand_present=False",
+    "actual_message_mentions_instantiation_from_a_scalar=True",
+    "except_TypeError_would_catch_it=False",
+    "none_gives_the_right_shape=True",
+    "none_and_explicit_are_interchangeable=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

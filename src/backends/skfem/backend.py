@@ -43,12 +43,15 @@ class SkfemBackend(SolverBackend):
             return BackendStatus.NOT_INSTALLED, "No Python found"
         try:
             result = subprocess.run(
-                [python, "-c", "import skfem; print(skfem.__version__)"],
+                [python, "-c", "import skfem; print(skfem.__version__)"], stdin=subprocess.DEVNULL,
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
                 ver = result.stdout.strip()
-                return BackendStatus.AVAILABLE, f"scikit-fem {ver}"
+                # Name the interpreter, not just the version. `couple` takes a
+                # `command` argv and discover('list') is where an agent is sent
+                # to resolve it; "scikit-fem 12.0.1" alone leaves it guessing.
+                return BackendStatus.AVAILABLE, f"scikit-fem {ver} at {python}"
             return BackendStatus.NOT_INSTALLED, f"skfem import failed: {result.stderr.strip()}"
         except Exception as e:
             return BackendStatus.NOT_INSTALLED, f"Check failed: {e}"

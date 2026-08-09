@@ -1,13 +1,19 @@
 {
-  "_comment": "Tier-2 cheap fixture for linear_elasticity#5: GridIn::read_msh rejects Gmsh second-order quad (element type 10, Quad9) in 2D with a specific ExcMessage listing supported element types.",
+  "_comment": "Tier-2 cheap fixture for linear_elasticity#5: GridIn::read_msh rejects Gmsh second-order quad (element type 10, Quad9) in 2D with a specific ExcMessage listing supported element types. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook writes a linear Quad4 mesh (Gmsh element type 3) instead of the Quad9, GridIn::read_msh then returns normally and the expectation `is not supported` goes missing. WEAKNESS worth knowing: the OTHER two expectations do not flip, because the fixture's own failure branch prints 'expected ExcMessage about unsupported Element Identifier' and the string GridIn appears in it too, so `Element Identifier` and `GridIn` are matched by the fixture's own text rather than by deal.II's. The diagnostic-bearing expectation is `is not supported`. Proved KILLED 2026-08-07. FIXED 2026-08-08: dropped 'GridIn' and 'Element Identifier'. Both are written by this fixture in BOTH arms -- the failure arm prints 'FIXTURE FAILED: GridIn accepted' and 'expected ExcMessage about unsupported Element Identifier' -- so neither could tell acceptance from rejection. deal.II's own 'is not supported' remains, and the failure banner is now forbidden. Executed: unmutated PASSED, T2_MUTATE=1 FAILED on 'is not supported' plus the forbidden 'FIXTURE FAILED'.",
   "backend": "dealii",
   "physics": "linear_elasticity",
   "pitfall_index": 5,
   "mode": "compile_and_run",
   "expect_in_output": [
-    "Element Identifier",
-    "is not supported",
-    "GridIn"
+    "is not supported"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "FIXTURE FAILED"
+  ],
+  "_mutation": {
+    "note": "remove the pathology from the input: hand the same reader a LINEAR quad (Gmsh element type 3), a topology deal.II supports, so nothing is rejected",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }

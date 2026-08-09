@@ -1,0 +1,22 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#5, verified 2026-08-06 on skfem 12.0.1. Claim: the geometric term S : grad(du)^T grad(v) is essential; dropping it gives quadratic convergence at small strains (<5%) but STAGNATES at large strains, dropping ~10x then flat-lining around 1e-6 absolute. Ran: total-Lagrangian PK2 Neo-Hookean, MeshTri().refined(3), ElementVector(ElementTriP1), 162 DOFs, mu=lam=1, exact tangent vs material-only tangent at 2% and 30% right-edge stretch. Printed: 'QUADRATIC AT SMALL STRAINS' IS FALSE -- at 2% stretch (inside the claim's own <5% window) the material-only tangent converges LINEARLY at a constant ratio of 0.052, taking 8 iterations against the exact tangent's 3; it still reaches the right answer, so only the rate reveals the bug. At 30% stretch the shape of the claim holds: the residual drops 8.76x, flat-lines within a factor 1.113 over five iterations, and then goes NaN -- worse than stagnation. THE PLATEAU LEVEL IS WRONG: it sits at 1.77e-03, not 'around 1e-6', so the absolute threshold in the entry is unusable and the history SHAPE (drop then flat) is the real signal. MUTATION CONTROL (re-runnable): T2_MUTATE=1 restores the geometric term S : grad(du)^T grad(v) on the material-only path of tangent(), so both Newton runs use the exact tangent. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 10 expect_in_output strings; T2_MUTATE=1 removes 'small_material_only_is_linear_not_quadratic=True', 'small_material_only_costs_more_iterations=True', 'large_material_only_reached_nan=True' and 'large_material_only_converged=False' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "dofs_N=162",
+    "small_exact_is_quadratic=True",
+    "small_material_only_is_linear_not_quadratic=True",
+    "small_material_only_costs_more_iterations=True",
+    "small_material_only_converged=True",
+    "large_exact_converged=True",
+    "large_material_only_drops_about_10x=True",
+    "large_material_only_flat_lines=True",
+    "large_material_only_plateau_near_1e_minus_6=False",
+    "large_material_only_reached_nan=True",
+    "large_material_only_converged=False"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

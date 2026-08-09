@@ -1,13 +1,13 @@
 {
-  "_comment": "Tier-2 for Kratos plasticity#4: FRICTION_ANGLE (and other plasticity variables) lives in ConstitutiveLawsApplication (CLA), not in core KratosMultiphysics (KM). KM.FRICTION_ANGLE raises AttributeError at attribute lookup BEFORE properties.SetValue is reached. Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for Kratos plasticity#4: FRICTION_ANGLE (and other plasticity variables) lives in ConstitutiveLawsApplication (CLA), not in core KratosMultiphysics (KM). KM.FRICTION_ANGLE raises AttributeError at attribute lookup BEFORE properties.SetValue is reached. Verified empirically 2026-06-01. INDEX CORRECTED 4 -> 5: FRICTION_ANGLE module split is plasticity #5, not #4 (#4 is the HARDENING_CURVE=3 perfect-plasticity entry). The fixture source was already testing the #5 claim; the recorded index pointed one entry earlier, so it was crediting the wrong pitfall. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 reads FRICTION_ANGLE from KratosMultiphysics.ConstitutiveLawsApplication, the module that actually owns it, instead of core KratosMultiphysics, so the attribute resolves. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: AttributeError. Re-verify: cd scripts/tier2_fixtures/kratos/friction_angle_wrong_module && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers. FIXED 2026-08-08: the expectation 'FRICTION_ANGLE' was a bare word present in both arms -- and on the tool side it is Python echoing the fixture's own source line KM.FRICTION_ANGLE. Replaced by the full interpreter sentence, which pins the module the attribute is missing FROM, which is what the claim is about.",
   "backend": "kratos",
   "physics": "plasticity",
-  "pitfall_index": 4,
+  "pitfall_index": 5,
   "mode": "python",
   "expect_in_output": [
     "AttributeError",
     "KratosMultiphysics",
-    "FRICTION_ANGLE"
+    "Module KratosMultiphysics has no attribute FRICTION_ANGLE"
   ],
   "forbid_in_output": []
 }

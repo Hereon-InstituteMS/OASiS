@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#4, verified 2026-08-06 on skfem 12.0.1. Claim: C4 = lam C^-1 (x) C^-1 + 2(mu - lam lnJ) I4_sym_C^-1; dropping I4_sym_C^-1 for a scalar-multiplied identity I4 gives Newton rate ~0.5, linear instead of quadratic. Ran: total-Lagrangian PK2 Neo-Hookean, MeshTri().refined(3), ElementVector(ElementTriP1), 162 DOFs, mu=lam=1, residual int S:dE(v), tangent int dE(v):C4:dE(du) + int S:grad(du)^T grad(v), at 2% and 30% right-edge stretch. Printed: exact tangent converges in 3 and 4 iterations with the ratio collapsing (9.7e-05 then 6.4e-08); the dropped-I4sym tangent needs 8 and 33 iterations at a CONSTANT ratio, i.e. exactly linear. THE ~0.5 NUMBER IS NOT A CONSTANT: the measured asymptotic factor is 0.051 at 2% stretch and 0.436 at 30%, so it tracks the strain level and cannot be used as a fixed threshold. The inexact tangent NEVER diverges, never NaNs, emits no warning, and lands on the same displacement to 1.8e-13 / 3.3e-14 relative -- the cost is iterations, not correctness. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site inside tangent(), replacing the dropped-term branch 'sandwich = dEu' (the scalar-multiplied identity I4) with the exact symmetrised Cinv dEu Cinv sandwich. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 removes 's02_dropped_needs_more_iterations=True', 's02_dropped_rate_is_constant_linear=True', 's30_dropped_needs_more_iterations=True', 's30_dropped_rate_is_constant_linear=True', 'linear_factor_grows_with_stretch=True' (and raises the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "dofs_N=162",
+    "s02_dropped_needs_more_iterations=True",
+    "s02_dropped_rate_is_constant_linear=True",
+    "s02_exact_ratio_collapses=True",
+    "s02_dropped_converged=True",
+    "s02_dropped_warnings=[]",
+    "s02_same_answer=True",
+    "s30_dropped_needs_more_iterations=True",
+    "s30_dropped_rate_is_constant_linear=True",
+    "s30_exact_ratio_collapses=True",
+    "s30_dropped_converged=True",
+    "s30_same_answer=True",
+    "linear_factor_grows_with_stretch=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"],
+  "timeout_seconds": 180
+}

@@ -11,13 +11,29 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 #include <deal.II/fe/fe_dgq.h>
+#include <deal.II/fe/fe_q.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/affine_constraints.h>
 
+#include <cstdlib>
 #include <iostream>
+#include <memory>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology —
+// the DG space — and distributes a CONTINUOUS FE_Q(1) on the very same
+// non-conforming mesh, where make_hanging_node_constraints really does have
+// hanging nodes to constrain.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -27,9 +43,13 @@ int main()
   tria.begin_active()->set_refine_flag();
   tria.execute_coarsening_and_refinement();
 
-  FE_DGQ<2> fe(1);
+  std::unique_ptr<FiniteElement<2>> fe;
+  if (mutate())
+    fe = std::make_unique<FE_Q<2>>(1);
+  else
+    fe = std::make_unique<FE_DGQ<2>>(1);
   DoFHandler<2> dh(tria);
-  dh.distribute_dofs(fe);
+  dh.distribute_dofs(*fe);
 
   AffineConstraints<double> ac;
   DoFTools::make_hanging_node_constraints(dh, ac);

@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::scalar_transport#3, and the execution that corrected it. Four arms. (1) The inline route needs no geometry section and no external file: exit 0. (2) A well-formed 'STRUCTURE GEOMETRY' block in a Scalar_Transport deck is NOT caught by section-name validation — every known field has a GEOMETRY section, so the name is valid — and it is never read for the scatra field: the run exits 0 although the .exo it names does not exist (STRUCTURE_GEOM_TOUCHED_THE_FILE=0, STRUCTURE_GEOM_SECTION_NAME_REJECTED=0). Writing it instead of TRANSPORT GEOMETRY therefore produces no error at all. (3) 'TRANSPORT GEOMETRY' IS the scatra route: present alongside the inline section, 4C aborts from core/io/src/4C_io_meshreader.cpp with \"Multiple options to read mesh for discretization 'scatra'. Only one is allowed.\" and names them — 'TRANSPORT ELEMENTS' 'TRANSPORT GEOMETRY'. (4) A field name that does not exist IS rejected by name, which is the entry's Signal. The string an earlier version quoted, 'expected element category TRANSP but got SOLID', appears in none of the four logs. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "scalar_transport",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "EXIT_INLINE=0",
+    "EXIT_STRUCTURE_GEOM=0",
+    "EXIT_TRANSPORT_GEOM=1",
+    "EXIT_SCATRA_GEOM=1",
+    "processor 0 finished normally",
+    "STRUCTURE_GEOM_TOUCHED_THE_FILE=0",
+    "STRUCTURE_GEOM_SECTION_NAME_REJECTED=0",
+    "Multiple options to read mesh for discretization 'scatra'. Only one is allowed.",
+    "'TRANSPORT ELEMENTS' 'TRANSPORT GEOMETRY'",
+    "4C_io_meshreader.cpp",
+    "Section 'SCATRA GEOMETRY' is not a valid section name.",
+    "CLAIMED_ELEMENT_CATEGORY_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_INLINE=1",
+    "EXIT_STRUCTURE_GEOM=1",
+    "EXIT_TRANSPORT_GEOM=0",
+    "EXIT_SCATRA_GEOM=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from arm 2: point the misdirected block at the scatra field. It then collides with the inline mesh and aborts, EXIT_STRUCTURE_GEOM becomes 1 and the fixture must go red — the silence only exists while the block names the WRONG field.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1,\\\"extra_sections\\\":\\\"STRUCTURE GEOMETRY:\\n$BLOCK_SOLID\\\"}\"   \"$TMP/structure_geom.yaml\"",
+      "to": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1,\\\"extra_sections\\\":\\\"TRANSPORT GEOMETRY:\\n$BLOCK_TRANSP\\\"}\"   \"$TMP/structure_geom.yaml\""
+    },
+    {
+      "note": "remove the pathology from arm 4: use a field name that exists. The 'not a valid section name' line disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1,\\\"extra_sections\\\":\\\"SCATRA GEOMETRY:\\n$BLOCK_TRANSP\\\"}\"    \"$TMP/scatra_geom.yaml\"",
+      "to": "sca \"{\\\"numstep\\\":2,\\\"dt\\\":0.1}\"    \"$TMP/scatra_geom.yaml\""
+    }
+  ]
+}

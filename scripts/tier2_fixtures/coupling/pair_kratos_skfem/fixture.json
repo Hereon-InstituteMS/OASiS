@@ -1,0 +1,45 @@
+{
+  "_comment": "COUPLING tier-2, closing the starred DIRICHLET cell in the sides table. The table said Kratos 'yes*' in both columns and explained the star as 'proven in a SEPARATE Kratos install, not in OASiS's interpreter here' — a claim nothing on this machine could re-run. The Neumann half already had tests/test_coupling_pair_fourc_kratos.py (real 4C binary against real Kratos ConvectionDiffusion, analytic reference); the Dirichlet half had nothing. This runs the SHIPPED Kratos participant — the exact text knowledge(topic='coupling', solver='kratos') serves — as the Dirichlet side of the placeholder conduction problem against a scikit-fem Neumann side, through the REGISTERED `couple` tool, and checks the interface temperature, the interface flux, that the two sides' fluxes carry opposite signs, conservation, an empty validation block, and an independently computed un-split monolithic re-solve. The interpreter is the substance of the claim: `command` is an argv list, so Kratos runs under a Python of its own while scikit-fem runs under OASiS's, and the fixture RESOLVES that interpreter by importing ConvectionDiffusionApplication in each candidate rather than trusting a path. That matters because discover(query='list') probes Kratos in OASiS's own interpreter and can therefore report it unavailable on a host where this coupling converges.",
+  "_mutation": [
+    {
+      "note": "Double the conductivity of the Kratos subdomain. The conductance ratio changes, so the interface temperature and the interface flux both leave the closed form and the monolithic re-solve, and the *_matches_reference and *_matches_monolithic verdicts go False. This is the mutation that proves the fixture checks PHYSICS rather than `converged`: the mutated run still converges, still balances, and still returns an empty validation block.",
+      "file": "source.py",
+      "from": "\"K\": f\"{p.kl}\",",
+      "to": "\"K\": f\"{2.0 * p.kl}\","
+    },
+    {
+      "note": "Give Kratos the same interface discretisation as its partner. The run still converges and the physics is still right, but the NON-MATCHING interface mesh the claim rests on is no longer exercised, so pair_kratos_skfem_meshes_nonmatching goes False.",
+      "file": "source.py",
+      "from": "KRATOS_NX, KRATOS_NY = 32, 32",
+      "to": "KRATOS_NX, KRATOS_NY = 14, 12"
+    }
+  ],
+  "backend": "coupling",
+  "physics": "pair_kratos_skfem",
+  "pitfall_index": 33,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "kratos_interpreter_found=True",
+    "kratos_runs_outside_the_oasis_interpreter=True",
+    "pair_kratos_skfem_converged=True",
+    "pair_kratos_skfem_meshes_nonmatching=True",
+    "pair_kratos_skfem_interface_T_matches_reference=True",
+    "pair_kratos_skfem_interface_q_matches_reference=True",
+    "pair_kratos_skfem_flux_signs_are_opposite=True",
+    "pair_kratos_skfem_flux_balanced=True",
+    "pair_kratos_skfem_validation_empty=True",
+    "pair_kratos_skfem_matches_monolithic=True",
+    "claims_checked=1",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "failures_count=1",
+    "pair_kratos_skfem_matches_monolithic=False",
+    "pair_kratos_skfem_meshes_nonmatching=False"
+  ]
+}

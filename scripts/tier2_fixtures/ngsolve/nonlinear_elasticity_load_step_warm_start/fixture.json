@@ -1,0 +1,19 @@
+{
+  "_comment": "ngsolve nonlinear_elasticity#1 (load stepping must warm-start from the previous converged GridFunction). Observed 2026-08-06 on NGSolve 6.2.2604: GridFunction.Set(cf, definedon=mesh.Boundaries(...)) zeroes EVERY free dof, so the catalog nonlinear_elasticity_2d/_3d loop cold-restarts each step; at the shipped defaults (maxh=0.1, order 2, disp 0.5, 10 steps) Newton counts grow 6/8/9 and step 4 dies with 'UmfpackInverse: Numeric factorization failed'. Overwriting only the constrained dofs via Projector(fes.FreeDofs(), False) converges all 10 steps in a constant 6 iterations with max|u_y| = 0.5 exactly. Also pins that solvers.Newton returns (status, numit), which is why the templates print 'Newton iters=0'. MUTATION CONTROL (re-runnable): T2_MUTATE=1 flips WARM_WRONG to True, so the 'cold' load_step run takes the warm-start branch that overwrites only the constrained dofs via Projector(fes.FreeDofs(), False) -- the documented fix. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 8 expect_in_output strings; T2_MUTATE=1 removes 'UmfpackInverse: Numeric factorization failed', 'cold_restart_broke_before_full_load=True' and 'cold_iteration_count_grows=True' (and trips the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "nonlinear_elasticity",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "newton_doc_status_is_first_return=True",
+    "set_definedon_zeroes_all_free_dofs=True",
+    "UmfpackInverse: Numeric factorization failed",
+    "cold_restart_broke_before_full_load=True",
+    "cold_iteration_count_grows=True",
+    "warm_all_status_zero=True",
+    "warm_iters_constant=True",
+    "warm_max_uy_equals_prescribed=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

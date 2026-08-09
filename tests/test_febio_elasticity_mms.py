@@ -1,7 +1,11 @@
 """Gen-only tests for the FEBio 3D linear-elasticity MMS family.
 
-No FEBio binary is available on this install, so these tests verify
-everything that CAN be verified offline:
+These tests verify everything that CAN be verified offline, without a
+FEBio binary. They deliberately assert NO measured quantity: the
+theoretical hex8 displacement L2 order is 2, and whether a given sweep
+attains it is a result to be measured by whoever runs the sweep, never a
+number pinned in a test. What is pinned here is deck structure and the
+MMS algebra:
 
   - the emitted deck is well-formed FEBio 4.0 XML with no unresolved
     placeholders,

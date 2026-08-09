@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for dune::nonlinear#0, #1, #2 and dune::navier_stokes#0, #1 \u2014 one nonlinear problem, -div((1+u^2) grad u) = 1 on an 8x8 grid, supports all five, and grouping them keeps it to the forms already in the cache (wall time 2 s, 2026-08-06, dune-fem 2.12.0.2). Measured: a form written in the discrete solution carries ONE argument and galerkin() rejects it with ValueError 'Integrands model requires form with at least two arguments.'; both working spellings converge to the same answer (max 0.07446243 either way, a == b and F == 0); solve() returns a plain dict with keys ['converged', 'iterations', 'linear_iterations', 'timing'], here 2 Newton and 19 linear iterations, and its repr does NOT contain the retracted 'Newton did not converge' string. PRECISION NOTE on navier_stokes#0: dot(b, grad(u))*v is only illegal when the velocity is VECTOR-valued. With a SCALAR u the same expression builds fine \u2014 measured \u2014 because dot(b, grad(u)) is then a scalar. On a dimRange=2 space it raises ValueError 'Invalid ranks 1 and 1 in product.' as claimed, and inner(dot(grad(u), u), v)*dx is the spelling that works. The fixture checks both so the claim cannot be re-read as applying to scalar problems. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 writes the \"discrete function\" form in the TRIAL function, so it carries two arguments. Unmutated the fixture still PASSES; mutated it FAILS because the expectations 'discrete_form_argument_count=1', 'discrete_function_form_rejected=ValueError', 'Integrands model requires form with at least two arguments.', 'dune_nonlinear_form_requirements_verified=True' are no longer printed and the forbidden token 'FAIL:' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/miniconda3/envs/dune-fem-env/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness). ENVIRONMENT: there is no ofa-dune conda env on this host, which is the interpreter scripts/run_tier2_fixtures.py falls back to; dune-fem 2.12.0.2 lives in ~/miniconda3/envs/dune-fem-env. Without DUNE_PYTHON set to that interpreter the runner records this fixture as `skipped`, not `failed`, so a summary that counts only passes and failures shows nothing wrong while nothing was executed. Every measurement quoted above, and the mutation verdict, was taken with DUNE_PYTHON=~/miniconda3/envs/dune-fem-env/bin/python.",
+  "backend": "dune",
+  "physics": "nonlinear",
+  "pitfall_index": 1,
+  "covers": [
+    "nonlinear:0",
+    "nonlinear:1",
+    "nonlinear:2",
+    "navier_stokes:0",
+    "navier_stokes:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "discrete_form_argument_count=1",
+    "discrete_function_form_rejected=ValueError",
+    "Integrands model requires form with at least two arguments.",
+    "a_equals_b_converged=True",
+    "F_equals_zero_converged=True",
+    "both_spellings_agree=True",
+    "info_type=dict",
+    "info_keys=['converged', 'iterations', 'linear_iterations', 'timing']",
+    "newton_ran_without_a_manual_loop=True",
+    "linear_iterations_exceed_newton=True",
+    "info_repr_contains_newton_did_not_converge=False",
+    "scalar_dot_b_grad_u_times_v_is_legal=True",
+    "vector_times_vector_rejected=ValueError",
+    "Invalid ranks 1 and 1 in product.",
+    "convective_term_arguments=2",
+    "dune_nonlinear_form_requirements_verified=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

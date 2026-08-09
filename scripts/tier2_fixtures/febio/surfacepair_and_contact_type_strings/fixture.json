@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::rigid_body#5. Five wrong forms on the shipped contact template, each pinned to its own message: <master>/<slave> gives 'tag \"master\" ... unrecognized tag'; 'sliding elastic' (space) and 'facet-to-facet sliding' both give 'tag \"contact\" ... invalid value for attribute \"type\"'; an unknown surface_pair gives '... invalid value for attribute \"surface_pair\"'; and an empty <contact></contact> body gives 'tag \"contact\" ... unrecognized tag'. The last two share a tag name, so the fixture matches the whole message. Positive control: the shipped template, unmodified, which reaches normal termination. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'contact_syntax=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "rigid_body",
+  "pitfall_index": 5,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "contact_syntax=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

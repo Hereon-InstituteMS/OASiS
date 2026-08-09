@@ -29,20 +29,34 @@ Catalog falsifications #29 + #30 found via this scanner:
 
 Fix landed alongside this fixture (3 template stubs +
 2 knowledge entries).
+MUTATION CONTROL. This fixture is a catalog self-consistency gate, so
+the control shows the gate can fail. T2_MUTATE=1 deletes one shipped
+template from the in-memory registry, which is exactly the
+inconsistency the gate exists to catch: missing_templates stops being
+empty, so 'missing_templates=[]' is no longer printed and a FAIL: line
+appears. Nothing on disk is touched.
 """
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 PHYSICS_TO_MODULE = {
     "linear_elasticity": "solid",
     "hyperelasticity": "solid",
     "biphasic": "biphasic",
-    "heat": "heat",
+    # FEBio 4.12 has no `heat` module and no solid-conduction
+    # solver. Heat conduction is done with the `thermo-fluid`
+    # module and every fluid velocity DOF fixed, which reduces
+    # the energy equation to Fourier conduction. Changed
+    # 2026-08-03 together with the heat_3d_bar template fix.
+    "heat": "thermo-fluid",
     # ── Audit pass 4 (2026-06-02): catch-up after FEBio
     #    refactor passes 181 + 182 added 12 new physics
     #    (active_contraction, damage, fiber_reinforced,
@@ -55,13 +69,41 @@ PHYSICS_TO_MODULE = {
     "fiber_reinforced": "solid",
     "fluid": "fluid",
     "fluid_fsi": "fluid-FSI",
-    "biphasic_fsi": "biphasic-FSI",
+    # FEBio 4.12 registers no `biphasic-FSI` MODULE: the registry
+    # line is `fluid-FSI.biphasic-FSI [FEMATERIAL_ID]`, i.e. a
+    # MATERIAL inside the fluid-FSI module. Corrected 2026-08-05
+    # together with the biphasic_fsi_3d_block template repair; the
+    # old value made this fixture demand the segfault back.
+    "biphasic_fsi": "fluid-FSI",
     "growth_remodeling": "solid",
     "multiphasic": "multiphasic",
     "plasticity": "solid",
     "polar_fluid": "polar fluid",
     "rigid_body": "solid",
     "viscoelasticity": "solid",
+    # ── Audit pass 5 (2026-08-03): elasticity_mms was added by
+    #    the MMS extension pass and never entered here, so its
+    #    template mapped to no physics and the fixture failed
+    #    with "cannot map template key to known physics".
+    "elasticity_mms": "solid",
+    # ── 2026-08-05: rigid_contact_3d_indentation was added by the
+    #    template-repair pass and never entered here, so it failed
+    #    with "cannot map template key to known physics". Its key
+    #    must sort before "rigid_body" is tried, which the
+    #    longest-prefix-first lookup already guarantees.
+    "rigid_contact": "solid",
+}
+
+# The ten module names FEBio 4.12.0 actually registers, read off
+# the installed binary with `printf 'list -m\nquit\n' | febio4
+# -nosplash`. `<Module type=...>` outside this set is not
+# diagnosed by FEBio — it SEGFAULTS (see the
+# unknown_module_type_segfaults fixture), so a template carrying
+# one is strictly worse than no template.
+REGISTERED_MODULES = {
+    "solid", "biphasic", "solute", "multiphasic", "fluid",
+    "fluid-FSI", "multiphasic-FSI", "fluid-solutes",
+    "thermo-fluid", "polar fluid",
 }
 
 
@@ -92,6 +134,11 @@ def _load_febio_backend():
     cb.InputFormat = _InputFormat
     cb.SolverBackend = _SolverBackend
     cb.JobHandle = _JobHandle
+    # core.backend grew a `sorted_by_step` helper after this stub
+    # was written; backend.py imports it at module scope, so the
+    # stub must expose it or the whole fixture dies on ImportError
+    # (which the fixture then reports as a Traceback → FAIL).
+    cb.sorted_by_step = lambda paths: sorted(paths)
     sys.modules["core.backend"] = cb
     sys.modules["core"] = types.ModuleType("core")
     sys.modules["core"].backend = cb
@@ -144,6 +191,12 @@ def main() -> int:
     templates = mod._TEMPLATES
     knowledge = mod._FEBIO_KNOWLEDGE
 
+    if MUTATE:
+        _victim = sorted(templates)[0]
+        print(f"mutation=the_template_{_victim}_is_removed_"
+              f"from_the_registry")
+        templates = {k: v for k, v in templates.items()
+                     if k != _victim}
     missing_templates = []
     missing_knowledge = []
     for cap in physics_list:
@@ -161,6 +214,7 @@ def main() -> int:
 
     xml_errors = []
     module_mismatches = []
+    unregistered_modules = []
     # Iterate physics keys in length-descending order so
     # 'fluid_fsi' and 'biphasic_fsi' match before their
     # 'fluid' / 'biphasic' prefixes (audit pass 4 fix).
@@ -209,8 +263,19 @@ def main() -> int:
             module_mismatches.append(
                 f"{key}: Module type='{actual}' "
                 f"expected='{expected}'")
+        if actual not in REGISTERED_MODULES:
+            unregistered_modules.append(key)
     print(f"template_xml_errors={xml_errors}")
     print(f"template_module_mismatches={module_mismatches}")
+    # PINNED, not gated: these two templates emit module names
+    # that FEBio 4.12 does not register, so running them
+    # segfaults the solver. The set is pinned in fixture.json so
+    # (a) adding a third phantom module trips the fixture and
+    # (b) fixing either of these two also trips it, forcing the
+    # catalog knowledge to be updated in the same commit.
+    # Verified 2026-08-03 against FEBio 4.12.0.86045466d.
+    print(f"templates_with_unregistered_module="
+          f"{sorted(unregistered_modules)}")
 
     ok = (not missing_templates
           and not missing_knowledge

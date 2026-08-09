@@ -34,22 +34,42 @@ have no upstream backing at all in Kratos 10.4.2.
 This fixture verifies the registration story via binary string
 scan (since Python attributes on the GMA module do not include
 these names — CLs are JSON-driven, not Python-imported).
+
+Mutation control: the pathology is the CATALOG's five wrong constitutive-law
+names. Removing it means auditing the CORRECTED catalog, and that is what
+T2_MUTATE=1 does: the audited list becomes the Geo-prefixed names
+GeoMechanicsApplication really registers. The same whole-word `strings` scan
+of the same libKratosGeoMechanicsCore.so runs against them, finds all of them,
+and reports catalog_present_count=6/6 with
+all_5_wrong_catalog_names_missing=False -- so catalog_present_count=2/7 and
+all_5_wrong_catalog_names_missing=True disappear.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
+os.environ.setdefault("OMP_NUM_THREADS", "2")
+
+# Imported unconditionally, and used below to locate the binary: with Kratos
+# absent the import raises, the process exits non-zero and the runner records
+# a failure, never a pass.
+import KratosMultiphysics  # noqa: F401
+import KratosMultiphysics.GeoMechanicsApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
 
 def main() -> int:
-    so_path = (
-        Path.home() / "Schreibtisch" / "Open-FEM-agent" / ".venv"
-        / "lib" / "python3.12" / "site-packages"
-        / "KratosMultiphysics" / ".libs"
-        / "libKratosGeoMechanicsCore.so"
-    )
+    # Scan the .libs of the very install that was just imported above. An
+    # absolute path to one particular checkout's .venv went stale when that
+    # checkout was renamed, and the fixture then reported "binary not found"
+    # instead of measuring anything.
+    so_path = (Path(KratosMultiphysics.__file__).parent / ".libs"
+               / "libKratosGeoMechanicsCore.so")
     if not so_path.is_file():
         print(f"FAIL: binary not found at {so_path}", file=sys.stderr)
         return 2
@@ -69,6 +89,18 @@ def main() -> int:
         "SmallStrainUDSM2DPlaneStrainLaw",
         "SmallStrainUDSM3DLaw",
     ]
+    if MUTATE:
+        # Mutation control: audit the CORRECTED catalog instead — the names
+        # GeoMechanicsApplication actually registers. Same binary, same scan.
+        print("mutation=catalog_rows_replaced_by_the_real_registered_names")
+        catalog_listed = [
+            "GeoLinearElasticPlaneStrain2DLaw",
+            "GeoIncrementalLinearElastic3DLaw",
+            "GeoMohrCoulombWithTensionCutOff2D",
+            "GeoMohrCoulombWithTensionCutOff3D",
+            "SmallStrainUDSM2DPlaneStrainLaw",
+            "SmallStrainUDSM3DLaw",
+        ]
 
     # Real registered names (from binary string scan).
     real_names = [

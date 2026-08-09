@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::ssi#4 and the execution that FALSIFIED its Signal. CONVFORM: \"convective\" on upstream ssi_mono_3D_1hex8_scatra.4C.yaml does not produce a slow mass-balance drift: SSIBase::init() in src/ssi/4C_ssi_base.cpp aborts with 'Inconsistent scalar transport formulation on a deforming domain: ... Please set CONVFORM to conservative in the SCALAR TRANSPORT DYNAMIC section.', exit 1, before any time step (CONV_RESULT_TESTS_PERFORMED=0, CONV_REACHED_RESULT_TEST=0). The diagnostic also names the condition the entry omitted: the requirement is tied to IS_INTENSIVE_SCALAR = false, i.e. to how the scalar is defined, not to SSI as such. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "ssi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CONS=0",
+    "EXIT_CONV=1",
+    "processor 0 finished normally",
+    "Inconsistent scalar transport formulation on a deforming domain",
+    "Please set 'CONVFORM' to 'conservative' in the SCALAR TRANSPORT DYNAMIC section.",
+    "4C_ssi_base.cpp",
+    "DIAGNOSTIC_NAMES_IS_INTENSIVE_SCALAR=1",
+    "CONV_RESULT_TESTS_PERFORMED=0",
+    "CONV_REACHED_RESULT_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CONS=1",
+    "EXIT_CONV=0",
+    "DIAGNOSTIC_NAMES_IS_INTENSIVE_SCALAR=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave CONVFORM conservative in the second arm. SSIBase::init accepts it, the abort vanishes and EXIT_CONV becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  CONVFORM: \"conservative\"/  CONVFORM: \"convective\"/' \"$BASE\" > \"$TMP/conv.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/conv.yaml\""
+  }
+}

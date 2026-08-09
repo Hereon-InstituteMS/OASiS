@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#4 — a Thermo_Structure_Interaction structural mesh must use SOLIDSCATRA elements, and the failure names neither the coupling nor the right element. Three arms on the upstream deck tests/input_files/tsi_heatflux_iterstaggaitken.4C.yaml (three SOLIDSCATRA HEX8 cells), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: the untouched deck exits 0 with 'processor 0 finished normally'; swapping SOLIDSCATRA for SOLID and dropping the SOLIDSCATRA-only 'TYPE Undefined' key exits 1 with 'Unsupported solid element type!' from tsi/4C_tsi_utils.cpp line 76 — a message that mentions neither SOLIDSCATRA nor the thermal discretisation it failed to clone; and swapping SOLIDSCATRA for SOLID while KEEPING 'TYPE Undefined' never gets that far, because TYPE is not a SOLID key, so the element line stops parsing with \"After parsing, the line still contains 'TYPE Undefined'.\" This also keeps the entry's own correction pinned: CLAIMED_TSI_TEXTS=0 asserts that 'no SCATRA discretisation found' and the file name 4C_tsi_factory.cpp appear nowhere, since neither exists in the binary.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_SOLID=1",
+    "EXIT_SOLID_WITHTYPE=1",
+    "processor 0 finished normally",
+    "BASE_SOLIDSCATRA_ELEMENTS=3",
+    "Unsupported solid element type!",
+    "4C_tsi_utils.cpp",
+    "After parsing, the line still contains 'TYPE Undefined'.",
+    "CLAIMED_TSI_TEXTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_BASE=1",
+    "EXIT_SOLID=0",
+    "EXIT_SOLID_WITHTYPE=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: leave the SOLIDSCATRA elements alone in the second arm. The TSI clone then succeeds, 'Unsupported solid element type!' disappears and EXIT_SOLID becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/SOLIDSCATRA HEX8/SOLID HEX8/; s/ TYPE Undefined//' \"$BASE\" > \"$TMP/solid.yaml\"",
+      "to": "sed 's/SOLIDSCATRA HEX8/SOLIDSCATRA HEX8/' \"$BASE\" > \"$TMP/solid.yaml\""
+    },
+    {
+      "note": "remove the pathology from the third arm too. The element line parses, the leftover-token message disappears and EXIT_SOLID_WITHTYPE becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/SOLIDSCATRA HEX8/SOLID HEX8/'                      \"$BASE\" > \"$TMP/solid_keeps_type.yaml\"",
+      "to": "sed 's/SOLIDSCATRA HEX8/SOLIDSCATRA HEX8/'                \"$BASE\" > \"$TMP/solid_keeps_type.yaml\""
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics dg_methods#1: a DG advection-diffusion form also needs the DIFFUSIVE Dirichlet value imposed weakly \u2014 the Nitsche/SIPG block on ds. With only the advective inflow term the diffusion operator sees a pure natural (zero-flux) condition and the boundary value is never imposed. Wrong variant: the full upwind + SIPG interior form, correct in every other respect, with the three ds terms -eps*dot(grad(u), n)*v*ds - eps*dot(grad(v), n)*u*ds + alpha/h*eps*u*v*ds and their u_D partners left out. A single fem.Constant switches the whole block on and off, so both variants share one compiled form. The diagnostic is the one the claim prescribes, and it is a STALL, not a size: the boundary defect sqrt(assemble((uh - u_D)**2 * ds)) normalised by the interior L2 norm is measured on 8x8, 16x16 and 32x32. Observed in the diffusion-dominated regime (eps = 1, b = (1, 0.5)): without the block the defect is 1.9245 / 1.9238 / 1.9235 \u2014 a relative change below 1e-3 per refinement, the fingerprint of a condition that is simply not being applied. With the block the same quantity falls by a factor of about 3.8 per refinement (0.04517 / 0.01205 / 0.00314). The KSP converges in all six solves, so nothing in the solver output reveals the difference. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "dg_methods",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "defect_stalls_under_refinement=True",
+    "defect_falls_under_refinement_with_nitsche=True",
+    "ksp_converged_in_every_run=True",
+    "VERDICT=boundary_value_never_applied_without_nitsche_block"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_stall_detected"
+  ],
+  "timeout_seconds": 300
+}

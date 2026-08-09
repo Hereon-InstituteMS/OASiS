@@ -1,0 +1,26 @@
+{
+  "_comment": "skfem helmholtz#4: at k=40 with 10 elements/wavelength standard P1 drifts out of phase and P2 on the same mesh recovers it. Verified 2026-08-06 on skfem 12.0.1. The claim's k and resolution are kept verbatim; only the geometry is scaled down to a one-element-thick MeshQuad strip (322 P1 DOFs / 963 P2 DOFs on the same 160-element mesh) instead of a 2D square, which at that resolution would need ~1e5 DOFs. The claim gives no domain size: the shift reaches the claimed ~1/4 wavelength after 16 wavelengths of propagation (measured 0.252 wavelengths, 84% relative L2 error); ElementQuad2 on the identical mesh gives 0.0017 wavelengths and 0.6%. Phase is measured with Basis.probes against the analytic exp(-i k x); only thresholds, orderings and exact DOF counts are pinned. MUTATION CONTROL (re-runnable): T2_MUTATE=1 switches WRONG_ELEMENT from 'P1' to 'P2', the documented p-refinement fix applied at the pathology site on the identical 160-element mesh. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'p1_element=ElementQuad1 p1_n_dofs=322', 'p1_drift_gt_0p2_wavelengths=True', 'p1_drift_is_about_a_quarter_wavelength=True', 'p1_l2_rel_gt_0p2=True' and 'p2_recovers_phase_by_gt_20x=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "helmholtz",
+  "pitfall_index": 4,
+  "mode": "python",
+  "timeout_seconds": 120,
+  "expect_in_output": [
+    "mesh_class=MeshQuad1 k=40 k_gt_20=True",
+    "elements_per_wavelength=10",
+    "p1_element=ElementQuad1 p1_n_dofs=322",
+    "p2_element=ElementQuad2 p2_n_dofs=963",
+    "same_mesh_for_p1_and_p2=True",
+    "n_elements=160",
+    "p1_drift_gt_0p2_wavelengths=True",
+    "p1_drift_is_about_a_quarter_wavelength=True",
+    "p1_l2_rel_gt_0p2=True",
+    "p2_drift_lt_0p01_wavelengths=True",
+    "p2_l2_rel_lt_0p05=True",
+    "p2_recovers_phase_by_gt_20x=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

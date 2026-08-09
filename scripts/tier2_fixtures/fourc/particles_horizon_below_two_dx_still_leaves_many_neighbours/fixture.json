@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::particles#3, and a falsification of its neighbour count. Upstream particle_sph_2d_pdbody_gravity.4C.yaml has 162 pdphase particles on a square lattice at dx=1.0. At the entry's own m=3 the bond list holds 1512 pairs. Dropping INTERACTION_HORIZON to 1.5 (m=1.5, below the 2*dx line the entry draws) still leaves 519 pairs = 6.4 partners per particle, and even at horizon 1.0, the tightest horizon that connects anything, there are 279 pairs = 3.4 partners per particle. 'Only 1-2 neighbours' is therefore unreachable on a regular grid. What the under-resolved horizon really costs is not silent mesh dependence: both runs go unstable and are killed after 25 and 22 steps with \"a particle of phase 'pdphase' traveled more than one bin on this processor!\" from particle/src/algorithm/4C_particle_algorithm.cpp line 790, with zero lines mentioning the horizon. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "PDPHASE_PARTICLES=162",
+    "EXIT_M3=0",
+    "EXIT_M1P5=1",
+    "EXIT_M1=1",
+    "processor 0 finished normally",
+    "M3_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "Number of initialized peridynamic bonds on this proc: 519",
+    "Number of initialized peridynamic bonds on this proc: 279",
+    "AVG_BONDS_PER_PARTICLE_M1P5=6.4",
+    "AVG_BONDS_PER_PARTICLE_M1=3.4",
+    "CLAIMED_ONE_OR_TWO_NEIGHBOURS=no",
+    "a particle of phase 'pdphase' traveled more than one bin on this processor!",
+    "4C_particle_algorithm.cpp, line 790",
+    "M1P5_HORIZON_WARNINGS=0",
+    "M1P5_STEPS_BEFORE_ABORT=25"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_M3=1",
+    "EXIT_M1P5=0",
+    "EXIT_M1=0",
+    "AVG_BONDS_PER_PARTICLE_M1P5=18.7",
+    "CLAIMED_ONE_OR_TWO_NEIGHBOURS=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the m=1.5 arm: leave INTERACTION_HORIZON at the upstream 3.0. That arm then reproduces the baseline, the bond count returns to 1512, the instability abort disappears and EXIT_M1P5 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  INTERACTION_HORIZON: 3.0/  INTERACTION_HORIZON: 1.5/' \"$BASE\" > \"$TMP/m1p5.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/m1p5.yaml\""
+    },
+    {
+      "note": "remove the pathology from the m=1 arm as well: it too falls back to 1512 bonds and 18.7 partners per particle, so the 279-bond and 3.4-partner evidence vanishes and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  INTERACTION_HORIZON: 3.0/  INTERACTION_HORIZON: 1.0/' \"$BASE\" > \"$TMP/m1.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/m1.yaml\""
+    }
+  ]
+}

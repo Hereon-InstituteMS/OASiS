@@ -1,0 +1,26 @@
+{
+  "_comment": "CLAIM hyperelasticity::3: [Syntax] Tangent has geometric + material parts: K = K_geo + K_mat. Assembling only K_mat gives a non-symmetric system; assembling K_mat + K_geo restores symmetry. Signal: do NOT wait for a solver complaint \u2014 deal.II cannot report a CG 'breakdown' (the guard in solver_cg.h is an Assert, compiled \u2026 WHAT THIS RUNS: -- probe \"geometric_term\" of the shared translation unit _shared/hyperelastic_family.cc, compiled once and cached so every fixture that names a probe of that unit shares ONE C++ build. A Neo-Hookean cantilever is driven to a tip deflection of 0.90 of its length with the consistent tangent, and at THAT state both tangents are assembled: K_mat + K_geo and K_mat alone. The probe runs exactly the measurement the claim asks for (max|A_ij - A_ji| over the assembled matrix) and, in addition, a central-difference directional-derivative check of K against the residual. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: tangent_under_test=K_mat_only; full_tangent_is_symmetric_to_roundoff=true; k_mat_only_tangent_is_symmetric_to_roundoff=true; dropping_k_geo_breaks_symmetry_as_the_claim_says=false; tangent_under_test_is_inconsistent=true; k_mat_only_path_completed=false; (+1 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 3,
+  "covers": [
+    "hyperelasticity::3"
+  ],
+  "mode": "cmd",
+  "expect_in_output": [
+    "tangent_under_test=K_mat_only",
+    "full_tangent_is_symmetric_to_roundoff=true",
+    "k_mat_only_tangent_is_symmetric_to_roundoff=true",
+    "dropping_k_geo_breaks_symmetry_as_the_claim_says=false",
+    "tangent_under_test_is_inconsistent=true",
+    "k_mat_only_path_completed=false",
+    "VERDICT=dropping_k_geo_costs_consistency_not_symmetry"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "breakdown",
+    "VERDICT=tangent_is_consistent_with_the_residual"
+  ],
+  "timeout_seconds": 600
+}

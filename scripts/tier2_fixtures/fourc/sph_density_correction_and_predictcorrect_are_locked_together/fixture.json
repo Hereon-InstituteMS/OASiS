@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::particle_sph#9. Both directions of the lock are executed and each has its own message from its own file -- FILE_A=4C_particle_interaction_sph.cpp for a correction without the predictor-corrector, FILE_B=4C_particle_interaction_sph_density.cpp for the predictor-corrector without a correction -- so a search for one string will not find the other. STEPS_BEFORE_ABORT counts TIME: lines across both logs and is 0, pinning that both fire at setup. The positive control is a real upstream deck that uses the LEGAL pairing and passes, with LEGAL_DECK_HAS_BOTH checking it really carries both keys rather than assuming. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_sph",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_CORRWITHOUT=1",
+    "EXIT_PCNONE=1",
+    "EXIT_LEGAL=0",
+    "the density correction scheme set is not valid with the current density evaluation scheme!",
+    "CORRECTION_WITHOUT_PC_ABORTS=yes",
+    "no density correction scheme set via parameter 'DENSITYCORRECTION'!",
+    "PC_WITHOUT_CORRECTION_ABORTS=yes",
+    "FILE_A=4C_particle_interaction_sph.cpp",
+    "FILE_B=4C_particle_interaction_sph_density.cpp",
+    "BOTH_ABORT_AT_SETUP=0",
+    "LEGAL_PAIRING_PASSES=yes",
+    "LEGAL_DECK_HAS_BOTH=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "CORRECTION_WITHOUT_PC_ABORTS=no",
+    "PC_WITHOUT_CORRECTION_ABORTS=no",
+    "EXIT_CORRWITHOUT=0",
+    "EXIT_PCNONE=0",
+    "LEGAL_DECK_HAS_BOTH=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

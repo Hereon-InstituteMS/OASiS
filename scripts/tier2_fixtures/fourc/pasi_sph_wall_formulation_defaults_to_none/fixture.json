@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#5, confirmed by execution and pinned to the knob that controls it. The parameter is WALLFORMULATION in PARTICLE DYNAMIC/SPH and its default is NoWallFormulation, so omitting it is not 'plain coupling' but switching the boundary treatment off. Deleting the single WALLFORMULATION line from upstream pasi_twoway_norelax_particle_sph_3d_piston_virtualwall_densitysummation.4C.yaml is accepted without a word, runs the whole coupled loop and reaches all eighteen result tests, but the fluid particle's density falls from 9.99658304322867730e-01 to 8.99761790578682885e-01 — a 10% deficit, exactly what a kernel whose support reaches through the wall into empty space computes — and its z-velocity flips from -2.47255596595578497e-01 to 1.36328793070252097e+00, so it is no longer held off the piston face. Six of eighteen tests fail. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "WALLFORMULATION_LINES_REMOVED=1",
+    "EXIT_VIRTUALWALL=0",
+    "EXIT_NOWALL=1",
+    "processor 0 finished normally",
+    "VIRTUALWALL_FAILURES=0",
+    "NOWALL_WARNINGS=0",
+    "NOWALL_REACHED_RESULT_TEST=18",
+    "NOWALL_FAILURES=6",
+    "is WRONG --> actresult= 8.99761790578682885e-01",
+    "is WRONG --> actresult= 1.36328793070252097e+00",
+    "NOWALL_DENSITY_DEFICIT_PERCENT=10.0",
+    "SPH_PARTICLES_SEE_VACUUM_ACROSS_THE_WALL=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_VIRTUALWALL=1",
+    "EXIT_NOWALL=0",
+    "WALLFORMULATION_LINES_REMOVED=0",
+    "NOWALL_FAILURES=0",
+    "SPH_PARTICLES_SEE_VACUUM_ACROSS_THE_WALL=no"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the virtual-particle wall formulation in the second arm. The density deficit and the velocity sign flip disappear, WALLFORMULATION_LINES_REMOVED becomes 0 and EXIT_NOWALL becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "grep -v 'WALLFORMULATION' \"$BASE\" > \"$TMP/nowall.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/nowall.yaml\""
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Tier-2 for fenics mixed_poisson#0. Tier-2 for fenics mixed_poisson#0: prescribing sigma.n on the ENTIRE boundary of a mixed Poisson problem is not a well-posed problem. The pressure is then determined only up to a constant and, unless the prescribed normal fluxes integrate to exactly the source, no solution exists at all \u2014 yet the script exits 0 and prints a pressure. The fix is to leave part of the boundary to the NATURAL pressure condition, -u_D * dot(tau, n) * ds(tag) in L. Wrong variant: a Dirichlet condition on the RT subspace over every exterior facet, with a Gaussian source whose integral does not match the zero prescribed flux. Right variant: flux prescribed on x = 0 and x = 1 only, with the natural pressure condition on y = 0 and y = 1. RT1 x DG0 on an 8x8 unit square, solved with a direct LU factorisation (MUMPS). Observed on dolfinx 0.10.0: the solve reports KSPConvergedReason 4, the vector is finite, and the pressure comes back as a single constant of enormous magnitude \u2014 min(p) == max(p) == 1.171722e+15, a relative spread of 0.0 across all 128 pressure dofs. The well-posed variant on the same mesh gives a pressure that actually varies, range [-8.9315e-01, 9.2133e-01]. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "mixed_poisson",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "solver_reported_converged=True",
+    "primary_solution_is_finite=True",
+    "primary_pressure_is_a_single_constant=True",
+    "primary_pressure_magnitude_exceeds_1e6=True",
+    "wellposed_variant_pressure_varies_and_is_order_one=True",
+    "VERDICT=flux_bc_on_the_whole_boundary_returns_a_converged_constant_garbage_pressure"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=flux_bc_on_the_whole_boundary_was_well_posed"
+  ],
+  "timeout_seconds": 300
+}

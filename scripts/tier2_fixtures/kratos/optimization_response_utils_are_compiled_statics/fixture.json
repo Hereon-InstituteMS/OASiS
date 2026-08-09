@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2: the python-layer LinearStrainEnergyResponseFunction needs the full OptimizationProblem + ExecutionPolicyDecorator stack, whereas the compiled statics under KOA.ResponseUtils give the same values directly on a programmatic ModelPart. Pitfall (kratos.optimization #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Both LinearStrainEnergyResponseUtils and MassResponseUtils resolve under KOA.ResponseUtils and NOT as top-level KOA attributes — the nesting is the part a reader gets wrong, and dotting the flat name raises AttributeError before the analysis-stage machinery is ever reached. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. INDEX SHIFTED by the guidance reclassification; the claim this fixture verifies is unchanged and every #index quoted above is the current one. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 5 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 5. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 5 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/optimization_response_utils_are_compiled_statics && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "optimization",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[KOA.ResponseUtils]=True_expected=True",
+    "probe[KOA.ResponseUtils.MassResponseUtils]=True_expected=True",
+    "probe[KOA.ResponseUtils.LinearStrainEnergyResponseUtils]=True_expected=True",
+    "probe[KOA.MassResponseUtils_flat]=False_expected=False",
+    "probe[KOA.LinearStrainEnergyResponseUtils_flat]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

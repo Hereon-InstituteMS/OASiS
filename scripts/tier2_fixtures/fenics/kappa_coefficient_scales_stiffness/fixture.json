@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics poisson#4: a forgotten kappa coefficient is silent, and the whole stiffness matrix is off by exactly kappa. Wrong variant: assemble the diffusion form WITHOUT the coefficient. Nothing is raised; the matrix is simply the kappa = 1 matrix. The fixture assembles both and checks the norm ratio equals the kappa it left out, which is the only observable the claim offers. The ratio is computed and compared to kappa inside the fixture, so no measured number is pinned in the expectations. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "poisson",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "assembly_raised=False",
+    "off_by_exactly_kappa=True",
+    "VERDICT=missing_coefficient_scales_stiffness_by_kappa"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=coefficient_present"
+  ]
+}

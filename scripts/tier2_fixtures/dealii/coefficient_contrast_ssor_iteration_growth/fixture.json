@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for dealii poisson#6. Tier-2 for dealii poisson#6 \u2014 probe \"coefficient_contrast\" of the shared adaptive-Poisson translation unit _shared/poisson_family.cc, compiled once and cached. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "poisson",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "expect_in_output": [
+    "iterations_grow_with_contrast=true",
+    "growth_is_linear_in_contrast=false",
+    "VERDICT=contrast_growth_is_marginal_not_linear"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=iteration_count_is_flat"
+  ],
+  "timeout_seconds": 900
+}

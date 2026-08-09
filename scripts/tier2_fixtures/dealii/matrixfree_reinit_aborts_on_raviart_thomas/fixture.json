@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM matrix_free::0: [API] MatrixFree needs an element whose shape functions it knows how to evaluate with sum factorization. The old rule of thumb 'tensor-product elements only, so FE_Q/FE_DGQ but NOT FE_SimplexP' is OUT OF DATE and this entry used to repeat it. Verified on deal.II 9.8: MatrixFree<3>::reinit SUCCEEDS \u2026 WHAT THIS RUNS: -- probes \"mf_simplex_support\" and \"mf_rt_reinit\" of the shared MatrixFree translation unit _shared/matrixfree_family.cc, compiled once and cached so four fixture directories share ONE C++ build. BOTH halves of the entry are executed. The out-of-date rule of thumb (\"tensor-product elements only, not FE_SimplexP\") is disproved on this build: MatrixFree<3>::reinit SUCCEEDS on FE_SimplexP(2) over a tetrahedral mesh from GridGenerator::subdivided_hyper_cube_with_simplices, and the cell_loop reproduces the assembled matrix-vector product to 2.9e-16. What does still fail is the vector-valued moment-based family, and it fails by ABORTING, so it runs in its own process here and the exit code is the observable: FE_RaviartThomas(0) gives rc=134 out of DEAL_II_NOT_IMPLEMENTED() inside internal::MatrixFreeFunctions::get_element_type_specific_information (matrix_free/shape_info.templates.h), printing \"You are trying to use functionality in deal.II that is currently not implemented\". The probe wraps the reinit in try/catch and prints caught_a_std_exception -- the line never appears, because an abort is not an exception. It is NOT gated on NDEBUG: rc=134 in the RELEASE build as well as the Debug one, which is why this fixture runs both. The grep checks the string the entry used to quote, \"MatrixFree: element type not supported\": it is in no header and no source file of this tree. Mutation control: T2_MUTATE=1 hands reinit an FE_Q(2) instead, both builds return rc=0, and the fixture fails its own expectations. OBSERVED, copied from the run: phantom_element_type_message_files=0; summary_release_mf_rt_reinit_rc=134; summary_debug_mf_rt_reinit_rc=134; You are trying to use functionality in deal.II that is currently not; get_element_type_specific_information; matrixfree_reinit_succeeds_on_fe_simplexp=true; (+2 more). Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "matrix_free",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "requires_debug": true,
+  "expect_in_output": [
+    "phantom_element_type_message_files=0",
+    "summary_release_mf_rt_reinit_rc=134",
+    "summary_debug_mf_rt_reinit_rc=134",
+    "You are trying to use functionality in deal.II that is currently not",
+    "get_element_type_specific_information",
+    "matrixfree_reinit_succeeds_on_fe_simplexp=true",
+    "simplex_cell_loop_matches_the_assembled_product_to_roundoff=true",
+    "VERDICT=matrixfree_handles_the_simplex_element"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "caught_a_std_exception=true",
+    "summary_release_mf_rt_reinit_rc=0"
+  ],
+  "timeout_seconds": 1800
+}

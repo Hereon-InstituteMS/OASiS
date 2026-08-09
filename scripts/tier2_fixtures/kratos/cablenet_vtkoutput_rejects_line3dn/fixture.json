@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2: KM.VtkOutput rejects the sliding-cable/ring generic Line3DN geometry, and the documented workaround (a visualisation SubModelPart of plain Element3D2N segments) is accepted. Pitfall (kratos.cable_net #1). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). A ModelPart holding SlidingCableElement3D3N makes VtkOutput(...).PrintOutput() raise RuntimeError 'Error: Modelpart contains elements or conditions with geometries for which no VTK-output is implemented!', while the same call on a part holding Element3D2N returns cleanly. Both halves are asserted so the fixture also proves the workaround. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 hands VtkOutput the supported Element3D2N geometry in the slot where the fixture expects the unsupported Line3DN, so the call succeeds instead of raising. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: vtk_on_line3dn_raised=True, observed=no_vtk_output_implemented_for_geometry, vtk_line3dn_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/cablenet_vtkoutput_rejects_line3dn && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "cable_net",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "vtk_on_line3dn_raised=True",
+    "observed=no_vtk_output_implemented_for_geometry",
+    "vtk_on_element3d2n_raised=False",
+    "vtk_line3dn_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 180
+}

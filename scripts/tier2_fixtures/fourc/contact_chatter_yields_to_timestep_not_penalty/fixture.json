@@ -1,0 +1,69 @@
+{
+  "_comment": "Tier-2 for fourc::contact#8 — when a contact Newton fails, the remedy is a smaller load step, not a smaller PENALTYPARAM, and the fixture prices both. Nine runs of one self-contained two-block mortar penalty deck (two unit cubes 0.1 apart, upper one pushed down over the ramp), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: at -0.9 with TIMESTEP 0.1 the run exhausts MAXITER after finalising ONE step, with 'Failed.......Number of Iterations = 50 < 50' and 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp line 165; the identical deck at TIMESTEP 0.01 completes all 100 steps and exits 0. Raising MAXITER to 200 only changes the number in the message ('Failed.......Number of Iterations = 200 < 200'), because the failure is active-set chatter and not a stiff-system stall: over the last twenty iterations the active set alternates strictly between 4 and 0 (ACTIVE_SET_VALUES_SEEN=[0, 4], ACTIVE_SET_ALTERNATES=yes) with 52 'ACTIVE CONTACT SET HAS CHANGED' announcements, the residual alternates between exactly two values and the update norm dx is pinned at a single constant (UPDATE_NORM_IS_PINNED=yes). That also explains why it is not monotone in the load: at TIMESTEP 0.1 the sequence -0.5 / -0.7 / -0.9 / -1.1 gives no / yes / no / yes, so a LARGER prescribed displacement converges where a smaller one does not. Lowering PENALTYPARAM from 1e4 to 1e2 does make the failing deck converge, and the last two arms show what it costs: measured from 4C's own report of the two facing corner nodes, the final gap is -0.012723 for the small-step stiff-penalty run and -0.649672 for the soft-penalty one, i.e. more than fifty times the interpenetration. Convergence bought with accuracy, which is why the penalty is the second thing to reach for.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "EXIT_FAIL_DT01=1",
+    "EXIT_OK_DT001=0",
+    "EXIT_MAXITER200=1",
+    "EXIT_PENALTY1E2=0",
+    "EXIT_LOAD_MINUS_07=0",
+    "EXIT_LOAD_MINUS_11=0",
+    "STEPS_FAIL_DT01=1",
+    "STEPS_OK_DT001=100",
+    "STEPS_PENALTY1E2=10",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "Failed.......Number of Iterations = 50 < 50",
+    "Failed.......Number of Iterations = 200 < 200",
+    "processor 0 finished normally",
+    "ACTIVE_SET_VALUES_SEEN=[0, 4]",
+    "ACTIVE_SET_ALTERNATES=yes",
+    "ACTIVE_SET_CHANGE_ANNOUNCEMENTS=52",
+    "UPDATE_NORM_IS_PINNED=yes",
+    "RESIDUAL_ALTERNATES_BETWEEN_TWO_VALUES=yes",
+    "CONVERGENCE_BY_LOAD_05_07_09_11=['no', 'yes', 'no', 'yes']",
+    "FAILURE_IS_MONOTONE_IN_THE_LOAD=no",
+    "GAP_SMALL_TIMESTEP_STIFF_PENALTY=-0.012723",
+    "GAP_BIG_TIMESTEP_SOFT_PENALTY=-0.649672",
+    "BOTH_ARE_PENETRATING=yes",
+    "SOFT_PENALTY_PENETRATES_FURTHER=yes",
+    "SOFT_PENALTY_PENETRATION_RATIO_OVER_10=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_FAIL_DT01=0",
+    "EXIT_OK_DT001=1",
+    "EXIT_MAXITER200=0",
+    "EXIT_PENALTY1E2=1",
+    "ACTIVE_SET_ALTERNATES=no",
+    "UPDATE_NORM_IS_PINNED=no",
+    "FAILURE_IS_MONOTONE_IN_THE_LOAD=yes",
+    "SOFT_PENALTY_PENETRATES_FURTHER=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the failing arm the smaller time step the entry prescribes. It then finishes all 100 steps, EXIT_FAIL_DT01 becomes 0 and the chatter markers vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 10  0.1  \"-0.9\" 1.0e4 50  plain \"$TMP/fail_dt01.yaml\"",
+      "to": "deck 100 0.01 \"-0.9\" 1.0e4 50  plain \"$TMP/fail_dt01.yaml\""
+    },
+    {
+      "note": "remove the pathology from the raised-cap arm the same way. 'Failed.......Number of Iterations = 200 < 200' disappears and EXIT_MAXITER200 becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 10  0.1  \"-0.9\" 1.0e4 200 plain \"$TMP/maxiter200.yaml\"",
+      "to": "deck 100 0.01 \"-0.9\" 1.0e4 200 plain \"$TMP/maxiter200.yaml\""
+    },
+    {
+      "note": "remove the penalty contrast: run the soft-penalty measurement arm with the stiff penalty and the small step, i.e. identical to its partner. The two gaps then coincide, SOFT_PENALTY_PENETRATES_FURTHER flips to no, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck 10  0.1  \"-0.9\" 1.0e2 50  probe \"$TMP/gap_soft.yaml\"",
+      "to": "deck 100 0.01 \"-0.9\" 1.0e4 50  probe \"$TMP/gap_soft.yaml\""
+    }
+  ]
+}

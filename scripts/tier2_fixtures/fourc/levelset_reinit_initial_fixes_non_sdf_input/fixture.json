@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::level_set#4. The rule (an initial level-set field that is not a signed distance function must be fixed with REINIT_INITIAL) is confirmed exactly, on the upstream deck built for it: levelset_elliptic_reinit_lin initialises phi = 0.2*x, whose gradient is 0.2 instead of 1, runs elliptic reinitialisation with REINIT_INITIAL: true, and pins the six nodal values of the corrected field phi = x. With REINIT_INITIAL: false all six fail and every computed value is exactly 0.2 times the pinned one -- the solver kept the raw initial field -- which the fixture measures as a ratio rather than asserting. 4C prints no warning about the gradient or the missing signed-distance property. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "level_set",
+  "pitfall_index": 4,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_REINIT=0",
+    "EXIT_NOREINIT=1",
+    "processor 0 finished normally",
+    "REINIT_RESULT_FAILURES=0",
+    "NOREINIT_RESULT_FAILURES=6",
+    "is WRONG --> actresult=",
+    "NOREINIT_KEPT_RAW_INITIAL_FIELD=6",
+    "NOREINIT_WARNINGS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep REINIT_INITIAL on. All six failures and the kept-raw-field count drop to 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/  REINIT_INITIAL: true/  REINIT_INITIAL: false/' \"$BASE\" > \"$TMP/noreinit.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/noreinit.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_REINIT=1",
+    "EXIT_NOREINIT=0",
+    "NOREINIT_RESULT_FAILURES=0",
+    "NOREINIT_KEPT_RAW_INITIAL_FIELD=0"
+  ]
+}

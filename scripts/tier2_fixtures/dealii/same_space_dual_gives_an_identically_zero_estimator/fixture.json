@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM error_estimation::1: [Numerical] Higher-order dual solution needed for effectivity index. Signal: solving the dual in the SAME finite-element space as the primal makes the dual-weighted residual collapse to zero (Galerkin orthogonality) \u2014 the effectivity index is trivially 1 but the estimator gives zero refinement \u2026 WHAT THIS RUNS: -- probe \"dwr_same_space\" of the shared goal-oriented translation unit _shared/goal_family.cc, compiled once and cached so three fixture directories share ONE C++ build. The same L-shaped goal-oriented problem, with the DUAL solved in the same Q1 space as the primal. The weight of the dual-weighted residual is z - I_h z, and when z already lives in the primal space I_h z = z, so the weight is zero pointwise and the estimator is zero to machine precision -- at every cycle, and the mesh never refines either, because a criterion of all zeros selects no cells: the dof count stays at 225 for three cycles running. The entry says \"the effectivity index is trivially 1\". It is not: with a zero estimator over a nonzero error the effectivity index is 0. The index near 1 is what the HIGHER-ORDER dual delivers -- 0.94 in the mutated run, where the estimator tracks the goal error down three refinement cycles. T2_MUTATE=1 solves the dual in Q2, the estimator becomes nonzero and the fixture fails its own expectations. OBSERVED, copied from the run: primal_degree=1 dual_degree=1; estimator_under_test_is_zero_to_machine_precision=true; effectivity_index_under_test_is_zero=true; effectivity_index_under_test_is_one=false; VERDICT=same_space_dual_gives_an_identically_zero_estimator. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "error_estimation",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "primal_degree=1 dual_degree=1",
+    "estimator_under_test_is_zero_to_machine_precision=true",
+    "effectivity_index_under_test_is_zero=true",
+    "effectivity_index_under_test_is_one=false",
+    "VERDICT=same_space_dual_gives_an_identically_zero_estimator"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=estimator_under_test_carries_information"
+  ],
+  "timeout_seconds": 1200
+}

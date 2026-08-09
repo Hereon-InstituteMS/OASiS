@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics heat#0: an insulated wall is a NATURAL condition. Writing T = 0 there solves a different problem, and nothing complains. Steady conduction on the unit square, k = 1, left wall T = 1, top/bottom/right physically insulated. Correct model: only the left condition, so the answer is uniform T = 1 and the net flux through top+bottom is machine zero. Wrong model: add T = 0 on top and bottom \u2014 the field now spans [0, 1] and those walls carry a large net flux they must not carry. Mutation control: T2_MUTATE=1 drops the spurious Dirichlet conditions. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "natural_only_is_uniform_one=True",
+    "natural_only_flux_is_machine_zero=True",
+    "dirichlet_zero_pulls_field_to_zero_and_leaks_flux=True",
+    "VERDICT=dirichlet_zero_on_insulated_wall_changes_the_problem"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_difference"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "ngsolve eigenvalue#0 (shift-and-invert: shift=0 fails on gradient-kernel operators, is safe on the Dirichlet Laplacian). Run 2026-08-06 on NGSolve 6.2.2604. Both halves hold: the Dirichlet Laplacian (unit_square maxh 0.2, H1 order 2, kernel dimension 0) completes at shift=0 with a lowest eigenvalue of 19.7525 against the analytic 2*pi^2 = 19.7392; the HCurl curl-curl operator on unit_cube maxh 0.5, whose kernel is 48 of 84 free DOFs, raises NgException 'UmfpackInverse: Numeric factorization failed.' at shift=0 and completes at shift=10. REFINEMENT: the boundary is finer than 'the operator has a null space', which is how the claim reads. The Neumann Laplacian HAS a null space -- one dimension, the constants -- and shift=0 goes through it without complaint, returning the kernel mode as an ordinary eigenvalue at 4.8e-15. An agent generalising 'kernel implies shift=0 fails' avoids a shift that is perfectly usable. Also recorded: the 'matrix is singular' line the claim quotes alongside the exception is written by UMFPACK through C stdio and flushed at process exit, so a capture placed around the call comes back EMPTY -- the exception is the reliable signal, the warning text is not one to guard on. Mutation: using shift 1.0 for the HCurl run removes the exception and the fixture fails on hcurl_shift0_names_umfpackinverse. MUTATION CONTROL (re-runnable): T2_MUTATE=1 moves HCURL_SHIFT, the shift of the curl-curl run, from 0.0 to 1.0 -- the claim's own fix for an operator with a gradient kernel -- so the shift-and-invert factorisation succeeds. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 11 expect_in_output strings; T2_MUTATE=1 removes 'hcurl_shift0_names_umfpackinverse=True', 'failure_is_the_shift_not_the_operator=True' and 'kernel_alone_does_not_predict_the_failure=True' (and prints the forbidden 'FAIL:') so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "eigenvalue",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "dirichlet_shift0_is_safe=True",
+    "dirichlet_lowest_matches_2pi2=True",
+    "neumann_has_a_null_space=True",
+    "neumann_shift0_completed_anyway=True",
+    "neumann_returned_the_kernel_mode=True",
+    "hcurl_kernel_is_large=True",
+    "hcurl_shift0_names_umfpackinverse=True",
+    "umfpack_warning_not_captured_around_the_call=True",
+    "hcurl_nonzero_shift_completes=True",
+    "failure_is_the_shift_not_the_operator=True",
+    "kernel_alone_does_not_predict_the_failure=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

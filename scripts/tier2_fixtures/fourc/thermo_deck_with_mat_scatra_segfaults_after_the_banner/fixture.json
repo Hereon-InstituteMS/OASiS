@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#4. Two standalone PROBLEMTYPE: Thermo decks identical except for the material: MAT_Fourier runs to a CORRECT result test and exit 0; MAT_scatra (DIFFUSIVITY) exits 139 on three runs out of three. The rule holds; the Signal did not. The claim said 'NO 4C output at all - no message'. In fact 4C reads the deck, builds the mesh, prints 'fill_complete() on discretization thermo' and 'Welcome to Thermal Time Integration', and only then segfaults inside the Thermo::TimIntImpl constructor, which OpenMPI's handler names in its backtrace (SCATRA_BACKTRACE_NAMES_TIMINTIMPL=1). What is genuinely absent is a FOUR_C_THROW: SCATRA_FOUR_C_ERROR_BLOCKS=0, no 'PROC 0 ERROR'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_FOURIER=0",
+    "EXIT_SCATRA1=139",
+    "EXIT_SCATRA2=139",
+    "EXIT_SCATRA3=139",
+    "is CORRECT",
+    "Signal: Segmentation fault (11)",
+    "SCATRA_FOUR_C_ERROR_BLOCKS=0",
+    "SCATRA_REACHED_FILL_COMPLETE=2",
+    "Welcome to Thermal Time Integration",
+    "SCATRA_BACKTRACE_NAMES_TIMINTIMPL=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FOURIER=1",
+    "EXIT_SCATRA1=0",
+    "EXIT_SCATRA2=0",
+    "EXIT_SCATRA3=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: build the 'scatra' deck with MAT_Fourier as well. All three repeats then exit 0, the segfault line and the SIGSEGV exit codes disappear, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"$SCATRA\"  > \"$TMP/scatra.yaml\"",
+    "to": "deck \"$FOURIER\" > \"$TMP/scatra.yaml\""
+  }
+}

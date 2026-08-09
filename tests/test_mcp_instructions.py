@@ -2,11 +2,14 @@
 
 A client that truncates the server's instructions when folding them into the
 model's context dropped the mid-string MANDATORY CRITIC safety block. It now
-leads the string; these tests guard that it stays there, appears once, respects
-the ablation toggle, and only references tools that actually exist.
+leads the string; these tests guard that it stays there, appears exactly once,
+cannot be switched off, references only tools that actually exist, and tells the
+agent how to SATISFY the requirement — enforcement an agent is never told about
+would just make every run fail with nothing explaining why.
 """
 import functools
 import os
+import pathlib
 import subprocess
 import sys
 from pathlib import Path
@@ -16,8 +19,11 @@ SRC = str(Path(__file__).resolve().parent.parent / "src")
 
 @functools.lru_cache(maxsize=None)
 def _instructions(disable_critic: bool = False) -> str:
-    """Build the server's instructions in a subprocess so env toggles read at
-    import time (OFA_DISABLE_CRITIC) take effect. Cached so we import at most twice."""
+    """Build the server's instructions in a subprocess.
+
+    `disable_critic` sets the retired OFA_DISABLE_CRITIC variable, which must
+    now do nothing — see test_no_environment_toggle_removes_the_critic_block.
+    """
     env = dict(os.environ, PYTHONPATH=SRC)
     env.pop("OFA_DISABLE_CRITIC", None)
     if disable_critic:
@@ -44,10 +50,27 @@ def test_critic_block_appears_exactly_once():
     assert _instructions().count(_BLOCK) == 1
 
 
-def test_ablation_removes_critic_block():
+def test_no_environment_toggle_removes_the_critic_block():
+    """This test used to assert the opposite: that OFA_DISABLE_CRITIC stripped
+    the block. Both that toggle and the runtime bypass it paired with are gone,
+    so an evaluation cannot end up silently running without the requirement."""
     instr = _instructions(disable_critic=True)
-    assert instr.count(_BLOCK) == 0
-    assert "MANDATORY CRITIC" not in instr
+    assert instr.count(_BLOCK) == 1
+    assert "MANDATORY CRITIC" in instr
+
+
+def test_the_critic_block_tells_the_agent_how_to_satisfy_it():
+    """Enforcement the agent is not told about is just a failure mode: every
+    run would come back NOT VERIFIED and nothing would say why."""
+    instr = _instructions()
+    assert "submit_critic_review" in instr
+    assert "does NOT" in instr and "critic_approved=True" in instr
+
+
+def test_the_instructions_offer_the_residual_check_and_computed_numbers():
+    instr = _instructions()
+    assert "verify_pde" in instr          # prove the output solves the problem
+    assert "oasis_computed" in instr      # report OASiS's numbers, not your own
 
 
 def test_critic_block_references_only_real_tools():
@@ -108,3 +131,53 @@ def test_coupling_tools_expose_critic_approved():
     schemas = _registered_tools()
     for name in ("couple", "couple_precice"):
         assert "critic_approved" in schemas[name].get("properties", {})
+def test_every_critic_gated_tool_actually_RESOLVES_the_critic():
+    """A declared parameter that decides nothing is worse than no parameter.
+
+    An audit found `coupled_solve` accepting `critic_approved` and never
+    referencing it, so an unreviewed run was indistinguishable from a reviewed
+    one — while the schema test above passed, because it only checked that the
+    parameter EXISTS. Declaring the gate is not enforcing it.
+
+    Reading the flag is no longer the bar either, and this test used to check
+    exactly that. `critic_approved` is a self-report; OASiS now resolves the
+    critic from its own review record. So the requirement is that a gated tool
+    LOOKS THE REVIEW UP: either by calling `_critic_state` itself, or by handing
+    `_stamp_verification` the `solver` and `setup_text` it needs to do so. A
+    tool that does neither cannot know whether its setup was reviewed, whatever
+    it does with the flag.
+    """
+    import ast
+    src = pathlib.Path(__file__).resolve().parents[1] / "src" / "tools" / "consolidated.py"
+    tree = ast.parse(src.read_text())
+
+    def resolves_critic(node) -> bool:
+        for n in ast.walk(node):
+            if not isinstance(n, ast.Call):
+                continue
+            fn = n.func
+            name = getattr(fn, "id", None) or getattr(fn, "attr", None)
+            if name == "_critic_state":
+                return True
+            if name == "_stamp_verification":
+                kws = {k.arg for k in n.keywords}
+                if {"solver", "setup_text"} <= kws:
+                    return True
+        return False
+
+    unenforced = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if node.name == "_stamp_verification":
+            continue                      # the gate itself, not a gated tool
+        params = [a.arg for a in (*node.args.args, *node.args.kwonlyargs)]
+        if "critic_approved" not in params:
+            continue
+        if not resolves_critic(node):
+            unenforced.append(node.name)
+
+    assert not unenforced, (
+        "these tools are critic-gated but never look up whether their setup "
+        "was reviewed, so the requirement is unenforced for them: "
+        + ", ".join(unenforced))

@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#0. Pins the two reader rejections the pitfall quotes ('tag \"material\" (line N) : missing attribute \"name\"' and 'tag \"SolidDomain\" (line N) : invalid value for attribute \"mat\"') AND the silent half: mat= on the <Elements> tag is a 3.x leftover that FEBio 4.0 ignores without a word \u2014 absent / \"1\" / \"Material1\" / \"NONSENSE\" all run to normal termination and write bit-identical node positions (md5 over the logged x;y;z). The positive control \u2014 the same deck with only the one wrong thing put right \u2014 is what makes the observed message attributable to the trigger rather than to anything else in the deck. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 gives the \"no name attribute\" material its name= back. The generic swap/drop neutralisation is not enough here: the two broken decks are written out as literals, and the swaps in this fixture build the four mat= variants of its third section. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'material_name_and_domain=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "material_name_and_domain=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

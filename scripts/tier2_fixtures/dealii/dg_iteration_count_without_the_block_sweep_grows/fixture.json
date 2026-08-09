@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM dg_advection_reaction::1: [Numerical] DG + multigrid in step-39. Signal: a plain SolverCG / SolverGMRES on the DG-advection system shows iteration count proportional to mesh Reynolds number (Pe_h) \u2014 not h-independent (visible in SolverControl history). Geometric multigrid with PreconditionBlock (block-Jacobi over the DG \u2026 WHAT THIS RUNS: -- probe \"iteration_count_vs_h\" of the shared DG-transport translation unit _shared/dgtransport_family.cc, compiled once and cached so eleven fixture directories share ONE C++ build. GMRES iteration counts on the DG-advection operator at four refinement levels for the curved field (rotation about a corner), with point Jacobi, with no preconditioner at all, and with PreconditionBlockSSOR over downstream-ordered cell blocks. SolverCG is tried once on the same non-symmetric operator and fails, so \"a plain SolverCG\" is not an option to compare against. NO MULTIGRID WAS BUILT. The entry credits geometric multigrid for h-independence; measured here, the block sweep over downstream-ordered cells alone already converges in one or two steps at every level, so multigrid is not what h-independence requires on this operator. Mutation control: T2_MUTATE=1 makes the probe run the CORRECT variant, and the fixture then fails its own expectations. OBSERVED, copied from the run: iteration_count_under_test_grows_with_refinement=true; unpreconditioned_iteration_count_grows_with_refinement=true; cg_on_the_nonsymmetric_dg_operator_failed=true; block_ssor_with_downstream_ordering_is_mesh_independent=true; VERDICT=iteration_count_under_test_is_not_mesh_independent. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "dg_advection_reaction",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "iteration_count_under_test_grows_with_refinement=true",
+    "unpreconditioned_iteration_count_grows_with_refinement=true",
+    "cg_on_the_nonsymmetric_dg_operator_failed=true",
+    "block_ssor_with_downstream_ordering_is_mesh_independent=true",
+    "VERDICT=iteration_count_under_test_is_not_mesh_independent"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=iteration_count_under_test_is_mesh_independent"
+  ],
+  "timeout_seconds": 1800
+}

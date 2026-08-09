@@ -32,13 +32,20 @@ This fixture asserts:
 Also surfaces the install gap: KratosContactStructuralMechanics
 Application was not in the .venv until installed during this
 probe (2026-06-01).
+
+Mutation control: T2_MUTATE=1 replaces the four catalog-listed BASE contact names with their correctly shape-suffixed 2D2N forms, so none of them is rejected and all_base_names_rejected goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.ContactStructuralMechanicsApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=base_names_given_their_shape_suffix")
 
 
 def main() -> int:
@@ -56,6 +63,9 @@ def main() -> int:
         "PenaltyFrictionlessMortarContact",
         "PenaltyFrictionalMortarContact",
     ]
+    if MUTATE:
+        # Pathology removed: give every base name its shape suffix.
+        base_names = [n + "Condition2D2N" for n in base_names]
     all_base_rejected = True
     for name in base_names:
         ok_reject = False

@@ -16,9 +16,22 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 removes the pathology: it
+// calls the refine_global() the pitfall is about forgetting, so n_dofs is 81
+// instead of 4. The fixture STILL PASSES — see fixture.json.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
@@ -26,6 +39,8 @@ int main()
   GridGenerator::hyper_cube(tria, 0.0, 1.0);
   // DELIBERATELY no tria.refine_global(...) — the pitfall under
   // verification.
+  if (mutate())
+    tria.refine_global(3);
 
   FE_Q<2> fe(1);
   DoFHandler<2> dof_handler(tria);
@@ -34,6 +49,12 @@ int main()
   // Print the small n_dofs that the pitfall warns about.
   std::cout << "DoFHandler::n_dofs() = "
             << dof_handler.n_dofs() << '\n';
+  // The two expectations used to be the bare words "n_dofs" and "DoFHandler",
+  // both of which the line above writes whatever the count is -- 4 unrefined
+  // and 81 under the mutation, matched identically.  This is the number.
+  std::cout << "dof_handler_n_dofs=" << dof_handler.n_dofs() << '\n';
+  std::cout << "triangulation_n_active_cells="
+            << tria.n_active_cells() << '\n';
   std::cout << "(expected 4 for un-refined FE_Q(1) on a single "
             << "hyper_cube cell)\n";
 

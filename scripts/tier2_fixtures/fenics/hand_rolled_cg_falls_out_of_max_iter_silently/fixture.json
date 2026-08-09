@@ -1,0 +1,24 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::8: [Integration] A CG loop that simply falls out of its `for` after max_iter, without raising or returning a converged flag, is the classic silent-failure shape: the caller gets a Function that looks like a solution. Signal: the hand-rolled CG loop has no PETSc KSP behind it, so there is no \u2026 WHAT THIS RUNS: a CG loop that simply falls out of its `for` after max_iter, without raising or returning a converged flag, is the classic silent-failure shape -- the caller gets a Function that looks like a solution. The hand-rolled loop has no PETSc KSP behind it, so there is no KSPConvergedReason to consult and nothing raises. Wrong variant: `def cg(...): for k in range(max_iter): ...` with no return value and no assertion at the call site. Right variant: return (iterations, converged) and assert the flag, as the minimal_working_example does. The fixture writes ONE child script and runs it as a subprocess twice, so the caller-visible symptom -- the process exit code -- is the measurement. Both runs use the same diverging operator action (the Dirichlet rows are not zeroed). OBSERVED, copied from the run: silent_loop_exited_with_returncode_zero=True; hand_rolled_loop_return_value_has_no_convergedreason=True; silent_run_still_printed_a_field_above_1e10=True; returning_and_asserting_the_flag_makes_the_process_fail=True; child_mode=silent cg_return_value=None return_has_getConvergedReason=False; AssertionError: matrix-free CG hit max_iter without reaching rtol; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 8,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::8"
+  ],
+  "expect_in_output": [
+    "silent_loop_exited_with_returncode_zero=True",
+    "hand_rolled_loop_return_value_has_no_convergedreason=True",
+    "silent_run_still_printed_a_field_above_1e10=True",
+    "returning_and_asserting_the_flag_makes_the_process_fail=True",
+    "child_mode=silent cg_return_value=None return_has_getConvergedReason=False",
+    "AssertionError: matrix-free CG hit max_iter without reaching rtol",
+    "VERDICT=silent_cg_loop_exits_zero_with_a_1e10_plus_solution"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=silent_cg_loop_did_not_exit_zero"
+  ],
+  "timeout_seconds": 300
+}

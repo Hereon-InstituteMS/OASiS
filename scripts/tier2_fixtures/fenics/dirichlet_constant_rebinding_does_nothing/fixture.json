@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics heat#1: a time-dependent Dirichlet value must be written INTO the fem.Constant the bc holds; rebinding the Python name is a no-op. Transient heat, T0 = 0, left wall g(t) = 1 + 2t, other walls insulated, backward Euler, 50 steps of dt = 0.01. Three variants: update `g.value`, rebind the name to a fresh Constant, and do nothing at all. The claim's sharpest observable is that rebinding is BIT-IDENTICAL to doing nothing, and that neither raises. Mutation control: T2_MUTATE=1 makes the \"rebind\" variant write g.value instead, so it stops matching the do-nothing run. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "heat",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "rebind_bit_identical_to_no_update=True",
+    "update_reaches_g_at_final_time=True",
+    "no_update_stays_at_first_step_value=True",
+    "VERDICT=rebinding_the_name_is_a_silent_noop"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=rebinding_had_an_effect"
+  ],
+  "timeout_seconds": 300
+}

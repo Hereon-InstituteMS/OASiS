@@ -1,0 +1,40 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics and fourc::thermal — the STRUCTURE ELEMENTS / THERMO ELEMENTS line grammar, which is the mesh-connectivity section an agent cannot write a deck without. Eleven arms on two self-contained decks (inline nodes, no mesh file). It pins three things `4C --parameters` alone will not tell a reader. (1) The REQUIRED-key sets are enforced: SOLID needs MAT and KINEM, THERMO takes MAT and NOTHING else, and KINEM's only two values are linear|nonlinear — 'nonlinearTotLag' is what 4C echoes back INTERNALLY after parsing 'nonlinear' and is rejected as input. (2) Being listed by `--parameters` is NOT the same as working: THERMO TRI6 parses and then dies at element evaluation with 'Element shape TRI6 (6 nodes) not activated. Just do it.' — `--parameters` describes the parser, not the physics module. (3) INTEGRATION cannot be written on a legacy element line in any syntax, and the two failure modes differ dangerously: with BOTH sub-keys it aborts cleanly with \"Key 'INTEGRATION' cannot be found in the container.\", but with a PARTIAL INTEGRATION it produces NO 4C error block at all — std::bad_any_cast, core dump, shell status 134. The fixture asserts S_INT_PART_FOURC_ERROR_BLOCKS=0 so that the absence of a diagnostic stays pinned. Note the diagnostics are fmt templates in the binary: grep for \"Required value '{}' not found in input line\", not for the rendered text. Verified by execution 2026-08-03 against 4C 2026.2.0-dev (git 89519cf). MUTATION CONTROL (T2_MUTATE=1, re-runnable): all nine broken element lines are replaced by the well-formed SOLID HEX8 / THERMO QUAD4 lines the two OK arms use. Ten of the eleven exit-code expectations and all nine quoted diagnostics disappear. The exception is S_INT_PART_FOURC_ERROR_BLOCKS=0, which counts an absence and therefore also holds on a clean run - noted here because it means that one expectation carries no weight by itself. Proved KILLED 2026-08-07.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_S_HEX8_OK=0",
+    "EXIT_S_NOKINEM=1",
+    "EXIT_S_QUAD4=1",
+    "EXIT_S_BOGUS=1",
+    "EXIT_S_TOTLAG=1",
+    "EXIT_S_INT_BOTH=1",
+    "EXIT_S_INT_PART=134",
+    "S_INT_PART_FOURC_ERROR_BLOCKS=0",
+    "EXIT_T_QUAD4_OK=0",
+    "EXIT_T_EXTRAKEY=1",
+    "EXIT_T_TRI6_DEAD=1",
+    "Required value 'KINEM' not found in input line",
+    "Element 'SOLID' does not seem to know cell type 'quad4'.",
+    "Unknown type 'FROBNICATE' of finite element",
+    "Could not parse parameter 'KINEM': invalid value 'nonlinearTotLag'",
+    "Key 'INTEGRATION' cannot be found in the container.",
+    "terminate called after throwing an instance of 'std::bad_any_cast'",
+    "After parsing, the line still contains 'KINEM linear'.",
+    "Element shape TRI6 (6 nodes) not activated. Just do it."
+  ],
+  "forbid_in_output": [
+    "EXIT_S_HEX8_OK=1",
+    "EXIT_T_QUAD4_OK=1",
+    "S_INT_PART_FOURC_ERROR_BLOCKS=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology from every bad arm: each is given the SAME well-formed element line as its own OK arm. Every EXIT_*=1 expectation becomes 0, EXIT_S_INT_PART=134 becomes 0, and all nine quoted diagnostics disappear - so the fixture must go red. S_INT_PART_FOURC_ERROR_BLOCKS=0 survives the mutation because it counts an ABSENCE and a clean run has no error block either; that is why it cannot carry the fixture alone.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

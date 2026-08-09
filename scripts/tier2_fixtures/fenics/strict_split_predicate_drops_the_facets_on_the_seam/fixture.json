@@ -1,0 +1,26 @@
+{
+  "_comment": "CLAIM stokes_darcy::4: [Input] Facet and cell predicates for the region touching the porous interface must use tolerant inequalities. dolfinx marks an entity only when ALL of its vertices satisfy the predicate, so splitting an outlet with x[1] > 0.5 and x[1] < 0.5 leaves the two facets that touch y = 0.5 in neither set. \u2026 WHAT THIS RUNS: facet and cell predicates for the region touching the porous interface must use tolerant inequalities. dolfinx marks an entity only when ALL of its vertices satisfy the predicate, so splitting an outlet with x[1] > 0.5 and x[1] < 0.5 leaves the two facets that touch y = 0.5 in neither set. Wrong variant: strict `x[1] > 0.5` and `x[1] < 0.5`. Right variant: `x[1] >= 0.5 - 1e-12` and `x[1] <= 0.5 + 1e-12`. A Brinkman channel on a 16x16 unit square (porous lower quarter, K = 1e-4, no-slip top and bottom, unit inlet pressure at x = 0) has its outlet at x = 1 split into an upper and a lower tag, and the fixture integrates 1*ds over both tags and the flux through both tags. OBSERVED, copied from the run: strict_split_left_two_facets_in_neither_set=True; strict_tagged_length_is_short_of_the_true_boundary=True; strict_flux_balance_is_off_by_more_than_one_percent=True; strict_split_raised_nothing_and_warned_nothing=True; tagged_length_total=0.875000 true_boundary_length=1.000000; tolerant_split_covers_the_whole_boundary=True; (+3 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 4,
+  "mode": "python",
+  "covers": [
+    "stokes_darcy::4"
+  ],
+  "expect_in_output": [
+    "strict_split_left_two_facets_in_neither_set=True",
+    "strict_tagged_length_is_short_of_the_true_boundary=True",
+    "strict_flux_balance_is_off_by_more_than_one_percent=True",
+    "strict_split_raised_nothing_and_warned_nothing=True",
+    "tagged_length_total=0.875000 true_boundary_length=1.000000",
+    "tolerant_split_covers_the_whole_boundary=True",
+    "tolerant_predicate_sets_do_not_overlap=True",
+    "tolerant_flux_balance_is_machine_zero=True",
+    "VERDICT=strict_inequalities_drop_the_facets_that_touch_the_seam"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=strict_inequalities_tagged_the_whole_boundary"
+  ],
+  "timeout_seconds": 300
+}

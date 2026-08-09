@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM matrix_free_poisson::7: [Performance] Unpreconditioned CG iteration count scales like O(1/h): measured on this install, halving the mesh size roughly DOUBLES the iteration count at fixed polynomial degree, and raising the degree at fixed mesh also multiplies it. Both hold for triangles and quadrilaterals. Signal: the run \u2026 WHAT THIS RUNS: unpreconditioned CG iteration count scales like O(1/h) -- halving the mesh size roughly DOUBLES the iteration count at fixed polynomial degree, and raising the degree at fixed mesh also multiplies it. Both hold for triangles and quadrilaterals. The run does not fail, it just gets slow, and a fixed max_iter that was comfortable on the coarse mesh starts tripping the non-convergence exit on the fine one. Wrong variant: a max_iter budget taken from the coarse mesh and kept fixed while the mesh is refined. Right variant: a budget that scales like 1/h (or a preconditioner; 'gamg' and 'hypre' are not available matrix-free because they need the assembled entries). Observed on dolfinx 0.10.0 at rtol 1e-8, unit square, 8/16/32 cells per side: triangles P1 22, 46, 95; triangles P2 51, 103, 204; quadrilaterals P1 15, 32, 63; quadrilaterals P2 44, 87, 172. Every per-halving ratio lies between 1.7 and 2.5, and at every mesh the P2 count is about 2.3 to 2.9 times the P1 count. With the budget frozen at 1.2x the coarse count, the 32x32 run exits its for-loop with converged=False. OBSERVED, copied from the run: cg_iterations cell=triangle degree=1; cg_iterations cell=quadrilateral degree=2; per_halving_ratio cell=triangle degree=1; iteration_count_doubles_when_h_halves=True; raising_the_degree_multiplies_the_count=True; fine_mesh_hit_the_coarse_max_iter=True; (+2 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "matrix_free_poisson",
+  "pitfall_index": 7,
+  "mode": "python",
+  "covers": [
+    "matrix_free_poisson::7"
+  ],
+  "expect_in_output": [
+    "cg_iterations cell=triangle degree=1",
+    "cg_iterations cell=quadrilateral degree=2",
+    "per_halving_ratio cell=triangle degree=1",
+    "iteration_count_doubles_when_h_halves=True",
+    "raising_the_degree_multiplies_the_count=True",
+    "fine_mesh_hit_the_coarse_max_iter=True",
+    "nothing_raised_it_just_ran_out_of_iterations=True",
+    "VERDICT=unpreconditioned_cg_count_scales_like_one_over_h"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cg_count_was_mesh_independent"
+  ],
+  "timeout_seconds": 300
+}

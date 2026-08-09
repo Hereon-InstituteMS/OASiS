@@ -1,0 +1,37 @@
+{
+  "_comment": "Tier-2 for fourc::ehl#1, and a FALSIFICATION of its Signal. The entry claimed near-contact 'gives pressure NaN or singular Reynolds stiffness matrix'. The minimum-film-height regularisation it recommends already exists as LUBRICATION DYNAMIC/GAP_OFFSET (default 0); upstream ehl3d_mixed.4C.yaml sets it to 0.0025. Setting it to 0 runs all 20 time steps, prints no NaN, no Inf, nothing containing 'singular' and no film-height remark, and returns a finite lubricant pressure and a full set of finite displacements that are simply wrong \u2014 5 of the deck's 7 result tests move, including the node-84 x displacement flipping sign. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "ehl",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "NOGAP_DECK_[GAP_OFFSET:0.0]",
+    "EXIT_WITHGAP=0",
+    "EXIT_NOGAP=1",
+    "OK (7)",
+    "processor 0 finished normally",
+    "Result check failed with 5 errors out of 7 tests",
+    "is WRONG --> actresult=",
+    "NOGAP_FAILED_TESTS=5",
+    "CLAIMED_NAN_OR_INF=0",
+    "CLAIMED_SINGULAR_STIFFNESS_TEXT=0",
+    "NOGAP_FILM_WARNINGS=0",
+    "NOGAP_TIME_STEPS_RUN=20",
+    "NOGAP_PRESSURE_IS_FINITE=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHGAP=1",
+    "EXIT_NOGAP=0",
+    "NOGAP_PRESSURE_IS_FINITE=no",
+    "NOGAP_DECK_[GAP_OFFSET:0.0025]"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the upstream minimum-film-height offset in the second arm. NOGAP_DECK_GAP_OFFSET becomes 0.0025 (a forbidden token), the 5-of-7 failure disappears and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BAD_GAP_OFFSET=0.0",
+    "to": "BAD_GAP_OFFSET=0.0025"
+  }
+}

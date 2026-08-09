@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#1 — one inline HEX8 cantilever (E 1000, rho 1, smallest edge 0.5, so the explicit stability limit is around 1.6e-2) integrated with ExplicitEuler at two step sizes. At dt = 1e-4 the run finalises all 8 steps, exits 0 and the increment norm 4C prints itself creeps to ||dx||=0.00575135. At dt = 5e-2 the same deck reaches ||dx||=3.38936e+100 and the process is killed by a floating-point exception (exit 136, 'Signal: Floating point exception (8)') after 7 steps. Nothing in the output mentions CFL, Courant or a stability limit (CFL_MENTIONED=0) — 4C does not check the condition for you. The third arm pins the spelling: 'ExplEuler' is rejected with 'Could not match this input' and the offending line echoed; the enum value is 'ExplicitEuler'. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STABLE=0",
+    "EXIT_TYPO=1",
+    "STABLE_STEPS=8",
+    "processor 0 finished normally",
+    "STABLE_LAST_DX=||dx||=0.00575135",
+    "UNSTABLE_LAST_DX=||dx||=3.38936e+100",
+    "Signal: Floating point exception (8)",
+    "CFL_MENTIONED=0",
+    "Could not match this input",
+    "ExplEuler"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_STABLE=1",
+    "EXIT_UNSTABLE=0",
+    "EXIT_TYPO=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: put the second arm's step size back under the stability limit. The runaway norm and the floating-point exception both vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck ExplicitEuler 5.0e-2 \"$TMP/unstable.4C.yaml\"",
+      "to": "deck ExplicitEuler 1.0e-4 \"$TMP/unstable.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: spell the scheme in full. The parse error vanishes and EXIT_TYPO becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck ExplEuler     1.0e-4 \"$TMP/typo.4C.yaml\"",
+      "to": "deck ExplicitEuler     1.0e-4 \"$TMP/typo.4C.yaml\""
+    }
+  ]
+}

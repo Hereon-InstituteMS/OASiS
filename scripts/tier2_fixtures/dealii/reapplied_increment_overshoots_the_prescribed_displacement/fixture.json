@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii hyperelasticity#10. Displacement control on a 6x6 Q1 block, 30% compression in three load steps. The correct pattern gives AffineConstraints the inhomogeneous increment on the FIRST Newton iteration of each load step and zero afterwards, because Newton solves for an increment and an inhomogeneous constraint makes that increment EQUAL the prescribed value. Re-applying the inhomogeneity on every iteration adds the increment again each time. Measured: the correct pattern converges every load step, the last one in 4 Newton steps with the residual dropping 4728 -> 15.3 -> 0.037 -> 2.2e-7 -> 2.9e-12, and lands on the prescribed -0.30 with a worst boundary deviation of exactly 0. Re-applying it drives the boundary to a deviation of 0.7 -- the face has been pushed to -1.0 instead of -0.3 -- the elements invert (min det F = -7.9e-14) and the residual is NaN on the first recorded iteration, after which the inner CG throws SolverControl::NoConvergence reporting 'The residual in the last step was -nan'. The claim's predicted signature of a residual that drops then jumps back up tenfold is NOT what happens here -- the run does not survive long enough to show it, it goes to NaN immediately -- so the fixture asserts on the boundary value the run actually lands on. T2_MUTATE=1 uses the incremental pattern. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build); every expect_in_output string was copied from that run. No expectation depends on wall-clock time.",
+  "backend": "dealii",
+  "physics": "hyperelasticity",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "expect_in_output": [
+    "boundary_update=increment_reapplied_on_every_iteration",
+    "every_load_step_converged=false",
+    "boundary_displacement_matches_the_target=false",
+    "VERDICT=reapplied_increment_misses_the_prescribed_value"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=incremental_constraints_hold_the_prescribed_value"
+  ],
+  "timeout_seconds": 900
+}

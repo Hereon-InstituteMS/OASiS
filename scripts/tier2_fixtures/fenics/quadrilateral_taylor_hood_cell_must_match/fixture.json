@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for fenics stokes#2: basix.ufl.element does support quadrilateral cells for a Q2/Q1 Taylor-Hood pair \u2014 provided the cell you pass is the mesh's own cell. The fixture builds the quadrilateral pair with cell=msh.basix_cell() and shows it works, then passes a TRIANGLE element to the same quadrilateral mesh and prints what comes back. Mutation control: T2_MUTATE=1 passes the matching cell in both places, so nothing is rejected. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "stokes",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "mesh_cell=quadrilateral",
+    "quad_taylor_hood_built=True",
+    "mismatched_cell_raised=True",
+    "VERDICT=quads_supported_but_the_cell_must_match_the_mesh"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cell_mismatch_accepted"
+  ]
+}

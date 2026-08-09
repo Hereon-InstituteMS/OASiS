@@ -10,14 +10,21 @@ at Initialize:
   for the element with ID 1
   ... in applications/StructuralMechanicsApplication/
   custom_elements/solid_elements/base_solid_element.cpp:249
+
+Mutation control: T2_MUTATE=1 assigns a CONSTITUTIVE_LAW to the Properties before Initialize, which is the documented requirement the fixture omits, so Initialize succeeds and the RuntimeError disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication as SMA  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=constitutive_law_assigned_to_the_properties")
 
 
 def main() -> int:
@@ -29,7 +36,10 @@ def main() -> int:
     prop = mp.CreateNewProperties(1)
     prop.SetValue(KM.YOUNG_MODULUS, 1.0)
     prop.SetValue(KM.POISSON_RATIO, 0.3)
-    # NOTE: NO CONSTITUTIVE_LAW assigned.
+    # NOTE: NO CONSTITUTIVE_LAW assigned (unless mutated).
+    if MUTATE:
+        prop.SetValue(KM.CONSTITUTIVE_LAW,
+                      SMA.LinearElasticPlaneStrain2DLaw())
     elem = mp.CreateNewElement("SmallDisplacementElement2D3N", 1,
                                 [1, 2, 3], prop)
     try:

@@ -1,0 +1,33 @@
+{
+  "_comment": "Tier-2 for fourc::cardiovascular0d#4, and the execution that FALSIFIED the standalone half of it. PROBLEMTYPE 'Cardiovascular0D' is not a value 4C knows: the parser prints the full enum and PROBLEMTYPE_LIST_HAS_CARDIOVASCULAR0D=0 while PROBLEMTYPE_LIST_HAS_STRUCTURE=1. But standalone 0D IS supported: the upstream deck cardiovascular0d_syspulcirculation_0d_heart is a full closed-loop sys-pul circulation with VENTRICLE_MODEL '0D' carried by a single dummy SOLID HEX8 whose eight dispx are all result-tested to 0, and it exits 0 with all 24 result tests correct. The 'parent field' is a bookkeeping formality, not a physical coupling, and there is no Fluid route -- the only coupling section 4C defines is CARDIOVASCULAR 0D-STRUCTURE COUPLING. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "cardiovascular0d",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_STANDALONE=1",
+    "BASE_TESTS_CORRECT=24",
+    "BASE_SOLID_ELEMENTS=1",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "Candidate deprecated_selection 'PROBLEMTYPE' has wrong value, possible values:",
+    "PROBLEMTYPE_LIST_HAS_CARDIOVASCULAR0D=0",
+    "PROBLEMTYPE_LIST_HAS_STRUCTURE=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_STANDALONE=0",
+    "PROBLEMTYPE_LIST_HAS_CARDIOVASCULAR0D=1",
+    "PROBLEMTYPE_LIST_HAS_STRUCTURE=0"
+  ],
+  "_mutation": {
+    "note": "remove the invalid-enum pathology: keep PROBLEMTYPE Structure in the standalone arm. The parser diagnostic and the enum listing disappear, EXIT_STANDALONE becomes 0, and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "STANDALONE_PROBLEMTYPE=Cardiovascular0D",
+    "to": "STANDALONE_PROBLEMTYPE=Structure"
+  }
+}

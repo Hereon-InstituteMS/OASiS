@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#9: XDMFFile.write_function only accepts a Function whose degree matches the mesh geometry degree, so a P2 velocity cannot be written directly. Mutation control: T2_MUTATE=1 interpolates into a matching P1 vector space first, which is one of the two documented cures. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 9,
+  "mode": "python",
+  "expect_in_output": [
+    "write_function_raised=True",
+    "Degree of output Function must be same as mesh degree",
+    "VERDICT=p2_velocity_cannot_go_straight_into_xdmf"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=xdmf_accepted_p2"
+  ]
+}

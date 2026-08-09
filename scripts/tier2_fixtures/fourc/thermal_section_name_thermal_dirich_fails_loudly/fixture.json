@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#1. One working standalone PROBLEMTYPE: Thermo deck plus six copies that each swap THERMAL<->THERMO in exactly one place; all six abort, each with a different message. 'DESIGN SURF THERMAL DIRICH CONDITIONS', 'THERMO DYNAMIC' and 'THERMAL ELEMENTS' all give \"Section '...' is not a valid section name.\" from core/io/src/4C_io_input_file.cpp; a RESULT DESCRIPTION group named THERMO gives 'Could not match this input'; DIS: \"thermal\" gives 'expected 1 tests but performed 0'; element type THERMAL gives \"Unknown type 'THERMAL' of finite element\". The catalogued wording 'unknown section' and the attribution to input_spec_builders.cpp are both absent from the run (CLAIMED_UNKNOWN_SECTION_TEXT=0, CLAIMED_SPEC_BUILDERS_ORIGIN=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_DIRICH=1",
+    "EXIT_DYN=1",
+    "EXIT_ELESEC=1",
+    "EXIT_RDGROUP=1",
+    "EXIT_DIS=1",
+    "EXIT_ELETYPE=1",
+    "is CORRECT",
+    "Section 'DESIGN SURF THERMAL DIRICH CONDITIONS' is not a valid section name.",
+    "4C_io_input_file.cpp",
+    "Section 'THERMO DYNAMIC' is not a valid section name.",
+    "Section 'THERMAL ELEMENTS' is not a valid section name.",
+    "Could not match this input",
+    "expected 1 tests but performed 0",
+    "Unknown type 'THERMAL' of finite element",
+    "CLAIMED_UNKNOWN_SECTION_TEXT=0",
+    "CLAIMED_SPEC_BUILDERS_ORIGIN=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_DIRICH=0",
+    "EXIT_DYN=0",
+    "EXIT_ELETYPE=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the correct PLAIN section name in the condition arm. That deck then runs, the 'not a valid section name' line for it disappears and EXIT_DIRICH becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "swap dirich  \"DESIGN SURF DIRICH CONDITIONS\" \"DESIGN SURF THERMAL DIRICH CONDITIONS\"",
+    "to": "swap dirich  \"DESIGN SURF DIRICH CONDITIONS\" \"DESIGN SURF DIRICH CONDITIONS\"        "
+  }
+}

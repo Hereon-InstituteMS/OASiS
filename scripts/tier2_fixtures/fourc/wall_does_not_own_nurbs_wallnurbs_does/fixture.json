@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#2 — the isogeometric 2D cell type is WALLNURBS, not WALL, and the diagnostic for the wrong spelling blames the wrong thing. Three arms on the upstream deck tests/input_files/w1_w1nurbs.4C.yaml, which is the ideal witness because one mesh carries BOTH families: four 'WALLNURBS NURBS9' cells on CP control points and four 'WALL QUAD4' cells on plain NODE lines. Run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: the untouched deck exits 0 with 'processor 0 finished normally' and BASE_HAS_PLAIN_WALL_ELEMENTS=4, so WALL is a registered element type in the very same run in which rewriting 'WALLNURBS NURBS9' as 'WALL NURBS9' aborts with \"Unknown type 'WALL' of finite element\" from core/comm/4C_comm_parobjectfactory.cpp line 153 — what is unregistered is the WALL-plus-NURBS pairing, not WALL. The third arm is the silent one: rewriting exactly the 16 'CP <id> COORD x y z <weight>' lines as ordinary 'NODE <id> COORD x y z', deck otherwise untouched with SHAPEFCT: \"Nurbs\" and STRUCTURE KNOTVECTORS still in place, SEGFAULTS inside Wall1::w1_nlnstiffmass — shell status 139, NODELINES_FOURC_ERROR_BLOCKS=0, no error block, only the MPI signal line. The presence of every string this fixture edits is asserted first, so an upstream rename breaks it loudly instead of voiding it.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_WALLNURBS=1",
+    "EXIT_NODELINES=139",
+    "processor 0 finished normally",
+    "BASE_HAS_PLAIN_WALL_ELEMENTS=4",
+    "Unknown type 'WALL' of finite element",
+    "4C_comm_parobjectfactory.cpp",
+    "Signal: Segmentation fault (11)",
+    "NODELINES_FOURC_ERROR_BLOCKS=0",
+    "NURBS_DECK_HAS_SHAPEFCT=yes",
+    "NURBS_DECK_HAS_KNOTVECTORS=yes",
+    "NURBS_DECK_CP_LINES=16"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_BASE=1",
+    "EXIT_WALLNURBS=0",
+    "EXIT_NODELINES=0",
+    "NURBS_DECK_HAS_SHAPEFCT=no",
+    "NURBS_DECK_HAS_KNOTVECTORS=no"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the second arm: leave WALLNURBS alone. The parobjectfactory abort disappears and EXIT_WALLNURBS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/WALLNURBS NURBS9/WALL NURBS9/' \"$BASE\" > \"$TMP/wall_nurbs.yaml\"",
+      "to": "sed 's/WALLNURBS NURBS9/WALLNURBS NURBS9/' \"$BASE\" > \"$TMP/wall_nurbs.yaml\""
+    },
+    {
+      "note": "remove the pathology from the third arm: hand it the pristine deck, CP control-point lines intact. The segfault disappears and EXIT_NODELINES becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "python3 - \"$BASE\" \"$TMP/node_lines.yaml\" <<'PY'",
+      "to": "cp \"$BASE\" \"$TMP/node_lines.yaml\"\npython3 - \"$BASE\" \"$TMP/unused.yaml\" <<'PY'"
+    }
+  ]
+}

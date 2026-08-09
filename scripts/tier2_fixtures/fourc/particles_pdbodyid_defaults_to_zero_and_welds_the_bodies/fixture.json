@@ -1,0 +1,51 @@
+{
+  "_comment": "Tier-2 for fourc::particles#6: the consequence is confirmed, the default value is falsified. Upstream particle_sph_3d_pdbody_colliding_slow.4C.yaml is two 515-particle blocks 0.2 apart with horizon 0.3, tagged PDBODYID 1 and 2, and gives 41126 bonds with all 9 result tests passing. Stripping PDBODYID from both bodies welds them: 41129 bonds, i.e. 3 cross-body bonds that should not exist, and 6 of 9 result tests fail, with zero lines mentioning body id, PDBODYID or a default. The entry says the unset value is -1; it is 0. Tagging body 1 explicitly with PDBODYID 0 and leaving body 2 untagged reproduces the welded 41129 exactly, which is only possible if the unset state is 0 — with -1 the ids would still differ and the count would stay at 41126. The control arm (0 and 2, both explicit) gives 41126 and passes, so what matters is that the ids DIFFER, not what they are. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particles",
+  "pitfall_index": 6,
+  "mode": "cmd",
+  "timeout_seconds": 400,
+  "expect_in_output": [
+    "PARTICLES_PER_BODY=515",
+    "EXIT_BOTHIDS=0",
+    "EXIT_OMITBOTH=1",
+    "EXIT_ZEROANDOMIT=1",
+    "EXIT_ZEROANDTWO=0",
+    "processor 0 finished normally",
+    "BOTHIDS_FAILURES=0",
+    "Number of initialized peridynamic bonds on this proc: 41126",
+    "Number of initialized peridynamic bonds on this proc: 41129",
+    "BONDS_OMITBOTH=41129",
+    "BONDS_ZEROANDOMIT=41129",
+    "BONDS_ZEROANDTWO=41126",
+    "CROSS_BODY_BONDS_WHEN_OMITTED=3",
+    "OMITBOTH_FAILURES=6",
+    "ZEROANDTWO_FAILURES=0",
+    "OMITBOTH_BODY_WARNINGS=0",
+    "DEFAULT_PDBODYID_IS_ZERO=yes",
+    "DEFAULT_PDBODYID_IS_MINUS_ONE=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BOTHIDS=1",
+    "EXIT_OMITBOTH=0",
+    "CROSS_BODY_BONDS_WHEN_OMITTED=0",
+    "OMITBOTH_FAILURES=0",
+    "DEFAULT_PDBODYID_IS_MINUS_ONE=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: keep PDBODYID on both bodies in the OMITBOTH arm. The two bodies stay separate, BONDS_OMITBOTH falls back to 41126, CROSS_BODY_BONDS_WHEN_OMITTED becomes 0, OMITBOTH_FAILURES becomes 0 and EXIT_OMITBOTH becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(os.path.join(d, \"omitboth.yaml\"),   \"w\").write(t.replace(one, '\"').replace(two, '\"'))",
+      "to": "open(os.path.join(d, \"omitboth.yaml\"),   \"w\").write(t)"
+    },
+    {
+      "note": "remove the pathology from the discriminating arm: keep body 2's explicit PDBODYID 2 so only body 1 is renumbered. BONDS_ZEROANDOMIT falls back to 41126 and DEFAULT_PDBODYID_IS_ZERO flips to no, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "open(os.path.join(d, \"zeroandomit.yaml\"),\"w\").write(t.replace(one, ' PDBODYID 0\"').replace(two, '\"'))",
+      "to": "open(os.path.join(d, \"zeroandomit.yaml\"),\"w\").write(t.replace(one, ' PDBODYID 0\"'))"
+    }
+  ]
+}

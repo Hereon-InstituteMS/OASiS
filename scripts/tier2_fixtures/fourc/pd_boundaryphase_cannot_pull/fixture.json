@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#10, confirmed by execution. Self-contained 2-D deck: a 6x6 pdphase plate with its left column at x=1.5 and a 6-particle boundaryphase wall at x=0.5, one PERIDYNAMIC_GRID_SPACING away, driven by a Dirichlet function whose only difference between the arms is the sign of the wall velocity. Retreating wall: the plate's edge particle ends at posx=1.5, velx=0 with abs(diff) exactly 0.00000000000000000e+00, and 'Number of pd_neighbor_pairs in peridynamic evaluation on this proc' peaks at 0 — no contact pair is ever created, because a pair only exists where the separation drops BELOW the grid spacing, so there is no tensile branch to reach. Advancing wall: pairs peak at 6 and the plate is accelerated. Same deck, same speed, opposite sign. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PULL=0",
+    "EXIT_PUSH=1",
+    "processor 0 finished normally",
+    "PULL_FAILURES=0",
+    "PULL_EXACT_ZERO_DIFFS=2",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "PULL_MAX_CONTACT_PAIRS=0",
+    "PUSH_FAILURES=2",
+    "PUSH_MAX_CONTACT_PAIRS=6",
+    "is WRONG --> actresult= 4.31",
+    "VERDICT: BOUNDARYPHASE_CAN_LOAD_PDPHASE_IN_TENSION=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PULL=1",
+    "EXIT_PUSH=0",
+    "PULL_FAILURES=2",
+    "VERDICT: BOUNDARYPHASE_CAN_LOAD_PDPHASE_IN_TENSION=yes"
+  ],
+  "_mutation": {
+    "note": "remove the contrast: drive the retreating arm INTO the plate as well. Both arms then push, the pull arm stops being exactly undisturbed, PULL_MAX_CONTACT_PAIRS stops being 0 and PULL_FAILURES becomes non-zero, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"-25.0\" > \"$TMP/pull.yaml\"",
+    "to": "deck \"25.0\" > \"$TMP/pull.yaml\""
+  }
+}

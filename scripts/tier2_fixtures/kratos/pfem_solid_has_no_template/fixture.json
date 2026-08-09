@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2: pitfall (kratos.pfem_solid #0) says the catalog template is an availability-probe STUB and gives as its Signal 'the emitted script is < 30 lines, contains no Model.CreateModelPart() ... results_summary.json has a single note key'. THAT SIGNAL IS NOW UNREACHABLE: a 2026-06-26 honesty audit removed every availability-probe generator, so no script is emitted for this physics at all. Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Measured: 'pfem_solid' is still a KNOWLEDGE key while GENERATORS holds no entry starting 'pfem_solid_', so generate_input raises ValueError 'No Kratos template for pfem_solid_<variant>' rather than emitting a stub. The fixture pins the corrected state and goes red if a stub generator is ever reintroduced. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the pathology is a fact about the shipped catalog — pfem_solid is documented but has no generator — so it cannot be removed by editing a physics row; the mutation instead changes what the fixture ASKS about, repointing the same two probes at linear_elasticity, which is documented AND ships linear_elasticity_2d plus linear_elasticity_2d_nonlinear. Both probes still run for real against backends.kratos.generators. These expect_in_output strings disappear: in_knowledge[pfem_solid]=True, generators_for[pfem_solid]=[], stub_template_mismatches=0 — the mutant prints in_knowledge[linear_elasticity]=True, a non-empty generators_for[linear_elasticity] list and stub_template_mismatches=1, and also trips the forbidden token FAIL:. Repo-root lookup hardened in the same pass: parents[4] does not exist inside the mutation harness's scratch tree, so the fixture now searches upward for src/backends/kratos/generators and falls back to $OASIS_REPO, aborting with FIXTURE_ABORT=no_oasis_checkout rather than reporting a pass if neither resolves; the proof therefore also sets OASIS_REPO=/home/alexander/Schreibtisch/ofa-consolidate. Proof environment: KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (28 applications; the repo-venv Kratos wheel does not load on this glibc and /usr/bin/python3 cannot import this repo). Proved KILLED 2026-08-07.",
+  "backend": "kratos",
+  "physics": "pfem_solid",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "kratos_version_present=True",
+    "in_knowledge[pfem_solid]=True",
+    "generators_for[pfem_solid]=[]",
+    "stub_template_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ],
+  "timeout_seconds": 240,
+  "_mutation": {
+    "note": "The pathology is a fact about the shipped catalog — pfem_solid is documented but has no generator — so it cannot be removed by editing a physics row. The mutation changes what the fixture ASKS about instead: it repoints the same two probes at linear_elasticity, which is documented AND ships linear_elasticity_2d plus linear_elasticity_2d_nonlinear, so the 'documented but no template' assertion has to disappear.",
+    "file": "source.py",
+    "from": "MUTATE = os.environ.get(\"T2_MUTATE\") == \"1\"",
+    "to": "MUTATE = True"
+  }
+}

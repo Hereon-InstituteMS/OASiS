@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::pasi#6 and #7, both exercised on the same upstream two-way deck. COUPLING removed: the run does not print the word 'coupl' even once (NOCOUP_MENTIONS_COUPLING=0, counted), completes, and gets 5 of 9 verdicts wrong -- it has silently become the partitioned_onewaycoup default. The one observable that separates the two schemes is counted on both runs rather than asserted: a two-way run reports its fixed-point iterations and a one-way run has none (TWOWAY_ITERATION_LINES vs ONEWAY_ITERATION_LINES=0), which is what makes 'grep for iteration' an actionable check. Second half: a TIMESTEP written into PARTICLE DYNAMIC at ten times the PASI step is inert. That is measured two ways -- the startup 'Overview of chosen time stepping' table is PARSED and its Particles column compared numerically against the PASI column and against the value we wrote (PARTICLE_COLUMN_EQUALS_PASI=yes, PARTICLE_COLUMN_EQUALS_THE_KEY_WE_WROTE=no), and the verdict lines are compared bit-exactly against the untouched deck. CLASH_DECK_REALLY_CARRIES_THE_KEY guards the equality against a silently failed edit, the defect class that lets an inertness fixture pass while proving nothing. PASI_DECKS_WITH_A_PARTICLE_TIMESTEP counts, over all of 4C's own PASI decks, how many put a TIMESTEP in PARTICLE DYNAMIC. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 rebuilds both probe decks from the untouched upstream file; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "pasi",
+  "pitfall_index": 6,
+  "covers": [
+    "pasi:6",
+    "pasi:7"
+  ],
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "PASI_DECKS_WITH_A_PARTICLE_TIMESTEP=0",
+    "EXIT_BASE=0",
+    "EXIT_NOCOUP=1",
+    "EXIT_DTCLASH=0",
+    "BASE_PASSES=yes",
+    "NOCOUP_MENTIONS_COUPLING=0",
+    "NOCOUP_DEGRADES_SILENTLY=yes",
+    "ONEWAY_ITERATION_LINES=0",
+    "ITERATION_COUNT_SEPARATES_THEM=yes",
+    "Overview of chosen time stepping:",
+    "TIMESTEP_TABLE_IS_PRINTED=yes",
+    "currently equal for both structure and particle field",
+    "TIMESTEP_ROW_PARSED=yes",
+    "PARTICLE_COLUMN_EQUALS_PASI=yes",
+    "PARTICLE_COLUMN_EQUALS_THE_KEY_WE_WROTE=no",
+    "PARTICLE_TIMESTEP_IS_INERT=yes",
+    "CLASH_DECK_REALLY_CARRIES_THE_KEY=yes"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "NOCOUP_DEGRADES_SILENTLY=no",
+    "NOCOUP_VERDICTS_WRONG=0",
+    "ITERATION_COUNT_SEPARATES_THEM=no",
+    "PARTICLE_COLUMN_EQUALS_THE_KEY_WE_WROTE=yes",
+    "PARTICLE_TIMESTEP_IS_INERT=no",
+    "CLASH_DECK_REALLY_CARRIES_THE_KEY=no",
+    "TIMESTEP_ROW_PARSED=no"
+  ],
+  "_mutation": {
+    "note": "remove both pathologies: rebuild the probe decks from the untouched upstream two-way deck, so COUPLING is present and no conflicting particle step exists. The silent degradation and the inertness both disappear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

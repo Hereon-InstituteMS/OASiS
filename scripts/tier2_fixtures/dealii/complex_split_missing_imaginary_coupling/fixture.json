@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for dealii helmholtz#1. Tier-2 for dealii helmholtz#1 \u2014 probe \"complex_split_coupling\" of the shared translation unit _shared/helmholtz_family.cc. This deal.II is a real-scalar build, so the complex Helmholtz problem is split into a 2-component FESystem carrying (u_re, u_im); the absorbing boundary term -i k u v dS is purely off-diagonal in that split, and omitting it leaves the two blocks independent. Mutation control: T2_MUTATE=1 assembles the coupling, and the fixture then fails its own expectations. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug at the dbgbuild tree where the fixture sets requires_debug); every expect_in_output string was copied from that run.",
+  "backend": "dealii",
+  "physics": "helmholtz",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "imaginary_coupling_assembled=false",
+    "imaginary_component_exactly_zero=false",
+    "components_are_proportional_to_the_source_split=true",
+    "VERDICT=no_coupling_leaves_the_two_blocks_independent"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=blocks_are_coupled"
+  ],
+  "timeout_seconds": 600
+}

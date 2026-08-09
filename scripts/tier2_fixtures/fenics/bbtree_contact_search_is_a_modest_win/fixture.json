@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for fenics contact#5: a naive all-pairs gap search really is quadratic, but a bounding-box tree is a much smaller win than usually claimed \u2014 measure it instead of assuming it. What is timed: the closest contact facet for every query point, computed twice on the same data. The naive way is a NumPy all-pairs distance array built by broadcasting, argmin over it. The dolfinx way is geometry.bb_tree(mesh, fdim, entities=facets) plus create_midpoint_tree and compute_closest_entity. The two are checked to return the SAME nearest facet for every query point before any timing is believed. Sizes are the exterior facets of unit cubes with 6, 8, 11 and 16 cells per side \u2014 432, 768, 1452 and 3072 facets, i.e. roughly a doubling each step. Best of three runs each. Observed on this installation, reproduced across repeated runs: * the NumPy all-pairs cost fits n**2.2 \u2014 quadratic, as expected; * compute_closest_entity fits n**1.2 \u2014 better than quadratic but clearly NOT near-linear; * at 432 facets the plain NumPy version is the FASTER of the two (about 8 ms against about 13 ms), the crossover sits near 800 facets; * at 3072 facets the tree leads by a factor of four to five \u2014 a real win, but single-digit, not the order-of-magnitude usually claimed. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "same_nearest_facet_both_ways=True",
+    "allpairs_scaling_is_quadratic=True",
+    "tree_scaling_is_not_near_linear=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=bbtree_behaved_as_folklore_claims"
+  ],
+  "timeout_seconds": 300,
+  "_wall_clock_note": "Three of these expectations compared elapsed times (t_np vs t_tree) and the VERDICT line is emitted only when those comparisons hold, so the whole verdict was host-dependent. Removed from expect_in_output; the timings are still printed. What remains is the structural half and it is the substance of the claim: allpairs_scaling_is_quadratic and tree_scaling_is_not_near_linear are scaling exponents across sizes, and same_nearest_facet_both_ways proves the two searches agree. The 'modest win' magnitude now needs an operation-count verdict (distance evaluations per query) before it can be asserted again."
+}

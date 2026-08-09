@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for kratos.dem::6: writing DENSITY instead of PARTICLE_DENSITY is accepted by the materials reader, never read, and erases the whole model without a warning. Executed 2026-08-07 on Kratos 10.4.3 with two otherwise identical decks. Measured: with DENSITY, Properties[PARTICLE_DENSITY] reads back exactly 0.0 while Properties[DENSITY] reads 2650.0, SpheresPart goes from 4 elements to 0, and the run still prints ANALYSIS COMPLETED and exits 0; with PARTICLE_DENSITY, the property reads 2650.0 and all 4 particles survive. Both variables are resolved through KratosGlobals.GetVariable. INTERPRETER: needs a Kratos build carrying DEMApplication; set KRATOS_PYTHON=/mnt/kratos-tier2/kv/bin/python (the 28-application source build). The repo venv wheel does not import at all on this host (GLIBC_2.32 against a 2.31 system) and /usr/bin/python3 carries no DEMApplication, so pointing this anywhere else SKIPS rather than passes. Every deck is written into a fresh TemporaryDirectory and driven through DEMAnalysisStage in a CHILD process: Kratos logs from C++ and buffers it, so an in-process capture would miss every DEM line, and a Finalize()d DEM stage cannot be probed from python without segfaulting. MUTATION CONTROL (T2_MUTATE=1, re-runnable): see the module docstring -- the mutation changes the INPUT only, never an assertion, so every deck is still really executed against Kratos. Verified 2026-08-07: unmutated PASSES (rc=0) with probe_mismatches=0; with T2_MUTATE=1 it FAILS (rc=1), the named probe lines flip and the trailing =ok line disappears. Re-verify: cd scripts/tier2_fixtures/kratos/dem_density_spelling_erases_every_particle && $KRATOS_PYTHON source.py, then T2_MUTATE=1 $KRATOS_PYTHON source.py. NOTE ON forbid_in_output: the sentinel is FIXTURE_FAILED, not MISMATCH. The runner's matcher is case-insensitive substring, so forbidding 'MISMATCH' also matches the 'probe_mismatches=0' line this fixture prints on SUCCESS, and every passing run would be recorded as failed. Found by running these fixtures through scripts/run_tier2_fixtures.py rather than by hand.",
+  "backend": "kratos",
+  "physics": "dem",
+  "pitfall_index": 6,
+  "covers": [
+    "dem::6"
+  ],
+  "mode": "python",
+  "expect_in_output": [
+    "probe[wrong_key_particle_density_is_zero]=0.0_expected=0.0",
+    "probe[wrong_key_density_holds_the_value]=2650.0_expected=2650.0",
+    "probe[wrong_key_loses_every_particle]=0_expected=0",
+    "probe[wrong_key_raises_nothing]=None_expected=None",
+    "probe[right_key_keeps_every_particle]=4_expected=4",
+    "dem_density_spelling_check=ok",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FIXTURE_FAILED"
+  ]
+}

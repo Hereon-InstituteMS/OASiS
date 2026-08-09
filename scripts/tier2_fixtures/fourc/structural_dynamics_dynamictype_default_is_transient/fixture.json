@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::structural_dynamics#10 — DYNAMICTYPE is optional and defaults to GenAlpha, a TRANSIENT scheme. On one single-HEX8 deck, DYNAMICTYPE: 'Statics' exits 0 against a result test pinned to 1e-10 at 4.45356052073027156e-02; deleting only that line runs the same four steps, prints the generalised-alpha coefficient banner (NO_DYNAMICTYPE_GENALPHA_BANNER=1), never mentions the key it defaulted (NO_DYNAMICTYPE_MENTIONS_THE_KEY=0), and returns 4.56234193100488808e-02 instead. LINEAR_SOLVER is the opposite case: its default of -1 is not a valid solver id, so deleting it fails at once with 'no linear solver defined for structural field. Please set LINEAR_SOLVER in STRUCTURAL DYNAMIC to a valid number!' from structure_new/src/linear_solver/4C_structure_new_solver_factory.cpp. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "structural_dynamics",
+  "pitfall_index": 10,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_STATICS=0",
+    "EXIT_NO_DYNAMICTYPE=1",
+    "EXIT_NO_LINEAR_SOLVER=1",
+    "processor 0 finished normally",
+    "NO_DYNAMICTYPE_STEPS=4",
+    "NO_DYNAMICTYPE_GENALPHA_BANNER=1",
+    "NO_DYNAMICTYPE_MENTIONS_THE_KEY=0",
+    "is WRONG --> actresult= 4.56234193100488808e-02",
+    "no linear solver defined for structural field. Please set LINEAR_SOLVER in STRUCTURAL DYNAMIC to a valid number!",
+    "4C_structure_new_solver_factory.cpp"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_STATICS=1",
+    "EXIT_NO_DYNAMICTYPE=0",
+    "EXIT_NO_LINEAR_SOLVER=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: write DYNAMICTYPE explicitly in the second arm. It then matches the pinned static answer, the GenAlpha banner disappears and EXIT_NO_DYNAMICTYPE becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"                            $'\\n  LINEAR_SOLVER: 1' \"$TMP/nodyn.4C.yaml\"",
+      "to": "deck $'\\n  DYNAMICTYPE: \"Statics\"'                            $'\\n  LINEAR_SOLVER: 1' \"$TMP/nodyn.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: give the third arm its LINEAR_SOLVER. The solver-factory abort vanishes and EXIT_NO_LINEAR_SOLVER becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck $'\\n  DYNAMICTYPE: \"Statics\"' \"\"                      \"$TMP/nosolver.4C.yaml\"",
+      "to": "deck $'\\n  DYNAMICTYPE: \"Statics\"' $'\\n  LINEAR_SOLVER: 1'                      \"$TMP/nosolver.4C.yaml\""
+    }
+  ]
+}

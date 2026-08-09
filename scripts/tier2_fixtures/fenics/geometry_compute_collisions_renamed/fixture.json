@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics contact#4: the DOLFINx 0.10 geometry search functions are not named the way older tutorials name them. The gap search a contact model needs is compute_collisions_POINTS; plain compute_collisions is gone. Wrong variant: dolfinx.geometry.compute_collisions(tree, points), the name used by every pre-0.7 tutorial. It fails with \"AttributeError: module 'dolfinx.geometry' has no attribute 'compute_collisions'\". What DOES exist is checked too, because the claim is a rename and not a removal: bb_tree is present under exactly that name, with the signature bb_tree(mesh, dim, *, padding=0.0, entities=None) \u2014 the entities keyword being what restricts the tree to the contact facets \u2014 and the ten working names of the release are all present. The fixture then runs a real query through the correct name and confirms it returns candidate cells for a point inside the mesh. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "contact",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "module 'dolfinx.geometry' has no attribute 'compute_collisions'",
+    "bb_tree_takes_entities_kw=True",
+    "bb_tree_returns_BoundingBoxTree=True",
+    "all_documented_working_names_present=True",
+    "compute_collisions_points_returns_candidates=True",
+    "VERDICT=compute_collisions_gone_use_compute_collisions_points"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=old_geometry_name_still_present"
+  ]
+}

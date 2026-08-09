@@ -1,0 +1,24 @@
+{
+  "_comment": "ngsolve plasticity#6 (consistent vs continuum tangent). Observed 2026-08-06 on NGSolve 6.2.2604, plane-strain J2 on unit_square maxh 0.3 VectorH1 order 2, traction 400: below yield the AssembleLinearization tangent and the hand-built continuum C_ep are bitwise identical (which validates the continuum implementation), in the plastic range they differ by ~35% in matrix norm. Newton with the consistent tangent converges in 9 residual evaluations with a quadratic tail; with the continuum tangent it is still short of tolerance after 120, at a constant ratio ~0.96. The qualitative claim holds; its stated 'factor of ~2-3 per iteration' does not -- the observed drop is about 4% per iteration. MUTATION CONTROL (re-runnable): T2_MUTATE=1 flips TANGENT_WRONG from 'continuum' to 'consistent', so the second Newton run is driven by AssembleLinearization instead of the hand-built C_ep. Re-verified by execution 2026-08-06 on NGSolve 6.2.2604: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 removes 'continuum_hits_iteration_cap=True', 'continuum_still_above_tol=True', 'continuum_ratio_constant_linear=True', 'continuum_drop_per_iter_faster_than_factor_2=False', 'continuum_drop_per_iter_slower_than_4pct=True', 'consistent_needs_far_fewer_residuals=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "ngsolve",
+  "physics": "plasticity",
+  "pitfall_index": 6,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "tangent_matrix_type=SparseMatrixd",
+    "disp_space_type=VectorH1",
+    "elastic_state_tangents_identical=True",
+    "plastic_state_tangents_differ_gt_10pct=True",
+    "consistent_converged=True",
+    "consistent_quadratic=True",
+    "continuum_hits_iteration_cap=True",
+    "continuum_still_above_tol=True",
+    "continuum_ratio_constant_linear=True",
+    "continuum_drop_per_iter_faster_than_factor_2=False",
+    "continuum_drop_per_iter_slower_than_4pct=True",
+    "continuum_within_1pct_of_consistent_solution=True",
+    "consistent_needs_far_fewer_residuals=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

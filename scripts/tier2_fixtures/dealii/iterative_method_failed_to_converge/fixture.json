@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2: SolverControl raises NoConvergence when max_iterations is too low. Many pitfalls Signal this exact text — generic verification of the 'iterative method failed to converge' exception class.",
+  "_comment": "Tier-2: SolverControl raises NoConvergence when max_iterations is too low. Many pitfalls Signal this exact text — generic verification of the 'iterative method failed to converge' exception class. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook raises the SolverControl cap from 1 iteration to 100 (tolerance 1e-10). CG converges, nothing is raised, and BOTH expectations `SolverControl` and `iterative method` go missing. Proved KILLED 2026-08-07.",
   "backend": "dealii",
   "physics": "linear_elasticity",
   "pitfall_index": 98,
@@ -9,5 +9,11 @@
     "SolverControl",
     "iterative method"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [],
+  "_mutation": {
+    "note": "remove the pathology: raise the iteration cap from 1 to 100 (and the tolerance to 1e-10) so CG can converge on this SPD system",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }

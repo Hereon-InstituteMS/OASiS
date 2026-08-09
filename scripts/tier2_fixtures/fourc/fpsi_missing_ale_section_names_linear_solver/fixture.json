@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::fpsi#0, and a FALSIFICATION of both quoted Signals. On upstream fpsi_ofsiinterface.4C.yaml, deleting ALE DYNAMIC gives 'No linear solver defined for ALE problems. Please set LINEAR_SOLVER in ALE DYNAMIC to a valid number!' from adapter/4C_adapter_ale.cpp line 89 — an actionable abort that never mentions FPSI or a missing field — and deleting the fluid -> ale entry from CLONING MATERIAL MAP gives no 4C diagnostic at all: an uncaught std::out_of_range terminates the process (shell status 134) with zero 'PROC 0 ERROR in' lines and no occurrence of the word 'cloning'. Neither 'FPSI: ALE field not configured' nor 'cannot clone material for ALE' exists. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fpsi",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "NOALE_DECK_HAS_ALE_SECTION=0",
+    "NOCLONE_DECK_HAS_ALE_CLONE=0",
+    "EXIT_FULL=0",
+    "EXIT_NOALE=1",
+    "EXIT_NOCLONE=134",
+    "OK (2)",
+    "processor 0 finished normally",
+    "No linear solver defined for ALE problems. Please set LINEAR_SOLVER in ALE DYNAMIC to a valid number!",
+    "4C_adapter_ale.cpp",
+    "terminate called after throwing an instance of 'std::out_of_range'",
+    "CLAIMED_ALE_FIELD_TEXT=0",
+    "CLAIMED_CANNOT_CLONE_TEXT=0",
+    "NOCLONE_4C_ERROR_LINES=0",
+    "NOCLONE_MENTIONS_CLONING=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FULL=1",
+    "EXIT_NOALE=0",
+    "EXIT_NOCLONE=0",
+    "NOALE_DECK_HAS_ALE_SECTION=1",
+    "NOCLONE_DECK_HAS_ALE_CLONE=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the missing-ALE pathology: keep the ALE DYNAMIC section. NOALE_DECK_HAS_ALE_SECTION becomes 1 (a forbidden token), the linear-solver abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DROP_ALE_SECTION=yes",
+      "to": "DROP_ALE_SECTION=no"
+    },
+    {
+      "note": "remove the missing-clone pathology: keep the fluid -> ale entry. NOCLONE_DECK_HAS_ALE_CLONE becomes 1 (a forbidden token), the std::out_of_range terminate vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DROP_FLUID_TO_ALE_CLONE=yes",
+      "to": "DROP_FLUID_TO_ALE_CLONE=no"
+    }
+  ]
+}

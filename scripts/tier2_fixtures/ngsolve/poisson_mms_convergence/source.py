@@ -24,17 +24,28 @@ skfem, so the per-DOF error constants differ):
   order=2 L2 ≲ 5e-5
   order=3 L2 ≲ 1e-6
 Plus order=1 EOC maxh=1/8 → maxh=1/16 within [1.7, 2.3].
+
+Mutation control (re-runnable): T2_MUTATE=1 drops the
+fes.FreeDofs() argument from a.mat.Inverse(), i.e. solves
+without restricting the inverse to the unconstrained DOFs —
+the one catalog API-surface token this gate certifies. The
+Dirichlet constraint is then ignored, the L2 errors blow up
+to ~1e15 at every order and the forbidden string 'FAIL:'
+appears. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import logging
 import math
+import os
 import sys
 
 logging.disable(logging.CRITICAL)
 
 import ngsolve as ngs
 from netgen.geom2d import unit_square
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
 
 
 def run_ngsolve_poisson(maxh: float, order: int) -> float:
@@ -54,8 +65,9 @@ def run_ngsolve_poisson(maxh: float, order: int) -> float:
     ll = ngs.LinearForm(f * v * ngs.dx).Assemble()
 
     gfu = ngs.GridFunction(fes)
-    gfu.vec.data = (a.mat.Inverse(fes.FreeDofs())
-                    * ll.vec)
+    inv = (a.mat.Inverse() if MUTATE
+           else a.mat.Inverse(fes.FreeDofs()))
+    gfu.vec.data = inv * ll.vec
 
     err_form = ngs.Integrate(
         (gfu - u_ex) * (gfu - u_ex), mesh)

@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#5. Confirms the entry's 'exactly 10x' for a poise-vs-Pa.s viscosity slip (ratio 10.000000 to 15 digits) and measures a m/s-vs-mm/s velocity slip (1e-3), on upstream lubrication_sb_2d.4C.yaml. It also FALSIFIES the entry's h exponent: the entry said 'h in mm vs m gives factor 1e9 off', but pressure goes as 1/h^2 (the h^3 sits inside the divergence, one power spent on the second gradient), so a 1000-fold h slip moves the pressure by 1e6, measured here. 4C prints no unit or scaling diagnostic at all. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_SI=0",
+    "EXIT_POISE=1",
+    "EXIT_MMPS=1",
+    "EXIT_HMM=1",
+    "is CORRECT, abs(diff)=",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "VISCOSITY_x10_PRESSURE_RATIO=10.000000",
+    "VELOCITY_div1000_PRESSURE_RATIO=1.0000e-03",
+    "HEIGHT_x1000_PRESSURE_RATIO=1.0000e-06",
+    "PRESSURE_IS_EXACTLY_LINEAR_IN_VISCOSITY=yes",
+    "HEIGHT_EXPONENT_IS_MINUS_TWO=yes",
+    "UNIT_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_SI=1",
+    "EXIT_POISE=0",
+    "PRESSURE_IS_EXACTLY_LINEAR_IN_VISCOSITY=no",
+    "HEIGHT_EXPONENT_IS_MINUS_TWO=no",
+    "HEIGHT_x1000_PRESSURE_RATIO=1.0000e-09"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the viscosity unit slip: keep SI Pa.s in the POISE arm. The 10.000000 ratio becomes 1 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "BAD_VISCOSITY='5e-06'",
+      "to": "BAD_VISCOSITY='5e-07'"
+    },
+    {
+      "note": "remove the velocity unit slip: keep 20000 in the MMPS arm. The 1e-3 ratio becomes 1 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "BAD_VELOCITY='20.0'",
+      "to": "BAD_VELOCITY='20000'"
+    },
+    {
+      "note": "remove the film-height unit slip: keep metres in the HMM arm. The 1e-6 ratio that falsifies the claimed 1e9 disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "BAD_HEIGHT='(45.0)-(x*0.5)'",
+      "to": "BAD_HEIGHT='(0.045)-(x*0.5e-3)'"
+    }
+  ]
+}

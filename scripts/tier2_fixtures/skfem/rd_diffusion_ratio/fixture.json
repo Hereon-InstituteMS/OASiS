@@ -1,0 +1,25 @@
+{
+  "_comment": "Verifies reaction_diffusion pitfall 4 on scikit-fem 12.0.1 (2026-08-06). Schnakenberg on 16x16 ElementQuad1 (289 DOFs), a=0.1 b=0.9 gamma=1000, dt=2e-3, 40 backward-Euler steps, identical seed and 1e-2 perturbation in every run. d_v/d_u = 1 decays to 8.9e-16, = 8 to 1.1e-03, = 10 patterns at 9.8e-01, = 40 patterns at 4.1e+00, so the mechanism switches on between 8 and 10. That brackets the analytic threshold the fixture computes from the dispersion relation, d_crit = 8.5676 (root of (d*f_u+g_v)^2 = 4*d*det), which makes the claim's quoted '~10' a safe rule of thumb rather than the exact number. At equal diffusivities the first Turing condition already fails (d*f_u+g_v = -0.2) and the largest growth rate over all Neumann modes is -100, versus +31 and +411 at d_v = 40. MUTATION CONTROL (re-runnable): T2_MUTATE=1 sets D_V_WRONG, the equal diffusivity d_v = d_u = 1, to the shipped D_V_RIGHT = 40 -- the documented fix (fast inhibitor, slow activator). Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 15 expect_in_output strings; T2_MUTATE=1 switches the Turing mechanism back on in the wrong variant and removes 'equal_diffusivity_fails_turing_condition=True', 'lambda_max_at_equal_diffusivity_lt_0=True' and 'equal_diffusivity_spread_lt_1e_8=True', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "reaction_diffusion",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "element=ElementQuad1",
+    "n_dofs=289",
+    "n_elements=256",
+    "f_u=0.8 f_v=1.0 g_u=-1.8 g_v=-1.0",
+    "equal_diffusivity_fails_turing_condition=True",
+    "ratio_40_passes_turing_condition=True",
+    "critical_ratio_between_8_and_9=True",
+    "lambda_max_at_equal_diffusivity_lt_0=True",
+    "lambda_max_at_ratio_40_gt_0=True",
+    "equal_diffusivity_spread_lt_1e_8=True",
+    "ratio_40_spread_gt_1p0=True",
+    "ratio_8_spread_lt_1e_2=True",
+    "ratio_10_spread_gt_0p1=True",
+    "empirical_threshold_between_8_and_10=True",
+    "analytic_threshold_inside_empirical_bracket=True"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

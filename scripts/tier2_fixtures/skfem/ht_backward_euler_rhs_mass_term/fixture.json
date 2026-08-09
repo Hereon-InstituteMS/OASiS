@@ -1,0 +1,18 @@
+{
+  "_comment": "Tier-2 for skfem heat#1: backward Euler is (M+dt*K)u_new = M*u_old + dt*f. Substituting K@u_old (or the bare u_old) makes the solution BLOW UP, not decay -- the earlier 'decays to zero in one step' signal was wrong. Measured on skfem 12.0.1, MeshTri().refined(3)/P1, dt=0.005, six steps: the correct RHS tracks the analytic factor exp(-2 pi^2 dt); K@u_old and the bare vector both reach 1e+10. Thresholds only, no magnitude pinned. MUTATION CONTROL (re-runnable): T2_MUTATE=1 replaces both wrong RHS builders (rhs_k = K @ u and rhs_bare = u) by the documented correct one, M @ u_old. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 5 expect_in_output strings; T2_MUTATE=1 removes 'K_u_old_blows_up=True', 'bare_u_old_blows_up=True' and 'neither_wrong_variant_decays_to_zero=True' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "heat",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "correct_decays_monotonically=True",
+    "correct_tracks_analytic_decay_factor=True",
+    "K_u_old_blows_up=True",
+    "bare_u_old_blows_up=True",
+    "neither_wrong_variant_decays_to_zero=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

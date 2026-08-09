@@ -1,5 +1,5 @@
 {
-  "_comment": "Tier-2 for skfem nonlinear#0+#2+#3: skfem has NO built-in Newton solver (no attribute matching 'newton' or 'nonlin' at top-level or in helpers); basis.interpolate(u) returns DiscreteField with .grad shape (dim, n_elements, n_quad). Verified empirically 2026-06-01.",
+  "_comment": "Tier-2 for skfem nonlinear#0+#2+#3: skfem has NO built-in Newton solver (no attribute matching 'newton' or 'nonlin' at top-level or in helpers); basis.interpolate(u) returns DiscreteField with .grad shape (dim, n_elements, n_quad). Verified empirically 2026-06-01. MUTATION CONTROL (re-runnable): this fixture asserts an ABSENCE, so the control injects the thing the claim says is missing rather than removing a pathology -- T2_MUTATE=1 binds skfem.newton_solve onto the module before the namespace scan. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 4 expect_in_output strings; T2_MUTATE=1 removes 'no_newton_in_skfem=True' so the fixture goes red, which proves that line is read off dir(skfem) rather than hard-coded. Re-run: T2_MUTATE=1 python source.py",
   "backend": "skfem",
   "physics": "nonlinear",
   "pitfall_index": 0,

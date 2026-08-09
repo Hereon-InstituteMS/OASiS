@@ -1,0 +1,25 @@
+{
+  "_comment": "CLAIM stokes_darcy::5: [Input] Every boundary facet that carries neither a Dirichlet condition nor a ds term silently gets the do-nothing condition sigma.n = 0, i.e. it becomes a free outlet. Signal: no error, KSP reason 4, plausible-looking velocity and pressure fields - but the inflow/outflow balance is off by order 1 \u2026 WHAT THIS RUNS: every boundary facet that carries neither a Dirichlet condition nor a ds term silently gets the do-nothing condition sigma.n = 0, i.e. it becomes a free outlet. Wrong variant: a 3D box in which the two z faces are located but never given a no-slip Dirichlet condition and never appear in the right-hand side. Right variant: the same run with those facets in the no-slip set. 3D Brinkman box, 6x6x6 tetrahedral unit cube, porous lower half with K = 1e-4, unit pressure imposed weakly at the inlet x = 0, zero at the outlet x = 1, no-slip on the two y faces, MUMPS LU, 6934 dofs. OBSERVED, copied from the run: inlet_outlet_balance_is_off_by_order_one=True; the_flux_through_the_forgotten_faces_explains_the_imbalance=True; forgotten_faces_run_raised_nothing_and_looks_plausible=True; sealing_the_faces_restores_a_machine_zero_balance=True; under_test: relative_inlet_outlet_balance=; flux_through_the_z_faces=; (+1 more). Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "stokes_darcy",
+  "pitfall_index": 5,
+  "mode": "python",
+  "covers": [
+    "stokes_darcy::5"
+  ],
+  "expect_in_output": [
+    "inlet_outlet_balance_is_off_by_order_one=True",
+    "the_flux_through_the_forgotten_faces_explains_the_imbalance=True",
+    "forgotten_faces_run_raised_nothing_and_looks_plausible=True",
+    "sealing_the_faces_restores_a_machine_zero_balance=True",
+    "under_test: relative_inlet_outlet_balance=",
+    "flux_through_the_z_faces=",
+    "VERDICT=an_unconstrained_face_is_a_free_outlet_and_only_the_flux_balance_shows_it"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "all_finite=False",
+    "VERDICT=the_unconstrained_faces_behaved_like_walls"
+  ],
+  "timeout_seconds": 300
+}

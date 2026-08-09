@@ -1,0 +1,41 @@
+{
+  "_comment": "Tier-2 for fourc::arterial_network#1, and the execution that FALSIFIED it. MAT_CNST_ART has no AREA0 parameter -- adding one fails to match section 'MATERIALS' and AREA0_IS_A_MAT_CNST_ART_PARAMETER=0. The reference area is A0 = pi*DIAM^2/4 from the DIAM token on the ART element line, so halving DIAM 24 -> 12 on upstream one_d_3_artery_network (shortened to 50 steps) QUARTERS it: area at node 1 goes 452.400 -> 113.105, REFERENCE_AREA_RATIO=3.9998, not the claimed ~2x. The flow error is larger and opposite in sign: flowrate at node 4 goes 23.266 -> 79.184. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "arterial_network",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=1",
+    "EXIT_HALFDIAM=1",
+    "EXIT_AREA0=1",
+    "Failed to match specification in section 'MATERIALS'.",
+    "AREA0_IS_A_MAT_CNST_ART_PARAMETER=0",
+    "is WRONG --> actresult= 1.13105246757359396e+02",
+    "is WRONG --> actresult= 7.91838437467430794e+01",
+    "REFERENCE_AREA_RATIO=3.9998",
+    "HALF_DIAM_PRESSURE_ERROR_IS_TWOFOLD=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_AREA0=0",
+    "EXIT_HALFDIAM=0",
+    "HALF_DIAM_PRESSURE_ERROR_IS_TWOFOLD=yes",
+    "REFERENCE_AREA_RATIO=1.0000"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the geometry pathology: keep the upstream DIAM. The reference-area ratio becomes 1 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/DIAM 24.0/DIAM 12.0/' base.yaml > halfdiam.yaml",
+      "to": "cp base.yaml halfdiam.yaml"
+    },
+    {
+      "note": "remove the invented-parameter probe: do not add AREA0 to the material. The MATERIALS match failure vanishes, EXIT_AREA0 becomes 1 only through the result test but the diagnostic line is gone, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    t.replace(old, '      VISCOSITY: 0.04\\n      DENS: 0.001\\n      AREA0: 452.39\\n'\n                   '      YOUNG: 400000', 1))",
+      "to": "    t)"
+    }
+  ]
+}

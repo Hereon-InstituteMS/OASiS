@@ -12,19 +12,31 @@ properties.SetValue is reached:
 
 (YIELD_STRESS / FRACTURE_ENERGY are in core KM; only the
 plasticity-specific ones split into CLA.)
+
+Mutation control: T2_MUTATE=1 reads FRICTION_ANGLE from KratosMultiphysics.ConstitutiveLawsApplication, the module that actually owns it, instead of core KratosMultiphysics. The attribute then resolves and the AttributeError disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
 
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=attribute_read_from_the_constitutivelaws_module_that_owns_it")
+
 
 def main() -> int:
     try:
-        # Bug: FRICTION_ANGLE lives in CLA, not KM.
-        KM.FRICTION_ANGLE
+        if MUTATE:
+            # Pathology removed: read it from the module that owns it.
+            import KratosMultiphysics.ConstitutiveLawsApplication as CLA
+            CLA.FRICTION_ANGLE
+        else:
+            # Bug: FRICTION_ANGLE lives in CLA, not KM.
+            KM.FRICTION_ANGLE
     except Exception:
         traceback.print_exc()
         return 1

@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2: UPl element Initialize reads exotic nodal historical variables; a minimal nodal-variable list crashes inside C++. Pitfall (kratos.poromechanics #4). Executed on Kratos 10.4.3 (pip wheels, glibc-2.31 host, fresh venv on external ext4 image). Every variable the claim lists resolves on PoromechanicsApplication and NOT on core: INITIAL_STRESS_TENSOR, NODAL_EFFECTIVE_STRESS_TENSOR, NODAL_MID_PLANE_LIQUID_PRESSURE, NODAL_SLIP_TENDENCY, NODAL_JOINT_DAMAGE, DT_LIQUID_PRESSURE, NORMAL_LIQUID_FLUX, LIQUID_DISCHARGE. Assembling the AddVariables list therefore requires the Poromechanics module by name; none of these can be dotted off KratosMultiphysics. The fixture imports KratosMultiphysics at module scope; with Kratos absent the import raises, the process exits non-zero and the runner records a failure, never a pass. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 INVERTS the expected outcome of all 10 probes -- it asserts the opposite of what this build actually does, while leaving each probe's callable untouched so every probe still really runs against Kratos. Every probe[...] line then disagrees with itself and probe_mismatches goes from 0 to 10. This proves the printed booleans come from actually calling into Kratos on this build, and that a wrong claim is caught, rather than the fixture echoing a hard-coded table. Verified: unmutated the fixture PASSES; with T2_MUTATE=1 it FAILS and these expect_in_output strings disappear: all 10 probe[<label>]=<ok>_expected=<must> lines, probe_mismatches=0. Re-verify: cd scripts/tier2_fixtures/kratos/poromechanics_upl_exotic_nodal_variables && /usr/bin/python3 source.py (passes), then T2_MUTATE=1 /usr/bin/python3 source.py (fails). Interpreter: KRATOS_PYTHON=/usr/bin/python3 is REQUIRED on this host -- the repo venv Kratos wheel is built against GLIBC_2.32 and fails to load (ImportError on Kratos.cpython-312...so), while the system python3.8 carries Kratos 10.4 Release with CableNet, ConstitutiveLaws, StructuralMechanics and LinearSolvers.",
+  "backend": "kratos",
+  "physics": "poromechanics",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "probe[PORO.INITIAL_STRESS_TENSOR]=True_expected=True",
+    "probe[PORO.NODAL_EFFECTIVE_STRESS_TENSOR]=True_expected=True",
+    "probe[PORO.NODAL_MID_PLANE_LIQUID_PRESSURE]=True_expected=True",
+    "probe[PORO.NODAL_SLIP_TENDENCY]=True_expected=True",
+    "probe[PORO.NODAL_JOINT_DAMAGE]=True_expected=True",
+    "probe[PORO.DT_LIQUID_PRESSURE]=True_expected=True",
+    "probe[PORO.NORMAL_LIQUID_FLUX]=True_expected=True",
+    "probe[PORO.LIQUID_DISCHARGE]=True_expected=True",
+    "probe[KM.INITIAL_STRESS_TENSOR]=False_expected=False",
+    "probe[KM.DT_LIQUID_PRESSURE]=False_expected=False",
+    "probe_mismatches=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

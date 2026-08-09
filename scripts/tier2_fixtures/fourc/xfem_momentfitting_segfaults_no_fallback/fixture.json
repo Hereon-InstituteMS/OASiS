@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#4 and a FALSIFICATION of its Signal. The entry claimed a runtime warning 'MomentFitting did not converge for element X -- falling back to Tessellation'. No such warning exists and there is no fallback path. On the upstream Fluid_XFEM deck xfluid_ls_neumann_inflow_stab, VOLUME_GAUSS_POINTS_BY: MomentFitting terminates with SIGSEGV (exit 139) in Core::FE::GaussPointsComposite::num_points, reached from FluidEleCalc::sysmat; the log carries 'Signal: Segmentation fault (11)' and 'Failing at address: (nil)' and nothing else. Tessellation on the identical deck exits 0 and matches all four result tests. The rule (Tessellation is the robust choice) stands; the observable is a crash. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 4,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_TESS=0",
+    "processor 0 finished normally",
+    "TESS_RESULT_FAILURES=0",
+    "Signal: Segmentation fault (11)",
+    "GaussPointsComposite",
+    "MF_REACHED_RESULT_TEST=0",
+    "CLAIMED_FALLBACK_TEXT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: run the second arm with Tessellation too. The segfault and its signal line vanish, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/VOLUME_GAUSS_POINTS_BY: \"DirectDivergence\"/VOLUME_GAUSS_POINTS_BY: \"MomentFitting\"/' \"$BASE\" > \"$TMP/mf.yaml\"",
+    "to": "sed 's/VOLUME_GAUSS_POINTS_BY: \"DirectDivergence\"/VOLUME_GAUSS_POINTS_BY: \"Tessellation\"/' \"$BASE\" > \"$TMP/mf.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_TESS=1",
+    "EXIT_MF=0",
+    "MF_REACHED_RESULT_TEST=1"
+  ]
+}

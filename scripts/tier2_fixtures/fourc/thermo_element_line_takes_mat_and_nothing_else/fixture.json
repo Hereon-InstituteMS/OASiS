@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::thermal#2. One standalone PROBLEMTYPE: Thermo deck run four times, differing only in the tail of the THERMO element line. 'MAT 1' alone runs to a CORRECT result test (exit 0); appending KINEM linear, TYPE Undefined or THICK 1.0 each aborts with exit 1 and \"After parsing, the line still contains '<the token>'.\" followed by 'Parsed parameters: MAT : 1', from core/io/src/4C_io_input_spec.cpp line 32. The failing runs never reach the result test (KINEM_REACHED_RESULT_TEST=0), so the extra token is rejected outright, not absorbed. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermal",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_MAT_ONLY=0",
+    "EXIT_KINEM=1",
+    "EXIT_TYPE=1",
+    "EXIT_THICK=1",
+    "is CORRECT",
+    "After parsing, the line still contains 'KINEM linear'.",
+    "After parsing, the line still contains 'TYPE Undefined'.",
+    "After parsing, the line still contains 'THICK 1.0'.",
+    "Parsed parameters: MAT : 1",
+    "4C_io_input_spec.cpp",
+    "KINEM_REACHED_RESULT_TEST=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MAT_ONLY=1",
+    "EXIT_KINEM=0",
+    "EXIT_TYPE=0",
+    "EXIT_THICK=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: append nothing to the KINEM arm's element line. That deck is then identical to the MAT-only one, it runs, and both the leftover-token diagnostic and EXIT_KINEM=1 disappear, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "deck \"KINEM linear\"    > \"$TMP/kinem.yaml\"",
+    "to": "deck \"\"                > \"$TMP/kinem.yaml\""
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem hyperelasticity#3, verified 2026-08-06 on skfem 12.0.1. Claim: F = I + grad(u); dropping the identity makes F = 0 at the reference configuration, det(F) = 0, lnJ = -inf, and the first residual out of asm is NaN or wildly too large. Ran: MeshTri().refined(3), ElementVector(ElementTriP1), 162 DOFs, mu=lam=1, both kernels assembled at u = 0 under warnings.catch_warnings(record=True), then three Newton steps each toward a 5% right-edge stretch. Printed: with the identity F[0,0] = 1, det(F) = 1 everywhere and the first residual is exactly 0.000e+00; without it F[0,0] = 0, det(F) = 0 everywhere and the residual is NaN in every entry -- the NaN branch of the claim, not the too-large branch. The ONLY thing emitted is one numpy RuntimeWarning 'invalid value encountered in divide' from skfem.helpers.inv; nothing raises and the Newton loop completes. NEW: the resulting displacement is NaN on every FREE DOF but finite on the constrained ones because condense writes the prescribed values in verbatim, so a check of np.isnan(u).all() misses it while isfinite(u).all() catches it. MUTATION CONTROL (re-runnable): T2_MUTATE=1 makes deformation_gradient add the identity on the add_identity=False path too, so F = I + grad(u) in both kernels and the degenerate F = 0 is gone. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 13 expect_in_output strings; T2_MUTATE=1 removes 'without_identity_detF_all_zero=True', 'no_identity_first_residual_all_nan=True', 'no_identity_first_residual_finite=False' and 'without_identity_solution_finite=False' so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "hyperelasticity",
+  "pitfall_index": 3,
+  "mode": "python",
+  "expect_in_output": [
+    "dofs_N=162",
+    "with_identity_detF_all_one=True",
+    "without_identity_detF_all_zero=True",
+    "grad_u_is_zero_at_reference=True",
+    "correct_first_residual_is_zero=True",
+    "no_identity_first_residual_all_nan=True",
+    "no_identity_first_residual_finite=False",
+    "nothing_raised_during_assembly=True",
+    "with_identity_newton_completed=True",
+    "without_identity_newton_completed=True",
+    "without_identity_solution_free_dofs_all_nan=True",
+    "with_identity_solution_finite=True",
+    "without_identity_solution_finite=False"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

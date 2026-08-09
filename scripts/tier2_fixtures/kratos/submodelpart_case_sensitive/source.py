@@ -10,13 +10,20 @@ ModelPart.GetSubModelPart('inlet') when the actual name is
   "inlet" in model part "Structure" ... from
   ModelPart::ErrorNonExistingSubModelPart in
   kratos/sources/model_part.cpp:2406
+
+Mutation control: T2_MUTATE=1 asks for the sub model part by its actual name 'Inlet' instead of the lower-case 'inlet', removing the case mismatch. The lookup then succeeds and the RuntimeError with 'no sub model part with name' disappears.
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 
 import KratosMultiphysics as KM
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=submodelpart_requested_with_its_actual_case")
 
 
 def main() -> int:
@@ -24,8 +31,8 @@ def main() -> int:
     mp = model.CreateModelPart("Structure")
     mp.CreateSubModelPart("Inlet")
     try:
-        # Wrong case — should raise.
-        mp.GetSubModelPart("inlet")
+        # Wrong case — should raise. Under mutation the case is correct.
+        mp.GetSubModelPart("Inlet" if MUTATE else "inlet")
     except Exception:
         traceback.print_exc()
         return 1

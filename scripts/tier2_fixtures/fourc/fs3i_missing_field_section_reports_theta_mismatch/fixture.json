@@ -1,0 +1,48 @@
+{
+  "_comment": "Tier-2 for fourc::fs3i#0, and a FALSIFICATION of its Signal. The entry claimed a missing field section 'aborts at setup with FS3I field N not found from 4C_fs3i_factory.cpp; the failure message names the missing field'. On upstream fs3i_part_1wc_infperm.4C.yaml, deleting SCALAR TRANSPORT DYNAMIC trips FS3I's own cross-field consistency check in fs3i/4C_fs3i.cpp line 188 — 'Parameter(s) theta for one-step-theta time-integration scheme defined in one or more of the individual fields do(es) not match for partitioned FS3I computation.' — which names THETA, the parameter that silently reverted to its default, and never names the removed section (NOSCATRA_NAMES_ITS_SECTION=0). Deleting ALE DYNAMIC instead gives the generic adapter/4C_adapter_ale.cpp message, whose text says nothing about FS3I. No 4C_fs3i_factory.cpp exists and 'FS3I field N not found' appears in neither log. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fs3i",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 480,
+  "expect_in_output": [
+    "NOSCATRA_DECK_HAS_SECTION=0",
+    "NOALE_DECK_HAS_SECTION=0",
+    "EXIT_FULL=0",
+    "EXIT_NOSCATRA=1",
+    "EXIT_NOALE=1",
+    "OK (3)",
+    "processor 0 finished normally",
+    "Parameter(s) theta for one-step-theta time-integration scheme defined in one or more of the individual fields do(es) not match for partitioned FS3I computation.",
+    "4C_fs3i.cpp",
+    "No linear solver defined for ALE problems. Please set LINEAR_SOLVER in ALE DYNAMIC to a valid number!",
+    "4C_adapter_ale.cpp",
+    "CLAIMED_FS3I_FIELD_TEXT=00",
+    "CLAIMED_FS3I_FACTORY_FILE=0",
+    "NOSCATRA_NAMES_ITS_SECTION=0",
+    "NOALE_MESSAGE_MENTIONS_FS3I=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_FULL=1",
+    "EXIT_NOSCATRA=0",
+    "EXIT_NOALE=0",
+    "NOSCATRA_DECK_HAS_SECTION=1",
+    "NOALE_DECK_HAS_SECTION=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the missing-scatra pathology: keep SCALAR TRANSPORT DYNAMIC. NOSCATRA_DECK_HAS_SECTION becomes 1 (a forbidden token) and the theta-mismatch abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DROP_SCATRA_SECTION=yes",
+      "to": "DROP_SCATRA_SECTION=no"
+    },
+    {
+      "note": "remove the missing-ALE pathology: keep ALE DYNAMIC. NOALE_DECK_HAS_SECTION becomes 1 (a forbidden token) and the ALE adapter abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "DROP_ALE_SECTION=yes",
+      "to": "DROP_ALE_SECTION=no"
+    }
+  ]
+}

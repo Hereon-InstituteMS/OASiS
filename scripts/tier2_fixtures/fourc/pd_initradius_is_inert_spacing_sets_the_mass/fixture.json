@@ -1,0 +1,42 @@
+{
+  "_comment": "Tier-2 for fourc::particle_pd#7, which execution FALSIFIED. The entry said INITRADIUS must equal dx/2 or mass and volume come out wrong. On upstream particle_sph_2d_pdbody_gravity.4C.yaml a tenfold INITRADIUS on BOTH materials leaves all ten result tests passing with abs(diff) exactly 0.00000000000000000e+00 and the bond count unchanged at 1512: the run is bit-identical, so INITRADIUS is inert for PD. 4C also never prints a total system mass at startup, so the quoted Signal cannot be read anywhere. What does carry the mass is INITIALPARTICLESPACING in PARTICLE DYNAMIC/SPH (mass = INITDENSITY * spacing^KERNEL_SPACE_DIM); doubling it breaks eight of the ten tests, which is the third arm. PD bond forces use PERIDYNAMIC_GRID_SPACING and the horizon, and PD contact gaps are measured against PERIDYNAMIC_GRID_SPACING rather than radii. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_pd",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_ASDOCUMENTED=0",
+    "EXIT_BIGRADIUS=0",
+    "EXIT_BIGSPACING=1",
+    "processor 0 finished normally",
+    "BIGRADIUS_FAILURES=0",
+    "BIGRADIUS_EXACT_MATCHES=10",
+    "is CORRECT, abs(diff)= 0.00000000000000000e+00",
+    "Number of initialized peridynamic bonds on this proc: 1512",
+    "TOTAL_MASS_PRINTED_AT_STARTUP=0",
+    "BIGSPACING_FAILURES=8",
+    "VERDICT: PD_INITRADIUS_AFFECTS_THE_ANSWER=no"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BIGRADIUS=1",
+    "EXIT_BIGSPACING=0",
+    "VERDICT: PD_INITRADIUS_AFFECTS_THE_ANSWER=yes"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the discriminating control: make the spacing arm identical to the baseline. Nothing then distinguishes the inert parameter from the live one, BIGSPACING_FAILURES becomes 0 and the verdict flips to yes — the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  INITIALPARTICLESPACING: 1.0/  INITIALPARTICLESPACING: 2.0/' \"$BASE\" > \"$TMP/bigspacing.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/bigspacing.yaml\""
+    },
+    {
+      "note": "invert the claim the other way: give the radius arm a spacing change instead, so what is being varied is no longer INITRADIUS. BIGRADIUS then stops being bit-identical and the exact-match count collapses — the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/INITRADIUS: 0.5/INITRADIUS: 5.0/' \"$BASE\" > \"$TMP/bigradius.yaml\"",
+      "to": "sed 's/  INITIALPARTICLESPACING: 1.0/  INITIALPARTICLESPACING: 2.0/' \"$BASE\" > \"$TMP/bigradius.yaml\""
+    }
+  ]
+}

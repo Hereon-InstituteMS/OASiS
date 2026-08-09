@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics navier_stokes#0: dolfinx.nls.petsc.NewtonSolver cannot wrap a 0.10 NonlinearProblem. That pairing is from <= 0.8. The fixture builds a 0.10 NonlinearProblem, tries the legacy pairing, and prints what came back. It then shows the supported path: problem.solve() plus problem.solver, which is a petsc4py SNES. Mutation control: T2_MUTATE=1 skips the legacy pairing and only exercises the supported path. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "navier_stokes",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "legacy_pairing_raised=True",
+    "supported_path_solver_type=SNES",
+    "supported_path_converged=True",
+    "VERDICT=legacy_newtonsolver_pairing_is_broken_on_0_10"
+  ],
+  "forbid_in_output": [
+    "VERDICT=legacy_pairing_worked"
+  ]
+}

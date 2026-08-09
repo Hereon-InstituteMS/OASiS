@@ -87,7 +87,15 @@ KNOWLEDGE = {
             "refinement decreases the error). Signal: computed "
             "eigenvalues from eigsh match the analytic sequence "
             "within ~5% relative on MeshTri.refined(4) P1. "
-            "(Verified empirically 2026-06-01.)",
+            "Re-measured 2026-08-03 on skfem 12.0.1 / scipy "
+            "1.15.3: eigsh(K_I, M=M_I, k=5, sigma=0, "
+            "which='LM') on MeshTri().refined(4) with "
+            "ElementTriP1 returns 19.9298, 50.1664, 50.6329, "
+            "81.9713, 102.4604 — relative errors 0.97%, 1.66%, "
+            "2.60%, 3.82%, 3.81%. Note the P1 error GROWS up the "
+            "spectrum, so a 5% bar on the fifth eigenvalue is "
+            "much tighter than on the first. (Verified "
+            "empirically 2026-06-01; re-measured 2026-08-03.)",
             "[Numerical] Structural vibration eigenproblem "
             "K*x = omega^2*M*x — eigenvalues are squared "
             "angular frequencies. Take omega = sqrt(eig) to get "

@@ -1,0 +1,43 @@
+{
+  "_comment": "Tier-2 for fourc::fluid_turbulence#2 and a partial FALSIFICATION. The entry's 'CFL < 1 for explicit' branch is inapplicable: FLUID DYNAMIC TIMEINTEGR offers only Af_Gen_Alpha, BDF2, Np_Gen_Alpha, One_Step_Theta and Stationary, all implicit, and 4C prints that list when an explicit scheme is requested. So 'explicit time integration at CFL > 1 gives NaN within ~10 steps' cannot be observed in 4C. The implicit branch is real: on the upstream channel deck f3_cha_8x8x8_recongradl2 a 100x TIMESTEP runs to the result test with no NaN, no CFL or Courant warning of any kind, and both pinned velocities wrong -- exactly the 'stable but no longer time-accurate' behaviour, with no diagnostic to catch it. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fluid_turbulence",
+  "pitfall_index": 2,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_BASE=0",
+    "EXIT_EXPLICIT=1",
+    "EXIT_BIGDT=1",
+    "Could not match this input",
+    "possible values: Af_Gen_Alpha|BDF2|Np_Gen_Alpha|One_Step_Theta|Stationary",
+    "processor 0 finished normally",
+    "BASE_RESULT_FAILURES=0",
+    "BIGDT_REACHED_RESULT_TEST=1",
+    "BIGDT_RESULT_FAILURES=2",
+    "BIGDT_NAN=0",
+    "BIGDT_CFL_WARNINGS=0",
+    "is WRONG --> actresult="
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the enum arm: ask for an integrator that exists. The rejection and the possible-values list vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  TIMEINTEGR: \"Af_Gen_Alpha\"/  TIMEINTEGR: \"Explicit_Euler\"/' \"$BASE\" > \"$TMP/explicit.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/explicit.yaml\""
+    },
+    {
+      "note": "remove the pathology from the time-step arm: keep the upstream step. BIGDT_RESULT_FAILURES drops to 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/  TIMESTEP: 0.8/  TIMESTEP: 80.0/'                            \"$BASE\" > \"$TMP/bigdt.yaml\"",
+      "to": "cp \"$BASE\" \"$TMP/bigdt.yaml\""
+    }
+  ],
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_BASE=1",
+    "EXIT_EXPLICIT=0",
+    "BIGDT_RESULT_FAILURES=0"
+  ]
+}

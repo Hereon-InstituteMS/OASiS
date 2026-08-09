@@ -1,0 +1,28 @@
+{
+  "_comment": "Tier-2 for sparta particle_emission: emitting on ONE face of an outflow box does not hold the domain at the freestream — and the catalog was WRONG about how you detect it. Four decks differing in one line were run on the installed binary (SPARTA 24 Sep 2025, spa_serial): a seeded 2d argon box emitting on xlo only, the same box emitting on xlo+ylo+yhi, the same box with no emit fix, and the xlo-only box with the mixture's vstream set to 0. Both particle_emission:2 and hypersonic_flow:1 said the Np column 'decreases monotonically instead of levelling off' and told the reader to check that Np has flattened. Executed, the xlo-only Np column FLATTENS — it falls 28 % over the first stats interval and then changes by 0.2 % over the last, holding at a bit under 60 % of the seeded count. So the recommended check PASSES on the broken deck. Both entries were rewritten in the same commit to the comparison this script actually makes: against a deck emitting on every inflow face, which holds within a couple of percent of the seeded count, while the no-emit deck drains to under 5 %. vstream 0 still emits and plateaus several times lower than the drift case, which is particle_emission:3. Every assertion is a ratio between decks in this script; no measured number is pinned. COVERS: particle_emission:2, particle_emission:3, hypersonic_flow:1. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 changes the one line that carried the pathology, 'fix in emit/face gas xlo', to 'fix in emit/face gas xlo ylo yhi' in the two decks that had it, so the starved box is fed on every inflow face and nothing else moves; the one-face plateau then rises from 0.5764 of the seeded count to 0.9806 (the control deck's own value), the first-interval drop falls from 0.2802 to 0.01503, and the drift-over-thermal plateau ratio falls from 2.75 to 1.307. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: the_flattening_is_not_just_slow_decay=True, one_face_plateau_is_far_below_the_seeded_density=True, vstream_zero_plateau_is_several_times_lower=True. Re-verify: cd scripts/tier2_fixtures/sparta/one_emit_face_plateaus_below_freestream && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "particle_emission",
+  "pitfall_index": 2,
+  "covers": [
+    "particle_emission:2",
+    "particle_emission:3",
+    "hypersonic_flow:1"
+  ],
+  "mode": "python",
+  "timeout_seconds": 900,
+  "expect_in_output": [
+    "one_face_np_DOES_flatten_so_flatness_is_not_the_test=True",
+    "the_flattening_is_not_just_slow_decay=True",
+    "one_face_plateau_is_far_below_the_seeded_density=True",
+    "emitting_on_every_inflow_face_holds_the_density=True",
+    "no_emit_at_all_drains_the_box=True",
+    "vstream_zero_still_emits=True",
+    "vstream_zero_plateau_is_several_times_lower=True",
+    "nexit_stays_nonzero_on_the_one_face_run=True",
+    "emit_on_one_face_rc=0 n_errors=0 n_warnings=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

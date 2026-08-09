@@ -1,0 +1,23 @@
+{
+  "_comment": "Tier-2 for skfem stokes#5, verified 2026-08-06 on skfem 12.0.1. The entry was marked inherited/never-falsified and said 'ElementVector DOF ordering is unreliable for mixed systems ... the actual layout depends on element type', recommending two separate scalar bases instead. Ran: ElementVector over ElementTriP1, ElementTriP2, ElementTriP3, ElementTetP1 and ElementTetP2 on refined(2) meshes, comparing basis.doflocs against the corresponding scalar basis under both the interleaved and the blocked reading, plus the nodal DOF keys; then a deliberate blocked-style slice of a vector solution. Printed: THE CLAIM IS FALSE. Every element gives basis.N exactly dim times the scalar count, doflocs[:, k::dim] reproduces the scalar doflocs for every component, the blocked reading matches for NO element, and get_dofs().nodal gives u^1/u^2(/u^3) that are exactly consecutive with stride dim. layout_depends_on_element_type is False across three polynomial orders and both 2D and 3D. The two-scalar-bases recommendation is not wrong, only mis-motivated: it buys a layout preference, not correctness. THE REAL TRAP IS THE OPPOSITE ONE and it is silent -- slicing a vector solution as [:N] (the blocked convention skfem does NOT use) returns an array of exactly the right length, 289 here, that deviates from the true component by 2.0000e+00 with an empty warning list, so neither a length check nor a try/except catches it. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site - the blocked-convention slice blocked_guess = u[:bs.N] becomes the interleaved stride u[0::2] that skfem's layout actually calls for, so the extracted array IS the true component. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 16 expect_in_output strings; T2_MUTATE=1 drives blocked_slice_max_deviation from 2.0000e+00 to 0, removing 'blocked_slice_is_silently_wrong=True' and raising the forbidden 'FAIL:', so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem", "physics": "stokes", "pitfall_index": 5, "mode": "python",
+  "expect_in_output": [
+    "triP1_layout_is_interleaved=True",
+    "triP2_layout_is_interleaved=True",
+    "triP3_layout_is_interleaved=True",
+    "tetP1_layout_is_interleaved=True",
+    "tetP2_layout_is_interleaved=True",
+    "triP2_layout_is_blocked=False",
+    "tetP2_layout_is_blocked=False",
+    "triP3_components_are_consecutive=True",
+    "tetP2_components_are_consecutive=True",
+    "interleaved_for_every_element=True",
+    "blocked_for_no_element=True",
+    "components_consecutive_for_every_element=True",
+    "layout_depends_on_element_type=False",
+    "blocked_slice_has_the_right_length=True",
+    "blocked_slice_is_silently_wrong=True",
+    "blocked_slice_warnings=[]"
+  ],
+  "forbid_in_output": ["Traceback", "FAIL:"]
+}

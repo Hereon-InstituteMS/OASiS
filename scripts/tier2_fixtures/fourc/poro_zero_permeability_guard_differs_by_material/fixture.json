@@ -1,0 +1,44 @@
+{
+  "_comment": "Tier-2 for fourc::porous_media#2 and the execution that FALSIFIED its Signal. PERMEABILITY=0 on MAT_FluidPoro (upstream poro_2D_quad4_linporo) hits a named guard: 'zero or negative permeability' from mat/4C_mat_fluidporo.cpp, exit 1. The same value on MAT_FluidPoroMultiPhase (upstream porofluid_pressure_based_2D_quad4) has NO guard: the residual jumps to 5.128e+14 in the first nonlinear step and the process dies on 'Signal: Floating point exception (8)' inside EvaluatorMassPressure::evaluate_matrix_and_assemble, exit 136, without emitting a single 'PROC 0 ERROR in' banner (MULTIZERO_HAS_4C_ERROR_BANNER=0, against 1 for the MAT_FluidPoro arm). Neither quoted diagnostic ('zero pivot detected', 'solver returned status: -3') occurs in either arm. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "porous_media",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_POROOK=0",
+    "EXIT_POROZERO=1",
+    "EXIT_MULTIZERO=136",
+    "processor 0 finished normally",
+    "zero or negative permeability",
+    "4C_mat_fluidporo.cpp",
+    "Signal: Floating point exception (8)",
+    "EvaluatorMassPressure",
+    "POROZERO_HAS_4C_ERROR_BANNER=1",
+    "MULTIZERO_HAS_4C_ERROR_BANNER=0",
+    "MULTIPHASE_RESIDUAL_BLOWUP=1",
+    "CLAIMED_ZERO_PIVOT_TEXT=0",
+    "CLAIMED_SOLVER_STATUS_MINUS3_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_POROOK=1",
+    "EXIT_POROZERO=0",
+    "EXIT_MULTIZERO=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the MAT_FluidPoro arm: keep the shipped permeability. The named guard never fires and EXIT_POROZERO becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/      PERMEABILITY: 0.01/      PERMEABILITY: 0.0/' \"$PORO\"  > \"$TMP/poro_zero.yaml\"",
+      "to": "cp \"$PORO\" \"$TMP/poro_zero.yaml\""
+    },
+    {
+      "note": "remove the pathology from the MAT_FluidPoroMultiPhase arm: keep the shipped permeability. The SIGFPE and the 5.128e+14 residual vanish, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "sed 's/^      PERMEABILITY: 1$/      PERMEABILITY: 0/'    \"$MULTI\" > \"$TMP/multi_zero.yaml\"",
+      "to": "cp \"$MULTI\" \"$TMP/multi_zero.yaml\""
+    }
+  ]
+}

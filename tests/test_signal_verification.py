@@ -65,7 +65,47 @@ class TestDealiiSignalFloor(unittest.TestCase):
     MIN_TIER2_PASSED = 11  # deal.II pitfalls with named (catalog-indexed)
                            # Tier-2 fixtures (cheap bucket closed
                            # 2026-05-31 + 1 medium already done).
-    MIN_TIER2_RUNNER_PASSED = 108  # cross-cutting (incl. synthetic indices).
+    MIN_TIER2_RUNNER_PASSED = 183  # cross-cutting (incl. synthetic indices).
+    # CONSOLIDATION: the dune and febio campaigns each raised this floor from a
+    # DIFFERENT baseline (108 -> 112 and 113 -> 183), so neither number
+    # describes the merged tree. Held at 183 — the highest count any single
+    # branch actually recorded in one run — and deliberately NOT raised to the
+    # 187 rows the merged snapshot now carries, because those 187 were never
+    # all green at one time on one host. The fingerprint check in the test
+    # below is what makes that safe: it fails the snapshot as unverifiable
+    # until run_tier2_fixtures.py --write-results is run against this tree.
+    #
+    # Both campaigns' provenance, kept:
+    # 2026-08-03 dune knowledge-extraction pass: +4 dune fixtures, all
+    # executed against the installed dune-fem 2.12.0.2 and merged into
+    # tier2_results.json without disturbing the other backends' rows.
+    #   +1 dune::poisson::7   (DirichletBC omitted from the scheme list
+    #                          -> singular pure-Neumann system that CG
+    #                          still reports as converged; measured L2
+    #                          error 7.5e+14 after 23935 iterations)
+    #   +1 dune::poisson::9   (solver= string is not validated in
+    #                          Python; the C++ parameter reader
+    #                          enumerates gmres/cg/bicgstab)
+    #   +1 dune::poisson::11  (space UFL cell reports a simplex on a
+    #                          cube grid)
+    #   +1 dune::poisson::99  (MMS numerical-correctness gate: L2/H1
+    #                          orders for Lagrange k=1,2 on
+    #                          structuredGrid)
+    # dune::mixed_methods::0 was already counted; its fixture was made
+    # machine-independent in the same pass (it previously hard-coded
+    # one developer's absolute paths and failed everywhere else).
+    #
+    # 2026-08-06 (113 -> ... -> 183): seventy new FEBio fixtures, every one of
+    # them run here against febio4 4.12.0.86045466d, plus two re-keys
+    # that fixed mis-attributed evidence. Only the febio rows of the
+    # snapshot were rewritten; the other backends' rows are as
+    # recorded, because with the interpreter-resolution fix in place
+    # this host reproduces 52 of the 113 and that reconciliation is
+    # open work elsewhere, not a number to quietly lower here.
+    #
+    # 2026-08-06 sparta knowledge restructure: +10 SPARTA fixtures (that
+    # branch read the floor as 108 -> 118; the same +10 is inside the 197
+    # rows the merged snapshot now holds).
     # 2026-06-01 fixture additions:
     #   +1 ngsolve::helmholtz::0 (complex coef on real FESpace)
     #   +1 kratos::linear_elasticity::2 (SubModelPart case-sensitive)
@@ -114,6 +154,52 @@ class TestDealiiSignalFloor(unittest.TestCase):
     #      submodule, NOT top-level ngsolve — catalog drift)
     #   +1 fenics::biharmonic::0 (fem.functionspace factory vs FunctionSpace
     #      class — LLM-trap from legacy dolfin)
+    # 2026-08-03 fixture additions (108 -> 113): the first FEBio
+    # fixtures that RUN the solver, now that febio4 4.12.0 is built
+    # and installed. All five were executed on this machine before
+    # the floor was raised.
+    #   +1 febio::linear_elasticity::98 (hex8 patch test — FEBio's
+    #      first executed numerical-correctness gate: exact linear
+    #      field at the free interior node to 1.4e-17 and Cauchy
+    #      stress against the St.Venant-Kirchhoff closed form to
+    #      3.5e-11)
+    #   +1 febio::linear_elasticity::5 (a deck with no <Control>
+    #      reads SUCCESS, writes .xplt + CSVs, and solves nothing)
+    #   +1 febio::linear_elasticity::7 (a degenerate hex8 runs to
+    #      normal termination with 25% wrong stress)
+    #   +1 febio::heat::0 (an unregistered <Module type> SEGFAULTS
+    #      with no diagnostic — catalog falsification: FEBio 4.12
+    #      has no `heat` and no `biphasic-FSI` module)
+    #   +1 febio::biphasic::5 (<linear_solver type="test"/> is a
+    #      null solver that zeroes the solution vector and reports
+    #      success — the one case where the normal-termination
+    #      banner, exit 0 AND a non-zero completed-step count are
+    #      all satisfied by a run that solved nothing; found by
+    #      the critic pass over the first four fixtures)
+    #
+    # 2026-08-03, SAME DAY, SECOND PASS — the 108 -> 113 raise above
+    # was UNENFORCEABLE as written and has been repaired rather than
+    # rolled back. All five new fixtures printed
+    # "<key>=skipped_no_binary" and returned 0 when febio4 was
+    # absent, and each fixture.json expected only the bare "<key>="
+    # prefix, which that skip string satisfies. On any host without
+    # FEBio the five rows were therefore green while verifying
+    # nothing: the floor certified five checks that had not run. A
+    # floor that certifies nothing is worse than no floor, because it
+    # is read as evidence.
+    #
+    # Repair, applied to all five fixture directories:
+    #   * a missing binary now prints "FAIL: ..." and returns 1
+    #     ("FAIL:" is already in every fixture's forbid_in_output, so
+    #     the failure is recorded even if the exit status is ignored),
+    #   * expect_in_output pins the success TOKEN, not the key prefix
+    #     (e.g. "febio_patch_test=passed",
+    #     "unknown_module_segfault_count=4"), so no skip string can
+    #     satisfy it,
+    #   * "skipped_no_binary" was added to forbid_in_output.
+    # Verified both ways on this host: all five pass with febio4
+    # present and all five fail with FEBIO_BINARY pointing at a
+    # non-existent path.
 
     # Cost-bucket floors (round-3 critic finding E: report per-cost
     # coverage, not a fake /96 fraction). data/postmortems/
@@ -580,6 +666,23 @@ class TestHarnessSelfChecks(unittest.TestCase):
         by scripts/run_tier2_fixtures.py) and fails if the
         passed count drops below TestDealiiSignalFloor.
         MIN_TIER2_RUNNER_PASSED.
+
+        WHAT THIS DOES AND DOES NOT ESTABLISH. It reads a
+        COMMITTED snapshot; it does not run a fixture. So a green
+        result means "the recorded number has not regressed", NOT
+        "the fixtures pass on this machine" — and the file travels
+        with the repo, so without a currency check every user gets
+        our result reported as theirs. An audit found exactly that:
+        the snapshot was 18 commits stale, recording `passed: 113`
+        on a host where 7 passed and 10 failed, and this test was
+        green even with the backend's binary hidden.
+
+        The fingerprint below is the currency check. It identifies
+        the fixture SET the snapshot describes, so a fixture added,
+        deleted or edited since makes the summary detectably stale
+        instead of silently wrong. A missing fingerprint is treated
+        as stale rather than waved through, because "we cannot tell"
+        must never read as "fine".
         """
         import json
         from pathlib import Path
@@ -591,6 +694,26 @@ class TestHarnessSelfChecks(unittest.TestCase):
                 "present — run scripts/run_tier2_fixtures.py "
                 "first")
         data = json.loads(path.read_text(encoding="utf-8"))
+
+        # Currency first: a number describing a different fixture set says
+        # nothing about this one.
+        sys.path.insert(0, str(repo / "scripts"))
+        from run_tier2_fixtures import fixture_inventory_fingerprint
+        live = fixture_inventory_fingerprint()
+        recorded = data.get("fixture_fingerprint")
+        self.assertIsNotNone(
+            recorded,
+            "tier2_results.json carries no fixture_fingerprint, so there is no "
+            "way to tell whether its counts describe the fixtures now in the "
+            "tree. Re-run scripts/run_tier2_fixtures.py --write-results. An "
+            "unverifiable floor must not report as green.")
+        self.assertEqual(
+            recorded, live,
+            "tier2_results.json summarises a DIFFERENT fixture set than the one "
+            "in the tree — a fixture was added, deleted or edited since it was "
+            "written, so its passed count does not describe these fixtures. "
+            "Re-run scripts/run_tier2_fixtures.py --write-results.")
+
         passed = data.get("summary", {}).get("passed", 0)
         self.assertGreaterEqual(
             passed,

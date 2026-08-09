@@ -1,0 +1,49 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#14 — KINEM linear on an ordinary St-Venant-Kirchhoff solid never errors: it drops the geometric nonlinearity, over-predicts compliance and the run looks perfectly healthy, so the only defence is a converged comparison. Four arms of one HEX8 unit cube (YOUNG 1000, NUE 0.3, surface Neumann in y), two load levels a factor 300 apart, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Each linear arm carries its NONLINEAR twin's RESULT DESCRIPTION pinned at 1e-12 at TWO probe nodes at once, node 6 and node 3, because the size of the discrepancy is node-dependent and a percentage quoted without a node means nothing. Observed: at the small load the two kinematics agree to 0.06% and the SIGN differs between the probe nodes (-0.06% at node 6, +0.06% at node 3), so the direction of the error is no tell at small strain; at 300x the load KINEM linear over-predicts by +5.70% at node 6 and +81.84% at the SAME run's node 3. Both nonlinear references exit 0 with no result failures, both linear runs are stopped only by the result test this fixture adds (SMALL/BIG_ONLY_ERROR_IS_THE_RESULT_TEST=yes) and neither log ever prints the word KINEM (*_MENTIONS_KINEM=0) — in a deck without a result test there is nothing at all to grep for.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 14,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_NL_SMALL=0",
+    "EXIT_LIN_SMALL=1",
+    "EXIT_NL_BIG=0",
+    "EXIT_LIN_BIG=1",
+    "processor 0 finished normally",
+    "RESULT_FAILURES_NL_SMALL=0",
+    "RESULT_FAILURES_NL_BIG=0",
+    "LINEAR_VS_NONLINEAR_PERCENT_SMALL_NODE6=-0.06",
+    "LINEAR_VS_NONLINEAR_PERCENT_SMALL_NODE3=+0.06",
+    "LINEAR_VS_NONLINEAR_PERCENT_BIG_NODE6=+5.70",
+    "LINEAR_VS_NONLINEAR_PERCENT_BIG_NODE3=+81.84",
+    "SMALL_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "BIG_ONLY_ERROR_IS_THE_RESULT_TEST=yes",
+    "SMALL_MENTIONS_KINEM=0",
+    "BIG_MENTIONS_KINEM=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_NL_SMALL=1",
+    "EXIT_NL_BIG=1",
+    "EXIT_LIN_BIG=0",
+    "RESULT_FAILURES_NL_BIG=1",
+    "LINEAR_VS_NONLINEAR_PERCENT_BIG_NODE3=agrees"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology from the large-load arm: give it the nonlinear kinematics. It then matches its twin at both probe nodes, both percentages become 'agrees' and EXIT_LIN_BIG becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    300.0 \"$BIG6\"   \"$BIG3\"   \"$TMP/l_big.yaml\"",
+      "to": "deck nonlinear 300.0 \"$BIG6\"   \"$BIG3\"   \"$TMP/l_big.yaml\""
+    },
+    {
+      "note": "remove the pathology from the small-load arm too. The 0.06% pair disappears and EXIT_LIN_SMALL becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck linear    1.0   \"$SMALL6\" \"$SMALL3\" \"$TMP/l_small.yaml\"",
+      "to": "deck nonlinear 1.0   \"$SMALL6\" \"$SMALL3\" \"$TMP/l_small.yaml\""
+    }
+  ]
+}

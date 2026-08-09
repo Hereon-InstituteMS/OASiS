@@ -1,0 +1,19 @@
+{
+  "_comment": "CLAIM time_dependent_heat::1: [Numerical] CFL for explicit; unconditionally stable for implicit. Signal: explicit Euler on the heat equation diverges (NaN within ~10 steps) at dt > h^2/(2*alpha) \u2014 SUNDIALS::ARKode reports step rejection or SolverControl::failure; backward Euler / Crank-Nicolson via SUNDIALS::IDA are \u2026 WHAT THIS RUNS: -- probe \"forward_euler_stability\" of the shared transient-heat translation unit _shared/heat_family.cc, which is compiled once and cached, so this fixture adds no build of its own. theta = 0 (forward Euler) on the unit square with alpha = 1 and h = 1/16, a FIXED number of steps at each dt so a larger step cannot hide the instability by finishing sooner. The stability limit is found by scanning dt, and it lands BELOW the textbook finite-difference bound h^2/(2 alpha): the bound is about three times the measured limit, so a dt that satisfies \"dt < h^2/(2 alpha)\" still blows up with a consistent (non-lumped) FE mass matrix. THE SUNDIALS HALF OF THE ENTRY IS NOT TESTABLE ON THIS INSTALL. It names SUNDIALS::ARKode step rejection and SUNDIALS::IDA; this deal.II was configured without SUNDIALS, which the grep below reads straight out of config.h. The contrast the entry draws is instead made with theta = 1 inside the probe. T2_MUTATE=1 switches to theta = 1 (backward Euler), nothing blows up at any dt tried, and the fixture fails its own expectations. OBSERVED, copied from the run: deal_ii_with_sundials=false; fd_bound_is_not_the_fe_limit=true; bounded_at_every_dt_tried=false; VERDICT=conditionally_stable_bisection_found_the_limit. Verified by execution 2026-08-06 against deal.II 9.8.0-pre (Release at ~/dealii/build; Debug where the fixture sets requires_debug); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "dealii",
+  "physics": "time_dependent_heat",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "expect_in_output": [
+    "deal_ii_with_sundials=false",
+    "fd_bound_is_not_the_fe_limit=true",
+    "bounded_at_every_dt_tried=false",
+    "VERDICT=conditionally_stable_bisection_found_the_limit"
+  ],
+  "forbid_in_output": [
+    "BUILD_FAILED",
+    "UNKNOWN_PROBE",
+    "VERDICT=unconditionally_stable_over_the_range_tried"
+  ],
+  "timeout_seconds": 900
+}

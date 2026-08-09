@@ -1,0 +1,36 @@
+{
+  "_comment": "Tier-2 for fourc::particle_dem#8. The point is an ASYMMETRY measured on the same quantity: FRICT_COEFF_TANG: 0.0 in PARTICLE DYNAMIC/DEM aborts (proved by the sibling fixture), while the identical 0.0 in MAT_ParticleWallDEM produces no DEM abort (WALLZERO_DEM_ABORTS=0), no warning mentioning friction or the wall material (WALLZERO_WARNINGS=0), a run that reaches the result-test manager, and a changed answer (WALLZERO_VERDICTS_WRONG). The untouched deck passes in the same session, so the difference is the wall material and nothing else. Second probe: pointing the DESIGN SURFACE PARTICLE WALL condition's MAT at the DEM particle material gives 'cast to Mat::ParticleWallMaterialDEM failed!' -- a C++ class name -- and WRONG_WALLMAT_NAMES_THE_INPUT_KEY=no records that neither the condition nor PARTICLE_WALL_MAT is mentioned anywhere in the log. UPSTREAM_DECKS_WITH_MAT_MINUS_ONE counts 4C's own coupled decks that legally run with no wall material at all. MUTATION CONTROL (2026-08-07): T2_MUTATE=1 removes the pathology from every probe deck; unmutated the fixture PASSES, mutated it FAILS. Re-verify with `cd <fixture dir> && T2_MUTATE=1 bash cmd.sh`. Executed 2026-08-07 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "particle_dem",
+  "pitfall_index": 8,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WALLZERO=1",
+    "EXIT_WRONGMAT=1",
+    "EXIT_ROLBASE=0",
+    "WALLZERO_DEM_ABORTS=0",
+    "WALLZERO_WARNINGS=0",
+    "WALLZERO_REACHED_RESULT_TESTS=yes",
+    "WALLMAT_SILENTLY_CHANGES_THE_ANSWER=yes",
+    "ROLBASE_PASSES=yes",
+    "cast to Mat::ParticleWallMaterialDEM failed!",
+    "WRONG_WALLMAT_NAMES_A_CLASS=yes",
+    "WRONG_WALLMAT_NAMES_THE_INPUT_KEY=no",
+    "UPSTREAM_DECKS_WITH_MAT_MINUS_ONE=4"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "WALLMAT_SILENTLY_CHANGES_THE_ANSWER=no",
+    "WALLZERO_VERDICTS_WRONG=0",
+    "WRONG_WALLMAT_NAMES_A_CLASS=no",
+    "EXIT_WRONGMAT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: rebuild every probe deck from the untouched upstream file, so the thing being claimed is absent. The diagnostics never appear and the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "MUTATE=\"${T2_MUTATE:-0}\"",
+    "to": "MUTATE=1"
+  }
+}

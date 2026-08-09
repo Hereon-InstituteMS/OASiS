@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::fsi#11 and a FALSIFICATION. The entry said a FUNCT combining SYMBOLIC_FUNCTION_OF_SPACE_TIME with VARIABLE 'requires COMPONENT: 0 in the same list item', and that without it the VARIABLE is silently ignored so a ramp stays stuck at 0. Two things are wrong. VARIABLE is never written in the same list item -- upstream decks put it in its own sibling entry -- and omitting COMPONENT changes nothing. Rewriting the drive of upstream fsi_fp_mono_fs_ga_ga.4C.yaml from -t*t to -t*t*a with a linearinterpolation variable a == 1 reproduces all six pinned results both with COMPONENT: 0 (exit 0, OK (6)) and without it (exit 0, 10 time steps, OK (6), zero FUNCT warnings). Changing that same variable to ramp 1 -> 0.5, still with no COMPONENT key in the deck, moves every one of the six pinned values -- 'Result check failed with 6 errors out of 6 tests', fluid velx at node 5 becomes -5.000e-01 against the pinned -2.000e+00 -- which is direct proof the variable is being evaluated rather than dropped. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, git 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fsi",
+  "pitfall_index": 11,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "NOCOMP_ARM_HAS_COMPONENT_KEY=0",
+    "NOCOMP_ARM_HAS_VARIABLE_KEY=1",
+    "EXIT_WITHCOMP=0",
+    "EXIT_NOCOMP=0",
+    "EXIT_NOCOMPHALF=1",
+    "processor 0 finished normally",
+    "OK (6)",
+    "NOCOMP_TIME_STEPS_RUN=10",
+    "NOCOMP_FUNCT_WARNINGS=0",
+    "Result check failed with 6 errors out of 6 tests",
+    "is WRONG --> actresult="
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHCOMP=1",
+    "EXIT_NOCOMP=1",
+    "EXIT_NOCOMPHALF=0",
+    "NOCOMP_ARM_HAS_COMPONENT_KEY=1"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: put COMPONENT: 0 back into the arms that were supposed to lack it. NOCOMP_ARM_HAS_COMPONENT_KEY becomes 1 (forbidden) and there is no longer a no-COMPONENT arm to observe, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "COMPONENT_LINE=\"\"",
+    "to": "COMPONENT_LINE=\"COMPONENT: 0\""
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::multiscale#0. The cost claim is right and its Signal is wrong. There is no MicroSolver timer — the string appears zero times in the run's output, and no timer in the TimeMonitor table mentions micro at all — because every RVE solve is counted into the same generic 'Core::LinAlg::Solver: 2) Solve' entry as the macro solves. So the profile cannot attribute the time, which is the opposite of what the entry promised. What is visible is the call count: upstream sohex8_multiscale_macro performs 1.326e+04 linear solves on a tiny macro mesh, and the identical mesh and schedule with the three MAT_Struct_Multiscale materials swapped for a plain MAT_Struct_StVenantKirchhoff performs 10. Both arms have RESULT DESCRIPTION stripped so both reach the timer table; 4C aborts before printing it when a result test fails. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "multiscale",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_MULTISCALE=0",
+    "EXIT_PLAIN=0",
+    "processor 0 finished normally",
+    "MULTISCALE_SOLVE_CALLS=1.326e+04",
+    "PLAIN_SOLVE_CALLS=10",
+    "MICROSOLVER_TIMERS=0",
+    "TIMERS_MENTIONING_MICRO=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_MULTISCALE=1",
+    "EXIT_PLAIN=1",
+    "PLAIN_SOLVE_CALLS=1.326e+04"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: leave the multiscale materials in the 'plain' arm too. Both arms then do the same 1.326e+04 solves, the contrast disappears and PLAIN_SOLVE_CALLS no longer reads 10, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[3], \"w\").write(strip_result_description(plain))",
+    "to": "open(sys.argv[3], \"w\").write(strip_result_description(t))"
+  }
+}

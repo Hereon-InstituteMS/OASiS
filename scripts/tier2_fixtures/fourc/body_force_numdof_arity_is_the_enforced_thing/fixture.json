@@ -1,0 +1,60 @@
+{
+  "_comment": "Tier-2 for fourc::structural_mechanics#7 — on a body-force block 4C enforces INTERNAL CONSISTENCY (ONOFF, VAL and FUNCT each carrying exactly NUMDOF entries), not that NUMDOF matches the element's dof count. Seven arms, DESIGN VOL NEUMANN on a 3D SOLID HEX8 and DESIGN SURF NEUMANN on a 2D WALL QUAD4, same material and load, run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: 3D NUMDOF 3 and 3D NUMDOF 6 with the extra slots OFF both exit 0 and both pass the SAME RESULT DESCRIPTION pinned to 1e-12 (RESULT_FAILURES=0 for both), so the oversized block really is unused rather than misread; 3D NUMDOF 6 with a fourth slot switched ON exits 1 with 'You have activated more than 3 dofs in your Neumann boundary condition. This is higher than the dimension of the element.' from solid_3D_ele/4C_solid_3D_ele_neumann_evaluator.cpp line 64; and both directions of an inconsistent block — NUMDOF 6 with a 3-entry ONOFF, NUMDOF 3 with a 6-entry ONOFF — are rejected at parse with 'Could not match this input' from core/fem/condition/4C_fem_condition_definition.cpp line 79. The 2D pair is the trap: on a WALL element NUMDOF 3 with the THIRD component switched ON exits 0, produces the same answer as NUMDOF 2 to the pinned tolerance and emits no error block at all (WALL_NUMDOF3_ON_ERROR_BLOCKS=0), so a wrong component count in 2D is a silent modelling error. The wording an earlier version quoted, 'NUMDOF mismatch - expected 3 got 6', appears in none of the seven logs: CLAIMED_NUMDOF_MISMATCH_TEXT=0.",
+  "backend": "fourc",
+  "physics": "structural_mechanics",
+  "pitfall_index": 7,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_VOL_NUMDOF3=0",
+    "EXIT_VOL_NUMDOF6_OFF=0",
+    "EXIT_VOL_NUMDOF6_ON=1",
+    "EXIT_VOL_ONOFF_SHORT=1",
+    "EXIT_VOL_ONOFF_LONG=1",
+    "EXIT_WALL_NUMDOF2=0",
+    "EXIT_WALL_NUMDOF3_ON=0",
+    "processor 0 finished normally",
+    "VOL_NUMDOF3_RESULT_FAILURES=0",
+    "VOL_NUMDOF6_OFF_RESULT_FAILURES=0",
+    "You have activated more than 3 dofs in your Neumann boundary condition.",
+    "4C_solid_3D_ele_neumann_evaluator.cpp",
+    "Could not match this input",
+    "4C_fem_condition_definition.cpp",
+    "WALL_NUMDOF2_RESULT_FAILURES=0",
+    "WALL_NUMDOF3_ON_RESULT_FAILURES=0",
+    "WALL_NUMDOF3_ON_ERROR_BLOCKS=0",
+    "CLAIMED_NUMDOF_MISMATCH_TEXT=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_VOL_NUMDOF3=1",
+    "EXIT_VOL_NUMDOF6_OFF=1",
+    "EXIT_VOL_NUMDOF6_ON=0",
+    "EXIT_VOL_ONOFF_SHORT=0",
+    "EXIT_VOL_ONOFF_LONG=0",
+    "EXIT_WALL_NUMDOF3_ON=1",
+    "WALL_NUMDOF3_ON_ERROR_BLOCKS=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the inconsistency from the short arm: give ONOFF its six entries. The parse rejection disappears and EXIT_VOL_ONOFF_SHORT becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck3d 6 \"[0, 1, 0]\"          \"[0.0, 100.0, 0.0, 0.0, 0.0, 0.0]\"    \"[0, 1, 0, 0, 0, 0]\" \"$TMP/vshort.yaml\"",
+      "to": "deck3d 6 \"[0, 1, 0, 0, 0, 0]\" \"[0.0, 100.0, 0.0, 0.0, 0.0, 0.0]\"    \"[0, 1, 0, 0, 0, 0]\" \"$TMP/vshort.yaml\""
+    },
+    {
+      "note": "remove the inconsistency from the long arm the same way. EXIT_VOL_ONOFF_LONG becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck3d 3 \"[0, 1, 0, 0, 0, 0]\" \"[0.0, 100.0, 0.0]\"                   \"[0, 1, 0]\"          \"$TMP/vlong.yaml\"",
+      "to": "deck3d 3 \"[0, 1, 0]\"          \"[0.0, 100.0, 0.0]\"                   \"[0, 1, 0]\"          \"$TMP/vlong.yaml\""
+    },
+    {
+      "note": "remove the pathology from the 3D moment arm: switch the fourth slot off. The neumann_evaluator abort disappears and EXIT_VOL_NUMDOF6_ON becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck3d 6 \"[0, 1, 0, 0, 1, 0]\" \"[0.0, 100.0, 0.0, 0.0, 100.0, 0.0]\"  \"[0, 1, 0, 0, 1, 0]\" \"$TMP/v6on.yaml\"",
+      "to": "deck3d 6 \"[0, 1, 0, 0, 0, 0]\" \"[0.0, 100.0, 0.0, 0.0, 0.0, 0.0]\"  \"[0, 1, 0, 0, 0, 0]\" \"$TMP/v6on.yaml\""
+    }
+  ]
+}

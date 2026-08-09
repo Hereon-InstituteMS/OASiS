@@ -1,0 +1,40 @@
+{
+  "_comment": "COUPLING tier-2. Settles a DIRECT CONTRADICTION between two served texts, by execution, and then supplies the SPARTA preCICE coupled run that the 'CAN — proven by a real coupled run' verdict never had. `src/backends/sparta/backend.py`'s `precice_participant()` served an `import precice`-first snippet under the docstring 'Verified pattern'; `src/tools/coupling_knowledge.py` served, for the same backend, 'There is exactly one way to load it, and every other way segfaults', naming that exact ordering as the crashing one. Part A runs all four orderings in their own subprocesses and reports what each does — precice-first through the stock wrapper and mpi4py-first both segfault (inside PMPI_Type_size, because libsparta defines its own MPI stubs and links no real MPI, so a real libmpi in the global namespace interposes them); SPARTA-first with RTLD_GLOBAL fails the other way, with a missing libmpi; RTLD_DEEPBIND|RTLD_LOCAL works. Part C runs a REAL two-participant preCICE coupling through the REGISTERED `couple_precice` tool: a rarefied argon DSMC flow past a cylinder (SPARTA, necessarily the DIRICHLET side — no surf_collide style takes a prescribed heat flux) against a lumped thermal shell (Neumann). SPARTA runs as a subprocess, which is the honest consequence of the load order plus the Python library's lack of a per-surf scatter, and it is the only route that can exchange a per-element field. The scheme is EXPLICIT because DSMC sampling noise does not shrink with sub-iteration, so `converged` could never be meaningful — the fixture asserts that `couple_precice` reports it as UNMEASURED rather than as converged, and grades the coupling on its fixed point instead: SPARTA run STANDALONE at uniform wall temperatures BRACKETING the coupled answer, fitted, and put through the shell's own balance. That reference never touches preCICE, the orchestrator or the shell participant.",
+  "_mutation": {
+    "note": "Flip the sign with which the lumped shell applies the flux it imported — this is the NEUMANN participant and the served rule is that the partner's number is applied UNCHANGED. The shell then reads the gas heating it as cooling and drives the wall temperature to T_OUTER - qbar/C_SHELL, i.e. far below zero, which SPARTA cannot use as a diffuse wall temperature. The run fails loudly instead of silently, which is the right outcome for a mutation this coarse; the point of the control is that the fixture's assertions bite on the exchanged VALUES and on the participants' exit codes, not on whether the orchestrator was happy. The load-order verdicts in Part A are unaffected and still report yes — they do not depend on the coupled run, and a mutation that also broke them would say less, not more.",
+    "file": "source.py",
+    "from": "APPLY_SIGN = 1.0\n\n\n# ── PART A: the load orderings",
+    "to": "APPLY_SIGN = -1.0\n\n\n# ── PART A: the load orderings"
+  },
+  "backend": "coupling",
+  "physics": "precice_coupled_run",
+  "pitfall_index": 18,
+  "mode": "python",
+  "timeout_seconds": 2400,
+  "expect_in_output": [
+    "ordering_precice_first_stock_wrapper_matches_served_text=yes",
+    "ordering_mpi4py_then_precice_then_sparta_matches_served_text=yes",
+    "ordering_sparta_first_rtld_global_matches_served_text=yes",
+    "ordering_deepbind_local_then_precice_matches_served_text=yes",
+    "orderings_that_work=1_of_4",
+    "exactly_one_ordering_works=yes",
+    "rtld_deepbind_is_the_one_that_works=yes",
+    "precice_first_stock_wrapper_segfaults=yes",
+    "sparta_all_participant_returncodes_zero=yes",
+    "sparta_participants_exchanged_data=yes",
+    "explicit_scheme_reports_convergence_unmeasured=yes",
+    "sparta_all_time_windows_ran=yes",
+    "sparta_coupling_moved_the_wall=yes",
+    "sparta_interface_flux_balanced=yes",
+    "hotter_wall_takes_less_heat=yes",
+    "reference_fixed_point_inside_the_probe_bracket=yes",
+    "sparta_coupled_fixed_point_matches_reference=yes",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "failures_count=1"
+  ]
+}

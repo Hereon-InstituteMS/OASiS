@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics hyperelasticity#4: ufl.variable() + ufl.diff() give the first Piola-Kirchhoff stress from a stored energy, but the class Variable is NOT reachable as ufl.variable.Variable. The attribute ufl.variable is the FUNCTION variable(), which shadows the submodule of the same name, so repr(type(ufl.variable(F))) prints \"<class 'ufl.variable.Variable'>\" while writing ufl.variable.Variable raises AttributeError: 'function' object has no attribute 'Variable'. The spelling that works is ufl.classes.Variable. The fixture also checks the useful half of the claim: type(ufl.variable(F)) is Variable, type(ufl.diff(W, F_var)).__name__ == \"VariableDerivative\", and the resulting P is usable inside inner(P, grad(v))*dx -- it is assembled into a real residual vector, so \"usable\" is measured, not asserted. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "hyperelasticity",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "ufl_variable_attribute_is_a=function",
+    "repr_of_type_of_F_var=<class 'ufl.variable.Variable'>",
+    "F_var_type=Variable",
+    "P_type=VariableDerivative",
+    "AttributeError: 'function' object has no attribute 'Variable'",
+    "submodule_shadowed_by_function=True",
+    "P_assembles_into_a_residual=True",
+    "VERDICT=use_ufl_classes_Variable_not_ufl_variable_Variable"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=variable_spelling_is_harmless"
+  ]
+}

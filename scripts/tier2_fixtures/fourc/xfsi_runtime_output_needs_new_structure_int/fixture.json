@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::fsi_xfem#5 and a FALSIFICATION. The entry told the reader to open the IO/RUNTIME VTK OUTPUT fluid VTU in ParaView and look at hexes crossing the structure. On the upstream monolithic deck xfsi_3D_boxes there is no such file to open: adding IO/RUNTIME VTK OUTPUT plus the FLUID and STRUCTURE sub-sections aborts before the first step with 'Runtime output is not available in the old structure time integration! You need to take the new one, i.e. set INT_STRATEGY: Standard!' from 4C_structure_timint.cpp, and following that instruction changes nothing -- the XFSI adapter constructs the legacy integrator regardless, so the identical throw reappears and zero .vtu files are produced in both arms. Combined with fourc::xfem_fluid#6 (an XFEM fluid writes no VTU even when the run succeeds), XFEM results have to be inspected through the Ensight .result file or the Gmsh .pos output. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "fsi_xfem",
+  "pitfall_index": 5,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_CLEAN=0",
+    "EXIT_VTK=1",
+    "EXIT_VTKSTD=1",
+    "processor 0 finished normally",
+    "Runtime output is not available in the old structure time integration!",
+    "4C_structure_timint.cpp",
+    "INT_STRATEGY: Standard",
+    "VTKSTD_SAME_THROW=1",
+    "VTK_VTU=0",
+    "VTKSTD_VTU=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: do not add the runtime VTK sections, so nothing asks the legacy structure integrator for runtime output. The throw and both zero-VTU counts stop being evidence and EXIT_VTK becomes 0, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "vtk = t.replace(\"STRUCTURAL DYNAMIC:\\n\", blk, 1)",
+    "to": "vtk = t"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CLEAN=1",
+    "EXIT_VTK=0",
+    "VTK_VTU=1",
+    "VTKSTD_SAME_THROW=0"
+  ]
+}

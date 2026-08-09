@@ -22,10 +22,23 @@ MMS (matches fenics):
   p = sin(πx)·cos(πy)            (zero mean)
   f = -ν·Δu + grad(p)            (analytic; computed below)
   ν = 1
+
+Mutation control: this is a correctness gate, so the mutation
+breaks the discretisation the gate certifies rather than
+removing a pitfall. T2_MUTATE=1 drops the explicit negation of
+the divergence block (B = -asm(divergence,...) becomes
+B = asm(divergence,...)), which is exactly the sign-convention
+bug this fixture's own _comment records having caught: skfem's
+divergence has the opposite sign from the fenics form. The
+velocity is unaffected but the pressure comes back negated, so
+the P1 pressure L2 error jumps to ~1.0 and its EOC collapses to
+~0, printing "FAIL:" (a forbid_in_output string) twice and
+turning the fixture red. Re-run: T2_MUTATE=1 python source.py
 """
 from __future__ import annotations
 
 import math
+import os
 import sys
 
 import numpy as np
@@ -39,6 +52,13 @@ from skfem import (
     asm, condense, solve)
 from skfem.helpers import grad, ddot
 from skfem.models.general import divergence
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+
+# B-block sign convention: skfem's divergence is +∫q·div(u),
+# opposite to the fenics form, so the catalog template negates
+# it.  Under mutation the negation is dropped.
+B_SIGN = -1.0 if not MUTATE else 1.0
 
 
 def run_stokes_mms(refine: int) -> tuple[float, float]:
@@ -63,7 +83,7 @@ def run_stokes_mms(refine: int) -> tuple[float, float]:
     # divergence gives +∫q·div(u) and we flip sign here to
     # form the standard saddle-point block
     # [[K, -B^T], [-B, 0]] with B = ∫q·div(u).
-    B = -asm(divergence, basis_u, basis_p)
+    B = B_SIGN * asm(divergence, basis_u, basis_p)
 
     # f1, f2 source from MMS, evaluated at quadrature pts
     # via @LinearForm with vector-test-function v.

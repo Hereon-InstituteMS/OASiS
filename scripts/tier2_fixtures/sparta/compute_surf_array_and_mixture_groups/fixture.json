@@ -1,0 +1,24 @@
+{
+  "_comment": "Tier-2 for sparta surface_interaction: 'compute grid'/'compute surf' always produce ARRAYS (bare c_ID is never valid), and the column count is ngroup*nvalue where ngroup is 1 for the built-in 'all' mixture, for a mixture defined without 'group', AND for one defined with 'group <name>'. Only 'group SELF' or the built-in 'species' mixture give per-species columns. A fix ave/* fed ONE value is the opposite: a VECTOR read bare as f_ID. COVERS (added 2026-08-06): surface_interaction:5 only. This script uses 'compute grid', so it verifies the per-GRID forms; surface_interaction:4 and conjugate_heat_transfer:3 quote the per-SURF messages (fix_ave_surf.cpp:150, dump_surf.cpp:569, compute_reduce.cpp:293) and this script produces their per-grid twins instead, so neither is attributed here. MUTATION CONTROL (added 2026-08-06, re-runnable): T2_MUTATE=1 gives the two mixtures whose second column is asked for the 'group SELF' keyword — the one defined with no 'group' at all and the one defined with the named 'group lite' — so both acquire one group per species and c_g[2] exists. Nothing else changes: same two species, same compute grid, same compute reduce, same run. Both decks then exit rc=0 with an empty error list instead of aborting on 'Compute reduce compute array is accessed out-of-range (../compute_reduce.cpp:236)'. Verified: unmutated the fixture PASSES (rc=0); with T2_MUTATE=1 it FAILS (rc=1) and these expect_in_output strings go False and disappear: default_mixture_has_one_group=True, named_group_is_still_one_group=True. The array-versus-vector assertions (bare_compute_grid_is_not_a_vector, single_value_fix_is_a_vector, single_value_fix_indexed_aborts) are a separate claim, deliberately outside the hook, and stay True. Re-verify: cd scripts/tier2_fixtures/sparta/compute_surf_array_and_mixture_groups && python source.py (passes, rc=0), then T2_MUTATE=1 python source.py (fails, rc=1). Needs a SPARTA binary: the fixtures find spa_serial/spa_mpi on PATH or at ~/Schreibtisch/sparta/src/spa_serial, else set SPARTA_BINARY; with none present they exit 0 on a SKIP: line.",
+  "backend": "sparta",
+  "physics": "surface_interaction",
+  "pitfall_index": 5,
+  "covers": [
+    "surface_interaction:5"
+  ],
+  "mode": "python",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "bare_compute_grid_is_not_a_vector=True",
+    "default_mixture_has_one_group=True",
+    "named_group_is_still_one_group=True",
+    "group_self_gives_per_species_columns=True",
+    "single_value_fix_is_a_vector=True",
+    "single_value_fix_indexed_aborts=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "UNEXPECTED:"
+  ]
+}

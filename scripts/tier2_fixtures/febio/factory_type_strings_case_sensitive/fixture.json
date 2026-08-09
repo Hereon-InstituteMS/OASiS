@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for febio::linear_elasticity#8. Pins the CONTRAST the pitfall is about: type=\"HEX8\" gives 'Invalid element type' and type=\"Zero Displacement\" gives 'tag \"bc\" (line N) : invalid value for attribute \"type\"', while <analysis> STATIC / static / Static all run to normal termination with bit-identical logged sx;sy;sz (md5 over the CSV). Both halves are required \u2014 the fixture goes red if FEBio ever starts case-folding type strings AND if it ever stops case-folding enum values. Executed 2026-08-06 on FEBio 4.12.0.86045466d (source build, USE_MKL=OFF). MUTATION CONTROL (2026-08-07): T2_MUTATE=1 neutralises the L.swap / L.drop edits this fixture uses to turn a correct deck into a broken one, so every deck it builds is the correct one and the pitfall is never triggered. Unmutated the fixture still PASSES; mutated it FAILS because the expectation 'type_case_sensitivity=reproduced' is no longer printed and the forbidden token 'not_reproduced' appears. Re-verify with `cd <fixture dir> && T2_MUTATE=1 ~/Schreibtisch/open-fem-agent/.venv/bin/python source.py` (the mutation branch lives in source.py, so the proof is one command and needs no external harness).",
+  "backend": "febio",
+  "physics": "linear_elasticity",
+  "pitfall_index": 8,
+  "mode": "python",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "type_case_sensitivity=reproduced"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "not_reproduced",
+    "skipped"
+  ]
+}

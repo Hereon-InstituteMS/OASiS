@@ -1,0 +1,49 @@
+{
+  "_comment": "COUPLING tier-2. Verifies the strongest pair claim in the sides table: NGSolve and scikit-fem are each listed as 'Either side, in either subdomain. All four role/position combinations were run as real couplings on this install ... and all converged.' Four combinations is a stronger claim than two, and this is the one row pair that makes it, so all four are run rather than the two a 'both roles' claim would need. Role and position are independent: the outward normal flips between subdomains, and with it the sign of the exported flux and of the applied Neumann term, which is exactly what a mis-signed `S = 1.0 if ... else -1.0` in a participant gets wrong. Each combination is checked against the closed form of the split conduction problem, with non-matching interface meshes (17 points against 13).",
+  "_mutation": {
+    "note": "Configure both participants with a conductivity 25% away from the one the closed form is computed from. The coupling stays SELF-CONSISTENT: it converges, the two sides still agree at the interface, and the flux balance is untouched because both subdomains moved together \u2014 the interface temperature does not even change, since the conductance RATIO is preserved. Only the interface FLUX moves, by the same 25%. So this is a converged, balanced, internally unimpeachable coupling of the wrong problem, which is the exact silent-wrong shape these fixtures exist to catch, and the q_err check is the only thing that sees it. Run by hand against the subject rather than the setup, the equivalent was flipping the sign of `normal_fluxes` in data/coupling_participants/participant_skfem.py (not stageable, so not declarable here): that produced a run which converged in 62 iterations and balanced to 3.9e-08 while landing 22 K from the exact interface temperature.",
+    "file": "../_lib/couplinglib.py",
+    "from": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{k}\", \"F_SRC\": \"0.0\",",
+    "to": "\"IFACE_X\": f\"{problem.xi}\", \"K\": f\"{1.25 * k}\", \"F_SRC\": \"0.0\","
+  },
+  "backend": "coupling",
+  "physics": "pair_ngsolve_skfem",
+  "pitfall_index": 1,
+  "mode": "python",
+  "timeout_seconds": 1800,
+  "expect_in_output": [
+    "ngs_L_D_skf_R_N_converged=True",
+    "ngs_L_D_skf_R_N_meshes_nonmatching=True",
+    "ngs_L_D_skf_R_N_interface_T_matches_reference=True",
+    "ngs_L_D_skf_R_N_interface_q_matches_reference=True",
+    "ngs_L_D_skf_R_N_flux_signs_are_opposite=True",
+    "ngs_L_D_skf_R_N_flux_balanced=True",
+    "ngs_L_D_skf_R_N_validation_empty=True",
+    "ngs_L_D_skf_R_N_matches_monolithic=True",
+    "ngs_L_N_skf_R_D_converged=True",
+    "ngs_L_N_skf_R_D_interface_q_matches_reference=True",
+    "ngs_L_N_skf_R_D_matches_monolithic=True",
+    "skf_L_D_ngs_R_N_converged=True",
+    "skf_L_D_ngs_R_N_interface_T_matches_reference=True",
+    "skf_L_D_ngs_R_N_matches_monolithic=True",
+    "skf_L_N_ngs_R_D_converged=True",
+    "skf_L_N_ngs_R_D_interface_T_matches_reference=True",
+    "skf_L_N_ngs_R_D_matches_monolithic=True",
+    "combinations_run=4",
+    "failures_count=0"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:",
+    "TIMEOUT",
+    "did_not_converge",
+    "_meshes_nonmatching=False",
+    "_interface_T_matches_reference=False",
+    "_interface_q_matches_reference=False",
+    "_flux_signs_are_opposite=False",
+    "_flux_balanced=False",
+    "_validation_empty=False",
+    "_matches_monolithic=False",
+    "failures_count=1"
+  ]
+}

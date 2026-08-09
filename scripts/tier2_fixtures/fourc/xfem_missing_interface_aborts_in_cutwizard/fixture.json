@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#2 and a FALSIFICATION of its Signal. The entry claimed that with no interface description the solution silently reverts to standard FEM and an XFEM diagnostic prints '0 enriched elements'. That string exists nowhere in 4C. Removing the sole DESIGN XFEM LEVELSET NEUMANN VOL condition from the upstream deck xfluid_ls_neumann_inflow_stab aborts in Cut::CutWizard::safety_checks with 'You have to call PrepareCut() before you can call the Cut-routine' from 4C_cut_cutwizard.cpp, before any time step completes -- the run never reaches 'Checking results of', so there is no non-enriched answer to compare against. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 2,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_WITHCOND=0",
+    "EXIT_NOCOND=1",
+    "processor 0 finished normally",
+    "You have to call PrepareCut() before you can call the Cut-routine",
+    "4C_cut_cutwizard.cpp",
+    "NOCOND_REACHED_RESULT_TEST=0",
+    "CLAIMED_ENRICHED_ELEMENTS_TEXT=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the level-set coupling condition. The cut wizard is then set up correctly, the run exits 0 and the abort text vanishes, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(block, \"\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_WITHCOND=1",
+    "EXIT_NOCOND=0",
+    "NOCOND_REACHED_RESULT_TEST=1"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::lubrication#3. The rule holds — a Reynolds solve does return sub-ambient pressure in a diverging gap — but the entry pointed at 'Elrod-Adams' and post-processing clamps when 4C already has the key: LUBRICATION DYNAMIC/PENALTY_CAVITATION, whose DEFAULT IS 0 (off). On upstream lubrication_sb_2d.4C.yaml with the surface velocity reversed, penalty off gives -73.94 (exactly minus the reference) and penalty 1e+08 gives -9.4e-07; no cavitation/vaporisation warning is printed either way and the string 'elrod' never appears. The CONV_NOPEN arm proves the penalty is inert on the converging reference case (result still CORRECT with it off). Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "lubrication",
+  "pitfall_index": 3,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_CONV_PEN=0",
+    "EXIT_CONV_NOPEN=0",
+    "EXIT_DIV_NOPEN=1",
+    "is CORRECT, abs(diff)=",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=",
+    "SUB_AMBIENT_WITHOUT_PENALTY=yes",
+    "SUB_AMBIENT_WITH_PENALTY=no",
+    "CAVITATION_WARNINGS_PENALTY_OFF=0",
+    "CLAIMED_ELROD_ADAMS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_CONV_PEN=1",
+    "EXIT_DIV_NOPEN=0",
+    "SUB_AMBIENT_WITHOUT_PENALTY=no",
+    "SUB_AMBIENT_WITH_PENALTY=yes"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: slide the surface the other way, so the gap converges and no sub-ambient pressure is generated in any arm. SUB_AMBIENT_WITHOUT_PENALTY flips to 'no' and the DIV arms stop failing, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "BAD_VELOCITY='-20000'",
+    "to": "BAD_VELOCITY='20000'"
+  }
+}

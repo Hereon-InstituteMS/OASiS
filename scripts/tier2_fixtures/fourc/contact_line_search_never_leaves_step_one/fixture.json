@@ -1,0 +1,53 @@
+{
+  "_comment": "Tier-2 for fourc::contact#9 — a line search does not rescue a failing contact Newton, and the trace shows why: the step length never leaves 1.0, so the line search has nothing to shorten. Five runs of the failing two-block mortar penalty deck (-0.9 over ten steps, PENALTYPARAM 1e4, the same configuration contact#8 shows chattering), run 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C. Observed: STRUCT NOX/Line Search Method set to Backtrack, Polynomial, Full Step and More'-Thuente gives four runs whose per-iteration (||F||, step, dx) traces are BYTE-IDENTICAL (TRACES_IDENTICAL_ACROSS_METHODS=yes), each with 55 lines reading 'step = 1.00000e+00', one finalised step and then 'The nonlinear solver did not converge!' from solver_nonlin_nox/4C_solver_nonlin_nox_problem.cpp. The only step lengths that ever appear are 0.00000e+00 (the predictor line of each time step) and 1.00000e+00 — STEP_LENGTHS_STRICTLY_BETWEEN_ZERO_AND_ONE=0, so no backtracking ever happens. The fifth arm rules out the obvious alternative explanation that the section is ignored: a bogus Method value is refused with 'Could not match this input' and never starts a solve (BOGUS_METHOD_STARTED_A_SOLVE=0), so 4C reads and honours the setting; it simply has no leverage on an active set that chatters. Shrink the time step instead.",
+  "backend": "fourc",
+  "physics": "contact",
+  "pitfall_index": 9,
+  "mode": "cmd",
+  "timeout_seconds": 600,
+  "expect_in_output": [
+    "EXIT_LS_BACKTRACK=1",
+    "EXIT_LS_POLYNOMIAL=1",
+    "EXIT_LS_FULLSTEP=1",
+    "EXIT_LS_MORETHUENTE=1",
+    "EXIT_LS_BOGUS=1",
+    "STEPS_LS_BACKTRACK=1",
+    "STEPS_LS_POLYNOMIAL=1",
+    "STEPS_LS_FULLSTEP=1",
+    "UNIT_STEP_LINES_LS_BACKTRACK=55",
+    "UNIT_STEP_LINES_LS_POLYNOMIAL=55",
+    "UNIT_STEP_LINES_LS_FULLSTEP=55",
+    "UNIT_STEP_LINES_LS_MORETHUENTE=55",
+    "The nonlinear solver did not converge!",
+    "4C_solver_nonlin_nox_problem.cpp",
+    "Could not match this input",
+    "BOGUS_METHOD_STARTED_A_SOLVE=0",
+    "TRACES_IDENTICAL_ACROSS_METHODS=yes",
+    "STEP_LENGTHS_SEEN=['0.00000e+00', '1.00000e+00']",
+    "STEP_LENGTHS_STRICTLY_BETWEEN_ZERO_AND_ONE=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "Traceback",
+    "EXIT_LS_BACKTRACK=0",
+    "EXIT_LS_POLYNOMIAL=0",
+    "EXIT_LS_BOGUS=0",
+    "TRACES_IDENTICAL_ACROSS_METHODS=no",
+    "BOGUS_METHOD_STARTED_A_SOLVE=1"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: shrink the prescribed displacement so every arm converges instead of chattering. The failure disappears along with the 55 unit-step lines and 'The nonlinear solver did not converge!', so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "    VAL: [0.0, 0.0, -0.9]",
+      "to": "    VAL: [0.0, 0.0, -0.3]"
+    },
+    {
+      "note": "make the bogus arm legal. 'Could not match this input' disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"Sledgehammer\"   \"$TMP/bogus.yaml\"",
+      "to": "deck \"Full Step\"      \"$TMP/bogus.yaml\""
+    }
+  ]
+}

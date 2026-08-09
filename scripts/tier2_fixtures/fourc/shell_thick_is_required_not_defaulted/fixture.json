@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-2 for fourc::shell#2, and a FALSIFICATION of its premise. THICK has no default on SHELL7P — it is required:true, and omitting it is a parse error, \"Required value 'THICK' not found in input line\" from core/io/src/4C_io_input_spec_builders.cpp, with zero steps run. The rest of the entry stands: on a flat 8x2 SHELL7P plate, THICK 0.01 is pinned by the deck's result test and exits 0 at -2.52367752125895084e+00, while THICK 0.02 with nothing else changed gives -4.88145053467516798e-01. The fourth arm pins a naming trap between the two shell families: SHELL7P takes THICK on the element, MAT_Kirchhoff_Love_shell takes THICKNESS in the material, and writing THICKNESS on a SHELL7P line lets the parser consume the THICK prefix and then complain about the NEXT key, \"Required value 'SDC' not found in input line\" — a message that names a key which was never the problem. Verified by execution 2026-08-06 against 4C 2026.2.0-dev at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "shell",
+  "pitfall_index": 2,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_THICK_0p01=0",
+    "EXIT_THICK_0p02=1",
+    "EXIT_NO_THICK=1",
+    "EXIT_THICKNESS=1",
+    "processor 0 finished normally",
+    "is WRONG --> actresult=-4.88145053467516798e-01",
+    "Required value 'THICK' not found in input line",
+    "4C_io_input_spec_builders.cpp",
+    "Required value 'SDC' not found in input line",
+    "NO_THICK_STEPS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_THICK_0p01=1",
+    "EXIT_NO_THICK=0",
+    "EXIT_THICKNESS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: give the third arm its THICK key. The required-value diagnostic vanishes, NO_THICK_STEPS stops being 0 and EXIT_NO_THICK becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"\"               \"$TMP/nothick.4C.yaml\"",
+      "to": "deck \"THICK 0.01 \"               \"$TMP/nothick.4C.yaml\""
+    },
+    {
+      "note": "remove the second pathology: use the element-side spelling in the fourth arm. The misleading 'SDC' diagnostic vanishes and EXIT_THICKNESS becomes 0, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"THICKNESS 0.01 \" \"$TMP/thickness.4C.yaml\"",
+      "to": "deck \"THICK 0.01 \" \"$TMP/thickness.4C.yaml\""
+    },
+    {
+      "note": "remove the numeric contrast: give the second arm the reference thickness. Its answer collapses onto the pinned one and the wrong-answer line disappears, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "deck \"THICK 0.02 \"     \"$TMP/t002.4C.yaml\"",
+      "to": "deck \"THICK 0.01 \"     \"$TMP/t002.4C.yaml\""
+    }
+  ]
+}

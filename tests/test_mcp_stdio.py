@@ -196,10 +196,10 @@ def test_run_simulation_skfem_poisson_round_trip(tmp_path):
                 "solver": "skfem",
                 "input_content": script,
                 "job_name": "mcp_stdio_smoke_skfem_poisson",
-                # critic_approved=True bypasses the in-tool reminder
-                # that an independent critic should pre-approve real
-                # simulations — fine here because the script is a
-                # fixed smoke probe, not a research run.
+                # Passed to exercise the parameter, not to obtain a verdict:
+                # the flag no longer verifies anything on its own, and this
+                # test asserts only that the run completed and produced an
+                # artefact. A VERIFIED stamp would need submit_critic_review.
                 "critic_approved": True,
             },
         ))

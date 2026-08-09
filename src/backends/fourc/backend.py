@@ -9,6 +9,7 @@ Generators are at backends/fourc/generators/ (10 physics modules).
 import asyncio
 import logging
 import os
+import re
 import shutil
 import time
 import uuid
@@ -28,9 +29,99 @@ logger = logging.getLogger("oasis.fourc")
 FOURC_ROOT = Path(os.environ["FOURC_ROOT"]) if os.environ.get("FOURC_ROOT") else None
 
 
+_FOURC_IDENT_CACHE: dict[str, tuple[bool, str]] = {}
+
+
+def _identifies_as_fourc(binary) -> tuple[bool, str]:
+    """Does this executable actually identify itself as 4C?
+
+    Cheap and conservative. 4C prints its usage to stderr and exits non-zero
+    when run with no arguments, and that text names the program — so the check
+    is "run it with no arguments and look for 4C's own vocabulary". Anything
+    that produces neither is not 4C.
+
+    Deliberately fails OPEN on an inability to look (timeout, permission,
+    OSError): a check that cannot run must not condemn a working install. It
+    fails CLOSED only when the program ran and said something that is not 4C,
+    which is the case that matters — `/bin/true` runs, says nothing, and used to
+    be reported as an available solver.
+
+    Cached per path, because `check_availability` is called repeatedly by
+    `discover` and every knowledge surface, and this spawns a process.
+    """
+    import subprocess
+
+    key = str(binary)
+    if key in _FOURC_IDENT_CACHE:
+        return _FOURC_IDENT_CACHE[key]
+
+    verdict: tuple[bool, str]
+    try:
+        # stdin MUST be closed. An audit pointed this at `/bin/cat`, which
+        # consumed the PARENT's entire stdin and made the verdict a function of
+        # that text; pointed at a real solver it hung the full timeout and then
+        # failed open. Under an MCP stdio server the parent's stdin is the
+        # JSON-RPC stream, so an identity probe could eat the protocol.
+        r = subprocess.run([key], capture_output=True, timeout=20,
+                           stdin=subprocess.DEVNULL)
+        blob = (r.stdout + r.stderr).decode("utf-8", errors="replace").lower()
+        # 4C's banner names itself in full. The first version matched "4c",
+        # "dat file" and "input file", all of which are far too weak: "4c" is
+        # two characters, so `/bin/pwd` and `/bin/ls` pass whenever the working
+        # directory contains it, and `/usr/bin/env` passes whenever ANY
+        # environment variable does — which is the normal state for a 4C user,
+        # since LD_LIBRARY_PATH=/opt/4C-dependencies/lib contains it. And
+        # "input file" passes `/usr/bin/gcc`, whose no-argument output is "no
+        # input files". Four measured false positives from three sloppy tokens.
+        # What 4C ACTUALLY emits with no arguments, measured rather than
+        # assumed: it does not print a banner at all. It throws
+        # `FourC::Core::Exception` with "Please provide both <input> and
+        # <output> arguments." and aborts. An audit recommended matching the
+        # project's full name, "Comprehensive Computational Community Code" —
+        # that appears in the banner on a successful start, NOT on this path, so
+        # matching it refused the real binary. Both the first token set and its
+        # proposed replacement were wrong in opposite directions, which is why
+        # this now uses strings taken from the observed output.
+        #
+        # `fourc::` is the C++ namespace and is specific enough on its own: no
+        # ordinary executable emits it. The argument message is a second,
+        # independent witness.
+        markers = ("fourc::", "provide both <input> and <output>", "lib4c.so")
+        if not blob.strip():
+            verdict = (False, "produced no output at all when run with no "
+                              "arguments; 4C aborts with a named exception")
+        elif any(t in blob for t in markers):
+            verdict = (True, "identified itself")
+        else:
+            verdict = (False, "its output carries none of 4C's own markers: "
+                              + " ".join(blob.split())[:120])
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        # Could not look — do not accuse a possibly-working install.
+        # ValueError is deliberately NOT caught here: UnicodeDecodeError is a
+        # ValueError, so catching it sent every non-UTF-8 binary down the
+        # fail-open path and ACCEPTED it (`/usr/bin/gzip` passed). Decoding is
+        # now explicit with errors="replace", so there is nothing left for a
+        # ValueError to mean except a real bug, which should surface.
+        verdict = (True, f"identity not checked ({type(exc).__name__})")
+
+    _FOURC_IDENT_CACHE[key] = verdict
+    return verdict
+
+
 def _find_fourc_binary() -> Optional[Path]:
     """Locate the 4C binary."""
+    # An explicit override that does not resolve must not fall through to the
+    # search path — see the FEBio equivalent for what that costs. Kept as a
+    # warning-and-None here rather than an exception, because this finder is
+    # called from more places than FEBio's and a raise would change behaviour
+    # in paths I have not tested.
     env_path = os.environ.get("FOURC_BINARY")
+    if env_path and not Path(env_path).is_file():
+        logger.warning(
+            "FOURC_BINARY is set to %r, which is not a file; NOT falling back "
+            "to the search path, because the binary OASiS tests must be the one "
+            "you named", env_path)
+        return None
     if env_path and Path(env_path).is_file():
         return Path(env_path)
     if FOURC_ROOT:
@@ -81,6 +172,20 @@ class FourcBackend(SolverBackend):
         local_gen = Path(__file__).parent / "generators" / "__init__.py"
         if not local_gen.exists():
             return BackendStatus.MISCONFIGURED, "4C generators not found in oasis"
+
+        # Confirm the binary IS 4C, not merely that a file exists and is
+        # executable. `FOURC_BINARY=/bin/true` used to report
+        # "available — 4C at /bin/true", so a stale path, a wrong build, or a
+        # same-named program on PATH was indistinguishable from a working
+        # install. An agent consults `discover`, believes it, and every run then
+        # fails for a reason the availability report has already ruled out —
+        # which is the worst place to be wrong.
+        ident_ok, ident_why = _identifies_as_fourc(binary)
+        if not ident_ok:
+            return BackendStatus.MISCONFIGURED, (
+                f"the binary at {binary} does not identify itself as 4C "
+                f"({ident_why}). Point FOURC_BINARY at a real 4C build; a file "
+                f"that merely exists and is executable is not a solver.")
         return BackendStatus.AVAILABLE, f"4C at {binary}"
 
     def input_format(self) -> InputFormat:
@@ -92,7 +197,7 @@ class FourcBackend(SolverBackend):
             return None
         import subprocess
         try:
-            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=5, stdin=subprocess.DEVNULL)
             for line in r.stdout.splitlines():
                 if "version" in line.lower():
                     return line.strip()
@@ -111,9 +216,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("plasticity", "Elasto-plasticity: J2/von Mises, Drucker-Prager, GTN damage, crystal plasticity", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["linear_2d", "nonlinear_3d"]),
+            # heat_transient_2d was reachable through generate_input()
+            # and produced a running One-Step-Theta deck, but was absent
+            # from template_variants, so no tool could select it and no
+            # caller could discover it. Registered 2026-08-03 after
+            # executing both variants on the installed 4C (both rc=0).
             PhysicsCapability("heat", "Heat conduction", [2, 3],
                               ["QUAD4", "HEX8"],
-                              ["heat_2d"]),
+                              ["heat_2d", "heat_transient_2d"]),
             PhysicsCapability("fluid", "Incompressible Navier-Stokes", [2, 3],
                               ["QUAD4", "HEX8"],
                               ["channel_2d", "cavity_2d"]),
@@ -126,15 +236,29 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("beams", "Beam elements", [2, 3],
                               ["BEAM3R", "BEAM3EB"],
                               ["cantilever_static", "cantilever_dynamic"]),
+            # inline_penalty_3d FIRST: it is the only contact variant
+            # that is self-contained (inline nodes + elements) and runs
+            # without FOURC_ROOT or an external Exodus mesh. penalty_3d
+            # is the tutorial/format-template route and needs both.
             PhysicsCapability("contact", "Contact mechanics", [3],
                               ["HEX8"],
-                              ["penalty_3d"]),
+                              ["inline_penalty_3d", "penalty_3d"]),
             PhysicsCapability("particle_pd", "Peridynamics (bond-based)", [2],
                               ["particle"],
                               ["plate_2d", "impact_2d"]),
+            # Variants renamed 2026-08-07 to match the deck that now ships.
+            # "poiseuille_2d" served a hydrostatic column and
+            # "normal_impact_1d" a 3-D settling pack; a name that describes a
+            # different experiment than the deck is the same class of defect
+            # as a wrong key, and harder to notice because nothing errors.
             PhysicsCapability("particle_sph", "Smoothed particle hydrodynamics", [2],
                               ["particle"],
-                              ["poiseuille_2d", "dam_break_2d"]),
+                              ["hydrostatic_2d", "dam_break_2d"]),
+            PhysicsCapability("particle_dem",
+                              "Discrete element method (granular contact, "
+                              "friction, rolling, adhesion, walls)",
+                              [1, 2, 3], ["particle"],
+                              ["settling_3d"]),
             PhysicsCapability("tsi", "Thermo-structure interaction", [2, 3],
                               ["SOLIDSCATRA HEX8"],
                               ["monolithic_3d", "oneway_3d",
@@ -199,9 +323,14 @@ class FourcBackend(SolverBackend):
             PhysicsCapability("multiscale", "Multiscale FE-squared (computational homogenisation)", [3],
                               ["SOLID HEX8"],
                               ["fe2_3d"]),
+            # single_phase_3d listed FIRST because it is the only one of
+            # the three that generates a complete deck and runs (rc=0 on
+            # the installed 4C, 2026-08-03); terzaghi_2d and
+            # consolidation_3d fall through to the ~1 kB reference-stub
+            # template and are documentation, not runnable input.
             PhysicsCapability("porous_media", "Poroelasticity (Biot/mixture theory, consolidation)", [2, 3],
                               ["WALLQ4PORO", "WALLQ9PORO", "SOLIDH8PORO", "SOLIDT4PORO"],
-                              ["terzaghi_2d", "consolidation_3d"]),
+                              ["single_phase_3d", "terzaghi_2d", "consolidation_3d"]),
             # New physics
             PhysicsCapability("membrane", "Membrane elements (inflatable, fabric, tissue)", [2, 3],
                               ["MEMBRANE TRI3", "MEMBRANE QUAD4"], ["membrane_2d"]),
@@ -345,6 +474,16 @@ class FourcBackend(SolverBackend):
         if variant in ("umbrella", "N/A"):
             return self._umbrella_template(physics, variant)
 
+        # Executed deck templates come first. Every entry in
+        # backends.fourc.decks was run on the installed binary and exited 0,
+        # which is a stronger guarantee than any other branch below offers,
+        # and the pairs it covers are exactly the ones that used to fall
+        # through to the "Not a runnable input" stub.
+        from backends.fourc import decks as _decks
+        _deck = _decks.render(physics, variant)
+        if _deck is not None:
+            return _deck
+
         # First try inline mesh generators (self-contained, no external files)
         try:
             return self._generate_inline(physics, variant, params)
@@ -416,154 +555,6 @@ class FourcBackend(SolverBackend):
         # Map (physics, variant) → (problemtype, description,
         # required sections, pitfalls).
         stubs: dict[tuple[str, str], dict] = {
-            ("plasticity", "linear_2d"): {
-                "problemtype": "Structure",
-                "summary": ("Elasto-plasticity (small-strain "
-                            "J2 / von Mises with isotropic "
-                            "hardening) on a 2D QUAD4 mesh."),
-                "needs": ["MAT_Struct_PlasticLinElast or "
-                          "MAT_Struct_J2Plast with parameters "
-                          "YIELD, ISOHARD",
-                          "STRUCTURE GEOMETRY with WALL→SOLID "
-                          "QUAD4 elements (post-2026.3 rename)",
-                          "STRUCTURAL DYNAMIC with "
-                          "DYNAMICTYPE: Statics or GenAlpha",
-                          "Solver section with appropriate "
-                          "Newton tolerance for plastic step"],
-                "pitfalls": ["YIELD too low → instant plastic "
-                             "yielding; mesh-dependent",
-                             "ISOHARD = 0 with finite YIELD → "
-                             "perfectly plastic; non-unique "
-                             "solution at limit load"],
-            },
-            ("plasticity", "nonlinear_3d"): {
-                "problemtype": "Structure",
-                "summary": ("Finite-strain plasticity (J2 or "
-                            "GTN damage) on a 3D HEX8 mesh."),
-                "needs": ["MAT_Struct_PlasticNlnLogNeoHooke "
-                          "or MAT_Struct_PlasticGTND2 (with "
-                          "GTN-damage params f0, fcr, fF)",
-                          "STRUCTURE GEOMETRY with SOLID HEX8 "
-                          "elements + KINEM nonlinear",
-                          "STRUCTURAL DYNAMIC with DYNAMICTYPE: "
-                          "Statics (quasi-static) or GenAlpha"],
-                "pitfalls": ["KINEM 'linear' kills geometric "
-                             "nonlinearity → wrong necking",
-                             "GTN nucleation (eN, sN, fN) "
-                             "tuning critical for ductile "
-                             "fracture initiation"],
-            },
-            ("particle_pd", "impact_2d"): {
-                "problemtype": "Particle",
-                "summary": ("Bond-based peridynamics impact "
-                            "problem with two PD bodies: a "
-                            "pdphase target and a boundaryphase "
-                            "impactor with prescribed velocity."),
-                "needs": ["MAT_PD_ElastBondbased with bulk "
-                          "modulus K and critical_stretch s0",
-                          "Two PARTICLE_PHASE sections "
-                          "(target pdphase + impactor "
-                          "boundaryphase)",
-                          "BINNING STRATEGY with appropriate "
-                          "BIN_SIZE_LOWER_BOUND",
-                          "PARTICLE DYNAMIC with explicit time "
-                          "integration; CFL: dt < c_safety * "
-                          "dx / wave speed"],
-                "pitfalls": ["BIN_SIZE_LOWER_BOUND too large → "
-                             "neighbor search slow / OOM",
-                             "critical_stretch too low → "
-                             "spurious bond breakage at "
-                             "boundaries"],
-            },
-            ("particle_sph", "dam_break_2d"): {
-                "problemtype": "Particle",
-                "summary": ("SPH dam-break: 2D rectangular "
-                            "column of fluid collapsing onto a "
-                            "rigid floor under gravity."),
-                "needs": ["MAT_ParticleSPHFluid (the material "
-                          "name is case-sensitive and appears "
-                          "in 60 upstream decks)",
-                          "PARTICLE_PHASE for the fluid "
-                          "column + a boundaryphase for the "
-                          "floor/walls",
-                          "PARTICLE DYNAMIC with explicit "
-                          "time integration + appropriate "
-                          "CFL"],
-                "pitfalls": ["[Input] There is no SOUNDSPEED key "
-                             "and no SMOOTHING_LENGTH key in 4C's "
-                             "SPH input. Both were previously "
-                             "served here as required material "
-                             "parameters, one with a numeric "
-                             "tuning rule; neither appears in any "
-                             "file of 4C's source or in any of "
-                             "its 2171 upstream decks. Signal: "
-                             "writing either into MATERIALS "
-                             "aborts with \"Failed to match "
-                             "specification in section "
-                             "'MATERIALS'\" — the same message a "
-                             "mis-cased real key produces, so the "
-                             "message alone does not tell you "
-                             "which mistake you made. Check names "
-                             "against `4C -p`, which dumps the "
-                             "accepted grammar from the binary. "
-                             "(Verified 2026-08-07)"],
-            },
-            ("porous_media", "terzaghi_2d"): {
-                "problemtype": "Poroelasticity",
-                "summary": ("Terzaghi 1-D consolidation "
-                            "benchmark — saturated soil "
-                            "column under instantaneously "
-                            "applied surface load, pore "
-                            "pressure dissipates over time."),
-                "needs": ["MAT_FluidPoro (for the fluid "
-                          "phase) + MAT_Struct_StVenantKirchhoff "
-                          "or PLN_ELASTIC (for the solid "
-                          "skeleton)",
-                          "STRUCTURE GEOMETRY with "
-                          "WALLQ4PORO elements (NOT plain "
-                          "WALL — the poro suffix is "
-                          "required)",
-                          "POROELASTICITY DYNAMIC with "
-                          "monolithic coupling (NOT "
-                          "partitioned for the consolidation "
-                          "stage)",
-                          "Drainage BC at the top surface "
-                          "(zero pore pressure)"],
-                "pitfalls": ["Time scale: poro is "
-                             "DYNAMIC formulation — slow "
-                             "load ramp >>10 * H/sqrt(E/rho) "
-                             "to avoid elastic waves",
-                             "Permeability k too small → "
-                             "no consolidation in run time; "
-                             "rule of thumb t_final >> H^2 "
-                             "/ (c_v) where c_v = k*E/mu_f"],
-            },
-            ("porous_media", "consolidation_3d"): {
-                "problemtype": "Poroelasticity",
-                "summary": ("3-D consolidation under "
-                            "distributed surface load — "
-                            "axisymmetric or rectangular "
-                            "footprint; HEX8 SOLIDH8PORO "
-                            "elements."),
-                "needs": ["Same MAT_FluidPoro + solid "
-                          "skeleton as terzaghi_2d",
-                          "STRUCTURE GEOMETRY with "
-                          "SOLIDH8PORO (3D variant)",
-                          "POROELASTICITY DYNAMIC with "
-                          "monolithic coupling",
-                          "Drainage BC on the loaded "
-                          "surface"],
-                "pitfalls": ["Element-locking: at low "
-                             "permeability, the standard "
-                             "displacement-based formulation "
-                             "locks volumetrically; use "
-                             "u-p mixed (SOLIDH8PORO is "
-                             "p1-p1 stabilised) or check "
-                             "for incompressibility "
-                             "locking",
-                             "Slow load ramp same as "
-                             "terzaghi_2d"],
-            },
             # ── Deep multiphysics rows that genuinely need a
             #    case-specific mesh (often TWO meshes), a second
             #    input file, patient-derived topology, an explicit
@@ -572,452 +563,16 @@ class FourcBackend(SolverBackend):
             #    so they are honest reference stubs instead of a
             #    guaranteed MPI_Abort from the placeholder template
             #    (probe 2026-06-12).
-            ("fsi_xfem", "xfem_fsi_3d"): {
-                "problemtype": "Fluid_Structure_Interaction_XFEM",
-                "summary": ("XFEM fluid-structure interaction: a "
-                            "structure is immersed in a fixed "
-                            "background fluid mesh; the interface "
-                            "is captured by XFEM enrichment with "
-                            "Nitsche coupling (no ALE)."),
-                "needs": ["TWO meshes: a background fluid HEX8 "
-                          "block + a separate immersed structure "
-                          "HEX8 body (cannot be one inline grid)",
-                          "XFLUID DYNAMIC + XFLUID DYNAMIC/GHOST "
-                          "PENALTY sections with a Nitsche "
-                          "penalty parameter",
-                          "STRUCTURAL DYNAMIC (GenAlpha) + FLUID "
-                          "DYNAMIC (Np_Gen_Alpha) + two solvers"],
-                "pitfalls": ["BUILD LIMITATION: this 4C build "
-                             "appears to lack Qhull — the Cut "
-                             "library's tessellation backend. "
-                             "Interface cutting aborts in "
-                             "Cut::TetMesh::call_q_hull (observed "
-                             "for level-set on this build). "
-                             "Rebuild 4C with Qhull enabled before "
-                             "expecting XFEM cut cases to run.",
-                             "Nitsche penalty too small → unstable "
-                             "interface traction; too large → "
-                             "ill-conditioned system"],
-            },
-            ("xfem_fluid", "xfem_3d"): {
-                "problemtype": "Fluid_XFEM",
-                "summary": ("XFEM fluid with an embedded interface "
-                            "(void, obstacle, or two-phase) on a "
-                            "non-conforming background mesh; "
-                            "Nitsche coupling enforces interface "
-                            "conditions weakly."),
-                "needs": ["A background fluid HEX8 mesh PLUS a "
-                          "separate cutter mesh or level-set "
-                          "function defining the interface",
-                          "XFLUID DYNAMIC + XFLUID DYNAMIC/GHOST "
-                          "PENALTY sections",
-                          "MAT_fluid + appropriate stabilisation"],
-                "pitfalls": ["BUILD LIMITATION: this 4C build "
-                             "appears to lack Qhull (Cut-library "
-                             "tessellation). A cut element aborts "
-                             "in Cut::TetMesh::call_q_hull "
-                             "(observed for level-set here). "
-                             "Rebuild with Qhull before running "
-                             "XFEM cut cases.",
-                             "Ghost-penalty factor controls "
-                             "stability of small cut fractions"],
-            },
-            ("fs3i", "fs3i_3d"): {
-                "problemtype": ("Fluid_Porous_Structure_Scalar_"
-                                "Scalar_Interaction"),
-                "summary": ("FS3I: 5-field coupling — fluid + "
-                            "structure + ALE + a fluid-side scalar "
-                            "+ a structure-side scalar (e.g. drug "
-                            "mass transfer through a vessel wall)."),
-                "needs": ["Separate fluid and structure HEX8 "
-                          "meshes sharing a matched FSI interface "
-                          "(two node sets) — not a single grid",
-                          "STRUCTURAL + FLUID + ALE + FSI DYNAMIC + "
-                          "two SCALAR TRANSPORT fields with S2I "
-                          "interface coupling",
-                          "Monolithic or partitioned FSI solver "
-                          "block with shape derivatives"],
-                "pitfalls": ["Interface meshes must be conforming "
-                             "(matching nodes) or a mortar "
-                             "projection is required",
-                             "Scalar interface permeability sets "
-                             "the transfer rate — easy to make "
-                             "the transport trivially zero"],
-            },
-            ("fpsi", "monolithic_3d"): {
-                "problemtype": "Fluid_Porous_Structure_Interaction",
-                "summary": ("FPSI: free Navier-Stokes fluid over a "
-                            "deformable Biot porous bed, monolithic "
-                            "coupling, with ALE tracking the free-"
-                            "fluid boundary."),
-                "needs": ["TWO meshes: a free-fluid HEX8 domain and "
-                          "a porous HEX8 domain sharing the FPSI "
-                          "interface (fluid-side + poro-side node "
-                          "sets)",
-                          "FLUID + POROELASTICITY + ALE + FPSI "
-                          "DYNAMIC sections",
-                          "MAT_FluidPoro skeleton + pore-fluid "
-                          "materials on the porous block"],
-                "pitfalls": ["Beavers-Joseph-Saffman interface "
-                             "condition parameters strongly affect "
-                             "the slip velocity",
-                             "Monolithic FPSI needs a block "
-                             "preconditioner tuned per field — the "
-                             "default may not converge"],
-            },
-            ("ehl", "ehl_3d"): {
-                "problemtype": "Elastohydrodynamic_Lubrication",
-                "summary": ("Elastohydrodynamic lubrication: a 2-D "
-                            "Reynolds lubrication film coupled to a "
-                            "3-D elastic body — film pressure "
-                            "deforms the body, which changes the "
-                            "film geometry."),
-                "needs": ["TWO meshes of different dimension: a 2-D "
-                          "QUAD4 lubrication film + a 3-D HEX8 "
-                          "elastic body whose contact surface "
-                          "receives the film pressure",
-                          "STRUCTURAL DYNAMIC + LUBRICATION DYNAMIC "
-                          "+ EHL DYNAMIC coupling sections",
-                          "MAT_lubrication + a structural material"],
-                "pitfalls": ["The film-to-surface projection "
-                             "(matching or mortar) must be set up "
-                             "per geometry",
-                             "Cavitation handling in the Reynolds "
-                             "solver is needed for diverging gaps"],
-            },
-            ("fbi", "penalty_3d"): {
-                "problemtype": "Fluid_Beam_Interaction",
-                "summary": ("Fluid-beam interaction: a flexible "
-                            "beam immersed in a 3-D fluid channel, "
-                            "coupled by a penalty drag term."),
-                "needs": ["TWO meshes: a fluid HEX8 channel + a "
-                          "separate beam LINE2 mesh embedded in it",
-                          "FBI DYNAMIC (penalty parameter) + "
-                          "STRUCTURAL + FLUID DYNAMIC + a BINNING "
-                          "STRATEGY for the beam-fluid search",
-                          "MAT_BeamReissnerElastHyper + MAT_fluid"],
-                "pitfalls": ["Penalty parameter trades coupling "
-                             "accuracy against conditioning",
-                             "BIN_SIZE_LOWER_BOUND must cover the "
-                             "beam-fluid search radius or pairs are "
-                             "missed"],
-            },
-            ("pasi", "dem_impact_3d"): {
-                "problemtype": "Particle_Structure_Interaction",
-                "summary": ("Particle-structure interaction: DEM "
-                            "granular particles impact a deformable "
-                            "structural plate via Hertz contact."),
-                "needs": ["A structural HEX8 plate mesh PLUS an "
-                          "explicit cloud of DEM particles (a "
-                          "PARTICLES section with per-particle "
-                          "positions, radii, phases)",
-                          "PARTICLE DYNAMIC (INTERACTION DEM) + "
-                          "PASI DYNAMIC + STRUCTURAL DYNAMIC + a "
-                          "BINNING STRATEGY with the domain box",
-                          "MAT_ParticleMaterialDEM + a structural "
-                          "material"],
-                "pitfalls": ["Explicit DEM time step must satisfy "
-                             "the Rayleigh/contact-stiffness CFL or "
-                             "it explodes",
-                             "DOMAINBOUNDINGBOX must enclose all "
-                             "particle motion"],
-            },
-            ("ssi", "monolithic_elch_3d"): {
-                "problemtype": "Structure_Scalar_Interaction",
-                "summary": ("Monolithic structure-scalar (electro"
-                            "chemistry) interaction: two electrode "
-                            "blocks with a scatra-scatra interface "
-                            "(S2I) using Butler-Volmer kinetics; "
-                            "lithium intercalation swells the "
-                            "structure."),
-                "needs": ["A mesh with TWO electrode blocks sharing "
-                          "an S2I interface (matching node sets on "
-                          "each side) — not a single block",
-                          "SSI CONTROL (COUPALGO ssi_Monolithic, "
-                          "SCATRATIMINTTYPE Elch) + SCALAR "
-                          "TRANSPORT/S2I COUPLING + ELCH CONTROL",
-                          "SOLIDSCATRA elements + electrode/"
-                          "electrolyte materials with kinetics"],
-                "pitfalls": ["S2I requires matching (or mortar) "
-                             "interface meshes; mismatched nodes "
-                             "silently drop the coupling",
-                             "Butler-Volmer exchange current "
-                             "density sets the interface "
-                             "overpotential — easy to stall"],
-            },
-            ("ssti", "monolithic_3d"): {
-                "problemtype": "Structure_Scalar_Thermo_Interaction",
-                "summary": ("Monolithic structure-scalar-thermo "
-                            "interaction: structural mechanics + "
-                            "electrochemical scalar transport + "
-                            "thermal field, with S2I interface "
-                            "coupling and thermal expansion."),
-                "needs": ["A multi-block electrode mesh with an S2I "
-                          "interface (as for ssi) plus a cloned "
-                          "thermal field",
-                          "SSI CONTROL + TSI DYNAMIC + SCALAR "
-                          "TRANSPORT + THERMAL DYNAMIC monolithic "
-                          "sub-couplings",
-                          "SOLIDSCATRA elements + electrode + "
-                          "Fourier materials via mesh cloning"],
-                "pitfalls": ["Three coupled fields: the monolithic "
-                             "block preconditioner must be tuned or "
-                             "Newton stalls",
-                             "Same S2I matching-mesh requirement as "
-                             "ssi"],
-            },
-            ("sti", "monolithic_3d"): {
-                "problemtype": "Scalar_Thermo_Interaction",
-                "summary": ("Monolithic scalar-thermo interaction: "
-                            "coupled scalar transport and thermal "
-                            "fields with the Soret effect (thermo"
-                            "diffusion) and reaction heat sources."),
-                "needs": ["A single HEX8 domain is enough, BUT the "
-                          "scatra field must be cloned to a thermo "
-                          "field with matching DOFs and the Soret "
-                          "coupling material set up",
-                          "STI DYNAMIC (COUPALGO sti_Monolithic) + "
-                          "SCALAR TRANSPORT + THERMAL DYNAMIC + the "
-                          "monolithic solver block",
-                          "MAT_soret (couples concentration and "
-                          "temperature) + MAT_Fourier + MAT_scatra"],
-                "pitfalls": ["The Soret coefficient links the two "
-                             "fields; with it zero the problem "
-                             "decouples and the 'interaction' is "
-                             "meaningless",
-                             "Initial fields for both temperature "
-                             "and concentration must be consistent"],
-            },
-            ("cardiac_monodomain", "monodomain_3d"): {
-                "problemtype": "Cardiac_Monodomain",
-                "summary": ("Cardiac electrophysiology: action-"
-                            "potential propagation through a tissue "
-                            "slab via the monodomain reaction-"
-                            "diffusion equation with an ionic cell "
-                            "model."),
-                "needs": ["A tissue HEX8/TET4 mesh WITH per-element "
-                          "fiber directions (anisotropic "
-                          "conductivity) — fibers are case-specific",
-                          "SCALAR TRANSPORT DYNAMIC (nonlinear, "
-                          "monodomain) + a stimulation Neumann "
-                          "condition with a pulse function",
-                          "MAT_myocard with an ionic cell MODEL "
-                          "(e.g. TenTusscher, MinimalModel) and "
-                          "DIFF1/2/3 fiber/sheet/normal conduction"],
-                "pitfalls": ["Mesh must resolve the depolarisation "
-                             "wavefront (~0.2 mm) or conduction "
-                             "velocity is wrong",
-                             "Ionic model + time step must match "
-                             "(stiff models need small dt)"],
-            },
-            ("arterial_network", "single_artery_1d"): {
-                "problemtype": "ArterialNetwork",
-                "summary": ("1-D arterial pulse-wave propagation: a "
-                            "compliant artery with a prescribed "
-                            "inlet flow and a 3-element Windkessel "
-                            "(RCR) outlet."),
-                "needs": ["A 1-D ARTERY line mesh (NODE COORDS + "
-                          "ARTERY LINE2 elements) — the network "
-                          "topology is case-specific",
-                          "ARTERIAL DYNAMIC + an inflow waveform "
-                          "FUNCT + DESIGN POINT WINDKESSEL "
-                          "CONDITIONS at the outlet",
-                          "MAT_cnst_art (wall Young, thickness, "
-                          "reference area, blood density/"
-                          "viscosity)"],
-                "pitfalls": ["Windkessel R/C values set the "
-                             "reflection coefficient — wrong values "
-                             "give nonphysical pressure",
-                             "Time step must resolve the pulse "
-                             "wave-speed CFL along the segment"],
-            },
-            ("reduced_airways", "airways_1d"): {
-                "problemtype": "ReducedDimensionalAirWays",
-                "summary": ("1-D reduced-dimensional airway tree: a "
-                            "branching network of compliant airway "
-                            "segments from trachea to terminal "
-                            "bronchioles, terminating in acinar "
-                            "compartments."),
-                "needs": ["An airway-tree line mesh (REDAIRWAY "
-                          "LINE2 elements) with physiologically "
-                          "ordered branching — derived per patient, "
-                          "not generic",
-                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC + "
-                          "ACINUS sub-section + a tracheal pressure "
-                          "(breathing) waveform",
-                          "MAT_redairway_material (proximal + "
-                          "distal) + MAT_redairway_acinus_material"],
-                "pitfalls": ["Tree topology must follow a Horsfield/"
-                             "Strahler ordering or the resistance "
-                             "network is unphysical",
-                             "Acinar compliance varies with disease "
-                             "(emphysema, fibrosis, ARDS)"],
-            },
-            ("reduced_lung", "lung_1d"): {
-                "problemtype": "ReducedLung",
-                "summary": ("Reduced-dimensional lung: a 1-D airway "
-                            "tree coupled to 0-D alveolar acini and "
-                            "optionally a 3-D parenchyma."),
-                "needs": ["A patient-derived 1-D airway tree (NODE "
-                          "COORDS + ARTERY/REDAIRWAY elements) plus "
-                          "per-acinus compliance distribution",
-                          "REDUCED DIMENSIONAL AIRWAYS DYNAMIC and "
-                          "the 1D-0D (or 3D-0D mortar) coupling "
-                          "setup",
-                          "Airway wall + acinar materials"],
-                "pitfalls": ["1D-0D coupling matches flow/pressure "
-                             "at outlets — inconsistent units stall "
-                             "the solve",
-                             "Tree must be physiologically "
-                             "reasonable (see reduced_airways)"],
-            },
-            ("multiscale", "fe2_3d"): {
-                "problemtype": "Structure",
-                "summary": ("FE^2 computational homogenisation: each "
-                            "macro Gauss point evaluates its "
-                            "constitutive response by solving a "
-                            "micro-scale RVE boundary-value "
-                            "problem."),
-                "needs": ["TWO input files: this MACRO file PLUS a "
-                          "separate MICRO RVE input file referenced "
-                          "by MICRO_INPUT_FILE",
-                          "MAT_Struct_Multiscale on the macro mesh "
-                          "(points to the micro file + micro solver "
-                          "id)",
-                          "A macro structural mesh + the full RVE "
-                          "definition (mesh, material, periodic "
-                          "BCs) in the micro file"],
-                "pitfalls": ["The RVE must be large enough to be a "
-                             "representative volume or the "
-                             "homogenised response is mesh-"
-                             "dependent",
-                             "FE^2 is expensive: one micro solve per "
-                             "macro Gauss point per Newton step"],
-            },
-            ("beam_interaction", "beam_contact_3d"): {
-                "problemtype": "Structure",
-                "summary": ("Beam-to-beam contact: two or more beams "
-                            "interacting via penalty contact "
-                            "(crossing, sliding)."),
-                "needs": ["A mesh with TWO (or more) separate beam "
-                          "LINE2 element blocks positioned to come "
-                          "into contact",
-                          "BEAM INTERACTION (STRATEGY beam_to_beam_"
-                          "contact) + BEAM TO BEAM CONTACT penalty "
-                          "+ a BINNING STRATEGY",
-                          "MAT_BeamReissnerElastHyper per beam"],
-                "pitfalls": ["SEARCH_RADIUS / BIN_SIZE_LOWER_BOUND "
-                             "must cover the closest approach or "
-                             "contact pairs are missed",
-                             "Penalty parameter trades penetration "
-                             "against conditioning"],
-            },
-            ("beam_interaction", "beam_solid_meshtying_3d"): {
-                "problemtype": "Structure",
-                "summary": ("Beam-to-solid volume meshtying: a beam "
-                            "embedded in a solid block as a "
-                            "reinforcement, coupled by penalty or "
-                            "mortar volume meshtying."),
-                "needs": ["TWO overlapping meshes: a solid HEX8 "
-                          "block + a beam LINE2 mesh threaded "
-                          "through its interior",
-                          "BEAM INTERACTION (STRATEGY beam_to_solid_"
-                          "volume_meshtying) + the meshtying penalty "
-                          "+ Gauss-point settings + a BINNING "
-                          "STRATEGY",
-                          "Beam material + solid material"],
-                "pitfalls": ["GAUSS_POINTS on the beam controls "
-                             "coupling accuracy vs. cost",
-                             "Beam must actually lie inside the "
-                             "solid volume or no pairs are found"],
-            },
-            ("particle_pd", "plate_2d"): {
-                "problemtype": "Particle",
-                "summary": ("2-D peridynamics: a pre-cracked plate "
-                            "fragmenting under a prescribed boundary "
-                            "velocity, with bond-based PD "
-                            "interaction."),
-                "needs": ["An explicit particle cloud (a PARTICLES "
-                          "section listing every PD point position "
-                          "+ phase) — generated by a meshing "
-                          "script, not an inline grid helper",
-                          "PARTICLE DYNAMIC/SPH and PARTICLE "
-                          "DYNAMIC/PD sub-sections (the SPH block is "
-                          "required even for pure PD) + a BINNING "
-                          "STRATEGY",
-                          "MAT_ParticlePD (Young, critical stretch) "
-                          "+ MAT_ParticleSPHBoundary"],
-                "pitfalls": ["INITIALPARTICLESPACING must match the "
-                             "PD grid spacing and the horizon "
-                             "(typically 3·dx)",
-                             "Explicit time step from the CFL: dt < "
-                             "0.5·dx/sqrt(E/rho)"],
-            },
-            ("particle_sph", "poiseuille_2d"): {
-                "problemtype": "Particle",
-                "summary": ("2-D SPH Poiseuille flow: pressure-"
-                            "driven flow between parallel plates "
-                            "developing the parabolic profile."),
-                "needs": ["An explicit SPH particle cloud (a "
-                          "PARTICLES section with fluid + boundary "
-                          "particle positions) generated by a "
-                          "script — not an inline FE grid",
-                          "PARTICLE DYNAMIC (INTERACTION SPH) + "
-                          "PARTICLE DYNAMIC/SPH (kernel, spacing) + "
-                          "a driving body force + a BINNING "
-                          "STRATEGY",
-                          "MAT_ParticleSPHFluid + "
-                          "MAT_ParticleSPHBoundary"],
-                "pitfalls": ["INITRADIUS must equal the kernel "
-                             "support (≈3·dx for a quintic spline)",
-                             "Bulk modulus sets the artificial "
-                             "speed of sound; too low over-"
-                             "compresses the fluid"],
-            },
-            ("fluid_turbulence", "les_channel_3d"): {
-                "problemtype": "Fluid",
-                "summary": ("Large-eddy simulation of turbulent "
-                            "channel flow with a sub-grid model and "
-                            "periodic streamwise/spanwise "
-                            "directions."),
-                "needs": ["A wall-resolved 3-D HEX8 channel mesh "
-                          "graded to the wall (y+ ~ 1) with periodic "
-                          "boundary surfaces — a coarse inline grid "
-                          "is not a meaningful LES",
-                          "FLUID DYNAMIC with a TURBULENCE MODEL "
-                          "section (e.g. Smagorinsky/dynamic) + "
-                          "periodic boundary conditions + turbulence "
-                          "statistics sampling",
-                          "MAT_fluid at the target Reynolds number"],
-                "pitfalls": ["LES on an under-resolved mesh is "
-                             "physically meaningless — it 'runs' but "
-                             "the statistics are wrong",
-                             "Needs a long sampling time to "
-                             "converge mean/Reynolds-stress "
-                             "profiles"],
-            },
-            ("brownian_dynamics", "brownian_3d"): {
-                "problemtype": "Structure",
-                "summary": ("Brownian dynamics of semiflexible "
-                            "polymer filaments: BEAM3R beams under "
-                            "thermal-fluctuation (stochastic) "
-                            "forcing, optionally with crosslinking."),
-                "needs": ["A beam LINE2/LINE3 filament mesh inside a "
-                          "periodic box + a BROWNIAN DYNAMICS "
-                          "section (thermal energy KT, damping, "
-                          "seed)",
-                          "STRUCTURAL DYNAMIC with a stochastic "
-                          "(statmech) integrator + a BINNING "
-                          "STRATEGY for crosslinker search",
-                          "MAT_BeamReissnerElastHyper with the "
-                          "filament cross-section"],
-                "pitfalls": ["The stochastic time step couples to "
-                             "KT and damping — too large loses the "
-                             "fluctuation-dissipation balance",
-                             "Results are statistical: a single "
-                             "short run is not representative"],
-            },
         }
+        # A stub must never shadow an executed deck. generate_input already
+        # consults backends.fourc.decks first, so a pair present in both would
+        # be dead code that silently rots out of date — and the whole point of
+        # the deck catalog is that its content is the content that ran.
+        from backends.fourc import decks as _decks
+        if _decks.get(physics, variant) is not None:
+            raise AssertionError(
+                f"stub catalog still carries {physics}/{variant}, which now "
+                f"has an executed deck in backends.fourc.decks")
         spec = stubs.get((physics, variant))
         if spec is None:
             return None
@@ -1089,14 +644,77 @@ class FourcBackend(SolverBackend):
             f"#\n"
             f"#   {family}\n"
             f"#\n"
-            f"# Example: prepare_simulation(fourc, "
-            f"{family.split(',')[0].strip()})\n"
-            f"# returns a real template, knowledge dict, and\n"
-            f"# pitfall list for the first concrete child.\n"
+            f"# Below this header is the RUNNABLE template of the\n"
+            f"# first concrete child, verbatim, so a reader who\n"
+            f"# asked the umbrella name still gets something they\n"
+            f"# can execute instead of a dead end.\n"
+            f"# For the other children call prepare_simulation with\n"
+            f"# their name.\n"
             f"# =====================================================\n"
-            f"TITLE:\n"
-            f"  - \"4C umbrella reference for {physics}\"\n"
-        )
+        ) + self._umbrella_child_template(physics, family)
+
+    def _umbrella_child_template(self, physics: str, family: str) -> str:
+        """The smallest concrete child's template that renders whole.
+
+        An umbrella row used to return nothing but a redirect. That is a dead
+        end for exactly the reader it is meant to help: a small model that
+        asked for `thermal` gets a list of names and no deck, and has to guess
+        which name to ask for next. Serving a child's executed template under a
+        header that says plainly which physics it is costs nothing and removes
+        a round trip.
+
+        The size rule is not cosmetic. prepare_simulation truncates a template
+        at 12000 characters, and several children are far above that (fourc's
+        poisson ships a 32x32 inline mesh, ~135 KB). A deck cut off mid-mesh is
+        worse than the redirect it replaced, because it looks complete. So the
+        smallest child that fits with headroom wins, and if none fits the
+        redirect stands.
+        """
+        fallback = (f"TITLE:\n"
+                    f"  - \"4C umbrella reference for {physics}\"\n")
+        # prepare_simulation truncates a template at 12000 characters; leave
+        # headroom for the header this method's caller prepends.
+        BUDGET = 10000
+        # Several inline generators default to a display-hostile mesh (fourc's
+        # poisson_2d is 32x32, ~134 KB). They accept a coarser one, and a
+        # coarse deck that renders whole teaches more than a fine one cut off
+        # mid-mesh, so try the coarse form before giving up on a child.
+        PARAM_TRIES = ({}, {"nx": 4, "ny": 4})
+        best: tuple[int, str, str, str] | None = None
+        for name in (n.strip() for n in family.split(",")):
+            if not name or name.startswith("meta-reference"):
+                continue
+            row = next((p for p in self.supported_physics()
+                        if p.name == name and p.template_variants), None)
+            if row is None:
+                continue
+            for variant in row.template_variants:
+                for params in PARAM_TRIES:
+                    try:
+                        child = self.generate_input(name, variant, dict(params))
+                    except Exception:
+                        continue
+                    if not child or child.lstrip().startswith("# ====="):
+                        continue
+                    if "Not a runnable" in child:
+                        continue
+                    # An external mesh reference makes the template unrunnable
+                    # for anyone who does not have that file. `\bFILE:` matches
+                    # the mesh-file key and deliberately NOT TEKO_XML_FILE /
+                    # MICROFILE, which resolve through FOURC_ROOT and are
+                    # documented on the two decks that need them.
+                    if re.search(r"\bFILE:", child):
+                        continue
+                    if len(child) > BUDGET:
+                        continue
+                    if best is None or len(child) < best[0]:
+                        best = (len(child), name, variant, child)
+                    break
+        if best is None:
+            return fallback
+        _, name, variant, child = best
+        return (f"# ---- concrete child, shown in full: "
+                f"{name} / {variant} ----\n" + child)
 
     def _generate_inline(self, physics: str, variant: str, params: dict) -> str:
         """Generate self-contained input with inline mesh (no external files)."""
@@ -1129,6 +747,7 @@ class FourcBackend(SolverBackend):
             matched_fluid_cavity_input,
             matched_fluid_channel_input,
             matched_reduced_airways_input,
+            matched_contact_3d_input,
         )
         key = f"{physics}_{variant}"
 
@@ -1282,10 +901,10 @@ class FourcBackend(SolverBackend):
             # plane-strain thermo-mechanics. 4C has NO 2D TSI elements
             # (module solid_scatra_3D_ele; every TSI corpus test is 3D)
             # and the 2D structural eletypes both dead-end with the
-            # thermo material on the deployed binary (T14 campaign
-            # 2026-07: WALL QUAD4 -> "Invalid type of material law for
-            # wall element"; SOLID QUAD4 -> "Element 'SOLID' does not
-            # seem to know cell type 'quad4'"). One SOLIDSCATRA HEX8
+            # thermo material on current builds (WALL QUAD4 -> "Invalid
+            # type of material law for wall element"; SOLID QUAD4 ->
+            # "Element 'SOLID' does not seem to know cell type
+            # 'quad4'"). One SOLIDSCATRA HEX8
             # layer with u_z fixed everywhere is exact plane strain;
             # temp_expr imposes a (partner-computed) temperature field.
             "tsi_plane_strain_2d":
@@ -1306,7 +925,7 @@ class FourcBackend(SolverBackend):
             # heated-beam input. Existed in inline_mesh since the
             # coupled_solve era but was never exposed as a variant —
             # and carried the silent COUPVARIABLE default bug (ran
-            # rc=0, zero displacement) until 2026-08-01.
+            # rc=0, zero displacement) until that was fixed.
             "tsi_oneway_3d":
                 lambda p: matched_tsi_oneway_input(
                     nx=min(int(p.get("nx", 4)), 8),
@@ -1336,6 +955,22 @@ class FourcBackend(SolverBackend):
             # inline BEAM3R cantilevers; the tip load scales with E,
             # so the probe's E=1000 override converges like the
             # default E=1e7.
+            # contact/inline_penalty_3d: the ONLY self-contained contact
+            # variant. contact/penalty_3d needs FOURC_ROOT and an external
+            # Exodus mesh; without them it falls through to the
+            # <placeholder> format template, which cannot run (4C's
+            # MatchTree rejects "TIMESTEP: <load_step_size>"). This one
+            # carries its own nodes and elements and completes every load
+            # step on the deployed 4C (verified by execution 2026-08-03).
+            "contact_inline_penalty_3d":
+                lambda p: matched_contact_3d_input(
+                    nx=int(p.get("nx", 2)), ny=int(p.get("ny", 2)),
+                    nz=int(p.get("nz", 2)),
+                    gap=p.get("gap", 0.1),
+                    indent=p.get("indent", 0.3),
+                    penalty=p.get("penalty", 1.0e4),
+                    E=p.get("E", 1000.0), nu=p.get("nu", 0.3),
+                    n_steps=int(p.get("n_steps", 10))),
             "beams_cantilever_static":
                 lambda p: matched_beam_cantilever_static_input(
                     n_elem=p.get("n_elem", 10),
@@ -1378,12 +1013,14 @@ class FourcBackend(SolverBackend):
                                              / p.get("dt", 0.1)))),
                 timestep=p.get("dt", 0.1)),
             # thermo_transient_mms/temporal_mms_2d: unsteady-heat MMS
-            # family graded on TEMPORAL convergence order (E3,
-            # 2026-08-01). Fixed fine mesh keyed off "n" (capped in
-            # the inline builder), dt-halving to the same T_end;
-            # One-Step-Theta shows measured order ~2 at theta=0.5
-            # (Richardson 2.018/2.004) and ~1 at theta=1.0
-            # (0.95/1.00/1.05 vs exact) on this build. The volumetric
+            # family graded on TEMPORAL convergence order. Fixed fine
+            # mesh keyed off "n" (capped in the inline builder),
+            # dt-halving to the same T_end, so the only thing varying
+            # is dt. One-Step-Theta is 2nd-order in time at theta=0.5
+            # and 1st-order at theta=1; grade theta=0.5 from Richardson
+            # differences of consecutive-dt solutions rather than from
+            # an error-vs-exact table, which saturates at the fixed
+            # mesh's spatial floor. The volumetric
             # MMS source goes through the PLAIN "DESIGN SURF NEUMANN
             # CONDITIONS" — the THERMO-prefixed Neumann sections are
             # silently ignored in standalone Thermo (see the
@@ -1565,7 +1202,18 @@ class FourcBackend(SolverBackend):
         mesh_rel = tutorials[key][1]
         mesh_path = FOURC_ROOT / "tests" / mesh_rel
         if mesh_path.exists():
-            content = f"# MESH_FILE: {mesh_path}\n" + content
+            # Give the RELATIVE location as well as the resolved one. The
+            # absolute path is what this host needs to run the deck, but it is
+            # also what an agent copies — and a served deck naming
+            # `/home/<someone>/4C/tests/...` is a dead end on every other
+            # machine. These meshes ship WITH 4C, so anyone who has 4C has them;
+            # only the prefix differs. Naming FOURC_ROOT turns an unusable
+            # absolute path into a locatable one.
+            content = (f"# MESH_FILE: {mesh_path}\n"
+                       f"# MESH_FILE_RELATIVE: $FOURC_ROOT/tests/{mesh_rel}"
+                       f"  (ships with 4C; the absolute path above is this "
+                       f"host's — resolve it against your own FOURC_ROOT)\n"
+                       + content)
         return content
 
     def _resolve_mesh_references(self, content: str) -> str:
@@ -1577,7 +1225,15 @@ class FourcBackend(SolverBackend):
             mesh_name = match.group(1)
             # Search for the mesh in tests/
             for mesh_path in FOURC_ROOT.rglob(mesh_name):
-                content = f"# MESH_FILE: {mesh_path}\n" + content
+                try:
+                    rel = mesh_path.relative_to(FOURC_ROOT)
+                except ValueError:
+                    rel = mesh_path.name
+                content = (f"# MESH_FILE: {mesh_path}\n"
+                           f"# MESH_FILE_RELATIVE: $FOURC_ROOT/{rel}"
+                           f"  (the absolute path above is this host's — "
+                           f"resolve it against your own FOURC_ROOT)\n"
+                           + content)
                 break
         return content
 

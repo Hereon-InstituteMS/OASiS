@@ -15,14 +15,21 @@ Empirically:
   SurfaceLoadCondition (no shape)  NOT registered
   SurfaceLoadCondition3D3N    registered as Condition (via SMA)
   SurfaceLoadCondition3D4N    same
+
+Mutation control: T2_MUTATE=1 gives the bare SurfaceLoadCondition name its 3D3N shape suffix in the condition probe, so it registers and base_name_as_condition_rejected goes False.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import KratosMultiphysics as KM
 import KratosMultiphysics.StructuralMechanicsApplication  # noqa: F401
 import KratosMultiphysics.IgaApplication  # noqa: F401
+
+MUTATE = os.environ.get("T2_MUTATE") == "1"
+if MUTATE:
+    print("mutation=base_surface_load_name_given_its_shape_suffix")
 
 
 def main() -> int:
@@ -40,9 +47,10 @@ def main() -> int:
             "SurfaceLoadCondition", 1, [1, 2, 3], props)
     except Exception as exc:  # noqa: BLE001
         elt_fail = "is not registered" in str(exc)
+    base_cond = ("SurfaceLoadCondition3D3N" if MUTATE
+                 else "SurfaceLoadCondition")
     try:
-        mp.CreateNewCondition(
-            "SurfaceLoadCondition", 1, [1, 2, 3], props)
+        mp.CreateNewCondition(base_cond, 1, [1, 2, 3], props)
     except Exception as exc:  # noqa: BLE001
         cond_fail = "is not registered" in str(exc)
     print(f"base_name_as_element_rejected={elt_fail}")

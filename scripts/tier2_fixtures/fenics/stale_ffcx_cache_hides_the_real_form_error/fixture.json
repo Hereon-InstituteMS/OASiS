@@ -1,0 +1,21 @@
+{
+  "_comment": "Tier-2 for fenics thermal_structural#2: after a form-compile failure the FFCx JIT cache is left holding a stale generated .c file, and re-running the SAME script hides the real error behind a JIT timeout. The fixture drives the exact cycle in one process, on a private cache directory passed through jit_options so nothing else can interfere. Attempt 1 compiles the thermo-elastic bilinear form with the thermal term wrongly left inside it and gets the true error, ArityMismatch. Attempt 2 compiles the identical form again against the same cache: instead of the ArityMismatch it pauses for the JIT timeout and raises TimeoutError(\"JIT compilation timed out, probably due to a failed previous compile. Try cleaning cache (e.g. remove <cache>/libffcx_forms_<hash>.c) or increase timeout option.\") chained onto FileExistsError: [Errno 17] File exists: '<that same path>'. Attempt 3 deletes the named file and the real ArityMismatch is back. The JIT timeout is set to 3 s (default 10 s) so the fixture stays quick; the message is the same, it just arrives sooner. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "thermal_structural",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "attempt1_error=ArityMismatch",
+    "failed_compile_left_a_c_file=True",
+    "attempt2_error=TimeoutError",
+    "JIT compilation timed out, probably due to a failed previous compile. Try cleaning cache (e.g. remove",
+    "FileExistsError: [Errno 17] File exists:",
+    "second_run_hides_the_real_error=True",
+    "deleting_the_named_file_restores_the_real_error=True",
+    "VERDICT=stale_ffcx_cache_masks_the_real_form_error"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=cache_did_not_mask_anything"
+  ]
+}

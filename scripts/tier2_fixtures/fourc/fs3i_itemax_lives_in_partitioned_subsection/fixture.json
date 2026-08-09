@@ -1,0 +1,46 @@
+{
+  "_comment": "Tier-2 for fourc::fs3i#5, and a FALSIFICATION of the section it names. The entry told the reader to set ITEMAX in FS3I DYNAMIC. That section has no ITEMAX: writing one aborts at parse time in core/io/src/4C_io_input_spec_builders.cpp line 633 with 'Could not match this input' and the key listed under '[!] The following data remains unused:'. The real home is the FS3I DYNAMIC/PARTITIONED subsection, alongside COUPALGO and CONVTOL, and its ITEMAX already defaults to 10 — so the outer scalar loop is bounded whether or not it is set, contradicting the entry's 'lets the outer scalar coupling iterate indefinitely'. Written there on upstream fs3i_part_1wc_infperm.4C.yaml it is accepted and the deck still passes all three result tests. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fs3i",
+  "pitfall_index": 5,
+  "mode": "cmd",
+  "timeout_seconds": 480,
+  "expect_in_output": [
+    "CLAIMED_ARM_HAS_ITEMAX=1",
+    "REAL_ARM_HAS_PARTITIONED_SECTION=1",
+    "EXIT_PLAIN=0",
+    "EXIT_CLAIMED=1",
+    "EXIT_REAL=0",
+    "OK (3)",
+    "processor 0 finished normally",
+    "Could not match this input",
+    "4C_io_input_spec_builders.cpp",
+    "The following data remains unused:",
+    "CLAIMED_PLACEMENT_ACCEPTED=0",
+    "REAL_PLACEMENT_FAILED_TESTS=0",
+    "PLAIN_FAILED_TESTS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_CLAIMED=0",
+    "EXIT_REAL=1",
+    "CLAIMED_ARM_HAS_ITEMAX=0",
+    "REAL_ARM_HAS_PARTITIONED_SECTION=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the wrong-placement pathology: stop writing ITEMAX into FS3I DYNAMIC. CLAIMED_ARM_HAS_ITEMAX drops to 0 (a forbidden token) and the parse abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "CLAIMED_PLACEMENT='FS3I DYNAMIC:\\n  ITEMAX: 5\\n'",
+      "to": "CLAIMED_PLACEMENT=''"
+    },
+    {
+      "note": "remove the correct-placement control: stop writing the FS3I DYNAMIC/PARTITIONED block. REAL_ARM_HAS_PARTITIONED_SECTION drops to 0 (a forbidden token), so the demonstration that the key belongs there is gone and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "REAL_PLACEMENT='FS3I DYNAMIC/PARTITIONED:\\n  ITEMAX: 5\\n'",
+      "to": "REAL_PLACEMENT=''"
+    }
+  ]
+}

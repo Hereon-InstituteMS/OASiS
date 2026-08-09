@@ -1,0 +1,20 @@
+{
+  "_comment": "CLAIM multiphase::5: [Numerical] A time step that is too large for Newton does not manifest as an instability. Backward Euler is unconditionally stable, so the failure lands entirely in the nonlinear solve. Signal: measured on the resolved 64x64 problem with eps/h = 2.56, dt = 1e-4 and dt = 1e-2 both converge (reason \u2026 WHAT THIS RUNS: a time step that is too large for Newton does not manifest as an instability. Backward Euler is unconditionally stable, so the failure lands entirely in the nonlinear solve, and the remedy is step-size control keyed on the converged reason rather than a CFL-style formula. Allen-Cahn droplet on a 32x32 unit square, eps = 2.56h, 3 backward Euler steps per dt. dt = 1e-4 and dt = 1e-2 both converge with CONVERGED_FNORM_RELATIVE even though 1e-2 is several times the explicit diffusive limit h^2/(4 eps), and the free energy still decreases monotonically. dt = 1.0 and dt = 100.0 both fail at the very first step with DIVERGED_LINE_SEARCH while phi stays finite and inside [-1.01, 1.01] - there is no blow-up to see, only a negative converged reason. Mutation control: T2_MUTATE=1 keeps the well-sized steps only; nothing fails and the diverged-reason findings are not produced. OBSERVED, copied from the run: well_sized_steps_all_converged=True; dt_1e-2_is_above_the_explicit_limit=True; too_large_dt_fails_at_the_very_first_step=True; too_large_dt_field_stays_finite_and_bounded=True; too_large_dt_reason_names=['DIVERGED_LINE_SEARCH']; VERDICT=large_dt_fails_in_newton_not_as_an_instability. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "multiphase",
+  "pitfall_index": 5,
+  "mode": "python",
+  "expect_in_output": [
+    "well_sized_steps_all_converged=True",
+    "dt_1e-2_is_above_the_explicit_limit=True",
+    "too_large_dt_fails_at_the_very_first_step=True",
+    "too_large_dt_field_stays_finite_and_bounded=True",
+    "too_large_dt_reason_names=['DIVERGED_LINE_SEARCH']",
+    "VERDICT=large_dt_fails_in_newton_not_as_an_instability"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=large_dt_behaved_differently"
+  ],
+  "timeout_seconds": 300
+}

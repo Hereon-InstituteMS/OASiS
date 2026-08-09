@@ -1,0 +1,30 @@
+{
+  "_comment": "Tier-2 for fourc::thermo_transient_mms#0 — in standalone Thermo the volumetric heat source must go in the PLAIN 'DESIGN SURF NEUMANN CONDITIONS'. The THERMO-prefixed section is a valid section name (PREFIXED_SECTION_NAME_REJECTED=0), parses without complaint, emits no warning (PREFIXED_NEUMANN_WARNINGS=0), lets the time loop run to its last step (PREFIXED_COMPLETED_TIME_LOOP=1) — and drops the source. Same manufactured-solution deck twice, differing only in that section name: the plain arm's centre node is 'is CORRECT' against the analytic value and exits 0; the prefixed arm's is 'is WRONG --> actresult= 8.89498029234571885e-01' against -1.12712429686840920e-02 and exits 1. The tolerance (5e-3) is an order of magnitude above the mesh's own discretisation error, so only a structurally missing right-hand side can fail it. Extends the recorded THERMO-prefixed DIRICH finding (fourc::thermal#3) to the body-load path. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "thermo_transient_mms",
+  "pitfall_index": 0,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "EXIT_PLAIN=0",
+    "EXIT_PREFIXED=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "is WRONG --> actresult= 8.89498029234571885e-01",
+    "PREFIXED_SECTION_NAME_REJECTED=0",
+    "PREFIXED_NEUMANN_WARNINGS=0",
+    "PREFIXED_COMPLETED_TIME_LOOP=1"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_PLAIN=1",
+    "EXIT_PREFIXED=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: put the body load in the plain section in both arms. The source is then applied in both, the second arm's result test passes, EXIT_PREFIXED becomes 0 and the 8.89e-01 reading disappears — so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "mms \"DESIGN SURF THERMO NEUMANN CONDITIONS\" \"$TMP/prefixed.yaml\"",
+    "to": "mms \"DESIGN SURF NEUMANN CONDITIONS\" \"$TMP/prefixed.yaml\""
+  }
+}

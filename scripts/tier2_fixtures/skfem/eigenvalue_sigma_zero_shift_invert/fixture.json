@@ -1,0 +1,17 @@
+{
+  "_comment": "Tier-2 for skfem eigenvalue#1: on the Dirichlet-restricted P1 Laplacian, eigsh(sigma=0, which='LM') returns the SMALLEST eigenvalues (shift-and-invert), which='SM' without sigma returns the same values, and plain eigsh with neither returns the TOP of the spectrum. Measured on skfem 12.0.1 / scipy 1.15.3. MUTATION CONTROL (re-runnable): T2_MUTATE=1 applies the documented fix at the pathology site -- the wrong-variant eigsh call (neither sigma nor which) gets sigma=0 and which='LM' back, so it shift-and-inverts too. Re-verified by execution 2026-08-06 on skfem 12.0.1 / NGSolve 6.2.2604: the unmutated run matches all 4 expect_in_output strings; T2_MUTATE=1 removes 'default_returns_top_of_spectrum=True' and 'default_min_exceeds_sigma0_max=True' and makes the forbidden 'FAIL:' appear, so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "eigenvalue",
+  "pitfall_index": 1,
+  "mode": "python",
+  "expect_in_output": [
+    "sigma0_and_SM_agree=True",
+    "default_returns_top_of_spectrum=True",
+    "default_min_exceeds_sigma0_max=True",
+    "sigma0_smallest_is_lowest_mode=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

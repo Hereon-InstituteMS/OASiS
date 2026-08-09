@@ -1,0 +1,19 @@
+{
+  "_comment": "Tier-2 for fenics convection_diffusion#0: without stabilisation the Galerkin method oscillates whenever the CELL Peclet number Pe_h = |b|*h/(2*kappa) exceeds ~1, and the correction in the claim \u2014 the oscillation DOES damp under refinement, it just needs a mesh that resolves the layer, which is the real (cost) argument for stabilising. Wrong variant: plain Galerkin P1 on the unit square, b=(1,0), kappa=1e-3, u=0 at x=0 and u=1 at x=1 (an exponential outflow layer). Right variant: the same form plus the SUPG streamline term with the per-cell tau. Observed on dolfinx 0.10.0: the Galerkin undershoot is -6.2798 / -3.0025 / -1.7205 at N = 8 / 16 / 32 (Pe_h = 62.5 / 31.25 / 15.625) \u2014 large, and shrinking monotonically with refinement \u2014 while SUPG on the same meshes stays at -0.0416 / -0.0377 / -0.0312. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "convection_diffusion",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "cell_peclet_above_one_on_every_mesh=True",
+    "primary_undershoot_below_minus_one_on_coarse_mesh=True",
+    "primary_undershoot_damps_monotonically_under_refinement=True",
+    "supg_undershoot_stays_within_ten_percent=True",
+    "VERDICT=galerkin_oscillates_above_cell_peclet_one_and_damps_only_by_resolving_the_layer"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_cell_peclet_oscillation_observed"
+  ],
+  "timeout_seconds": 300
+}

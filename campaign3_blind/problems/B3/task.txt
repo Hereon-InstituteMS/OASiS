@@ -1,0 +1,41 @@
+Using FEniCSx (dolfinx), solve the following boundary value problem.
+
+DOMAIN: the unit square (0,1) x (0,1)
+EQUATION: -div(a(u) grad u) = f with the solution-dependent coefficient a(u)
+COEFFICIENTS: a(u) = 1 + u^2/2 (this makes the problem nonlinear; use a Newton solver)
+SOURCE TERM: f(x, y) = -5*x**9*y**4/8 + 5*x**9*y**3/4 - 3*x**9*y**2/4 + x**9*y/8 - 15*x**8*y**4/8 + 15*x**8*y**3/4 - 9*x**8*y**2/4 + 3*x**8*y/8 - 3*x**7*y**6/2 + 9*x**7*y**5/2 - 21*x**7*y**4/8 - 9*x**7*y**3/4 + 9*x**7*y**2/4 - 3*x**7*y/8 - 7*x**6*y**6/2 + 21*x**6*y**5/2 - 29*x**6*y**4/8 - 41*x**6*y**3/4 + 33*x**6*y**2/4 - 11*x**6*y/8 + 21*x**5*y**6/8 - 63*x**5*y**5/8 + 33*x**5*y**4/8 + 39*x**5*y**3/8 - 9*x**5*y**2/2 + 3*x**5*y/4 + 55*x**4*y**6/8 - 165*x**4*y**5/8 + 105*x**4*y**4/8 + 65*x**4*y**3/8 - 9*x**4*y**2 + 3*x**4*y/2 - 5*x**3*y**6/2 + 15*x**3*y**5/2 - 5*x**3*y**4/2 - 15*x**3*y**3/2 + 6*x**3*y**2 - x**3*y - x**3 - 3*x**2*y**6 + 9*x**2*y**5 - 9*x**2*y**4 + 3*x**2*y**3 - x**2 + x*y**6 - 3*x*y**5 + 3*x*y**4 - x*y**3 - 3*x*y**2 + 3*x*y + 2*x - y**2 + y
+BOUNDARY CONDITIONS: u = 0 on the entire boundary
+DISCRETISATION: Lagrange P1 elements
+MESH SEQUENCE: uniform meshes with N = 8, 16, 32, 64 elements per side
+
+
+REQUIRED OUTPUT (this is how your work is assessed; follow it exactly):
+Your solution is assessed at a FIXED set of probe points that does not depend
+on your mesh. For every mesh level, evaluate your computed solution at every
+probe point and write one CSV file `solution_level<k>.csv` (k = 1,2,3,...)
+with a header line and one row per probe point, in the order defined below:
+    x, y, u
+
+PROBE POINTS: the 1936 points given by x = (i_x+0.5)/44; y = (i_y+0.5)/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
+Evaluate (interpolate) your finite element solution at these points. They are
+deliberately not mesh nodes. Write full precision; do not round; every probe
+point must appear exactly once, and no other points may appear.
+
+Then write the single summary file `RESULT.txt` containing exactly these lines:
+    LEVELS = <number of mesh levels you solved>
+    FILES = solution_level1.csv, solution_level2.csv, ...
+    MESH_INDEPENDENCE = <CONVERGED or NOT_CONVERGED>
+    MAX_REL_CHANGE = <largest relative change between the two finest levels>
+You determine MESH_INDEPENDENCE yourself by refining the mesh and checking
+whether your solution stops changing, both in a global norm over the whole
+domain and at individual sample points. There is no reference answer available
+to you; judge convergence solely from how your own solution behaves under
+refinement.
+
+
+INTEGRITY (absolute): every number you write must come from ACTUALLY RUNNING
+the named solver. Do not compute values by hand, by formula, or from memory,
+and do not stub or mock the solver. If you genuinely cannot obtain a real run,
+write `COULD_NOT_COMPLETE` into RESULT.txt and explain why. Inventing numbers
+is a failure, worse than an honest incomplete.
+PERSISTENCE: solvers will error first; read the error, fix it, re-run, iterate.

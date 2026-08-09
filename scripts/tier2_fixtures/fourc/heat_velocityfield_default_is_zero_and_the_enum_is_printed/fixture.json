@@ -1,0 +1,52 @@
+{
+  "_comment": "Tier-2 for fourc::heat#1 — VELOCITYFIELD is optional because 'zero' is already its default, and the omission is completely silent. On a 3-D HEX8 heat-conduction deck the explicit and the omitted arms both exit 0 with the same result test CORRECT at 1e-12, and the substring 'velocit' appears zero times anywhere in the omitted arm's log (OMITTED_MENTIONS_VELOCITY=0). Two further arms show the silence is a measurement and not an absence of checking: VELOCITYFIELD 'Navier_Stokes' aborts from src/scatra/4C_scatra_dyn.cpp with 'If you want non-matching fluid and scatra meshes, you need to use FIELDCOUPLING volmortar!', and an illegal value makes 4C print the legal set verbatim — \"Candidate deprecated_selection 'VELOCITYFIELD' has wrong value, possible values: Navier_Stokes|function|zero\". Both diagnostics an earlier version of this entry quoted for the omission are absent (CLAIMED_VELOCITY_FIELD_NOT_FOUND=0, CLAIMED_VELNP_UNINITIALIZED=0). Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf) at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "heat",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 180,
+  "expect_in_output": [
+    "OMITTED_DECK_HAS_VELOCITYFIELD=0",
+    "EXPLICIT_DECK_HAS_VELOCITYFIELD=1",
+    "EXIT_EXPLICIT=0",
+    "EXIT_OMITTED=0",
+    "EXIT_NAVSTOKES=1",
+    "EXIT_BADVALUE=1",
+    "is CORRECT",
+    "processor 0 finished normally",
+    "OMITTED_MENTIONS_VELOCITY=0",
+    "CLAIMED_VELOCITY_FIELD_NOT_FOUND=0",
+    "CLAIMED_VELNP_UNINITIALIZED=0",
+    "If you want non-matching fluid and scatra meshes, you need to use FIELDCOUPLING volmortar!",
+    "4C_scatra_dyn.cpp",
+    "Candidate deprecated_selection 'VELOCITYFIELD' has wrong value, possible values: Navier_Stokes|function|zero"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "OMITTED_DECK_HAS_VELOCITYFIELD=1",
+    "EXIT_OMITTED=1",
+    "EXIT_NAVSTOKES=0",
+    "EXIT_BADVALUE=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the pathology: put VELOCITYFIELD back into the omitted arm. There is then no omission under test, OMITTED_DECK_HAS_VELOCITYFIELD becomes 1 and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"velocityfield\\\":\\\"\\\",\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\" \"$TMP/omitted.yaml\"",
+      "to": "heat \"{\\\"results\\\":[[$NODE,$TRUE,1e-12]]}\" \"$TMP/omitted.yaml\""
+    },
+    {
+      "note": "remove the control: give the illegal-value arm a legal value. 4C has nothing to object to, the printed enum list disappears and the fixture must go red — that list is the only evidence of what the legal spellings are.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"velocityfield\\\":\\\"  VELOCITYFIELD: \\\\\\\"constant\\\\\\\"\\n\\\"}\"      \"$TMP/badvalue.yaml\"",
+      "to": "heat \"{}\"      \"$TMP/badvalue.yaml\""
+    },
+    {
+      "note": "remove the second control: run the Navier_Stokes arm with the default instead. Its mesh-coupling abort disappears and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "heat \"{\\\"velocityfield\\\":\\\"  VELOCITYFIELD: \\\\\\\"Navier_Stokes\\\\\\\"\\n\\\"}\" \"$TMP/navstokes.yaml\"",
+      "to": "heat \"{}\" \"$TMP/navstokes.yaml\""
+    }
+  ]
+}

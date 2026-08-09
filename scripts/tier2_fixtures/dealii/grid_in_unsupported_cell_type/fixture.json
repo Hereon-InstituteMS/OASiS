@@ -1,12 +1,21 @@
 {
-  "_comment": "Tier-2 fixture verifying that deal.II's GridIn raises ExcMessage when fed a Gmsh mesh containing only triangles (in 2D, deal.II requires QUADS — Tri elements are unsupported in this version's Triangulation<2>). The pitfall this verifies is linear_elasticity#4: 'deal.II 2D ONLY reads QUADS from Gmsh — no triangles. Always set gmsh.option.setNumber(Mesh.RecombineAll, 1) to produce quads. Signal: ExcMessage from grid_in.cc that the mesh contains unsupported cell type.' We write a minimal Gmsh-format string with triangles to stdin and let GridIn::read_msh raise the documented exception.",
+  "_comment": "Tier-2 for linear_elasticity#4 — INVERTED 2026-08-03 on deal.II 9.8.0-pre. The old pitfall claimed 'deal.II 2D ONLY reads QUADS from Gmsh — no triangles. Signal: ExcMessage from grid_in.cc'. False since deal.II 9.3 added simplex support, and this fixture already knew: on 9.8.0-pre it printed 'ERROR: GridIn::read_msh accepted triangles; pitfall claim does not hold in this deal.II version' and failed its own expect_in_output. The fixture now asserts the corrected claim — a triangles-only Gmsh mesh (element type 2) reads into Triangulation<2> and yields triangle cells (n_vertices() == 3). RecombineAll is a preference, not a requirement; the real downstream constraint is that simplex cells need FE_SimplexP + QGaussSimplex and are not supported by MatrixFree. MUTATION CONTROL (T2_MUTATE=1, re-runnable): the hook feeds GridIn a quads-only mesh (Gmsh element type 3) built from the same four nodes. The reader still accepts it, but the cell count is now quads, so the expectation `n_triangles=2` goes missing and the forbidden token FIXTURE_MISMATCH appears — the counts are read off the triangulation, not printed as constants. Proved KILLED 2026-08-07 with DEAL_II_DIR=/home/alexander/dealii/build, and ONLY there. ENVIRONMENT, read this before trusting a run: with the harness's own default prefix this fixture does not even compile. run_tier2_fixtures picks the Debug tree at /media/alexander/PortableSSD/dealii-verify-r2/dbgbuild, that tree ships no CMake macros, and find_package then silently falls back to the system deal.II 9.1.1 in /usr — where CellAccessor::n_vertices() (deal.II 9.3+) does not exist, so the build fails with 'has no member named n_vertices', the fixture is recorded failed, and any mutation verdict on it is VACUOUS. The 9.8.0-pre install this fixture was measured against is /home/alexander/dealii/build; pointing DEAL_II_DIR there makes it green and the mutation kills it. Deleting a stale generated CMakeLists.txt is required when changing prefix, because the runner writes that file only when it is absent and bakes the old HINTS into it.",
   "backend": "dealii",
   "physics": "linear_elasticity",
   "pitfall_index": 4,
   "mode": "compile_and_run",
   "expect_in_output": [
-    "ExcMessage",
-    "grid_in"
+    "GridIn_read_msh_triangles=ACCEPTED",
+    "n_triangles=2",
+    "FIXTURE_OK"
   ],
-  "forbid_in_output": []
+  "forbid_in_output": [
+    "FIXTURE_MISMATCH"
+  ],
+  "_mutation": {
+    "note": "remove the phenomenon under test: feed the same reader a quads-only Gmsh mesh (element type 3), so there are no simplex cells to read",
+    "file": "source.cpp",
+    "from": "return v != nullptr && std::string(v) == \"1\";",
+    "to": "return true;"
+  }
 }

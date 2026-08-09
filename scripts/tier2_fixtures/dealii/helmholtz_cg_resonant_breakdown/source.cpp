@@ -20,16 +20,30 @@
 #include <deal.II/lac/vector.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 using namespace dealii;
+
+namespace {
+// MUTATION CONTROL (see fixture.json). T2_MUTATE=1 sets k^2 = 0, which removes
+// the pathology outright: the operator is then the plain SPD Laplacian instead
+// of the singular K - k^2 M, and CG is entitled to converge.
+bool mutate()
+{
+  const char *v = std::getenv("T2_MUTATE");
+  return v != nullptr && std::string(v) == "1";
+}
+}  // namespace
 
 int main()
 {
   const unsigned n = 32;
   const double   h = 1.0 / (n + 1);
   const double k2 =
-      4.0 / (h * h) * std::pow(std::sin(4.0 * M_PI * h / 2.0), 2.0);
+      mutate() ? 0.0
+               : 4.0 / (h * h) * std::pow(std::sin(4.0 * M_PI * h / 2.0), 2.0);
 
   DynamicSparsityPattern dsp(n, n);
   for (unsigned i = 0; i < n; ++i) {

@@ -1,0 +1,50 @@
+{
+  "_comment": "Tier-2 for fourc::fpsi#4, and a FALSIFICATION of its Signal. The entry predicted 'stagnating CG/GMRES at very low K'. On upstream fpsi_ofsiinterface.4C.yaml (MAT_FluidPoro PERMEABILITY 1, every field on UMFPACK) a permeability of 1e-15 produces no solver stagnation of any kind (LOW_SOLVER_STAGNATION_MESSAGES=0) but a 4C abort, 'zero porosity!', from fluid_ele/4C_fluid_ele_calc_poro.cpp line 5397 inside FluidEleCalcPoro::compute_stabilization_parameters \u2014 the permeability enters the porous stabilisation parameter and the porosity check there fires first. A permeability of 1e+06 runs to the end and returns a different answer with no remark about the Darcy regime (HIGH_DARCY_WARNINGS=0), caught only by the deck's own 2 result tests. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C (2026.2.0-dev, commit 89519cfe76).",
+  "backend": "fourc",
+  "physics": "fpsi",
+  "pitfall_index": 4,
+  "mode": "cmd",
+  "timeout_seconds": 240,
+  "expect_in_output": [
+    "LOW_ARM_[PERMEABILITY:1e-15]",
+    "HIGH_ARM_[PERMEABILITY:1e+06]",
+    "EXIT_NOMINAL=0",
+    "EXIT_LOW=1",
+    "EXIT_HIGH=1",
+    "OK (2)",
+    "processor 0 finished normally",
+    "zero porosity!",
+    "4C_fluid_ele_calc_poro.cpp",
+    "compute_stabilization_parameters",
+    "Result check failed with 2 errors out of 2 tests",
+    "is WRONG --> actresult=",
+    "LOW_SOLVER_STAGNATION_MESSAGES=0",
+    "LOW_REACHED_RESULT_TEST=0",
+    "HIGH_FAILED_TESTS=2",
+    "HIGH_DARCY_WARNINGS=0"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NOMINAL=1",
+    "EXIT_LOW=0",
+    "EXIT_HIGH=0",
+    "LOW_ARM_[PERMEABILITY:1]",
+    "HIGH_ARM_[PERMEABILITY:1]",
+    "HIGH_FAILED_TESTS=0"
+  ],
+  "_mutation": [
+    {
+      "note": "remove the low-permeability pathology: keep the upstream value. LOW_ARM_PERMEABILITY:1 is a forbidden token and the 'zero porosity!' abort vanishes, so the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "LOW_PERMEABILITY=1e-15",
+      "to": "LOW_PERMEABILITY=1"
+    },
+    {
+      "note": "remove the high-permeability pathology: keep the upstream value. HIGH_FAILED_TESTS drops to 0 (a forbidden token) and the fixture must go red.",
+      "file": "cmd.sh",
+      "from": "HIGH_PERMEABILITY=1e+06",
+      "to": "HIGH_PERMEABILITY=1"
+    }
+  ]
+}

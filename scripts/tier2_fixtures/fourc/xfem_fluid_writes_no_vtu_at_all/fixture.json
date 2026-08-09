@@ -1,0 +1,34 @@
+{
+  "_comment": "Tier-2 for fourc::xfem_fluid#6 and a FALSIFICATION. The entry claimed XFEM output appears as fluid_subdomain_0-*.vtu / fluid_subdomain_1-*.vtu. With the identical IO/RUNTIME VTK OUTPUT + IO/RUNTIME VTK OUTPUT/FLUID block, the plain Fluid deck f3_stokes_residualbased_rotboxgeom writes fluid-00001-0.vtu plus a .pvd, while the Fluid_XFEM deck xfluid_ls_neumann_inflow_stab writes zero .vtu and zero .pvd, exits 0, prints 'processor 0 finished normally' and never mentions that the requested output was not produced. XFEM fluid results reach disk only as the legacy Ensight .result.fluid file and, with OUTPUT_GMSH, as .pos files. There are no sub-domain VTUs to load half of. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "xfem_fluid",
+  "pitfall_index": 6,
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "EXIT_PLAIN=0",
+    "EXIT_XFEM=0",
+    "PLAIN_VTU=1",
+    "PLAIN_PVD=1",
+    "XFEM_VTU=0",
+    "XFEM_PVD=0",
+    "XFEM_SUBDOMAIN_VTU=0",
+    "processor 0 finished normally",
+    "XFEM_OUTPUT_WARNINGS=0",
+    "fluid-00001-0.vtu"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: give the XFEM arm the plain-Fluid deck, so both arms are non-XFEM. XFEM_VTU becomes 1 and the contrast disappears, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "add_vtk \"$XDECK\" \"$TMP/xfem.yaml\"",
+    "to": "add_vtk \"$PDECK\" \"$TMP/xfem.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_XFEM=1",
+    "EXIT_PLAIN=1",
+    "PLAIN_VTU=0",
+    "XFEM_VTU=1"
+  ]
+}

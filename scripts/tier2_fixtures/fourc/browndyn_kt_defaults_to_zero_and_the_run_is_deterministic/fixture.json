@@ -1,0 +1,35 @@
+{
+  "_comment": "Tier-2 for fourc::brownian_dynamics#1, confirmed by execution. BROWNIAN DYNAMICS/KT has default_value 0.0 in 4C's input spec and BROWNDYNPROB: true does not imply a temperature. Upstream beam3r_line2_backweuler_browndyn_periodic_rve_dirich_element.4C.yaml is exactly that configuration — BROWNDYNPROB true, VISCOSITY set, no KT — and it is a purely deterministic run: node 2's transverse displacements come out at 1.79e-16 and 1.19e-16, machine zero, which the deck result-tests as zero. Adding KT makes the kicks appear at once (dispx 1.97729908169594938e-02, dispy -1.19525609708355449e-02) and all three tests fail. So a deck with BROWNDYNPROB true and no KT looks like a Brownian simulation, runs like one, contains no thermal physics at all, and 4C never mentions it. Verified by execution 2026-08-06 against 4C at /home/alexander/4C/build/4C.",
+  "backend": "fourc",
+  "physics": "brownian_dynamics",
+  "pitfall_index": 1,
+  "mode": "cmd",
+  "timeout_seconds": 300,
+  "expect_in_output": [
+    "UPSTREAM_DECK_SETS_KT=0",
+    "EXIT_NOKT=0",
+    "EXIT_WITHKT=1",
+    "processor 0 finished normally",
+    "NOKT_FAILURES=0",
+    "is CORRECT, abs(diff)= 1.79191893452733533e-16",
+    "NOKT_TRANSVERSE_MOTION_IS_MACHINE_ZERO=yes",
+    "NOKT_WARNINGS=0",
+    "WITHKT_FAILURES=3",
+    "is WRONG --> actresult= 1.97729908169594938e-02",
+    "is WRONG --> actresult=-1.19525609708355449e-02"
+  ],
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_NOKT=1",
+    "EXIT_WITHKT=0",
+    "WITHKT_FAILURES=0",
+    "NOKT_TRANSVERSE_MOTION_IS_MACHINE_ZERO=no"
+  ],
+  "_mutation": {
+    "note": "take the contrast away: leave the second arm without KT too. Both arms are then the same deterministic run, the thermal displacements never appear, WITHKT_FAILURES becomes 0 and EXIT_WITHKT becomes 0 — the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "open(sys.argv[2], \"w\").write(t.replace(blk, blk + \"  KT: 4.14e-06\\n\"))",
+    "to": "open(sys.argv[2], \"w\").write(t)"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "_comment": "Tier-2 for fourc::low_mach#6 and a CORRECTION of its Signal. The rule (resolve the boundary layers for the target Rayleigh number) is physics and is left alone; what needed fixing is the instruction to compare a Nusselt number against literature, because 4C computes neither Nu nor Ra and the strings never appear in its output. The observable it does provide is the wall heat flux, enabled by CALCFLUX_BOUNDARY in SCALAR TRANSPORT DYNAMIC together with a SCATRA FLUX CALC ... CONDITIONS block, printed each step as \"Normal fluxes at boundary 'ScaTraFluxCalc' on discretization 'scatra'\" and \"Sum of all normal flux boundary integrals for scalar 0: ...\"; Nu must be non-dimensionalised from it by the user. Dropping the hot-wall temperature on the upstream deck loma_2d_heated_chan_30x100 changes that integral and fails the deck's pinned results, confirming the integral is the heat-transfer carrier. Verified by execution 2026-08-06 against 4C 2026.2.0-dev (git 89519cf).",
+  "physics": "low_mach",
+  "pitfall_index": 6,
+  "timeout_seconds": 420,
+  "expect_in_output": [
+    "EXIT_HOT=0",
+    "EXIT_ISOTHERMAL=1",
+    "processor 0 finished normally",
+    "HOT_RESULT_FAILURES=0",
+    "Sum of all normal flux boundary integrals for scalar 0",
+    "Normal fluxes at boundary 'ScaTraFluxCalc' on discretization 'scatra'",
+    "ISOTHERMAL_RESULT_FAILURES=4",
+    "NUSSELT_OR_RAYLEIGH_MENTIONS=0"
+  ],
+  "_mutation": {
+    "note": "remove the pathology: keep the hot wall, so both arms are the baseline. ISOTHERMAL_RESULT_FAILURES drops to 0 and the flux stops being shown to respond, so the fixture must go red.",
+    "file": "cmd.sh",
+    "from": "sed 's/    VAL: \\[439.5\\]/    VAL: [293.0]/' \"$BASE\" > \"$TMP/isothermal.yaml\"",
+    "to": "cp \"$BASE\" \"$TMP/isothermal.yaml\""
+  },
+  "backend": "fourc",
+  "mode": "cmd",
+  "forbid_in_output": [
+    "FIXTURE_ABORT=",
+    "no_binary",
+    "EXIT_HOT=1",
+    "EXIT_ISOTHERMAL=0",
+    "HOT_FLUX_REPORTS=0",
+    "ISOTHERMAL_RESULT_FAILURES=0"
+  ]
+}

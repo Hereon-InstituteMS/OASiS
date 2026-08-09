@@ -1,0 +1,25 @@
+{
+  "_comment": "Tier-2 for skfem dg_methods#2, verified 2026-08-06 on skfem 12.0.1. Pure advection b=(1,0.5), f=0, inflow g=1, exact u==1. With the inflow load on FacetBasis (32 boundary facets) upwind DG reproduces u==1 to 2.2e-15; assembling the same load on InteriorFacetBasis (176 interior facets) leaves the matrix non-singular -- nothing warns -- but the solution runs to [-0.67, +16.9] and its streamwise band means become non-monotone. MUTATION CONTROL (re-runnable): T2_MUTATE=1 forces load_on = fb inside run(), i.e. moves the inflow load back onto FacetBasis, the documented fix. Re-verified by execution 2026-08-06 on skfem 12.0.1: the unmutated run matches all 12 expect_in_output strings; T2_MUTATE=1 removes 'n_interior_facets=176', 'wrong_max_abs_dev_from_one_gt_1=True', 'wrong_violates_max_principle=True', 'wrong_streamwise_decreases_gt_0=True', 'wrong_band_growth_gt_5=True' and 'wrong_over_right_dev_ratio_gt_1e10=True' (and emits the forbidden 'FAIL:'), so the fixture goes red. Re-run: T2_MUTATE=1 python source.py",
+  "backend": "skfem",
+  "physics": "dg_methods",
+  "pitfall_index": 2,
+  "mode": "python",
+  "expect_in_output": [
+    "n_boundary_facets=32",
+    "n_interior_facets=176",
+    "right_max_abs_dev_from_one_lt_1e-10=True",
+    "right_respects_max_principle=True",
+    "right_streamwise_decreases=0",
+    "right_band_growth_is_one=True",
+    "wrong_solution_is_finite=True",
+    "wrong_max_abs_dev_from_one_gt_1=True",
+    "wrong_violates_max_principle=True",
+    "wrong_streamwise_decreases_gt_0=True",
+    "wrong_band_growth_gt_5=True",
+    "wrong_over_right_dev_ratio_gt_1e10=True"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "FAIL:"
+  ]
+}

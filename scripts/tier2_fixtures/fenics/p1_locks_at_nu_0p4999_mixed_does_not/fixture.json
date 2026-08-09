@@ -1,0 +1,17 @@
+{
+  "_comment": "CLAIM nearly_incompressible_elasticity::0: [Numerical] Low-order displacement formulations LOCK as nu -> 0.5 \u2014 a mixed (u, p) method is the robust fix. Signal: [MEASURED 2026-08-03, dolfinx 0.10.0; cantilever 1.0 x 0.2 with end traction, tip deflection against a P2/P1 Taylor-Hood reference] P1 triangles are 7.2x / 3.2x / 1.6x / 1.2x too \u2026 WHAT THIS RUNS: a low-order displacement-only formulation LOCKS as nu -> 0.5, and the mixed (u, p) method is the robust fix. The claim also carries an explicit CORRECTION: the locking ratio is NOT ~1/(1-2nu). Wrong variant: P1 triangles, displacement only, on a 1.0 x 0.2 cantilever with an end traction at nu = 0.4999. Reference: P2/P1 Herrmann mixed formulation on the same mesh. Observed on 10x2 and 20x4 the mixed tip deflection is about 20x and 19x larger than the P1 one, while the same P2 displacement-only space is within a few percent of the mixed reference; 1/(1-2nu) would predict 5000x. Mutation control: T2_MUTATE=1 solves the tested case with the mixed (u, p) formulation, and the tip deflection then matches the reference exactly. OBSERVED, copied from the run: locking_ratio_exceeds_5=True; p2_is_within_10_percent_of_mixed=True; one_over_one_minus_two_nu_overpredicts_by_more_than_10x=True; VERDICT=p1_locks_while_p2_and_mixed_agree. Verified by execution 2026-08-06 against dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string above is text the software actually printed. T2_MUTATE=1 runs the correct variant instead, and the fixture then fails its own expectations \u2014 checked, so it cannot pass with the pathology absent.",
+  "backend": "fenics",
+  "physics": "nearly_incompressible_elasticity",
+  "pitfall_index": 0,
+  "mode": "python",
+  "expect_in_output": [
+    "locking_ratio_exceeds_5=True",
+    "p2_is_within_10_percent_of_mixed=True",
+    "one_over_one_minus_two_nu_overpredicts_by_more_than_10x=True",
+    "VERDICT=p1_locks_while_p2_and_mixed_agree"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=no_locking_measured"
+  ]
+}

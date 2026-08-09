@@ -1,0 +1,16 @@
+{
+  "_comment": "Tier-2 for fenics magnetostatics#4. Tier-2 for fenics magnetostatics#4: material data written with `ufl.conditional` is evaluated at QUADRATURE POINTS, so the effective geometry of the material interface silently depends on the quadrature degree of the form. A cell-wise DG0 fem.Function built from `mesh.compute_midpoints` pins the interface to cell boundaries instead. The same coil-in-iron problem is solved twice on the same 16x16 mesh, once with a ufl.conditional permeability and once with a DG0 permeability, at P1 and then at P2. The two materials agree BIT-FOR-BIT at P1 (the P1 form has a single midpoint quadrature point per cell, which is exactly what the DG0 marker uses) and disagree at P2. Mutation control: T2_MUTATE=1 uses the DG0 material for both solves, i.e. the recommended fix; the P2 difference then vanishes too. Verified by execution 2026-08-06 on dolfinx 0.10.0 / basix 0.10.0 (conda env `fenics`, real scalars); every expect_in_output string was copied from that run. T2_MUTATE=1 removes the pathology and the fixture then fails its own expectations.",
+  "backend": "fenics",
+  "physics": "magnetostatics",
+  "pitfall_index": 4,
+  "mode": "python",
+  "expect_in_output": [
+    "p1_answers_are_bit_identical=True",
+    "p2_relative_difference_exceeds_1e_3=True",
+    "VERDICT=conditional_material_geometry_follows_the_quadrature_degree"
+  ],
+  "forbid_in_output": [
+    "Traceback",
+    "VERDICT=material_spelling_does_not_change_the_answer"
+  ]
+}
