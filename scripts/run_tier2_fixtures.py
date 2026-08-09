@@ -278,6 +278,25 @@ def _eval_fixture(fixture_dir: Path,
 
     # Build env (per-backend defaults).
     env = os.environ.copy()
+    # WHERE THE CHECKOUT IS, for fixtures that audit the catalog rather than a
+    # solver. In place they find it by walking up from __file__, but the
+    # mutation harness stages a copy into a scratch tree that has no such
+    # ancestor, so the walk fails and the fixture aborts with
+    # FIXTURE_ABORT=no_oasis_checkout — which the harness scores
+    # VACUOUS_BASELINE, i.e. "this verdict would mean nothing".
+    #
+    # Measured before this line: 7 of the 11 Kratos fixtures that ship a
+    # `_mutation` block reported VACUOUS_BASELINE on every run, so the ledger
+    # carried NO machine discrimination evidence for them even though each had
+    # been proved KILLED by hand with OASIS_REPO exported on the command line.
+    # The runner knows where the checkout is; the staged fixture cannot. It is
+    # the runner's job to say so.
+    #
+    # Deliberately does NOT override an OASIS_REPO the caller already set, and
+    # deliberately points at the REAL checkout rather than the scratch copy:
+    # these fixtures audit the SHIPPED catalog, and their mutation lives in
+    # their own source, not in the catalog.
+    env.setdefault("OASIS_REPO", str(REPO_ROOT))
     extra_env = meta.get("env", {})
     if isinstance(extra_env, dict):
         for k, v in extra_env.items():

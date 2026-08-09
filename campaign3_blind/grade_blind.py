@@ -48,6 +48,24 @@ import sympy as sp
 
 HERE = Path(__file__).resolve().parent
 KEYS = HERE / "keys"
+PROBLEMS = HERE / "problems"
+
+
+def probe_exclusions(problem_id: str, side: str):
+    """Regions removed from a subdomain's probe grid, from the PUBLIC spec.
+
+    Deliberately not read from the key: the exclusion is already printed in the
+    task text handed to the agent, so it is public information and reading it
+    here keeps the sealed keys sealed.
+    """
+    spec = PROBLEMS / problem_id / "spec_public.json"
+    if not spec.is_file():
+        return None
+    try:
+        return json.loads(spec.read_text()).get(
+            f"probe_{side.lower()}_exclude")
+    except (json.JSONDecodeError, OSError):
+        return None
 
 x, y, z = sp.symbols("x y z", real=True)
 _SYMS = {"x": x, "y": y, "z": z}
@@ -87,16 +105,40 @@ def assert_probe_grid_incommensurate(dim: int, mesh_N) -> None:
 
 
 # ── the grader's own evaluation set ───────────────────────────────────────
-def probe_grid(dim: int, bounds=None):
+def probe_grid(dim: int, bounds=None, exclude=None):
     """Cell-centred grid, last index varying fastest. Never coincides with a
-    mesh node at any prescribed level."""
+    mesh node at any prescribed level.
+
+    `exclude` removes every point lying strictly inside any of the given
+    axis-aligned boxes, each written as [(lo, hi), ...] per axis. A subdomain
+    is not always a rectangle: D5's subdomain A is the unit square minus the
+    other subdomain minus a notch, and its task text says so and states the
+    1331 points that remain. Without this the grader built the full 1936-point
+    rectangle and rejected a correct submission with "expected 1936 probe
+    points, got 1331" — the task was right and the grader was wrong.
+
+    The exclusion is public by construction: it is printed in the task text the
+    agent is given, so reading it costs no secrecy. It is taken from the public
+    spec rather than the key precisely so that no key has to be reopened.
+    """
     M = PROBE_M[dim]
     b = bounds or [(0.0, 1.0)] * dim
     axes = [[lo + (i + 0.5) * (hi - lo) / M for i in range(M)] for lo, hi in b]
     pts = [()]
     for ax in axes:
         pts = [p + (v,) for p in pts for v in ax]
-    return pts
+    if not exclude:
+        return pts
+
+    def inside(p, box):
+        return all(lo < c < hi for c, (lo, hi) in zip(p, box))
+
+    boxes = [[tuple(axis) for axis in box] for box in exclude]
+    for box in boxes:
+        if len(box) != dim:
+            raise ValueError(
+                f"exclusion box has {len(box)} axes but the problem is {dim}D")
+    return [p for p in pts if not any(inside(p, box) for box in boxes)]
 
 
 def subdomain_bounds(key: dict, side: str, dim: int):
@@ -306,7 +348,9 @@ def grade_run(run_dir: Path, problem_id: str) -> dict:
                         "observed_order": None, "note": f"{path.name}: {why}"}
             bounds = (subdomain_bounds(key, side, dim) if coupled
                       else [(0.0, 1.0)] * dim)
-            good, why = matches_probe_grid(pts, probe_grid(dim, bounds))
+            exclude = probe_exclusions(problem_id, side) if coupled else None
+            good, why = matches_probe_grid(
+                pts, probe_grid(dim, bounds, exclude))
             if not good:
                 return {**out, "outcome": "INVALID_SUBMISSION",
                         "observed_order": None, "note": f"{path.name}: {why}"}

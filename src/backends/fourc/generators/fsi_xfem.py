@@ -193,7 +193,9 @@ class FSIXFEMGenerator(BaseGenerator):
                     'is fixed and the structure interface cuts through it via XFEM '
                     'enrichment. But 4C does NOT object to leftover ALE plumbing. '
                     'Signal: a deck carrying BOTH an ALE DYNAMIC section and a '
-                    "CLONING MATERIAL MAP runs to 'processor 0 finished normally' "
+                    "CLONING MATERIAL MAP runs to the exit banner, whose literal is "
+                    "'finished normally' with the rank printed into it "
+                    "(processor 0 finished normally), "
                     "and reproduces the reference results; there is no 'XFEM and "
                     "ALE are mutually exclusive' message and no "
                     '4C_xfem_fluid_setup.cpp in the source. Note also that this '

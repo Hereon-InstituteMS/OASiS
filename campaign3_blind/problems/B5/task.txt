@@ -16,7 +16,7 @@ probe point and write one CSV file `solution_level<k>.csv` (k = 1,2,3,...)
 with a header line and one row per probe point, in the order defined below:
     x, y, ux, uy
 
-PROBE POINTS: the 1024 points given by x = (i_x+0.5)/32; y = (i_y+0.5)/32, for i_x, i_y = 0, 1, ..., 31 independently, ordered with the last index varying fastest
+PROBE POINTS: the 1936 points given by x = (i_x+0.5)/44; y = (i_y+0.5)/44, for i_x, i_y = 0, 1, ..., 43 independently, ordered with the last index varying fastest
 Evaluate (interpolate) your finite element solution at these points. They are
 deliberately not mesh nodes. Write full precision; do not round; every probe
 point must appear exactly once, and no other points may appear.

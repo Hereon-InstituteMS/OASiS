@@ -991,14 +991,37 @@ def _stat(history: list[float], block: int) -> float:
     return float(sum(vals) / len(vals))
 
 
-def _stalled(history: list[float], window: int = 6) -> bool:
-    """Has the residual stopped falling? Compares the mean of the last half of
-    a window against the first half. Used only to make a failure message name
-    the right next step, never to declare convergence."""
+def _stalled(history: list[float], window: int = 12, floor_window: int = 6) -> bool:
+    """Has the residual stopped falling? Compares the last half of a window
+    against the first half. Used only to make a failure message name the right
+    next step, never to declare convergence.
+
+    MEDIANS, AND AS LONG A WINDOW AS THE HISTORY ALLOWS.
+
+    This used to average three residuals against the previous three. On the
+    plateau this exists to detect — a stochastic participant whose residual has
+    bottomed out in its own sampling noise — three-sample means scatter so much
+    that `late > 0.5 * early` failed by chance roughly one run in three. The
+    symptom was a genuinely stalled coupling whose failure message did NOT name
+    the noise_replicates route, so the user was left halving theta against a
+    floor no theta can reach. The hint appeared or not depending on the noise
+    draw, which makes it useless as a hint.
+
+    Two changes, both aimed at estimator scatter rather than at the threshold:
+    a longer window, and the median instead of the mean, so one lucky spike in
+    six cannot move the comparison. The window shrinks to what is available,
+    down to `floor_window`, because refusing to answer on a short history is
+    what a run with a small max_iter would get otherwise.
+
+    The threshold is unchanged. This makes the SAME question answerable, it
+    does not make the answer easier to get.
+    """
     vals = [v for v in history if np.isfinite(v)]
-    if len(vals) < window:
+    if len(vals) < floor_window:
         return False
-    half = window // 2
-    early = sum(vals[-window:-half]) / half
-    late = sum(vals[-half:]) / half
+    w = min(window, len(vals))
+    w -= w % 2                       # even, so the halves are the same size
+    half = w // 2
+    early = float(np.median(vals[-w:-half]))
+    late = float(np.median(vals[-half:]))
     return late > 0.5 * early
