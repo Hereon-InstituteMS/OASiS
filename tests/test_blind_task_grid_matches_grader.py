@@ -90,6 +90,56 @@ def test_every_task_asks_for_the_grid_the_grader_accepts() -> None:
           "the task texts to match it.")
 
 
+_COUPLED_LINE = re.compile(
+    r"PROBE POINTS, subdomain (?P<side>[AB]): the (?P<count>\d+) points"
+    r"(?P<rest>[^\n]*)")
+# A non-rectangular subdomain states the full grid, then the exclusion, then
+# how many points survive it. The surviving count is the operative one — it is
+# what the agent is told to write and what the grader must build.
+_REMAIN = re.compile(r"(\d+) points remain")
+
+
+def test_coupled_tasks_state_the_count_the_grader_builds() -> None:
+    """The count printed in a coupled task must equal the grader's grid for
+    that subdomain, exclusions included.
+
+    D5's subdomain A is the unit square minus subdomain B minus a notch. Its
+    task text says so and states 1331 points. The grader built the full
+    1936-point rectangle because nothing applied `probe_a_exclude`, so a
+    submission that followed the task exactly was rejected as
+    INVALID_SUBMISSION. This checks the two agree for every side of every
+    coupled problem, not just the rectangular ones.
+    """
+    gb = _grader()
+    wrong = []
+    for d in sorted(PROBLEMS.iterdir()):
+        task, spec_f = d / "task.txt", d / "spec_public.json"
+        if not (task.is_file() and spec_f.is_file()):
+            continue
+        txt = task.read_text(encoding="utf-8")
+        import json
+        spec = json.loads(spec_f.read_text())
+        dim = spec.get("dim", 2)
+        for m in _COUPLED_LINE.finditer(txt):
+            side = m.group("side")
+            remain = _REMAIN.search(m.group("rest"))
+            stated = int(remain.group(1) if remain else m.group("count"))
+            extent = spec.get(f"extent_{side.lower()}")
+            if not extent:
+                continue
+            bounds = [tuple(a) for a in extent]
+            built = len(gb.probe_grid(
+                dim, bounds, gb.probe_exclusions(d.name, side)))
+            if built != stated:
+                wrong.append(
+                    f"{d.name} subdomain {side}: task states {stated} points, "
+                    f"grader builds {built}")
+    assert not wrong, (
+        "coupled task text and grader disagree on the probe count, so these "
+        "grade INVALID_SUBMISSION however good the solution is:\n    "
+        + "\n    ".join(wrong))
+
+
 def test_the_stated_grid_reproduces_the_graders_points() -> None:
     """Stronger than comparing numbers: build the point set the task describes
     and hand it to the grader's own acceptance check."""
