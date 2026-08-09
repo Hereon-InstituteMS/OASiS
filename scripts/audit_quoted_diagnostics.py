@@ -72,7 +72,16 @@ REPO = Path(__file__).resolve().parents[1]
 # audit reports UNKNOWN for that backend rather than guessing.
 SOURCE_HINTS: dict[str, list[str]] = {
     # 4C: the source tree is READ ONLY — we only ever grep it.
-    "fourc": ["/home/alexander/4C/src", "/home/alexander/4C/tests"],
+    #
+    # `apps/` was missing and it is where the executable's own banners live.
+    # 4C_global_full_main.cpp holds printf("processor %d finished normally\n"),
+    # so the exit line every 4C fixture greps for was invisible to this audit
+    # and two entries quoting it were reported as fabricated diagnostics. 16
+    # files; the entry point of the shipped binary is not an optional part of
+    # 4C's source. `unittests/` is deliberately NOT added: a string that exists
+    # only in a test's expected output is not evidence the solver emits it.
+    "fourc": ["/home/alexander/4C/src", "/home/alexander/4C/apps",
+              "/home/alexander/4C/tests"],
     # FEBio is installed as a BINARY with no source tree — `/opt/febio` and
     # `/usr/local/febio` are both absent on this host, so the audit reported
     # UNKNOWN for every FEBio claim. The real install is below, and a binary is

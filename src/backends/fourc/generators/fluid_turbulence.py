@@ -123,6 +123,38 @@ class FluidTurbulenceGenerator(BaseGenerator):
                     '4C_fluid_discret_extractor.cpp. (Audit 2026-06-02; corrected '
                     'by execution 2026-08-06.)'
                 ),
+                (
+                    # Split from the entry above (index 3) rather than folded
+                    # into it. That entry is about the SECTION: its name, its
+                    # Master/Slave pairing, and the nullspace abort you get by
+                    # deleting it. This one is about the RANK COUNT, which the
+                    # section entry says nothing about, and the two fixtures
+                    # that probe them were both keyed to index 3 — crediting
+                    # one claim twice and leaving this failure mode with no
+                    # entry of its own to defend.
+                    '[Input] A deck with periodic boundary conditions is a '
+                    'RANK-COUNT constraint on this build, not only a modelling '
+                    'choice: the same file, byte for byte, ABORTS on one MPI '
+                    'rank and completes on two and on four. The throw comes out '
+                    'of Epetra_CrsGraph::MakeIndicesLocal, reached through '
+                    'Core::LinAlg::SparseMatrix::complete inside '
+                    'Conditions::PeriodicBoundaryConditions::balance_load, and '
+                    'it is a bare int, so 4C emits no diagnostic of its own at '
+                    'all. Signal: shell status 134 (SIGABRT) and a C++ runtime '
+                    'terminate line naming a thrown int, which is in no 4C '
+                    'source file; there is no PROC 0 ERROR banner, no source '
+                    'line, and the string DESIGN SURF PERIODIC appears nowhere '
+                    'in the log, so the reader is sent to inspect the periodic '
+                    'block — which is correct — instead of the mpirun -np. The '
+                    'only 4C-side anchor is the frame name '
+                    "'Conditions::PeriodicBoundaryConditions::balance_load', "
+                    'which is in 4C_fem_condition_periodic.cpp; on 2 and on 4 '
+                    'ranks every rank reaches the exit banner and prints '
+                    "'finished normally'. This is why the LES channel deck this "
+                    'project ships records np=2. (Verified by execution '
+                    '2026-08-09 against 4C 2026.2.0-dev, git 89519cf, on 1, 2 '
+                    'and 4 ranks.)'
+                ),
             ],
         }
 
