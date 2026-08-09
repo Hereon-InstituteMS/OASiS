@@ -611,6 +611,34 @@ def cpython_runtime(package_dirs: list[Path]) -> list[Path]:
                     real = cand.resolve()
                     if real.is_file() and real not in out:
                         out.append(real)
+                # A VENV DOES NOT CONTAIN ITS OWN libpython. It contains a
+                # pyvenv.cfg naming the base interpreter, and on this host that
+                # is a uv-managed CPython under ~/.local/share/python — so the
+                # glob above found nothing and libpython was absent from the
+                # corpus entirely.
+                #
+                # Measured: `float() argument must be a string or a real
+                # number, not 'complex'`, reproduced live in one line
+                # (lil_matrix()[0,0] = 1j), scored 0 hits and was reported as a
+                # fabricated skfem diagnostic. It is in
+                # cpython-3.12.13/lib/libpython3.12.so, 1 hit. Same class of
+                # instrument fault as the FEBio symlink and the missing -a:
+                # a corpus that cannot answer is not evidence of absence.
+                for cfg in (libdir / "pyvenv.cfg",
+                            libdir.parent / "pyvenv.cfg"):
+                    try:
+                        text = cfg.read_text(errors="ignore")
+                    except OSError:
+                        continue
+                    for line in text.splitlines():
+                        k, _, v = line.partition("=")
+                        if k.strip() != "home":
+                            continue
+                        base = Path(v.strip()).parent
+                        for cand in sorted(base.glob("lib/libpython3*.so*")):
+                            real = cand.resolve()
+                            if real.is_file() and real not in out:
+                                out.append(real)
                 break
     return out
 

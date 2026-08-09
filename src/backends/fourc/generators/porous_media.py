@@ -247,7 +247,10 @@ class PorousMediaGenerator(BaseGenerator):
                     "the surplus text back at you, so it is one of the "
                     "easier 4C errors to act on. (Audit 2026-08-07, "
                     "verified by execution: the same deck runs to "
-                    "'processor 0 finished normally' with the token "
+                    "the exit banner \u2014 the literal is 'finished "
+                    "normally', with the rank printed into it, so the "
+                    "line reads processor 0 finished normally \u2014 "
+                    "with the token "
                     "removed.)"
                 ),
                 (
