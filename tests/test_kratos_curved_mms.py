@@ -11,9 +11,10 @@ Covered:
     prints the machine-readable L2_ERROR line, and passes backend.validate_input
   * module-level validate_parameters accepts good params and rejects bad ones
 
-Live convergence evidence (run outside pytest, /usr/bin/python3, 2026-08-01):
-h=0.2/0.1/0.05/0.025 gave L2 = 6.363e-2/1.674e-2/4.226e-3/1.063e-3,
-observed orders 1.93/1.99/1.99 (theoretical: 2).
+The live execution gate runs outside pytest under /usr/bin/python3: an
+h-refinement sweep whose L2 errors must approach the theoretical P1
+order of 2. The measured errors and orders are outputs of that run and
+are deliberately NOT recorded here or in the module KNOWLEDGE.
 """
 from __future__ import annotations
 

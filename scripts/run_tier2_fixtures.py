@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -51,16 +52,168 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "scripts" / "tier2_fixtures"
 OUTPUT = REPO_ROOT / "scripts" / "scan_results" / "tier2_results.json"
 
-# Prefer the Debug-built deal.II at ~/Schreibtisch/dealii-debug
-# (Assert macros enabled — unlocks the Assert-gated Signal families
-# like ExcDimensionMismatch). Falls back to the conda Release install
-# (~/miniconda3/envs/ofa-dealii) which leaves Assert as a no-op.
-_DEBUG_PREFIX = Path.home() / "Schreibtisch" / "dealii-debug"
-_RELEASE_PREFIX = Path.home() / "miniconda3" / "envs" / "ofa-dealii"
-DEFAULT_DEALII_PREFIX = (
-    _DEBUG_PREFIX if (_DEBUG_PREFIX / "lib" / "libdeal_II.g.so").is_file()
-    else _RELEASE_PREFIX
-)
+
+# A `key=value` expectation must match the WHOLE value, not a prefix of it.
+#
+# The matcher is plain case-insensitive substring, so `same_name_files=1` stayed
+# matched when the fixture's own mutation turned the value into `10`. A DUNE pass
+# found that live and named two more of the same shape
+# (`umfpack_linear_iterations=1`, `k10_linear_iterations=1`); both survive only
+# because a boolean guard happens to sit beside the number. Measured across the
+# corpus, 2931 expectations have the `key=<int>` form and are prefixes of any
+# longer value.
+#
+# Fixing 2931 strings would be the wrong repair — the defect is in the matcher.
+# So for a needle that looks like an assertion (`key=value`, no spaces), the
+# character following the match must not continue the value: end of output, a
+# newline, a space, or punctuation is fine; another digit or letter is not.
+# Everything else — prose fragments, quoted diagnostics, multi-word phrases —
+# keeps plain substring matching, which is what those need.
+_ASSERTION = re.compile(r"^[A-Za-z_][\w.\[\]]*=\S+$")
+
+
+def _needle_present(needle: str, low_out: str) -> bool:
+    """True if `needle` appears in `low_out` without being truncated."""
+    low = needle.lower()
+    if not _ASSERTION.match(needle.strip()):
+        return low in low_out
+    start = 0
+    while True:
+        i = low_out.find(low, start)
+        if i == -1:
+            return False
+        j = i + len(low)
+        # The KEY must start where the needle starts. Guarding only the right
+        # edge left the mirror-image hole open: a needle that is a SUFFIX of a
+        # longer key matched that longer key's line, so an expectation could be
+        # satisfied by a sibling expectation it never mentions.
+        #
+        #     masked_max=1.000000            matched  unmasked_max=1.000000
+        #     displacement_criterion_satisfied=true   matched
+        #         tight_gamma_displacement_criterion_satisfied=true
+        #
+        # 11 expectations in the corpus were guaranteed true this way, including
+        # both control expectations of dune/unmasked_ds_flux_covers_whole_boundary
+        # — whose own docstring says the mutation drives unmasked_max to
+        # 1.000000, which then satisfies the masked_max control. Same defect as
+        # the value-prefix one this function was written to fix, one character to
+        # the left.
+        if i > 0 and (low_out[i - 1].isalnum() or low_out[i - 1] == "_"):
+            start = i + 1
+            continue
+        # A value continues only through word characters, a dot, or a sign;
+        # anything else (newline, space, comma, quote, EOF) ends it.
+        if j >= len(low_out) or not (low_out[j].isalnum()
+                                     or low_out[j] in "._-+"):
+            return True
+        start = i + 1
+
+def fixture_inventory_fingerprint() -> str:
+    """Identity of the fixture set: which fixtures exist and what they contain.
+
+    Deliberately NOT a claim about whether they pass — it records what was
+    summarised, so a summary can be told apart from a stale one. Every file in
+    every fixture directory is hashed, so editing a fixture's expectation or its
+    source counts as a change, not just adding or deleting one.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for d in sorted(p.parent for p in FIXTURES_DIR.glob("*/*/fixture.json")):
+        h.update(f"{d.parent.name}/{d.name}\n".encode())
+        for f in sorted(d.iterdir()):
+            if f.is_file():
+                h.update(f.name.encode())
+                h.update(hashlib.sha256(f.read_bytes()).digest())
+    return h.hexdigest()
+
+# Which deal.II do the deal.II fixtures compile against?
+#
+# Prefer a DEBUG build wherever one exists, because Assert is compiled out in
+# Release and the Assert-gated Signal families (ExcDimensionMismatch,
+# ExcInvalidFEIndex, ExcDivideByZero, …) simply cannot be produced by a Release
+# library. A fixture asserting such a Signal against a Release deal.II is not
+# testing anything.
+#
+# This used to be two hard-coded paths from one developer's machine
+# (~/Schreibtisch/dealii-debug and ~/miniconda3/envs/ofa-dealii). Neither
+# exists on this host, and the consequence was not an error but a SKIP: every
+# deal.II fixture reported "install root not present", which reads identically
+# to "no deal.II here" on a machine that has two working builds.
+#
+# TWO BRANCHES FIXED THIS INDEPENDENTLY AND BOTH FIXES ARE KEPT:
+#   knowledge/dealii-verify        replaced each single path with a CANDIDATE
+#                                  LIST probed by the library file itself, and
+#                                  found the real build locations on this host.
+#   knowledge/setup-and-portability delegated to the deal.II BACKEND's own
+#                                  discovery — the same code path the MCP
+#                                  server uses, so the fixtures and the server
+#                                  cannot disagree about which install is in
+#                                  play.
+# Order: explicit env override, then a Debug build from the candidate list,
+# then the backend's own discovery, then the Release candidates, then the
+# historical guesses.
+def _first_existing(cands, marker) -> Optional[Path]:
+    for c in cands:
+        try:
+            if (Path(c) / marker).is_file():
+                return Path(c)
+        except OSError:
+            continue
+    return None
+
+
+_DEBUG_CANDIDATES = [
+    os.environ.get("DEAL_II_DEBUG_DIR", ""),
+    Path.home() / "Schreibtisch" / "dealii-debug",
+    Path("/media/alexander/PortableSSD/dealii-verify-r2/dbgbuild"),
+    Path.home() / "dealii" / "dbgbuild",
+]
+_RELEASE_CANDIDATES = [
+    os.environ.get("DEAL_II_DIR", ""),
+    Path.home() / "dealii" / "build",
+    Path.home() / "dealii" / "install",
+    Path.home() / "miniconda3" / "envs" / "ofa-dealii",
+]
+# A build tree keeps its package config under cmake/config/, an install tree
+# under lib/cmake/deal.II/ — accept either, and key the Debug probe on the
+# debug library itself since that is what Assert needs.
+_DEBUG_PREFIX = (_first_existing(_DEBUG_CANDIDATES, "lib/libdeal_II.g.so")
+                 or Path.home() / "Schreibtisch" / "dealii-debug")
+_RELEASE_PREFIX = (
+    _first_existing(_RELEASE_CANDIDATES, "lib/libdeal_II.so")
+    or _first_existing(_RELEASE_CANDIDATES, "cmake/config/deal.IIConfig.cmake")
+    or Path.home() / "miniconda3" / "envs" / "ofa-dealii")
+
+
+def _has_debug_library(p: Path) -> bool:
+    return any((p / "lib").glob("libdeal_II.g.so*")) or \
+        any((p / "lib").glob("libdeal.ii.g.so*"))
+
+
+def _discover_dealii_prefix() -> Path:
+    env = os.environ.get("DEALII_PREFIX") or os.environ.get("DEAL_II_DIR")
+    if env and Path(env).is_dir():
+        return Path(env)
+    if _has_debug_library(_DEBUG_PREFIX):
+        return _DEBUG_PREFIX
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        from backends.dealii.backend import _find_dealii  # type: ignore
+        found = _find_dealii()
+        if found is not None:
+            # A source tree keeps its libraries under build/.
+            for candidate in (Path(found) / "build", Path(found)):
+                if candidate.is_dir() and any(
+                        (candidate / "lib").glob("libdeal_II*.so*")):
+                    return candidate
+            return Path(found)
+    except Exception:
+        pass
+    return _RELEASE_PREFIX
+
+
+DEFAULT_DEALII_PREFIX = _discover_dealii_prefix()
 
 
 @dataclass
@@ -107,7 +260,13 @@ def _eval_fixture(fixture_dir: Path,
     key = f"{backend}::{physics}::{idx}"
     result = FixtureResult(
         key=key, backend=backend, physics=physics,
-        pitfall_index=idx, fixture_id=fixture_dir.name,
+        # BACKEND-QUALIFIED. The bare directory name is not unique across the
+        # tree — elasticity_mms_convergence, poisson_mms_convergence and
+        # stokes_mms_convergence each exist under several backends — and the
+        # results record is read row-wise by fixture_id, so a bare name made
+        # each backend's row overwrite the previous one's and ten runs
+        # collapsed to three. Qualifying it keeps every run its own row.
+        pitfall_index=idx, fixture_id=f"{backend}/{fixture_dir.name}",
         mode=mode,
     )
     expect = [str(s) for s in meta.get("expect_in_output", [])]
@@ -132,11 +291,17 @@ def _eval_fixture(fixture_dir: Path,
     if requires_debug and not has_debug_lib and backend == "dealii":
         result.status = "skipped"
         result.notes.append(
-            "fixture requires Debug-built deal.II at "
-            "~/Schreibtisch/dealii-debug (Assert macros enabled); "
-            "current install is Release-only — skip until rebuilt "
-            "(task #30)")
+            f"fixture requires a Debug-built deal.II (Assert macros live); "
+            f"none of {[str(c) for c in _DEBUG_CANDIDATES if c]} has "
+            f"lib/libdeal_II.g.so — set DEAL_II_DEBUG_DIR to one")
         return result
+    # Point the build at the Debug tree when the fixture asked for it, so
+    # `requires_debug` actually changes which library gets linked instead of
+    # merely gating the run. Without this the flag was a no-op whenever a
+    # Release install happened to be found first.
+    if requires_debug and has_debug_lib and backend == "dealii":
+        env.setdefault("DEAL_II_DIR", str(_DEBUG_PREFIX))
+        env["DEAL_II_DIR"] = str(_DEBUG_PREFIX)
 
     if mode == "compile_only" and backend == "dealii":
         prefix = Path(env.get("DEAL_II_DIR",
@@ -367,53 +532,176 @@ def _eval_fixture(fixture_dir: Path,
         python = sys.executable
         REPO_VENV = REPO_ROOT / ".venv" / "bin" / "python"
 
-        def _route_to_repo_venv(env_var: str, label: str) -> str | None:
-            cand = env.get(env_var) or (
-                str(REPO_VENV) if REPO_VENV.is_file() else None)
-            if cand and Path(cand).is_file():
+        def _route_to_repo_venv(env_var: str, label: str,
+                               probe_module: str = "") -> str | None:
+            """Find an interpreter that can run this backend's fixture.
+
+            The first version looked only at `$ENV_VAR` and `REPO_ROOT/.venv`.
+            That fails in every git worktree and in any clone whose environment
+            lives elsewhere: measured here, 96 of 108 fixtures skipped and the
+            run then OVERWROTE `tier2_results.json` with `passed: 1`. A sibling
+            audit hit the same thing from the other side, rewriting 112 to 6.
+
+            So the search now widens, cheapest first, and — the part that
+            actually matters — it CHECKS the candidate can import the package
+            instead of assuming a path implies a working environment.
+            """
+            def _readable_file(p) -> bool:
+                # `is_file()` RAISES PermissionError on a path whose parent is
+                # unreadable — it does not return False. Scanning sibling
+                # directories walked into one such venv and killed the whole
+                # run before a single fixture reported.
+                try:
+                    return Path(p).is_file()
+                except OSError:
+                    return False
+
+            candidates = [env.get(env_var),
+                          str(REPO_VENV) if _readable_file(REPO_VENV) else None]
+            # A sibling checkout's venv: worktrees share one environment, and
+            # REPO_ROOT is the worktree, not the checkout that owns the venv.
+            try:
+                siblings = sorted(REPO_ROOT.parent.iterdir())
+            except OSError:
+                siblings = []
+            for sibling in siblings:
+                try:
+                    if sibling.is_dir():
+                        candidates.append(
+                            str(sibling / ".venv" / "bin" / "python"))
+                except OSError:
+                    continue
+            # The interpreter running this script, last: if it can import the
+            # package it is as good as any path we could guess.
+            candidates.append(sys.executable)
+
+            for cand in candidates:
+                if not cand or not _readable_file(cand):
+                    continue
+                if probe_module:
+                    try:
+                        probe = subprocess.run(
+                            [cand, "-c", f"import {probe_module}"],
+                            capture_output=True, timeout=120,
+                            stdin=subprocess.DEVNULL)
+                    except (OSError, subprocess.SubprocessError):
+                        continue
+                    if probe.returncode != 0:
+                        continue
                 return cand
+
             result.status = "skipped"
             result.notes.append(
-                f"{label} env python not found; set "
-                f"{env_var} or install repo .venv (task #18)")
+                f"{label}: no interpreter found that can import "
+                f"{probe_module or 'the package'}; set {env_var} to one")
             return None
 
-        if backend == "fenics":
-            cand = (env.get("FENICS_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-fenicsx" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "FEniCSx env python not found; set "
-                    "FENICS_PYTHON or install ofa-fenicsx conda env")
+        def _conda_python(env_var: str, env_names: list[str], label: str,
+                          probe_module: str) -> str | None:
+            """Find an interpreter for a conda-hosted backend.
+
+            The hard-coded env name (`ofa-fenicsx`, `ofa-dune`) is a GUESS,
+            and on this host it is wrong: the dolfinx env is called `fenics`
+            (plus `fenicsc` for the complex build). A wrong guess made every
+            fenics fixture report `skipped` — which a reader cannot tell apart
+            from "dolfinx is not installed". So: try the override, then each
+            known env name, then the running interpreter, and in every case
+            CHECK the candidate can import the package rather than inferring
+            that from the path.
+            """
+            cands = [env.get(env_var)]
+            for name in env_names:
+                cands.append(str(Path.home() / "miniconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "anaconda3" / "envs" / name
+                                 / "bin" / "python"))
+                cands.append(str(Path.home() / "mambaforge" / "envs" / name
+                                 / "bin" / "python"))
+            cands.append(sys.executable)
+            tried = []
+            for c in cands:
+                if not c:
+                    continue
+                try:
+                    if not Path(c).is_file():
+                        continue
+                except OSError:
+                    continue
+                tried.append(c)
+                try:
+                    probe = subprocess.run(
+                        [c, "-c", f"import {probe_module}"],
+                        capture_output=True, timeout=180,
+                        stdin=subprocess.DEVNULL)
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if probe.returncode == 0:
+                    return c
+            result.status = "skipped"
+            result.notes.append(
+                f"{label}: no interpreter found that can import "
+                f"{probe_module}; tried {tried or cands}; set {env_var}")
+            return None
+
+        # A cross_backend fixture is not a single-backend fixture, and its
+        # `backend` field does not say what it needs. All four are filed as
+        # `backend: kratos` "for runner-routing purposes" (their own _comment
+        # says so) because the kratos slot used to land in the repo .venv, which
+        # is where the MCP stack lives. That stopped being true: the kratos
+        # branch now PROBES `import KratosMultiphysics`, the repo venv's Kratos
+        # wheel fails on this host with `GLIBC_2.32 not found`, and the only
+        # interpreter that does import Kratos (/mnt/kratos-tier2/kv) has no
+        # `mcp`. So all four reported `skipped` — indistinguishable, to a
+        # reader, from "no Kratos installed here", while their recorded status
+        # stayed `passed` from an older run.
+        #
+        # They are routed like `coupling` instead, for the same reason: what
+        # they actually import is the MCP stack and the live registry. Probing
+        # `mcp` is the honest requirement; probing any one backend is a claim
+        # about what the fixture runs that is not true.
+        if fixture_dir.parent.name == "cross_backend":
+            cand = _route_to_repo_venv("OASIS_PYTHON", "OASiS server", "mcp")
+            if cand is None:
                 return result
+            python = cand
+        elif backend == "fenics":
+            cand = _conda_python("FENICS_PYTHON",
+                                 ["fenics", "ofa-fenicsx", "fenicsx",
+                                  "dolfinx"], "FEniCSx", "dolfinx")
+            if cand is None:
+                return result
+            python = cand
         elif backend == "dune":
-            cand = (env.get("DUNE_PYTHON")
-                    or str(Path.home() / "miniconda3" / "envs"
-                           / "ofa-dune" / "bin" / "python"))
-            if Path(cand).is_file():
-                python = cand
-            else:
-                result.status = "skipped"
-                result.notes.append(
-                    "DUNE-fem env python not found; set "
-                    "DUNE_PYTHON or install ofa-dune conda env")
+            cand = _conda_python("DUNE_PYTHON",
+                                 ["ofa-dune", "dune-fem-env", "dune311"],
+                                 "DUNE-fem", "dune.fem")
+            if cand is None:
                 return result
+            python = cand
         elif backend == "kratos":
-            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos")
+            cand = _route_to_repo_venv("KRATOS_PYTHON", "Kratos", "KratosMultiphysics")
             if cand is None:
                 return result
             python = cand
         elif backend == "ngsolve":
-            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve")
+            cand = _route_to_repo_venv("NGSOLVE_PYTHON", "NGSolve", "ngsolve")
             if cand is None:
                 return result
             python = cand
         elif backend == "skfem":
-            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem")
+            cand = _route_to_repo_venv("SKFEM_PYTHON", "scikit-fem", "skfem")
+            if cand is None:
+                return result
+            python = cand
+        elif backend == "coupling":
+            # A coupling fixture is not a single-backend fixture. It DRIVES
+            # several backends through the registered `couple` tool, so the
+            # interpreter it needs is one that can import the MCP stack — each
+            # participant is then launched in its own backend's interpreter, by
+            # the driver, exactly as a real coupling does it. Probing `mcp` is
+            # the honest requirement; probing any one backend would be a lie
+            # about what the fixture runs.
+            cand = _route_to_repo_venv("OASIS_PYTHON", "OASiS server", "mcp")
             if cand is None:
                 return result
             python = cand
@@ -450,9 +738,12 @@ def _eval_fixture(fixture_dir: Path,
     # Match expectations on captured output.
     low_out = out.lower()
     for needle in expect:
-        if needle.lower() in low_out:
+        if _needle_present(needle, low_out):
             result.expect_matched.append(needle)
     for needle in forbid:
+        # Forbidden strings keep PLAIN substring matching, deliberately. A
+        # forbid is a tripwire, and a tripwire should fire on the widest
+        # reading — if "Traceback" appears in any form we want the failure.
         if needle.lower() in low_out:
             result.forbid_violated.append(needle)
 
@@ -472,15 +763,29 @@ def _eval_fixture(fixture_dir: Path,
     return result
 
 
-def run() -> dict:
+def run(backend: str | None = None, fixture: str | None = None) -> dict:
+    """Evaluate the fixtures, optionally narrowed to one backend and/or one
+    fixture id.
+
+    The filters exist because a whole-tree run is now hours: the coupling
+    fixtures alone drive two solvers through tens to hundreds of iterations
+    each. Without them, checking one fixture means either running everything or
+    invoking its `source.py` by hand, and running it by hand bypasses the
+    routing and the expectation matching — which is to say it does not check
+    the fixture, only the script inside it.
+    """
     out_map: dict[str, dict] = {}
     if not FIXTURES_DIR.is_dir():
         return out_map
     for backend_dir in sorted(FIXTURES_DIR.iterdir()):
         if not backend_dir.is_dir():
             continue
+        if backend and backend_dir.name != backend:
+            continue
         for fixture_dir in sorted(backend_dir.iterdir()):
             if not fixture_dir.is_dir():
+                continue
+            if fixture and fixture_dir.name != fixture:
                 continue
             meta_path = fixture_dir / "fixture.json"
             if not meta_path.is_file():
@@ -529,9 +834,32 @@ def main():
     ap.add_argument(
         "--write-results", action="store_true",
         help="persist results to scan_results/tier2_results.json")
+    ap.add_argument(
+        "--backend", default=None,
+        help="only fixtures under scripts/tier2_fixtures/<backend>/")
+    ap.add_argument(
+        "--fixture", default=None,
+        help="only the fixture directory with this name")
     args = ap.parse_args()
 
-    results = run()
+    # A PARTIAL run must never become the whole-tree record. That is the same
+    # defect d17ac19 fixed from the other side: there, `--write-results` was
+    # parsed and never read, so any exploratory run silently replaced the
+    # snapshot. Adding filters re-opens it — `--backend coupling
+    # --write-results` would write 18 rows over 108 and the summary would read
+    # as a catastrophic regression. So the two are refused together.
+    if (args.backend or args.fixture) and args.write_results:
+        print("refusing to write results from a filtered run: the snapshot is "
+              "a whole-tree record, and 18 rows written over 108 reads as a "
+              "regression rather than as a partial run. Re-run without "
+              "--backend/--fixture to persist.")
+        return
+
+    results = run(backend=args.backend, fixture=args.fixture)
+    if not results:
+        where = " ".join(x for x in (args.backend, args.fixture) if x)
+        print(f"no fixtures matched {where!r}")
+        return
 
     summary = {
         "n_fixtures": len(results),
@@ -547,9 +875,29 @@ def main():
     print()
     print(f"Tier-2 summary: {summary}")
 
+    # `--write-results` was PARSED AND NEVER READ, so the write was
+    # unconditional and the flag was decoration. Every exploratory run destroyed
+    # the recorded snapshot: a DUNE audit reported it rewriting 112 passes to 6,
+    # and it overwrote 108 with 1 under me before I noticed. A summary that any
+    # incidental run can clobber is not a record.
+    if not args.write_results:
+        print("\nresults NOT written (pass --write-results to persist). "
+              f"Recorded snapshot at {OUTPUT.relative_to(REPO_ROOT)} is "
+              f"untouched.")
+        return
+
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
         "summary": summary,
+        # Identity of the fixture set these results describe. Without it a
+        # committed snapshot cannot be told from a current one: an audit found
+        # `tier2_results.json` 18 commits stale, recording `passed: 113` on a
+        # host where 7 passed and 10 failed — and the floor test that reads it
+        # was green, including with the backend's binary hidden. The number
+        # travels with the repo, so every user gets our result reported as
+        # theirs. Comparing this fingerprint catches the fixture set having moved
+        # underneath a stale summary.
+        "fixture_fingerprint": fixture_inventory_fingerprint(),
         "results": results,
     }, indent=2))
     print(f"results written to "

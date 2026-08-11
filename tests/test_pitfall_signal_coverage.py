@@ -487,12 +487,73 @@ SIGNAL_COVERAGE_MIN = {
                        #                 FEM backend at 100% Signal: coverage.
                        #                 Trajectory: 0.0% -> 100.0% in
                        #                 a SINGLE pass.)
-    "sparta":   0.0,   # SPARTA (DSMC particle code, the 9th backend) carries one
-                       #   curated rarefied-gas pitfall per physics (10 total) that
-                       #   predate the Signal: convention. Baseline locked at 0.0
-                       #   so it can't REGRESS; enriching them with Signal:
-                       #   observable-symptom markers is follow-up work (it is a
-                       #   fundamentally different, non-FEM code).
+    "sparta":  99.0,   # measured 100.0 — SPARTA (the 9th backend, a DSMC
+                       #                  particle code) reached FULL Signal
+                       #                  coverage when its flat
+                       #                  sparta_knowledge.json dump was
+                       #                  restructured into per-physics modules
+                       #                  under backends/sparta/generators/,
+                       #                  the shape every FEM backend already
+                       #                  uses. RECOUNTED 2026-08-03 (audit):
+                       #                  165 Signal-tagged pitfalls counted
+                       #                  across 10 physics = 65 physics-
+                       #                  specific (rarefied_flow 9,
+                       #                  surface_interaction 10,
+                       #                  conjugate_heat_transfer 7,
+                       #                  adaptive_grid 6, axisymmetric 6,
+                       #                  collision_relaxation 6,
+                       #                  hypersonic_flow 6, particle_emission
+                       #                  6, chemistry 4, ambipolar_plasma 5)
+                       #                  plus 10 cross-cutting deck-level
+                       #                  entries attached to every row.
+                       #                  The earlier "155 / collision_relaxation
+                       #                  5" arithmetic was wrong.
+                       #                  COUNT WHAT YOU NAME. Three different
+                       #                  numbers live here and they are NOT
+                       #                  interchangeable:
+                       #                    165 = pitfall entries counted
+                       #                     75 = distinct pitfall entries
+                       #                          (65 physics-specific + 10
+                       #                          cross-cutting; confirmed both
+                       #                          by value and by id())
+                       #                     74 = distinct Signal TEXTS
+                       #                  75 -> 74 because hypersonic_flow[0]
+                       #                  and particle_emission[0] are two
+                       #                  differently-worded pitfalls carrying
+                       #                  the SAME Signal literal verbatim (the
+                       #                  fix emit/face periodic-boundary
+                       #                  abort), so the 65 physics-specific
+                       #                  entries yield only 64 distinct
+                       #                  physics-specific Signal texts. That
+                       #                  64 is the only real "n=64" here; it is
+                       #                  a Signal-level duplicate, NOT an
+                       #                  entry-level miscount, and "75 unique
+                       #                  entries" was correct as written.
+                       #                  Checked for the reference-sharing trap
+                       #                  that inflated a peer backend's count:
+                       #                  exactly one sub-container is attached
+                       #                  by reference to all ten rows
+                       #                  ('deck_skeleton'), and it is not a
+                       #                  pitfall, so no counted number here is
+                       #                  inflated by it.
+                       #                  Message literals quoted inside those
+                       #                  Signals: 71 distinct, 71/71 present in
+                       #                  the installed binary (49 ERROR/WARNING
+                       #                  strings + 22 other console lines).
+                       #                  strings -n 6 canNOT check the
+                       #                  '(../file.cpp:NN)' suffix — the error
+                       #                  handler appends it at runtime — and a
+                       #                  FLERR-line audit against the SPARTA
+                       #                  sources found 1 of 48 such locations
+                       #                  wrong (compute_reduce.cpp:280, the
+                       #                  per-grid twin, quoted for the per-surf
+                       #                  message, which is at :293).
+                       #                  The old floor was 0.0 with 0 Signal
+                       #                  clauses in src/backends/sparta/.
+                       #                  NOTE the floor is not tight: at 165
+                       #                  counted rows, losing exactly ONE
+                       #                  physics-specific Signal leaves 99.394%
+                       #                  and still passes; two or more fail.
 }
 
 

@@ -686,5 +686,16 @@ class TestKnowledgeTools:
         assert "get_precice_knowledge" in captured
         result = captured["get_precice_knowledge"]()
         assert "preCICE" in result
-        assert "MCP" in result
         assert "adapter" in result.lower()
+        # This assertion used to be `"MCP" in result`, which passed only because
+        # the function still returned the PRE-REWRITE inline string. The rewrite
+        # replaced that payload with `precice_knowledge()`, and this test going
+        # green on the old text was one of the signals that the new corpus was
+        # never actually being served. Assert on the contract instead of on a
+        # word that happened to be in the legacy prose.
+        assert "couple_precice" in result
+        for token in ("precice-config.xml", "requires_writing_checkpoint",
+                      "set_mesh_vertices"):
+            assert token in result, f"preCICE payload does not document {token}"
+        # and the solver argument must be honoured, not dropped
+        assert captured["get_precice_knowledge"]("fenics") != result
